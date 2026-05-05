@@ -32,10 +32,14 @@ func _process(delta: float) -> void:
 		return
 		
 	var target_pos := target.global_position
+	if target.has_method("get_hit_origin"):
+		target_pos = target.get_hit_origin()
+		
 	var to_target := target_pos - global_position
 	var distance := to_target.length()
 	
-	if distance < 15:
+	# STANDARD: Use global distance for hit detection
+	if distance < 10.0:
 		hit_target()
 		return
 		
@@ -152,7 +156,8 @@ func apply_splash_damage(hit_pos: Vector2) -> void:
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
 			var enemy_global = enemy.global_position
-			var dist = to_local(enemy_global).length()
+			# STANDARD: Use global distance check for splash damage
+			var dist = hit_pos.distance_to(enemy_global)
 			if dist <= splash_radius:
 				# Pass enemy's OWN global position to take_damage for per-enemy numbers
 				enemy.take_damage(damage, enemy_global)

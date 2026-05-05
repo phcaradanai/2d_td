@@ -160,12 +160,19 @@ func update_visual_feedback() -> void:
 			# Restore normal modulate
 			body.modulate = Color(1, 1, 1, 1)
 
+func get_hit_origin() -> Vector2:
+	return global_position
+
+func get_aim_point() -> Vector2:
+	# STANDARD: Point for towers to aim at
+	return global_position
+
 func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag or reached_base_flag:
 		return
 		
-	# Capture current position if no hit_global provided
-	var capture_pos = hit_global if hit_global != Vector2.ZERO else global_position
+	# STANDARD: Use hit origin if no specific global point provided
+	var capture_pos = hit_global if hit_global != Vector2.ZERO else get_hit_origin()
 	
 	hp -= amount
 	if hp_bar:
@@ -213,7 +220,8 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 func spawn_death_effect(death_global: Vector2) -> void:
 	if death_pop_scene:
 		var effect = death_pop_scene.instantiate()
-		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/EffectsContainer")
+		# STANDARD: Use map-aligned effects container
+		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 		if effects_container:
 			effects_container.add_child(effect)
 			# MUST set global_position AFTER add_child

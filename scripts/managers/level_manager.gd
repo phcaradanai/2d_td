@@ -16,8 +16,21 @@ var decorative_blocked_cells: Array[Vector2i] = []
 var starting_gold: int = 100
 var starting_lives: int = 20
 var waves_path: String = "res://data/waves.json"
+ 
+func reset_state() -> void:
+	level_id = ""
+	level_name = "Unknown Level"
+	starting_gold = 100
+	starting_lives = 20
+	path_cells.clear()
+	blocked_cells.clear()
+	decorative_blocked_cells.clear()
+	grid_cols = 20
+	grid_rows = 12
 
 func load_level(path: String) -> bool:
+	reset_state()
+	
 	if not FileAccess.file_exists(path):
 		push_error("Level file not found: " + path)
 		return false

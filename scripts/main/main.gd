@@ -211,14 +211,16 @@ func _setup_game_from_level() -> void:
 		build_manager.reset_build_state()
 	
 	if game_manager:
-		game_manager.reset_game()
-		game_manager.set_starting_stats(level_manager.starting_gold, level_manager.starting_lives)
+		game_manager.apply_level_config(level_manager.starting_gold, level_manager.starting_lives)
+		game_manager.reset_runtime_state()
+		
+		# User requested specific log format
+		print("START LEVEL ", level_manager.level_id, " money ", game_manager.gold, " hp ", game_manager.lives)
 	
 	if game_hud:
 		game_hud.set_level_name(level_manager.level_name)
 		
-	_refresh_hud_stats()
-	_refresh_start_wave_ui()
+	update_hud()
 	
 	if build_preview:
 		build_preview.setup(level_manager.grid_size, level_manager.grid_cols, level_manager.grid_rows)
@@ -229,6 +231,10 @@ func _create_curve_from_points(points: PackedVector2Array) -> Curve2D:
 	for point in points:
 		curve.add_point(point)
 	return curve
+
+func update_hud() -> void:
+	_refresh_hud_stats()
+	_refresh_start_wave_ui()
 
 func _refresh_hud_stats() -> void:
 	if game_hud and game_manager:
@@ -284,7 +290,7 @@ func _connect_signals() -> void:
 		game_hud.tower_build_selected.connect(_on_tower_build_selected)
 		game_hud.cancel_build_requested.connect(_on_cancel_build_requested)
 		game_hud.pause_requested.connect(_on_pause_requested)
-		game_hud.restart_requested.connect(_on_restart_requested)
+		game_hud.restart_requested.connect(restart_level)
 		game_hud.upgrade_tower_requested.connect(_on_upgrade_tower_requested)
 		game_hud.deselect_tower_requested.connect(_deselect_tower)
 		game_hud.target_mode_changed.connect(_on_target_mode_changed)
@@ -300,7 +306,7 @@ func _connect_signals() -> void:
 		debug_panel.clear_projectiles_requested.connect(_debug_clear_projectiles)
 		debug_panel.trigger_victory_requested.connect(func(): if game_manager: game_manager.trigger_victory())
 		debug_panel.trigger_game_over_requested.connect(func(): if game_manager: game_manager.trigger_game_over())
-		debug_panel.restart_requested.connect(_on_restart_requested)
+		debug_panel.restart_requested.connect(restart_level)
 		debug_panel.god_mode_toggled.connect(_on_debug_god_mode_toggled)
 		debug_panel.level_load_requested.connect(start_game)
 		debug_panel.hard_audio_test_requested.connect(func(): if audio_manager: audio_manager.play_generated_test_tone())
@@ -401,7 +407,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif event.keycode == KEY_F4:
 				_debug_kill_all_enemies()
 			elif event.keycode == KEY_F5:
-				_on_restart_requested()
+				restart_level()
 			elif event.keycode == KEY_F6:
 				_on_debug_god_mode_toggled(not game_manager.debug_god_mode if game_manager else false)
 
@@ -469,8 +475,17 @@ func _on_level_select_back() -> void:
 	_play_ui_click()
 
 func start_game(level_path: String) -> void:
+	start_level(level_path)
+
+func start_level(level_path: String) -> void:
 	current_level_path = level_path
 	current_state = GameState.PLAYING
+	
+	# STANDARD: Ensure engine is unpaused when starting a level
+	get_tree().paused = false
+	if game_manager: game_manager.is_paused = false
+	
+	if OS.is_debug_build(): print("[Main] start_level: ", level_path)
 	
 	if main_menu: main_menu.hide_menu()
 	if level_select: level_select.hide_select()
@@ -497,6 +512,18 @@ func start_game(level_path: String) -> void:
 	if audio_manager:
 		audio_manager.play_music("gameplay")
 
+func restart_level() -> void:
+	if OS.is_debug_build(): print("[Main] restart_level requested for: ", current_level_path)
+	if get_tree().paused:
+		get_tree().paused = false
+		
+	if game_hud:
+		game_hud.exit_end_game_ui_state()
+		
+	if current_level_path != "":
+		start_level(current_level_path)
+	_play_ui_click()
+
 func _clear_gameplay_state() -> void:
 	if tower_container:
 		for tower in tower_container.get_children():
@@ -518,15 +545,7 @@ func _clear_gameplay_state() -> void:
 # --- Gameplay Handlers ---
 
 func _on_restart_requested() -> void:
-	if OS.is_debug_build(): print("[Main] Restart requested")
-	if get_tree().paused:
-		get_tree().paused = false
-		
-	if game_hud:
-		game_hud.exit_end_game_ui_state()
-		
-	start_game(current_level_path)
-	_play_ui_click()
+	restart_level()
 
 func _on_pause_requested() -> void:
 	if game_manager:

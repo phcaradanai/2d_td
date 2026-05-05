@@ -37,12 +37,20 @@ const TURRET_VISUAL_SIZE := 44.0
 
 @export var aim_turn_speed: float = 12.0
 @export var turret_angle_offset_degrees: float = 0.0
+@export var AIM_ROTATION_OFFSET: float = 0.0 # Offset for sprite orientation (degrees)
 
 # Targeting variables
 var current_target: Node2D = null
 var target_mode: String = "first"
 var debug_draw_range: bool = false
 var debug_draw_target_line: bool = false
+
+# Aim Visuals
+@export var show_aim_indicator: bool = true
+var aim_visual: Node2D = null
+var aim_line: Line2D = null
+var target_marker: Node2D = null
+var aim_alpha: float = 0.0 # For smooth fading
 
 # Shooting variables
 var shoot_cooldown: float = 0.0
@@ -177,6 +185,8 @@ func apply_level_visuals() -> void:
 	elif visual_type == "cannon": base_scale = Vector2(1.1, 1.1)
 	scale = base_scale
 	
+	# Ensure visuals are created
+	_ensure_aim_visual()
 	queue_redraw()
 
 func _load_external_sprites() -> void:
@@ -219,14 +229,73 @@ func _fit_sprite_to_size(p_sprite: Sprite2D, target_size: float) -> void:
 	p_sprite.scale = Vector2.ONE * scale_factor
 	p_sprite.centered = true
 	p_sprite.position = Vector2.ZERO
+	# Note: _ensure_aim_visual is now called in apply_level_visuals
+	queue_redraw()
+
+func _ensure_aim_visual() -> void:
+	if not show_aim_indicator:
+		if aim_visual: aim_visual.visible = false
+		return
+		
+	if aim_visual == null:
+		aim_visual = Node2D.new()
+		aim_visual.name = "AimVisual"
+		aim_visual.z_index = 50 # Ensure it's above most elements
+		add_child(aim_visual)
+		
+		aim_line = Line2D.new()
+		aim_line.name = "AimLine"
+		# Setup gradient for a modern look
+		var gradient = Gradient.new()
+		var v_color = _get_tower_color()
+		gradient.set_color(0, Color(v_color.r, v_color.g, v_color.b, 0.0))
+		gradient.set_color(1, Color(v_color.r, v_color.g, v_color.b, 0.8))
+		aim_line.gradient = gradient
+		aim_line.width = 4.0
+		aim_visual.add_child(aim_line)
+		
+		# Setup Target Marker
+		target_marker = Node2D.new()
+		target_marker.name = "TargetMarker"
+		var marker_script = load("res://scripts/ui/target_marker.gd")
+		if marker_script:
+			target_marker.set_script(marker_script)
+		aim_visual.add_child(target_marker)
+
+	# Set color based on tower type
+	var visual_color = _get_tower_color()
+	if aim_line:
+		aim_line.default_color = visual_color
+		# Update gradient as well
+		if aim_line.gradient:
+			aim_line.gradient.set_color(0, Color(visual_color.r, visual_color.g, visual_color.b, 0.0))
+			aim_line.gradient.set_color(1, Color(visual_color.r, visual_color.g, visual_color.b, 0.8))
+	if target_marker: target_marker.color = visual_color
+	
+	aim_visual.visible = true
+
+func _get_tower_color() -> Color:
+	match visual_type:
+		"basic": return Color(0.2, 0.8, 1.0) # Cyan
+		"rapid": return Color(0.3, 1.0, 0.6) # Emerald/Greenish-Cyan
+		"cannon": return Color(1.0, 0.5, 0.2) # Orange
+		"slow": return Color(0.7, 0.4, 1.0) # Purple
+		"poison": return Color(0.2, 0.9, 0.3) # Green
+		_: return Color.WHITE
 
 func _draw() -> void:
 	# 1. Selection / Range Highlight
 	if is_selected:
-		draw_circle(Vector2.ZERO, attack_range, Color(0.1, 0.8, 1.0, 0.1))
-		draw_arc(Vector2.ZERO, attack_range, 0, TAU, 64, Color(0.1, 0.8, 1.0, 0.4), 2.0)
+		# STANDARD: Draw world-unit range circle by compensating for GLOBAL scale
+		# and centering on the canonical range origin
+		var visual_range = attack_range / global_scale.x
+		var local_origin = to_local(get_range_origin())
+		draw_circle(local_origin, visual_range, Color(0.1, 0.8, 1.0, 0.1))
+		draw_arc(local_origin, visual_range, 0, TAU, 64, Color(0.1, 0.8, 1.0, 0.4), 2.0)
 	elif debug_draw_range:
-		draw_circle(Vector2.ZERO, attack_range, Color(1, 1, 1, 0.05))
+		var visual_range = attack_range / global_scale.x
+		var local_origin = to_local(get_range_origin())
+		draw_circle(local_origin, visual_range, Color(1, 1, 1, 0.05))
 
 	if not use_sprite:
 		# 2. Base Plate (Static)
@@ -236,11 +305,6 @@ func _draw() -> void:
 		if turret_pivot:
 			draw_set_transform(Vector2.ZERO, turret_pivot.rotation, Vector2.ONE)
 			_draw_turret_top()
-	
-	# 4. Debug Target Line
-	if (is_selected or debug_draw_target_line) and current_target and is_instance_valid(current_target):
-		var local_target_pos = to_local(current_target.global_position)
-		draw_line(Vector2.ZERO, local_target_pos, Color(1, 0, 0, 0.4), 1.5)
 
 func _draw_base_plate() -> void:
 	var lvl = level_index + 1
@@ -407,6 +471,22 @@ func get_info() -> Dictionary:
 		"target_mode": target_mode
 	}
 
+func get_fire_origin() -> Vector2:
+	if muzzle:
+		return muzzle.global_position
+	return global_position
+
+func get_attack_range() -> float:
+	return attack_range
+
+func get_range_origin() -> Vector2:
+	# STANDARD: Range guide must stay locked to the tower base
+	return global_position
+
+func get_targeting_origin() -> Vector2:
+	# Used for rotation calculation source
+	return global_position
+
 func set_projectile_container(container: Node2D) -> void:
 	projectile_container = container
 
@@ -440,15 +520,30 @@ func _process(delta: float) -> void:
 		return
 		
 	update_target()
+	_update_aim_indicator(delta)
 	
 	# Smooth visual rotation
 	if turret_pivot:
 		if is_valid_target(current_target):
-			var direction = current_target.global_position - global_position
-			var desired_angle = direction.angle() + deg_to_rad(turret_angle_offset_degrees)
-			turret_pivot.rotation = lerp_angle(turret_pivot.rotation, desired_angle, min(1.0, aim_turn_speed * delta))
+			# STANDARD: Use targeting origin (usually center) for rotation calculation 
+			# to avoid feedback loops if muzzle is offset and rotating
+			var source_pos = get_targeting_origin()
+			var target_pos = current_target.global_position
+			if current_target.has_method("get_aim_point"):
+				target_pos = current_target.get_aim_point()
+			elif current_target.has_method("get_hit_origin"):
+				target_pos = current_target.get_hit_origin()
+			
+			var direction = target_pos - source_pos
+			var angle_to_target = direction.angle()
+			
+			var desired_angle = angle_to_target + deg_to_rad(turret_angle_offset_degrees) + deg_to_rad(AIM_ROTATION_OFFSET)
+			
+			# Rotation Speed Check
+			var final_rot = lerp_angle(turret_pivot.rotation, desired_angle, min(1.0, aim_turn_speed * delta))
+			turret_pivot.rotation = final_rot
 		else:
-			# Idle rotation (could return to default or just stay)
+			# Optional: slow return to zero or stay
 			pass
 
 	if shoot_cooldown > 0:
@@ -458,7 +553,50 @@ func _process(delta: float) -> void:
 		shoot()
 		shoot_cooldown = fire_rate
 	
-	queue_redraw()
+	# Redraw needed for selection highlight, range, OR procedural turret rotation
+	if is_selected or debug_draw_range or (not use_sprite and is_valid_target(current_target)):
+		queue_redraw()
+
+func _update_aim_indicator(delta: float) -> void:
+	if not show_aim_indicator or aim_visual == null:
+		return
+		
+	var target_active = is_valid_target(current_target)
+	
+	# Debug print for first activation
+	if target_active and aim_alpha < 0.1 and OS.is_debug_build():
+		print("[Tower] Aim indicator activating for target: ", current_target.name)
+	
+	# Smooth Fading
+	var target_alpha = 1.0 if target_active else 0.0
+	aim_alpha = lerp(aim_alpha, target_alpha, 15.0 * delta)
+	
+	if aim_alpha < 0.01 and not target_active:
+		aim_visual.modulate.a = 0.0
+		return
+	
+	aim_visual.modulate.a = aim_alpha
+	
+	if is_instance_valid(current_target): # Use raw valid check here to allow fading even if slightly out of range
+		var muzzle_pos = get_fire_origin()
+		var target_pos = current_target.global_position
+		if current_target.has_method("get_aim_point"):
+			target_pos = current_target.get_aim_point()
+		elif current_target.has_method("get_hit_origin"):
+			target_pos = current_target.get_hit_origin()
+		
+		var local_muzzle = to_local(muzzle_pos)
+		var local_target = to_local(target_pos)
+		
+		# Update Line
+		if aim_line:
+			aim_line.clear_points()
+			aim_line.add_point(local_muzzle)
+			aim_line.add_point(local_target)
+			
+		# Update Marker
+		if target_marker:
+			target_marker.position = local_target
 
 func shoot() -> void:
 	if projectile_scene:
@@ -466,9 +604,17 @@ func shoot() -> void:
 		var container = projectile_container if projectile_container else get_tree().current_scene
 		container.add_child(projectile)
 		
-		# Use muzzle position if available, else tower center
-		var spawn_pos = muzzle.global_position if muzzle else global_position
+		# STANDARD: Use fire origin anchor for projectile spawn
+		var spawn_pos = get_fire_origin()
 		projectile.global_position = spawn_pos
+		
+		# Debug Log for shooting
+		if OS.is_debug_build():
+			var target_p = current_target.global_position
+			if current_target.has_method("get_aim_point"):
+				target_p = current_target.get_aim_point()
+			var dir = (target_p - spawn_pos).normalized()
+			print("[Tower] SHOOT at target=", target_p, " from muzzle=", spawn_pos, " dir=", dir)
 		
 		# Configure projectile based on tower type
 		var proj_scale = 1.0
@@ -502,9 +648,9 @@ func is_valid_target(enemy: Node2D) -> bool:
 	if enemy == null or not is_instance_valid(enemy): return false
 	if not enemy.has_method("is_alive") or not enemy.is_alive(): return false
 	
-	# Use local distance to ensure consistency with scaled MapRoot
-	var local_dist = to_local(enemy.global_position).length()
-	return local_dist <= attack_range
+	# STANDARD: Use canonical range origin and global distance check
+	var dist = get_range_origin().distance_to(enemy.global_position)
+	return dist <= attack_range
 
 func find_target() -> Node2D:
 	var enemies = get_enemies_in_range()
@@ -557,8 +703,10 @@ func select_last_target(enemies: Array) -> Node2D:
 func select_nearest_target(enemies: Array) -> Node2D:
 	var best_target = null
 	var min_dist = INF
+	var source_pos = get_range_origin()
 	for enemy in enemies:
-		var dist = to_local(enemy.global_position).length()
+		# STANDARD: Use global position distance check from range origin
+		var dist = source_pos.distance_to(enemy.global_position)
 		if dist < min_dist:
 			min_dist = dist
 			best_target = enemy

@@ -70,8 +70,10 @@ func _draw() -> void:
 		if hover_range > 0:
 			var fill_color = valid_range_fill if is_hover_valid else invalid_range_fill
 			var outline_color = valid_range_outline if is_hover_valid else invalid_range_outline
-			draw_circle(center, hover_range, fill_color)
-			draw_arc(center, hover_range, 0, TAU, 64, outline_color, 1.5)
+			# STANDARD: Draw world-unit range circle by compensating for GLOBAL scale
+			var visual_range = hover_range / global_scale.x
+			draw_circle(center, visual_range, fill_color)
+			draw_arc(center, visual_range, 0, TAU, 64, outline_color, 1.5)
 		
 		# Cell Highlight + Brackets
 		draw_rect(rect, Color(color.r, color.g, color.b, 0.15))

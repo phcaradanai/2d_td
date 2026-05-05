@@ -13,9 +13,15 @@ signal wave_rewarded(amount: int)
 @export var starting_gold: int = 120
 @export var starting_lives: int = 20
 
-func set_starting_stats(p_gold: int, p_lives: int) -> void:
+func apply_level_config(p_gold: int, p_lives: int) -> void:
 	starting_gold = p_gold
 	starting_lives = p_lives
+	# High visibility log for level switching audit
+	print(">>> [GameManager] APPLY CONFIG: starting_gold=%d, starting_lives=%d" % [starting_gold, starting_lives])
+
+# Legacy alias for backward compatibility if needed, but we should use apply_level_config
+func set_starting_stats(p_gold: int, p_lives: int) -> void:
+	apply_level_config(p_gold, p_lives)
 
 var gold: int = 0
 var lives: int = 0
@@ -38,6 +44,9 @@ func _ready() -> void:
 	reset_game()
 
 func reset_game() -> void:
+	reset_runtime_state()
+
+func reset_runtime_state() -> void:
 	gold = starting_gold
 	lives = starting_lives
 	current_wave = 0
@@ -57,6 +66,9 @@ func reset_game() -> void:
 	lives_changed.emit(lives)
 	wave_changed.emit(current_wave)
 	score_changed.emit(score)
+	
+	if OS.is_debug_build(): 
+		print("[GameManager] reset_runtime_state: gold=", gold, " lives=", lives)
 
 func add_gold(amount: int) -> void:
 	if is_game_over: return
@@ -172,15 +184,17 @@ func pause_game() -> void:
 	if is_paused: return
 	
 	is_paused = true
+	get_tree().paused = true
 	game_paused.emit()
-	if OS.is_debug_build(): print("[GameManager] manual pause ON")
+	if OS.is_debug_build(): print("[GameManager] engine pause ON")
 
 func resume_game() -> void:
 	if not is_paused: return
 	
 	is_paused = false
+	get_tree().paused = false
 	game_resumed.emit()
-	if OS.is_debug_build(): print("[GameManager] manual pause OFF")
+	if OS.is_debug_build(): print("[GameManager] engine pause OFF")
 
 func toggle_pause() -> void:
 	if is_paused:
