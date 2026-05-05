@@ -29,13 +29,23 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
-	# Outer shockwave ring
-	draw_arc(Vector2.ZERO, radius * (elapsed/lifetime), 0, TAU, 48, Color(color.r, color.g, color.b, 1.0), 3.0)
+	var progress = elapsed / lifetime
+	# Outer shockwave ring - expands
+	draw_arc(Vector2.ZERO, radius * progress, 0, TAU, 48, Color(color.r, color.g, color.b, 1.0 - progress), 4.0)
 	# Inner glowing field
-	draw_circle(Vector2.ZERO, radius, Color(color.r, color.g, color.b, 0.2))
-	# Tactical spikes
-	for i in range(8):
-		var ang = i * TAU / 8
-		var inner = Vector2(cos(ang), sin(ang)) * (radius * 0.4)
-		var outer = Vector2(cos(ang), sin(ang)) * radius
-		draw_line(inner, outer, Color(color.r, color.g, color.b, 0.5), 2.0)
+	draw_circle(Vector2.ZERO, radius * (1.0 - progress * 0.5), Color(color.r, color.g, color.b, 0.2 * (1.0 - progress)))
+	
+	# Shrapnel/Debris
+	var seed_val = int(global_position.x + global_position.y)
+	seed(seed_val)
+	for i in range(12):
+		var ang = i * TAU / 12 + (progress * 0.5)
+		var dist = radius * (0.3 + progress * 0.7)
+		var size = 4.0 * (1.0 - progress)
+		var p = Vector2(cos(ang), sin(ang)) * dist
+		draw_rect(Rect2(p.x - size/2, p.y - size/2, size, size), color)
+		# Add a small white core to some debris
+		if i % 3 == 0:
+			draw_rect(Rect2(p.x - size/4, p.y - size/4, size/2, size/2), Color.WHITE)
+	# Reset seed
+	seed(Time.get_ticks_msec())

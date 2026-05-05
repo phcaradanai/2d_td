@@ -15,6 +15,7 @@ var projectile_speed: float = 500.0
 var splash_radius: float = 0.0
 var slow_percent: float = 0.0
 var slow_duration: float = 0.0
+var slow_radius: float = 0.0
 var grid_cell: Vector2i
 
 # Level tracking
@@ -55,6 +56,7 @@ var aim_alpha: float = 0.0 # For smooth fading
 # Shooting variables
 var shoot_cooldown: float = 0.0
 var projectile_scene: PackedScene = preload("res://scenes/projectiles/Projectile.tscn")
+var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/MuzzleFlash.tscn")
 var projectile_container: Node2D = null
 
 @onready var range_area: Area2D = $RangeArea
@@ -143,6 +145,7 @@ func apply_level_stats() -> void:
 		splash_radius = data.get("splash_radius", 0.0)
 		slow_percent = data.get("slow_percent", 0.0)
 		slow_duration = data.get("slow_duration", 0.0)
+		slow_radius = data.get("slow_radius", 0.0)
 		_update_range_collision()
 		apply_level_visuals()
 		queue_redraw()
@@ -468,6 +471,7 @@ func get_info() -> Dictionary:
 		"splash_radius": splash_radius,
 		"slow_percent": slow_percent,
 		"slow_duration": slow_duration,
+		"slow_radius": slow_radius,
 		"target_mode": target_mode
 	}
 
@@ -516,7 +520,7 @@ func _on_click_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: 
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
-	if game_manager != null and game_manager.is_paused:
+	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
 		return
 		
 	update_target()
@@ -597,6 +601,13 @@ func _update_aim_indicator(delta: float) -> void:
 		# Update Marker
 		if target_marker:
 			target_marker.position = local_target
+			target_marker.visible = true
+	else:
+		# Target lost - clear visuals immediately to avoid "swinging stale beam" artifact
+		if aim_line:
+			aim_line.clear_points()
+		if target_marker:
+			target_marker.visible = false
 
 func shoot() -> void:
 	if projectile_scene:
@@ -634,12 +645,53 @@ func shoot() -> void:
 			proj_color = Color(0.4, 0.8, 1.0, 1.0) # Cyan
 			sfx_name = "tower_shoot_slow"
 			
-		projectile.setup(current_target, int(damage), projectile_speed, attack_type, splash_radius, slow_percent, slow_duration)
+		var radius = splash_radius if attack_type == "splash" else slow_radius
+		projectile.setup(current_target, int(damage), projectile_speed, attack_type, radius, slow_percent, slow_duration)
 		projectile.scale = Vector2(proj_scale, proj_scale)
 		projectile.modulate = proj_color
 		
+		# VISUAL POLISH: Recoil and Flash
+		play_fire_recoil()
+		spawn_muzzle_flash(proj_color)
+		
 		if audio_manager:
 			audio_manager.play_sfx(sfx_name)
+
+func play_fire_recoil() -> void:
+	# Recoil effect: Kick the turret sprite or pivot backward
+	var target_node = turret_sprite if turret_sprite else turret_pivot
+	if target_node == null: return
+	
+	# STANDARD: Use a fresh tween for every shot, but limit magnitude to avoid drift
+	var tween = create_tween()
+	var recoil_dist = 6.0
+	if visual_type == "cannon": recoil_dist = 12.0
+	elif visual_type == "rapid": recoil_dist = 3.0
+	
+	var original_pos = target_node.position
+	# Kick back (opposite of muzzle direction, which is X+)
+	tween.tween_property(target_node, "position", original_pos + Vector2(-recoil_dist, 0), 0.05)\
+		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
+	# Snap back
+	tween.tween_property(target_node, "position", original_pos, 0.15)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+func spawn_muzzle_flash(color: Color) -> void:
+	if muzzle_flash_scene:
+		var flash = muzzle_flash_scene.instantiate()
+		# STANDARD: effects in MapRoot/EffectsContainer
+		var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+		if not container: container = get_tree().current_scene
+		
+		container.add_child(flash)
+		flash.global_position = get_fire_origin()
+		flash.global_rotation = turret_pivot.global_rotation if turret_pivot else global_rotation
+		
+		if flash.has_method("setup"):
+			var flash_scale = 1.0
+			if visual_type == "cannon": flash_scale = 1.5
+			elif visual_type == "rapid": flash_scale = 0.7
+			flash.setup(color, flash_scale)
 
 func update_target() -> void:
 	current_target = find_target()

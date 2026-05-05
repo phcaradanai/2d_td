@@ -22,6 +22,11 @@ func _ready() -> void:
 		.set_trans(Tween.TRANS_SINE)\
 		.set_ease(Tween.EASE_OUT)
 	
+	# Scale pop
+	scale = Vector2(0.5, 0.5)
+	tween.tween_property(self, "scale", Vector2(1.2, 1.2), 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_delay(0.1)
+
 	# Fade out
 	tween.tween_property(self, "modulate:a", 0.0, duration - fade_delay)\
 		.set_delay(fade_delay)

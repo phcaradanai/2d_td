@@ -25,9 +25,16 @@ func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0) -> void:
 	tween.tween_callback(queue_free)
 
 func _draw() -> void:
-	# Draw a cross burst
-	var size = 6.0
-	draw_line(Vector2(-size, 0), Vector2(size, 0), color, 2.0)
-	draw_line(Vector2(0, -size), Vector2(0, size), color, 2.0)
-	# Inner glow
+	# Draw multi-directional sparks
+	var rays = 8
+	var size = 8.0
+	for i in range(rays):
+		var angle = i * TAU / rays
+		var spark_len = size * (0.8 + randf() * 0.4)
+		var dir = Vector2(cos(angle), sin(angle))
+		draw_line(Vector2.ZERO, dir * spark_len, color, 1.5)
+		# Secondary smaller spark
+		draw_line(dir * (spark_len * 0.4), dir * (spark_len * 0.7), Color.WHITE, 1.0)
+	
+	# Inner core
 	draw_circle(Vector2.ZERO, 3.0, Color.WHITE)

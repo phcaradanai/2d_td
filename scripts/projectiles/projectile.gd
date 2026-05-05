@@ -13,6 +13,9 @@ var lifetime: float = 5.0
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
 @onready var splash_effect_scene: PackedScene = preload("res://scenes/effects/SplashEffect.tscn")
 @onready var impact_effect_scene: PackedScene = preload("res://scenes/effects/ImpactEffect.tscn")
+var trail_points: Array[Vector2] = []
+@export var max_trail_points: int = 8
+@export var min_point_distance: float = 4.0
 
 func setup(p_target: Node2D, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_splash_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0) -> void:
 	target = p_target
@@ -44,6 +47,7 @@ func _process(delta: float) -> void:
 		return
 		
 	global_position += to_target.normalized() * speed * delta
+	_update_trail()
 	
 	lifetime -= delta
 	if lifetime <= 0:
@@ -52,8 +56,41 @@ func _process(delta: float) -> void:
 	if OS.is_debug_build():
 		queue_redraw()
 
+func _update_trail() -> void:
+	# Avoid adding points if we're already at the target or dead
+	if not is_instance_valid(target) or global_position.distance_to(target.global_position) < 5.0:
+		return
+		
+	if trail_points.is_empty():
+		trail_points.append(global_position)
+		return
+		
+	var last_p = trail_points.back()
+	if last_p.distance_to(global_position) >= min_point_distance:
+		trail_points.append(global_position)
+	
+	if trail_points.size() > max_trail_points:
+		trail_points.pop_front()
+	
+	queue_redraw()
+
 func _draw() -> void:
-	# Face movement direction
+	# 1. Draw Trail (Global points converted to local space)
+	if trail_points.size() >= 2:
+		var base_color = modulate
+		for i in range(trail_points.size() - 1):
+			var p1 = to_local(trail_points[i])
+			var p2 = to_local(trail_points[i+1])
+			
+			# Avoid drawing very tiny or degenerate segments
+			if p1.distance_to(p2) < 0.5: continue
+			
+			var alpha = float(i + 1) / trail_points.size()
+			var seg_color = base_color
+			seg_color.a = 0.4 * alpha
+			draw_line(p1, p2, seg_color, 2.0 * alpha, true)
+
+	# 2. Face movement direction
 	var rot = 0.0
 	if is_instance_valid(target):
 		rot = (target.global_position - global_position).angle()
@@ -94,27 +131,20 @@ func hit_target() -> void:
 	if OS.is_debug_build():
 		if OS.is_debug_build(): print("[Projectile] Hit global captured at ", hit_global)
 
-	if attack_type == "splash":
-		apply_splash_damage(hit_global)
-	elif attack_type == "slow":
-		if target and is_instance_valid(target):
-			if target.has_method("take_damage"):
-				target.take_damage(damage, hit_global)
-			if target.has_method("apply_slow"):
-				target.apply_slow(slow_percent, slow_duration)
-			_spawn_impact_effect(hit_global, Color(0.2, 0.8, 1.0)) # Icy blue
-			if audio_manager:
-				audio_manager.play_sfx("projectile_hit")
+	if attack_type == "splash" or attack_type == "slow":
+		apply_area_effect(hit_global)
 	else:
 		if target and target.has_method("take_damage"):
 			target.take_damage(damage, hit_global)
-			_spawn_impact_effect(hit_global)
+			# STANDARD: Use captured hit point and current pos for angle
+			var impact_angle = (hit_global - global_position).angle()
+			_spawn_impact_effect(hit_global, Color.WHITE, impact_angle)
 			if audio_manager:
 				audio_manager.play_sfx("projectile_hit")
 	
 	queue_free()
 
-func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE) -> void:
+func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
 	if impact_effect_scene:
 		var effect = impact_effect_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
@@ -128,17 +158,25 @@ func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE) -> void:
 		
 		var scale_val = 0.8
 		if attack_type == "slow": scale_val = 1.2
-		effect.setup(color, scale_val)
+		
+		# Set rotation for directional sparks
+		effect.rotation = hit_angle
+		
+		if effect.has_method("setup"):
+			effect.setup(color, scale_val)
 
-func apply_splash_damage(hit_pos: Vector2) -> void:
-	if audio_manager:
-		audio_manager.play_sfx("splash_hit")
-		
-	# Screen shake for cannon
-	var main = get_tree().current_scene
-	if main and main.has_method("shake_camera"):
-		main.shake_camera(8.0, 0.2)
-		
+func apply_area_effect(hit_pos: Vector2) -> void:
+	if attack_type == "splash":
+		if audio_manager:
+			audio_manager.play_sfx("splash_hit")
+		# Screen shake for cannon
+		var main = get_tree().current_scene
+		if main and main.has_method("shake_camera"):
+			main.shake_camera(8.0, 0.2)
+	elif attack_type == "slow":
+		if audio_manager:
+			audio_manager.play_sfx("projectile_hit")
+
 	# Spawn visual effect at hit position
 	if splash_effect_scene:
 		var effect = splash_effect_scene.instantiate()
@@ -149,15 +187,25 @@ func apply_splash_damage(hit_pos: Vector2) -> void:
 		else:
 			get_tree().current_scene.add_child(effect)
 			effect.global_position = hit_pos
-		effect.setup(splash_radius)
+		
+		var effect_color = Color(1, 0.5, 0.2) if attack_type == "splash" else Color(0.4, 0.8, 1.0)
+		if effect.has_method("setup"):
+			effect.setup(splash_radius, effect_color)
 	
 	# Find enemies in radius
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
 			var enemy_global = enemy.global_position
-			# STANDARD: Use global distance check for splash damage
+			# STANDARD: Use global distance check for area damage/slow
 			var dist = hit_pos.distance_to(enemy_global)
 			if dist <= splash_radius:
-				# Pass enemy's OWN global position to take_damage for per-enemy numbers
-				enemy.take_damage(damage, enemy_global)
+				if attack_type == "splash":
+					# Linear Falloff: 100% at center, 50% at edge
+					var falloff = 1.0 - (dist / splash_radius) * 0.5
+					enemy.take_damage(damage * falloff, enemy_global)
+				elif attack_type == "slow":
+					# Area slow deals its low base damage + applies debuff
+					enemy.take_damage(damage, enemy_global)
+					if enemy.has_method("apply_slow"):
+						enemy.apply_slow(slow_percent, slow_duration)

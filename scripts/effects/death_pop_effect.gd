@@ -23,14 +23,30 @@ func _ready() -> void:
 	tween.tween_callback(queue_free)
 
 func _draw() -> void:
-	# Draw shards flying out
-	var num_shards = 4
+	# Draw shards flying out with variation
+	var num_shards = 8
+	# Use a stable seed for the draw call based on position
+	var seed_val = int(global_position.x * 10 + global_position.y)
+	seed(seed_val)
+	
 	for i in range(num_shards):
-		var ang = i * TAU / num_shards
-		var pos = Vector2(cos(ang), sin(ang)) * 8.0
-		var shard_pts = [
-			pos + Vector2(2, 0),
-			pos + Vector2(-2, -2),
-			pos + Vector2(-2, 2)
-		]
+		var ang = i * TAU / num_shards + randf() * 0.5
+		var dist = 8.0 + randf() * 4.0
+		var pos = Vector2(cos(ang), sin(ang)) * dist
+		var s = 2.0 + randf() * 2.0
+		
+		var shard_pts = PackedVector2Array([
+			pos + Vector2(s, 0).rotated(randf() * TAU),
+			pos + Vector2(-s, -s).rotated(randf() * TAU),
+			pos + Vector2(-s, s).rotated(randf() * TAU)
+		])
 		draw_colored_polygon(shard_pts, color)
+		# Add a tiny white dot to some shards
+		if i % 2 == 0:
+			draw_circle(pos, 1.0, Color.WHITE)
+	
+	# Expanding ring
+	draw_arc(Vector2.ZERO, 10.0, 0, TAU, 24, Color(color.r, color.g, color.b, 0.4), 1.0)
+	
+	# Reset seed
+	seed(Time.get_ticks_msec())

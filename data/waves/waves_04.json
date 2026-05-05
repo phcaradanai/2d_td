@@ -1,0 +1,60 @@
+[
+  {
+    "wave": 1,
+    "name": "Sprint 1",
+    "completion_reward": 30,
+    "groups": [
+      {
+        "enemy_type": "fast",
+        "count": 8,
+        "spawn_delay": 0.6
+      }
+    ]
+  },
+  {
+    "wave": 2,
+    "name": "Mixed Sprint",
+    "completion_reward": 40,
+    "groups": [
+      {
+        "enemy_type": "basic",
+        "count": 10,
+        "spawn_delay": 0.8
+      },
+      {
+        "enemy_type": "fast",
+        "count": 5,
+        "spawn_delay": 0.4
+      }
+    ]
+  },
+  {
+    "wave": 3,
+    "name": "Heavy Support",
+    "completion_reward": 50,
+    "groups": [
+      {
+        "enemy_type": "tank",
+        "count": 3,
+        "spawn_delay": 1.5
+      },
+      {
+        "enemy_type": "fast",
+        "count": 8,
+        "spawn_delay": 0.5
+      }
+    ]
+  },
+  {
+    "wave": 4,
+    "name": "Overdrive",
+    "completion_reward": 70,
+    "groups": [
+      {
+        "enemy_type": "fast",
+        "count": 20,
+        "spawn_delay": 0.3
+      }
+    ]
+  }
+]

@@ -1,14 +1,14 @@
 extends Node2D
 
-@export var valid_color: Color = Color(0.1, 1.0, 0.2, 0.4)
-@export var invalid_color: Color = Color(1.0, 0.1, 0.1, 0.4)
-@export var valid_range_fill: Color = Color(0.1, 1.0, 0.2, 0.12)
-@export var valid_range_outline: Color = Color(0.1, 1.0, 0.2, 0.6)
-@export var invalid_range_fill: Color = Color(1.0, 0.1, 0.1, 0.12)
-@export var invalid_range_outline: Color = Color(1.0, 0.1, 0.1, 0.6)
+@export var valid_color: Color = Color(0.2, 1.0, 0.4, 0.6)
+@export var invalid_color: Color = Color(1.0, 0.2, 0.2, 0.6)
+@export var valid_range_fill: Color = Color(0.2, 1.0, 0.4, 0.15)
+@export var valid_range_outline: Color = Color(0.2, 1.0, 0.4, 0.8)
+@export var invalid_range_fill: Color = Color(1.0, 0.2, 0.2, 0.15)
+@export var invalid_range_outline: Color = Color(1.0, 0.2, 0.2, 0.8)
 
-@export var grid_color: Color = Color(1.0, 1.0, 1.0, 0.05)
-@export var blocked_color: Color = Color(1.0, 0.0, 0.0, 0.2)
+@export var grid_color: Color = Color(1.0, 1.0, 1.0, 0.08)
+@export var blocked_color: Color = Color(1.0, 0.1, 0.1, 0.25)
 
 var grid_size: int = 64
 var grid_cols: int = 20

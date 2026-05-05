@@ -66,16 +66,57 @@ func get_level_record(level_id: String) -> Dictionary:
 		"completed": false
 	}
 
+const LEVELS_PER_AREA: int = 5
+const TOTAL_AREAS: int = 2
+const TOTAL_LEVELS: int = 10
+
+func get_area_id_for_level(level_id_str: String) -> int:
+	var parts = level_id_str.split("_")
+	if parts.size() < 2: return 1
+	var num = int(parts[1])
+	return int((num - 1) / LEVELS_PER_AREA) + 1
+
+func is_area_unlocked(area_id: int) -> bool:
+	if area_id <= 1: return true
+	# Check if the last level of the previous area is completed
+	var last_level_of_prev = (area_id - 1) * LEVELS_PER_AREA
+	var prev_id = "level_%02d" % last_level_of_prev
+	return get_level_record(prev_id).get("completed", false)
+
 func is_level_unlocked(level_id: String) -> bool:
 	if level_id == "level_01": return true
 	
-	if level_id == "level_02":
-		return get_level_record("level_01")["completed"]
-		
-	if level_id == "level_03":
-		return get_level_record("level_02")["completed"]
-		
-	return false
+	# Extract level number from ID like "level_02" -> 2
+	var parts = level_id.split("_")
+	if parts.size() < 2: return false
+	
+	var level_num = int(parts[1])
+	if level_num <= 1: return true
+	
+	var area_id = get_area_id_for_level(level_id)
+	if not is_area_unlocked(area_id):
+		return false
+	
+	# Check if previous level (e.g. level_01) is completed
+	var prev_level_num = level_num - 1
+	var prev_level_id = "level_%02d" % prev_level_num
+	
+	return get_level_record(prev_level_id).get("completed", false)
+
+func get_next_level_id(current_id: String) -> String:
+	var parts = current_id.split("_")
+	if parts.size() < 2: return ""
+	
+	var level_num = int(parts[1])
+	if level_num >= TOTAL_LEVELS: return ""
+	
+	var next_num = level_num + 1
+	var next_id = "level_%02d" % next_num
+	
+	# Only return next level if it's actually unlocked
+	if is_level_unlocked(next_id):
+		return next_id
+	return ""
 
 func update_level_record(level_id: String, summary: Dictionary) -> bool:
 	var current = get_level_record(level_id)

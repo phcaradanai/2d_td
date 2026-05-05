@@ -1,0 +1,58 @@
+[
+  {
+    "wave": 1,
+    "name": "Endgame Stage 1",
+    "completion_reward": 100,
+    "groups": [
+      {
+        "enemy_type": "basic",
+        "count": 50,
+        "spawn_delay": 0.5
+      },
+      {
+        "enemy_type": "fast",
+        "count": 30,
+        "spawn_delay": 0.3
+      }
+    ]
+  },
+  {
+    "wave": 2,
+    "name": "Endgame Stage 2",
+    "completion_reward": 150,
+    "groups": [
+      {
+        "enemy_type": "tank",
+        "count": 40,
+        "spawn_delay": 0.8
+      },
+      {
+        "enemy_type": "fast",
+        "count": 40,
+        "spawn_delay": 0.2
+      }
+    ]
+  },
+  {
+    "wave": 3,
+    "name": "The Final Stand",
+    "completion_reward": 500,
+    "groups": [
+      {
+        "enemy_type": "tank",
+        "count": 60,
+        "spawn_delay": 0.5
+      },
+      {
+        "enemy_type": "fast",
+        "count": 100,
+        "spawn_delay": 0.1
+      },
+      {
+        "enemy_type": "basic",
+        "count": 150,
+        "spawn_delay": 0.2
+      }
+    ]
+  }
+]

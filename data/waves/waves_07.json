@@ -1,0 +1,26 @@
+[
+  {
+    "wave": 1,
+    "name": "Velocity Check",
+    "completion_reward": 50,
+    "groups": [
+      {
+        "enemy_type": "fast",
+        "count": 25,
+        "spawn_delay": 0.4
+      }
+    ]
+  },
+  {
+    "wave": 2,
+    "name": "Sonic Waves",
+    "completion_reward": 70,
+    "groups": [
+      {
+        "enemy_type": "fast",
+        "count": 40,
+        "spawn_delay": 0.2
+      }
+    ]
+  }
+]

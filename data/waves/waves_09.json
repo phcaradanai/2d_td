@@ -1,0 +1,14 @@
+[
+  {
+    "wave": 1,
+    "name": "The Horde",
+    "completion_reward": 100,
+    "groups": [
+      {
+        "enemy_type": "basic",
+        "count": 100,
+        "spawn_delay": 0.1
+      }
+    ]
+  }
+]

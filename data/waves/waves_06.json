@@ -1,0 +1,26 @@
+[
+  {
+    "wave": 1,
+    "name": "Iron Start",
+    "completion_reward": 50,
+    "groups": [
+      {
+        "enemy_type": "basic",
+        "count": 20,
+        "spawn_delay": 0.8
+      }
+    ]
+  },
+  {
+    "wave": 2,
+    "name": "Grouped Pressure",
+    "completion_reward": 60,
+    "groups": [
+      {
+        "enemy_type": "basic",
+        "count": 30,
+        "spawn_delay": 0.3
+      }
+    ]
+  }
+]

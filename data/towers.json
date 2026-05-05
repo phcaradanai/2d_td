@@ -3,29 +3,29 @@
 	"id": "basic_tower",
 	"name": "Basic Tower",
 	"cost": 50,
-	"description": "Balanced tower",
-	"projectile_speed": 500,
+	"description": "Reliable single-target damage",
+	"projectile_speed": 550,
 	"visual_type": "basic",
 	"attack_type": "single",
 	"levels": [
 	  {
 		"level": 1,
-		"damage": 10,
-		"range": 160,
+		"damage": 12,
+		"range": 165,
 		"fire_rate": 0.8,
-		"upgrade_cost": 40
+		"upgrade_cost": 45
 	  },
 	  {
 		"level": 2,
-		"damage": 18,
-		"range": 190,
+		"damage": 22,
+		"range": 195,
 		"fire_rate": 0.65,
-		"upgrade_cost": 75
+		"upgrade_cost": 85
 	  },
 	  {
 		"level": 3,
-		"damage": 32,
-		"range": 220,
+		"damage": 38,
+		"range": 225,
 		"fire_rate": 0.5,
 		"upgrade_cost": 0
 	  }
@@ -34,31 +34,31 @@
   "rapid_tower": {
 	"id": "rapid_tower",
 	"name": "Rapid Tower",
-	"cost": 65,
-	"description": "Fast attack, low damage",
-	"projectile_speed": 650,
+	"cost": 70,
+	"description": "Excellent against fast enemies",
+	"projectile_speed": 750,
 	"visual_type": "rapid",
 	"attack_type": "single",
 	"levels": [
 	  {
 		"level": 1,
 		"damage": 5,
-		"range": 145,
-		"fire_rate": 0.35,
-		"upgrade_cost": 55
+		"range": 140,
+		"fire_rate": 0.28,
+		"upgrade_cost": 65
 	  },
 	  {
 		"level": 2,
 		"damage": 8,
-		"range": 165,
-		"fire_rate": 0.28,
-		"upgrade_cost": 90
+		"range": 160,
+		"fire_rate": 0.22,
+		"upgrade_cost": 100
 	  },
 	  {
 		"level": 3,
-		"damage": 13,
-		"range": 185,
-		"fire_rate": 0.22,
+		"damage": 14,
+		"range": 180,
+		"fire_rate": 0.16,
 		"upgrade_cost": 0
 	  }
 	]
@@ -66,73 +66,76 @@
   "cannon_tower": {
 	"id": "cannon_tower",
 	"name": "Cannon Tower",
-	"cost": 90,
-	"description": "High damage, slow attack, splash damage",
-	"projectile_speed": 420,
+	"cost": 110,
+	"description": "Area damage specialist",
+	"projectile_speed": 450,
 	"visual_type": "cannon",
 	"attack_type": "splash",
 	"levels": [
 	  {
 		"level": 1,
-		"damage": 28,
-		"range": 190,
-		"fire_rate": 1.35,
-		"upgrade_cost": 80,
-		"splash_radius": 70
+		"damage": 18,
+		"range": 150,
+		"fire_rate": 1.4,
+		"upgrade_cost": 95,
+		"splash_radius": 75
 	  },
 	  {
 		"level": 2,
-		"damage": 48,
-		"range": 220,
-		"fire_rate": 1.15,
-		"upgrade_cost": 130,
-		"splash_radius": 85
+		"damage": 32,
+		"range": 175,
+		"fire_rate": 1.2,
+		"upgrade_cost": 150,
+		"splash_radius": 95
 	  },
 	  {
 		"level": 3,
-		"damage": 80,
-		"range": 250,
-		"fire_rate": 0.95,
+		"damage": 55,
+		"range": 200,
+		"fire_rate": 1.0,
 		"upgrade_cost": 0,
-		"splash_radius": 105
+		"splash_radius": 120
 	  }
 	]
   },
   "slow_tower": {
 	"id": "slow_tower",
 	"name": "Slow Tower",
-	"cost": 75,
-	"description": "Slows enemies on hit",
-	"projectile_speed": 450,
+	"cost": 85,
+	"description": "Support: Area slow effect",
+	"projectile_speed": 500,
 	"visual_type": "slow",
 	"attack_type": "slow",
 	"levels": [
 	  {
 		"level": 1,
-		"damage": 4,
-		"range": 170,
-		"fire_rate": 0.9,
-		"upgrade_cost": 65,
-		"slow_percent": 0.35,
-		"slow_duration": 1.5
+		"damage": 2,
+		"range": 155,
+		"fire_rate": 1.0,
+		"upgrade_cost": 75,
+		"slow_percent": 0.4,
+		"slow_duration": 2.0,
+		"slow_radius": 65
 	  },
 	  {
 		"level": 2,
-		"damage": 7,
-		"range": 200,
-		"fire_rate": 0.75,
-		"upgrade_cost": 110,
-		"slow_percent": 0.45,
-		"slow_duration": 2.0
+		"damage": 4,
+		"range": 180,
+		"fire_rate": 0.85,
+		"upgrade_cost": 120,
+		"slow_percent": 0.5,
+		"slow_duration": 2.5,
+		"slow_radius": 85
 	  },
 	  {
 		"level": 3,
-		"damage": 12,
-		"range": 230,
-		"fire_rate": 0.6,
+		"damage": 8,
+		"range": 205,
+		"fire_rate": 0.7,
 		"upgrade_cost": 0,
-		"slow_percent": 0.55,
-		"slow_duration": 2.5
+		"slow_percent": 0.6,
+		"slow_duration": 3.0,
+		"slow_radius": 110
 	  }
 	]
   }

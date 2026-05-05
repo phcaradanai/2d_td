@@ -111,7 +111,7 @@ func _ready() -> void:
 	apply_visuals()
 
 func _process(delta: float) -> void:
-	if game_manager != null and game_manager.is_paused:
+	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
 		return
 		
 	if not is_active or is_dead_flag or reached_base_flag:
@@ -180,9 +180,19 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO) -> void:
 		
 	flash_body()
 	spawn_damage_number(int(amount), capture_pos)
+	_play_hit_pulse()
 	
 	if hp <= 0:
 		die(capture_pos)
+
+func _play_hit_pulse() -> void:
+	# Quick squash and stretch reaction
+	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	
+	# STANDARD: Avoid stacking huge scales, just a quick pulse
+	tween.tween_property(self, "scale", Vector2(1.2, 0.8), 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func flash_body() -> void:
 	is_flashing = true

@@ -1,0 +1,65 @@
+[
+  {
+    "wave": 1,
+    "name": "The Long March",
+    "completion_reward": 40,
+    "groups": [
+      {
+        "enemy_type": "basic",
+        "count": 15,
+        "spawn_delay": 1.0
+      }
+    ]
+  },
+  {
+    "wave": 2,
+    "name": "Armor Platoon",
+    "completion_reward": 50,
+    "groups": [
+      {
+        "enemy_type": "tank",
+        "count": 6,
+        "spawn_delay": 2.0
+      },
+      {
+        "enemy_type": "basic",
+        "count": 10,
+        "spawn_delay": 0.8
+      }
+    ]
+  },
+  {
+    "wave": 3,
+    "name": "Rapid Response",
+    "completion_reward": 60,
+    "groups": [
+      {
+        "enemy_type": "fast",
+        "count": 15,
+        "spawn_delay": 0.4
+      }
+    ]
+  },
+  {
+    "wave": 4,
+    "name": "Final Gatekeeper",
+    "completion_reward": 100,
+    "groups": [
+      {
+        "enemy_type": "tank",
+        "count": 10,
+        "spawn_delay": 1.5
+      },
+      {
+        "enemy_type": "fast",
+        "count": 12,
+        "spawn_delay": 0.5
+      },
+      {
+        "enemy_type": "basic",
+        "count": 20,
+        "spawn_delay": 0.6
+      }
+    ]
+  }
+]

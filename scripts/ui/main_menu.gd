@@ -15,7 +15,9 @@ signal quit_pressed()
 
 func _ready() -> void:
 	start_button.pressed.connect(_on_start_pressed)
-	level_select_button.pressed.connect(_on_level_select_pressed)
+	if level_select_button:
+		level_select_button.hide()
+		level_select_button.disabled = true
 	
 	if credits_button:
 		credits_button.pressed.connect(_on_credits_pressed)

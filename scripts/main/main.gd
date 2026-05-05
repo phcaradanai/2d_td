@@ -5,7 +5,7 @@ const LEVEL_MANAGER_SCRIPT = preload("res://scripts/managers/level_manager.gd")
 const MAP_VISUAL_LAYER_SCRIPT = preload("res://scripts/map/map_visual_layer.gd")
 const UI_THEME_MANAGER_SCRIPT = preload("res://scripts/ui/ui_theme_manager.gd")
 
-enum GameState { MENU, LEVEL_SELECT, PLAYING, PAUSED, GAME_OVER, VICTORY }
+enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, PAUSED, GAME_OVER, VICTORY }
 
 @onready var world_root: Node2D = $WorldRoot
 @onready var map_root: Node2D = %MapRoot
@@ -63,8 +63,8 @@ func _ready() -> void:
 		debug_panel.process_mode = Node.PROCESS_MODE_ALWAYS
 		
 	if debug_button:
-		# Show only in debug or if enabled
-		debug_button.visible = _can_show_debug_panel()
+		# Hide by default, only show if debug build AND specifically enabled
+		debug_button.visible = false 
 		debug_button.pressed.connect(_on_debug_button_pressed)
 		debug_button.mouse_filter = Control.MOUSE_FILTER_STOP
 	
@@ -177,7 +177,7 @@ func _refresh_start_wave_ui() -> void:
 			wave_manager.get_total_waves(),
 			wave_manager.get_next_wave_name()
 		)
-		var can_start = not wave_manager.is_wave_running and current_state == GameState.PLAYING
+		var can_start = not wave_manager.is_wave_running and (current_state == GameState.BUILD or current_state == GameState.WAVE)
 		game_hud.set_start_wave_enabled(can_start)
 	else:
 		game_hud.update_start_wave_button(0, wave_manager.get_total_waves(), "")
@@ -277,7 +277,7 @@ func _ensure_level_nodes_exist() -> void:
 
 func _connect_signals() -> void:
 	if main_menu:
-		main_menu.start_pressed.connect(func(): start_game("res://data/levels/level_01.json"))
+		main_menu.start_pressed.connect(_on_level_select_requested)
 		main_menu.level_select_pressed.connect(_on_level_select_requested)
 		main_menu.quit_pressed.connect(func(): get_tree().quit())
 	
@@ -295,6 +295,8 @@ func _connect_signals() -> void:
 		game_hud.deselect_tower_requested.connect(_deselect_tower)
 		game_hud.target_mode_changed.connect(_on_target_mode_changed)
 		game_hud.main_menu_requested.connect(return_to_menu)
+		game_hud.back_to_map_requested.connect(_on_level_select_requested)
+		game_hud.next_level_requested.connect(start_next_level)
 		game_hud.audio_settings_changed.connect(_on_audio_settings_changed)
 		game_hud.test_audio_requested.connect(_on_test_audio_requested)
 		game_hud.reset_audio_requested.connect(_on_reset_audio_requested)
@@ -338,7 +340,7 @@ func _connect_signals() -> void:
 		game_manager.game_resumed.connect(_on_game_resumed)
 
 func _process(_delta: float) -> void:
-	if current_state != GameState.PLAYING: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 	
 	if build_manager and build_manager.is_build_mode_active():
 		var local_mouse = map_root.to_local(get_global_mouse_position())
@@ -377,7 +379,7 @@ func _check_tower_click(local_pos: Vector2) -> bool:
 	return false
 
 func _unhandled_input(event: InputEvent) -> void:
-	if current_state != GameState.PLAYING and current_state != GameState.PAUSED: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE and current_state != GameState.PAUSED: return
 	
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
@@ -385,7 +387,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				build_manager.clear_selected_tower()
 			elif selected_tower:
 				_deselect_tower()
-			elif current_state == GameState.PLAYING:
+			elif current_state == GameState.BUILD or current_state == GameState.WAVE:
 				_on_pause_requested()
 			elif current_state == GameState.PAUSED:
 				_resume_game()
@@ -411,7 +413,7 @@ func _unhandled_input(event: InputEvent) -> void:
 			elif event.keycode == KEY_F6:
 				_on_debug_god_mode_toggled(not game_manager.debug_god_mode if game_manager else false)
 
-	if current_state != GameState.PLAYING: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 	
 	if event is InputEventMouseButton and event.pressed:
 		var local_mouse = map_root.to_local(get_global_mouse_position())
@@ -445,33 +447,20 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Session Flow ---
 
 func return_to_menu() -> void:
-	current_state = GameState.MENU
+	set_game_phase(GameState.MENU)
 	_resume_game()
 	_clear_gameplay_state()
-	
-	if main_menu: main_menu.show_menu()
-	if level_select: 
-		level_select.update_ui(save_manager)
-		level_select.hide_select()
-	if game_hud: game_hud.hide_hud()
-	
-	if world_root: world_root.hide()
-	
 	if audio_manager:
 		audio_manager.play_music("menu")
 
 func _on_level_select_requested() -> void:
-	current_state = GameState.LEVEL_SELECT
-	if main_menu: main_menu.hide_menu()
-	if level_select: 
-		level_select.update_ui(save_manager)
-		level_select.show_select()
+	set_game_phase(GameState.LEVEL_SELECT)
 	_play_ui_click()
+	if audio_manager:
+		audio_manager.play_music("menu")
 
 func _on_level_select_back() -> void:
-	current_state = GameState.MENU
-	if level_select: level_select.hide_select()
-	if main_menu: main_menu.show_menu()
+	set_game_phase(GameState.MENU)
 	_play_ui_click()
 
 func start_game(level_path: String) -> void:
@@ -479,24 +468,17 @@ func start_game(level_path: String) -> void:
 
 func start_level(level_path: String) -> void:
 	current_level_path = level_path
-	current_state = GameState.PLAYING
 	
 	# STANDARD: Ensure engine is unpaused when starting a level
 	get_tree().paused = false
 	if game_manager: game_manager.is_paused = false
 	
+	set_game_phase(GameState.BUILD)
+	
+	if game_hud:
+		game_hud.exit_end_game_ui_state()
+		
 	if OS.is_debug_build(): print("[Main] start_level: ", level_path)
-	
-	if main_menu: main_menu.hide_menu()
-	if level_select: level_select.hide_select()
-	if game_hud: 
-		game_hud.show_hud()
-		game_hud.hide_center_message()
-		game_hud.hide_tower_info()
-		game_hud.set_status("Ready")
-		game_hud.set_build_status("None")
-	
-	if world_root: world_root.show()
 	
 	_clear_gameplay_state()
 	
@@ -524,6 +506,19 @@ func restart_level() -> void:
 		start_level(current_level_path)
 	_play_ui_click()
 
+func start_next_level() -> void:
+	if save_manager and current_level_id != "":
+		var next_id = save_manager.get_next_level_id(current_level_id)
+		var next_path = "res://data/levels/%s.json" % next_id
+		if FileAccess.file_exists(next_path):
+			if game_hud: game_hud.exit_end_game_ui_state()
+			start_level(next_path)
+		else:
+			# No more levels or next level missing
+			return_to_menu()
+	else:
+		return_to_menu()
+
 func _clear_gameplay_state() -> void:
 	if tower_container:
 		for tower in tower_container.get_children():
@@ -539,8 +534,12 @@ func _clear_gameplay_state() -> void:
 		enemy.queue_free()
 		
 	_deselect_tower()
+	if wave_manager:
+		wave_manager.reset_waves() # Stop spawning and reset counters
 	if build_manager:
 		build_manager.reset_build_state()
+	if build_preview:
+		build_preview.update_preview(Vector2i(-1, -1), false, false)
 
 # --- Gameplay Handlers ---
 
@@ -577,19 +576,103 @@ func show_wave_feedback(text: String, color: Color = Color.WHITE) -> void:
 	if game_hud and game_hud.has_method("show_temporary_message"):
 		game_hud.show_temporary_message(text, color)
 
+func set_game_phase(new_state: GameState) -> void:
+	if current_state == new_state: return
+	
+	var old_state = current_state
+	current_state = new_state
+	
+	if OS.is_debug_build(): print("[Main] State changed: ", old_state, " -> ", new_state)
+	
+	_refresh_ui_for_phase()
+
+func _refresh_ui_for_phase() -> void:
+	# Hide everything by default for safety, then show what's needed
+	var panels = {
+		"menu": main_menu,
+		"select": level_select,
+		"hud": game_hud,
+		"world": world_root,
+		"debug": debug_panel
+	}
+	
+	for key in panels:
+		var p = panels[key]
+		if p:
+			p.hide()
+			if p is Control: p.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			elif p is CanvasLayer: 
+				# CanvasLayer doesn't have mouse_filter, but its children do.
+				# We usually rely on .hide() for CanvasLayer.
+				pass
+
+	match current_state:
+		GameState.MENU:
+			if main_menu: 
+				main_menu.show()
+				# Title screen should block mouse to its buttons
+				main_menu.process_mode = Node.PROCESS_MODE_ALWAYS
+			get_tree().paused = false
+			
+		GameState.LEVEL_SELECT:
+			if level_select: 
+				level_select.update_ui(save_manager)
+				level_select.show()
+			get_tree().paused = false
+			
+		GameState.BUILD:
+			if game_hud: 
+				game_hud.show()
+				game_hud.set_paused(false)
+				game_hud.set_start_wave_enabled(true)
+				game_hud.hide_center_message()
+				game_hud.show_build_panel()
+			if world_root: world_root.show()
+			get_tree().paused = false
+			
+		GameState.WAVE:
+			if game_hud:
+				game_hud.show()
+				game_hud.set_paused(false)
+				game_hud.set_start_wave_enabled(false)
+				game_hud.hide_center_message()
+			if world_root: world_root.show()
+			get_tree().paused = false
+			
+		GameState.PAUSED:
+			if game_hud:
+				game_hud.show() # Keep HUD visible behind pause
+				game_hud.set_paused(true)
+			if world_root: world_root.show()
+			get_tree().paused = true
+			
+		GameState.GAME_OVER:
+			if game_hud:
+				game_hud.show()
+				game_hud.show_game_over()
+				game_hud.enter_end_game_ui_state()
+			if world_root: world_root.show()
+			
+		GameState.VICTORY:
+			if game_hud:
+				game_hud.show()
+				game_hud.show_victory()
+				game_hud.enter_end_game_ui_state()
+			if world_root: world_root.show()
+
 func _on_game_paused() -> void:
-	current_state = GameState.PAUSED
-	if game_hud:
-		game_hud.set_paused(true)
+	set_game_phase(GameState.PAUSED)
 
 func _on_game_resumed() -> void:
 	if current_state == GameState.PAUSED:
-		current_state = GameState.PLAYING
-	if game_hud:
-		game_hud.set_paused(false)
+		# Restore based on wave state
+		if wave_manager and wave_manager.is_wave_running:
+			set_game_phase(GameState.WAVE)
+		else:
+			set_game_phase(GameState.BUILD)
 
 func _on_tower_build_selected(tower_id: String) -> void:
-	if current_state != GameState.PLAYING: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 	_deselect_tower()
 	if build_manager:
 		build_manager.set_selected_tower(tower_id)
@@ -602,12 +685,15 @@ func _on_tower_placed(tower: Node2D, _tower_id: String, _cost: int) -> void:
 		audio_manager.play_sfx("tower_place")
 
 func _on_placed_tower_clicked(tower: Node2D) -> void:
-	if current_state != GameState.PLAYING: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 	if build_manager and build_manager.has_selected_tower(): return 
 	_select_tower(tower)
 	_play_ui_click()
 
 func _select_tower(tower: Node2D) -> void:
+	# Fix: Always clear previous selection first to avoid stale range circles
+	clear_selected_tower()
+	
 	if is_instance_valid(tower):
 		selected_tower = tower
 		if selected_tower.has_method("set_selected"):
@@ -629,7 +715,7 @@ func _deselect_tower() -> void:
 	clear_selected_tower()
 
 func _on_upgrade_tower_requested() -> void:
-	if current_state != GameState.PLAYING: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 	if selected_tower == null or not selected_tower.can_upgrade(): return
 	var cost = selected_tower.get_upgrade_cost()
 	if game_manager and game_manager.spend_gold(cost):
@@ -650,7 +736,7 @@ func _on_target_mode_changed(mode: String) -> void:
 	_play_ui_click()
 
 func _on_start_wave_requested() -> void:
-	if current_state != GameState.PLAYING: return
+	if current_state != GameState.BUILD: return
 	if audio_manager: audio_manager.unlock_audio()
 	if wave_manager:
 		wave_manager.start_next_wave()
@@ -686,6 +772,7 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status("Hover: " + str(cell) + " " + reason)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
+	set_game_phase(GameState.WAVE)
 	if game_manager:
 		game_manager.set_current_wave(wave_number)
 	if game_hud:
@@ -694,7 +781,8 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		show_wave_feedback("Wave %d: %s" % [wave_number, wave_name], Color(1, 0.8, 0.2))
 
 func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> void:
-	if current_state == GameState.PLAYING:
+	set_game_phase(GameState.BUILD)
+	if game_manager:
 		game_manager.award_wave_completion(reward)
 		if game_hud:
 			game_hud.set_status("Wave %d cleared! +%d Gold" % [wave_number, reward])
@@ -719,7 +807,9 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 	if game_manager:
 		game_manager.damage_base(base_damage)
 	
-	shake_camera(12.0, 0.3)
+	shake_camera(15.0, 0.4)
+	if game_hud:
+		game_hud.show_screen_flash(Color(0.8, 0.1, 0.1, 0.4), 0.3)
 	
 	# Spawn impact effect at leak position
 	var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
@@ -752,11 +842,18 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 		audio_manager.play_sfx("enemy_reach_base")
 
 func _on_game_over() -> void:
-	current_state = GameState.GAME_OVER
+	if OS.is_debug_build(): print("[Main] Game Over Triggered")
+	set_game_phase(GameState.GAME_OVER)
 	
 	clear_selected_tower()
 	if build_manager and build_manager.has_method("cancel_build_mode"):
 		build_manager.cancel_build_mode()
+	
+	# Stop all combat
+	if wave_manager:
+		wave_manager.reset_waves() # Stop spawning
+	
+	_clear_projectiles_and_targeting()
 		
 	var summary = game_manager.get_run_summary()
 	if game_hud:
@@ -766,8 +863,19 @@ func _on_game_over() -> void:
 	if audio_manager:
 		audio_manager.play_sfx("game_over")
 
+func _clear_projectiles_and_targeting() -> void:
+	if projectile_container:
+		for proj in projectile_container.get_children():
+			proj.queue_free()
+	
+	# Clear all tower targeting lines
+	if tower_container:
+		for tower in tower_container.get_children():
+			if tower.has_method("clear_targeting_line"):
+				tower.clear_targeting_line()
+
 func _on_victory() -> void:
-	current_state = GameState.VICTORY
+	set_game_phase(GameState.VICTORY)
 	
 	clear_selected_tower()
 	if build_manager and build_manager.has_method("cancel_build_mode"):

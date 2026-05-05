@@ -12,6 +12,8 @@ signal main_menu_requested()
 signal audio_settings_changed(settings: Dictionary)
 signal test_audio_requested(type: String)
 signal reset_audio_requested()
+signal next_level_requested()
+signal back_to_map_requested()
 
 # Top Bar
 @onready var gold_label: Label = $Root/TopBar/MarginContainer/HBoxContainer/GoldLabel
@@ -51,6 +53,7 @@ signal reset_audio_requested()
 @onready var center_message_panel: PanelContainer = $Root/CenterMessagePanel
 @onready var center_message_label: Label = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterMessageLabel
 @onready var center_restart_button: Button = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterRestartButton
+@onready var center_next_level_button: Button = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterNextLevelButton
 @onready var center_menu_button: Button = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterMenuButton
 
 # Summary Stats
@@ -89,18 +92,44 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	start_wave_button.pressed.connect(func(): start_wave_requested.emit())
-	settings_button.pressed.connect(func(): settings_panel.show())
+	settings_button.pressed.connect(func(): set_panel_active(settings_panel, true, true))
 	pause_button.pressed.connect(func(): pause_requested.emit())
 	
 	restart_button.pressed.connect(_on_restart_pressed)
 	center_restart_button.pressed.connect(_on_restart_pressed)
 	
-	center_menu_button.pressed.connect(func(): main_menu_requested.emit())
+	# Handle dynamic Next Level button if not in scene
+	if center_next_level_button == null:
+		center_next_level_button = Button.new()
+		center_next_level_button.name = "CenterNextLevelButton"
+		center_next_level_button.text = "Next Level"
+		# Style it similar to restart button if possible
+		var ref_btn = center_restart_button
+		if ref_btn:
+			for style_type in ["normal", "hover", "pressed", "disabled", "focus"]:
+				var sb = ref_btn.get_theme_stylebox(style_type)
+				if sb: center_next_level_button.add_theme_stylebox_override(style_type, sb)
+		
+		# Insert between Restart and Menu
+		var container = center_restart_button.get_parent()
+		if container:
+			container.add_child(center_next_level_button)
+			container.move_child(center_next_level_button, center_restart_button.get_index() + 1)
+			
+	if center_next_level_button:
+		center_next_level_button.pressed.connect(func(): next_level_requested.emit())
 	
-	basic_tower_button.pressed.connect(func(): tower_build_selected.emit("basic_tower"))
-	rapid_tower_button.pressed.connect(func(): tower_build_selected.emit("rapid_tower"))
-	cannon_tower_button.pressed.connect(func(): tower_build_selected.emit("cannon_tower"))
-	slow_tower_button.pressed.connect(func(): tower_build_selected.emit("slow_tower"))
+	center_menu_button.pressed.connect(func(): 
+		if center_menu_button.text == "Main Menu":
+			main_menu_requested.emit()
+		else:
+			back_to_map_requested.emit()
+	)
+	
+	basic_tower_button.pressed.connect(func(): _on_tower_btn_pressed("basic_tower", basic_tower_button))
+	rapid_tower_button.pressed.connect(func(): _on_tower_btn_pressed("rapid_tower", rapid_tower_button))
+	cannon_tower_button.pressed.connect(func(): _on_tower_btn_pressed("cannon_tower", cannon_tower_button))
+	slow_tower_button.pressed.connect(func(): _on_tower_btn_pressed("slow_tower", slow_tower_button))
 	cancel_build_button.pressed.connect(func(): cancel_build_requested.emit())
 	upgrade_tower_button.pressed.connect(func(): upgrade_tower_requested.emit())
 	deselect_tower_button.pressed.connect(func(): deselect_tower_requested.emit())
@@ -125,14 +154,29 @@ func _ready() -> void:
 	test_sfx_button.pressed.connect(func(): test_audio_requested.emit("sfx"))
 	test_music_button.pressed.connect(func(): test_audio_requested.emit("music"))
 	reset_audio_button.pressed.connect(func(): reset_audio_requested.emit())
-	close_settings_button.pressed.connect(func(): settings_panel.hide())
+	close_settings_button.pressed.connect(func(): set_panel_active(settings_panel, false))
 	
 	hide_tower_info()
 	hide_center_message()
-	settings_panel.hide()
+	set_panel_active(settings_panel, false)
 	if dim_overlay: dim_overlay.hide()
+	
+	# STANDARD: Full-screen Root should ignore mouse except for children
+	# This prevents invisible containers from blocking map clicks.
+	$Root.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
 	set_status("Ready")
 	set_build_status("Build: None")
+
+func set_panel_active(panel: Control, active: bool, block_mouse: bool = true) -> void:
+	if panel == null: return
+	
+	panel.visible = active
+	if active:
+		panel.process_mode = Node.PROCESS_MODE_INHERIT
+		panel.mouse_filter = Control.MOUSE_FILTER_STOP if block_mouse else Control.MOUSE_FILTER_IGNORE
+	else:
+		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func update_layout_for_viewport() -> void:
 	if not is_inside_tree(): return
@@ -175,7 +219,10 @@ func set_audio_settings_ui(settings: Dictionary) -> void:
 	updating_audio_ui = false
 
 func set_gold(value: int) -> void:
+	var old_text = gold_label.text
 	gold_label.text = "Gold: " + str(value)
+	if old_text != gold_label.text:
+		pulse_label(gold_label)
 	_update_tower_affordability(value)
 
 func _update_tower_affordability(current_gold: int) -> void:
@@ -188,18 +235,39 @@ func _update_tower_affordability(current_gold: int) -> void:
 	]:
 		var cost = tower_prices.get(btn_info["id"], 999)
 		if current_gold < cost:
-			btn_info["btn"].modulate = Color(1, 0.4, 0.4, 0.6)
+			btn_info["btn"].modulate = Color(1, 0.4, 0.4, 0.8)
 		else:
 			btn_info["btn"].modulate = Color(1, 1, 1, 1)
+		
+		# Update label with price if possible
+		var base_name = btn_info["id"].replace("_tower", "").capitalize()
+		btn_info["btn"].text = "%s ($%d)" % [base_name, cost]
 
 func set_tower_prices(prices: Dictionary) -> void:
 	tower_prices = prices
 
 func set_lives(value: int) -> void:
+	var old_text = lives_label.text
 	lives_label.text = "Lives: " + str(value)
+	if old_text != lives_label.text:
+		pulse_label(lives_label, 1.2 if value < 5 else 1.1)
+		
+		# Feedback for damage: Flash red briefly
+		var flash_tween = create_tween()
+		lives_label.add_theme_color_override("font_color", Color(1, 0, 0))
+		flash_tween.tween_interval(0.4)
+		flash_tween.tween_callback(func():
+			if value < 5:
+				lives_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+			else:
+				lives_label.remove_theme_color_override("font_color")
+		)
 
 func set_wave(value: int) -> void:
+	var old_text = wave_label.text
 	wave_label.text = "Wave: " + str(value)
+	if old_text != wave_label.text:
+		pulse_label(wave_label)
 
 func set_version(text: String) -> void:
 	if version_label:
@@ -220,6 +288,11 @@ func set_build_status(text: String) -> void:
 
 func set_start_wave_enabled(enabled: bool) -> void:
 	start_wave_button.disabled = not enabled
+	if not enabled:
+		start_wave_button.text = "In Progress"
+	else:
+		# Text will be restored by update_start_wave_button or next frame
+		pass
 
 func update_start_wave_button(next_wave_number: int, total_waves: int, wave_name: String = "") -> void:
 	if next_wave_number <= 0 or next_wave_number > total_waves:
@@ -251,7 +324,7 @@ func show_run_summary(summary: Dictionary) -> void:
 	enter_end_game_ui_state()
 	if dim_overlay: dim_overlay.show()
 	
-	center_message_panel.show()
+	set_panel_active(center_message_panel, true, true)
 	var result_text = summary.get("result", "Victory").to_upper()
 	center_message_label.text = result_text
 	
@@ -262,6 +335,10 @@ func show_run_summary(summary: Dictionary) -> void:
 		
 	stats_container.show()
 	center_restart_button.show()
+	if center_next_level_button:
+		center_next_level_button.visible = (result_text == "VICTORY")
+	
+	center_menu_button.text = "Back to Map"
 	center_menu_button.show()
 	
 	var stars = summary.get("stars", 0)
@@ -297,7 +374,8 @@ func show_tower_info(info: Dictionary) -> void:
 		tower_slow_label.show()
 		var slow_pct = int(info.get("slow_percent", 0) * 100)
 		var slow_dur = info.get("slow_duration", 0)
-		tower_slow_label.text = "Slow: %d%% (%0.1fs)" % [slow_pct, slow_dur]
+		var slow_rad = info.get("slow_radius", 0)
+		tower_slow_label.text = "Slow: %d%% (%0.1fs) R:%d" % [slow_pct, slow_dur, slow_rad]
 	else:
 		tower_slow_label.hide()
 	
@@ -321,14 +399,19 @@ func hide_tower_info() -> void:
 	hide_tower_info_panel()
 
 func show_center_message(title: String, show_buttons: bool = true) -> void:
-	center_message_panel.show()
+	set_panel_active(center_message_panel, true, true)
 	center_message_label.text = title
 	stats_container.hide()
 	center_restart_button.visible = show_buttons
+	if center_next_level_button:
+		center_next_level_button.hide()
+	
+	# If paused, this button should go to Menu, else it's "Back to Map" from summary
+	center_menu_button.text = "Main Menu" if get_tree().paused else "Back to Map"
 	center_menu_button.visible = show_buttons
 
 func hide_center_message() -> void:
-	center_message_panel.hide()
+	set_panel_active(center_message_panel, false)
 
 func show_game_over() -> void:
 	set_status("Game Over")
@@ -340,16 +423,16 @@ func show_victory() -> void:
 	update_start_wave_button(0, 0, "")
 
 func show_build_panel() -> void:
-	if left_sidebar: left_sidebar.show()
+	set_panel_active(left_sidebar, true, true)
 
 func hide_build_panel() -> void:
-	if left_sidebar: left_sidebar.hide()
+	set_panel_active(left_sidebar, false)
 
 func show_tower_info_panel() -> void:
-	if right_sidebar: right_sidebar.show()
+	set_panel_active(right_sidebar, true, true)
 
 func hide_tower_info_panel() -> void:
-	if right_sidebar: right_sidebar.hide()
+	set_panel_active(right_sidebar, false)
 
 func enter_end_game_ui_state() -> void:
 	hide_tower_info_panel()
@@ -399,3 +482,63 @@ func show_temporary_message(text: String, color: Color = Color.WHITE, duration: 
 	tween.parallel().tween_property(temp_message_label, "position:y", 60.0, 0.3)
 	
 	tween.tween_callback(temp_message_label.hide)
+
+func show_screen_flash(color: Color, duration: float = 0.2) -> void:
+	if dim_overlay == null: return
+	
+	var original_color = dim_overlay.color
+	var original_visible = dim_overlay.visible
+	
+	dim_overlay.color = color
+	dim_overlay.show()
+	
+	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	tween.tween_property(dim_overlay, "modulate:a", 0.0, duration).from(1.0)
+	tween.tween_callback(func():
+		dim_overlay.visible = original_visible
+		dim_overlay.color = original_color
+		dim_overlay.modulate.a = 1.0
+	)
+
+func pulse_label(label: Control, pulse_scale: float = 1.1) -> void:
+	if label == null: return
+	
+	# Kill existing pulse if any
+	var existing = label.get_meta("pulse_tween", null)
+	if existing and existing.is_running():
+		existing.kill()
+		label.scale = Vector2.ONE
+	
+	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	label.pivot_offset = label.size / 2.0
+	
+	tween.tween_property(label, "scale", Vector2.ONE * pulse_scale, 0.05).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	tween.tween_property(label, "scale", Vector2.ONE, 0.1).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
+	
+	label.set_meta("pulse_tween", tween)
+
+func _on_tower_btn_pressed(id: String, btn: Button) -> void:
+	var cost = tower_prices.get(id, 999)
+	# Check affordability here for feedback
+	var gold = 0
+	if get_tree().current_scene.game_manager:
+		gold = get_tree().current_scene.game_manager.gold
+	
+	if gold < cost:
+		shake_node(btn)
+		set_build_status("Not enough gold ($%d)!" % cost)
+		return
+		
+	tower_build_selected.emit(id)
+
+func shake_node(node: Control, strength: float = 10.0) -> void:
+	if node == null: return
+	var original_pos = node.position
+	var tween = create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	for i in range(4):
+		var offset = Vector2(randf_range(-strength, strength), randf_range(-strength, strength))
+		tween.tween_property(node, "position", original_pos + offset, 0.04)
+	tween.tween_property(node, "position", original_pos, 0.04)

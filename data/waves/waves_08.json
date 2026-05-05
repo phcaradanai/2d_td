@@ -1,0 +1,26 @@
+[
+  {
+    "wave": 1,
+    "name": "Tank Column",
+    "completion_reward": 80,
+    "groups": [
+      {
+        "enemy_type": "tank",
+        "count": 15,
+        "spawn_delay": 1.2
+      }
+    ]
+  },
+  {
+    "wave": 2,
+    "name": "Heavy Resistance",
+    "completion_reward": 100,
+    "groups": [
+      {
+        "enemy_type": "tank",
+        "count": 25,
+        "spawn_delay": 0.8
+      }
+    ]
+  }
+]
