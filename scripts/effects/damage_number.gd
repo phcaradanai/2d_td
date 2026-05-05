@@ -1,0 +1,29 @@
+extends Node2D
+
+@export var duration: float = 0.6
+@export var travel_distance: float = 40.0
+@export var fade_delay: float = 0.3
+
+@onready var label: Label = $Label
+
+func setup(amount: int, color: Color = Color.WHITE) -> void:
+	if label:
+		label.text = "-" + str(amount)
+		label.add_theme_color_override("font_color", color)
+
+func _ready() -> void:
+	var tween = create_tween()
+	tween.set_parallel(true)
+	
+	# Move up relative to starting position
+	# Using position here works because it's relative to the parent (EffectsContainer)
+	# And we set global_position just after add_child in the caller.
+	tween.tween_property(self, "position:y", position.y - travel_distance, duration)\
+		.set_trans(Tween.TRANS_SINE)\
+		.set_ease(Tween.EASE_OUT)
+	
+	# Fade out
+	tween.tween_property(self, "modulate:a", 0.0, duration - fade_delay)\
+		.set_delay(fade_delay)
+	
+	tween.chain().tween_callback(queue_free)

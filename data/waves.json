@@ -1,0 +1,70 @@
+[
+  {
+	"wave": 1,
+	"name": "First Contact",
+	"completion_reward": 25,
+	"groups": [
+	  {
+		"enemy_type": "basic",
+		"count": 6,
+		"spawn_delay": 0.75
+	  }
+	]
+  },
+  {
+	"wave": 2,
+	"name": "Fast Runners",
+	"completion_reward": 35,
+	"groups": [
+	  {
+		"enemy_type": "basic",
+		"count": 6,
+		"spawn_delay": 0.65
+	  },
+	  {
+		"enemy_type": "fast",
+		"count": 4,
+		"spawn_delay": 0.45
+	  }
+	]
+  },
+  {
+	"wave": 3,
+	"name": "Heavy Armor",
+	"completion_reward": 45,
+	"groups": [
+	  {
+		"enemy_type": "fast",
+		"count": 8,
+		"spawn_delay": 0.4
+	  },
+	  {
+		"enemy_type": "tank",
+		"count": 3,
+		"spawn_delay": 1.0
+	  }
+	]
+  },
+  {
+	"wave": 4,
+	"name": "Final Mix",
+	"completion_reward": 60,
+	"groups": [
+	  {
+		"enemy_type": "basic",
+		"count": 8,
+		"spawn_delay": 0.55
+	  },
+	  {
+		"enemy_type": "tank",
+		"count": 5,
+		"spawn_delay": 0.9
+	  },
+	  {
+		"enemy_type": "fast",
+		"count": 10,
+		"spawn_delay": 0.35
+	  }
+	]
+  }
+]

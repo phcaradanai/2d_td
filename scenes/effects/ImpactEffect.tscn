@@ -1,0 +1,15 @@
+[gd_scene format=3 uid="uid://dp6m5k8l2n3o1"]
+
+[ext_resource type="Script" path="res://scripts/effects/impact_effect.gd" id="1_impact_script"]
+
+[node name="ImpactEffect" type="Node2D"]
+script = ExtResource("1_impact_script")
+
+[node name="ColorRect" type="ColorRect" parent="."]
+offset_left = -4.0
+offset_top = -4.0
+offset_right = 4.0
+offset_bottom = 4.0
+pivot_offset = Vector2(4, 4)
+mouse_filter = 2
+color = Color(1, 1, 1, 1)

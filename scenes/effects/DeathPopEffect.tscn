@@ -1,0 +1,20 @@
+[gd_scene format=3 uid="uid://dm6m5k8l2n3o2"]
+
+[ext_resource type="Script" path="res://scripts/effects/death_pop_effect.gd" id="1_pop_script"]
+
+[node name="DeathPopEffect" type="Node2D"]
+script = ExtResource("1_pop_script")
+
+[node name="Circle" type="ColorRect" parent="."]
+offset_left = -6.0
+offset_top = -6.0
+offset_right = 6.0
+offset_bottom = 6.0
+pivot_offset = Vector2(6, 6)
+mouse_filter = 2
+color = Color(1, 0.2, 0.2, 0.8)
+
+[node name="Ring" type="Line2D" parent="."]
+points = PackedVector2Array(0, -8, 5.6, -5.6, 8, 0, 5.6, 5.6, 0, 8, -5.6, 5.6, -8, 0, -5.6, -5.6, 0, -8)
+width = 2.0
+default_color = Color(1, 1, 1, 0.5)

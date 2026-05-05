@@ -1,0 +1,22 @@
+[gd_scene load_steps=2 format=3 uid="uid://c8n6v5q8x2y1"]
+
+[ext_resource type="Script" path="res://scripts/enemies/enemy.gd" id="1_enemy_script"]
+
+[node name="Enemy" type="PathFollow2D"]
+loop = false
+script = ExtResource("1_enemy_script")
+
+[node name="Body" type="ColorRect" parent="."]
+offset_left = -16.0
+offset_top = -16.0
+offset_right = 16.0
+offset_bottom = 16.0
+color = Color(0.8, 0.2, 0.2, 1)
+
+[node name="HpBar" type="ProgressBar" parent="."]
+offset_left = -20.0
+offset_top = -28.0
+offset_right = 20.0
+offset_bottom = -24.0
+mouse_filter = 2
+show_percentage = false

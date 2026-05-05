@@ -1,0 +1,87 @@
+[gd_scene load_steps=5 format=3 uid="uid://dg3n5p7q2r1x8"]
+
+[ext_resource type="Script" path="res://scripts/towers/tower.gd" id="1_tower_script"]
+
+[sub_resource type="RectangleShape2D" id="RectangleShape2D_1"]
+size = Vector2(72, 72)
+
+[sub_resource type="CircleShape2D" id="CircleShape2D_1"]
+radius = 160.0
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_badge"]
+bg_color = Color(0, 0, 0, 0.490196)
+corner_radius_top_left = 4
+corner_radius_top_right = 4
+corner_radius_bottom_right = 4
+corner_radius_bottom_left = 4
+
+[node name="Tower" type="Node2D"]
+script = ExtResource("1_tower_script")
+
+[node name="Glow" type="Polygon2D" parent="."]
+visible = false
+color = Color(0.3, 0.6, 1, 0.235294)
+polygon = PackedVector2Array(-35, -35, 35, -35, 35, 35, -35, 35)
+
+[node name="Body" type="ColorRect" parent="."]
+offset_left = -24.0
+offset_top = -24.0
+offset_right = 24.0
+offset_bottom = 24.0
+color = Color(0.2, 0.4, 0.8, 1)
+
+[node name="Head" type="Node2D" parent="."]
+
+[node name="Barrel1" type="ColorRect" parent="Head"]
+offset_left = 6.0
+offset_top = -4.0
+offset_right = 24.0
+offset_bottom = 4.0
+color = Color(0.8, 0.8, 1, 1)
+
+[node name="Barrel2" type="ColorRect" parent="Head"]
+visible = false
+offset_left = 6.0
+offset_top = -10.0
+offset_right = 22.0
+offset_bottom = -2.0
+color = Color(0.8, 0.8, 1, 1)
+
+[node name="Barrel3" type="ColorRect" parent="Head"]
+visible = false
+offset_left = 6.0
+offset_top = 2.0
+offset_right = 22.0
+offset_bottom = 10.0
+color = Color(0.8, 0.8, 1, 1)
+
+[node name="Core" type="ColorRect" parent="Head"]
+offset_left = -12.0
+offset_top = -12.0
+offset_right = 12.0
+offset_bottom = 12.0
+color = Color(0.3, 0.6, 1, 1)
+
+[node name="ClickArea" type="Area2D" parent="."]
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="ClickArea"]
+shape = SubResource("RectangleShape2D_1")
+
+[node name="RangeArea" type="Area2D" parent="."]
+collision_layer = 0
+collision_mask = 2
+monitorable = false
+
+[node name="CollisionShape2D" type="CollisionShape2D" parent="RangeArea"]
+shape = SubResource("CircleShape2D_1")
+
+[node name="LevelBadge" type="Label" parent="."]
+offset_left = -20.0
+offset_top = 8.0
+offset_right = 20.0
+offset_bottom = 24.0
+theme_override_font_sizes/font_size = 10
+theme_override_styles/normal = SubResource("StyleBoxFlat_badge")
+text = "Lv1"
+horizontal_alignment = 1
+vertical_alignment = 1

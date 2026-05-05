@@ -1,0 +1,28 @@
+{
+  "id": "level_02",
+  "name": "Crossroad Bend",
+  "description": "A winding path with multiple curves. Requires better coverage and planning.",
+  "grid_size": 64,
+  "grid_cols": 20,
+  "grid_rows": 12,
+  "grid_origin": { "x": 0, "y": 0 },
+  "starting_gold": 100,
+  "starting_lives": 20,
+  "waves_path": "res://data/waves/waves_02.json",
+  "path_cells": [
+	[2, 0], [2, 1], [2, 2], [2, 3],
+	[3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3],
+	[8, 4], [8, 5], [8, 6], [8, 7], [8, 8],
+	[9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8],
+	[14, 7], [14, 6], [14, 5], [14, 4], [14, 3],
+	[15, 3], [16, 3], [17, 3], [18, 3], [19, 3]
+  ],
+  "spawn_cell": [2, 0],
+  "base_cell": [19, 3],
+  "blocked_cells": [
+	[3, 4], [4, 4], [5, 4], [6, 4]
+  ],
+  "decorative_blocked_cells": [
+	[10, 2], [11, 2], [16, 6], [17, 6]
+  ]
+}

@@ -1,0 +1,478 @@
+[gd_scene load_steps=2 format=3 uid="uid://d4k3j5l8n2m1"]
+
+[ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="1_hud_script"]
+
+[node name="GameHUD" type="CanvasLayer"]
+process_mode = 3
+script = ExtResource("1_hud_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="DimOverlay" type="ColorRect" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+color = Color(0, 0, 0, 0.55)
+
+[node name="TopBar" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 60.0
+grow_horizontal = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Root/TopBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_right = 20
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Root/TopBar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="GoldLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Gold: 0"
+vertical_alignment = 1
+
+[node name="LivesLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Lives: 0"
+vertical_alignment = 1
+
+[node name="WaveLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+text = "Wave: 0"
+vertical_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+text = "Ready"
+vertical_alignment = 1
+
+[node name="NextWaveLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_override_font_sizes/font_size = 14
+text = "Next: Wave 1"
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="StartWaveButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(140, 36)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Start Wave 1"
+
+[node name="SettingsButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Settings"
+
+[node name="PauseButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Pause"
+
+[node name="RestartButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(90, 36)
+layout_mode = 2
+size_flags_vertical = 4
+text = "Restart"
+
+[node name="RightMarginSpacer" type="Control" parent="Root/TopBar/MarginContainer/HBoxContainer"]
+custom_minimum_size = Vector2(80, 0)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="LeftSidebar" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_top = 60.0
+offset_right = 200.0
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Root/LeftSidebar"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/LeftSidebar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Label" type="Label" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Towers"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BasicTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Basic ($50)"
+
+[node name="RapidTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Rapid ($65)"
+
+[node name="CannonTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Cannon ($90)"
+
+[node name="SlowTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Slow ($75)"
+
+[node name="Spacer" type="Control" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+mouse_filter = 2
+
+[node name="BuildStatusLabel" type="Label" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "None"
+autowrap_mode = 3
+
+[node name="CancelBuildButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Cancel Build"
+
+[node name="RightSidebar" type="PanelContainer" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -260.0
+offset_top = 60.0
+grow_horizontal = 0
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Root/RightSidebar"]
+layout_mode = 2
+theme_override_constants/margin_left = 15
+theme_override_constants/margin_top = 15
+theme_override_constants/margin_right = 15
+theme_override_constants/margin_bottom = 15
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/RightSidebar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="TowerNameLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.4, 0.6, 1, 1)
+theme_override_font_sizes/font_size = 20
+text = "Tower Name"
+horizontal_alignment = 1
+
+[node name="TowerLevelLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Level: 1/3"
+
+[node name="TowerDamageLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Damage: 10"
+
+[node name="TowerRangeLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Range: 160"
+
+[node name="TowerFireRateLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Fire Rate: 1.0s"
+
+[node name="TowerSplashLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Splash: 0"
+
+[node name="TowerSlowLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Slow: 0%"
+
+[node name="TowerTargetModeLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Target Mode:"
+
+[node name="TargetModeOptionButton" type="OptionButton" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 35)
+layout_mode = 2
+
+[node name="TowerUpgradeCostLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.8, 0, 1)
+text = "Upgrade: 40 Gold"
+
+[node name="HSeparator" type="HSeparator" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="UpgradeTowerButton" type="Button" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Upgrade"
+
+[node name="DeselectTowerButton" type="Button" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
+layout_mode = 2
+text = "Close"
+
+[node name="CenterMessagePanel" type="PanelContainer" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -220.0
+offset_top = -260.0
+offset_right = 220.0
+offset_bottom = 260.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Root/CenterMessagePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 30
+theme_override_constants/margin_top = 30
+theme_override_constants/margin_right = 30
+theme_override_constants/margin_bottom = 30
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/CenterMessagePanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="CenterMessageLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 32
+text = "PAUSED"
+horizontal_alignment = 1
+
+[node name="StatsContainer" type="VBoxContainer" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 5
+
+[node name="StarsLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.9, 0, 1)
+theme_override_font_sizes/font_size = 36
+text = "★★★"
+horizontal_alignment = 1
+
+[node name="ScoreLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "Score: 0"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+
+[node name="LivesLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+text = "Lives Left: 0"
+
+[node name="KillsLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+text = "Enemies Killed: 0"
+
+[node name="LeaksLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+text = "Enemies Leaked: 0"
+
+[node name="GoldLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+text = "Gold Remaining: 0"
+
+[node name="HSeparator2" type="HSeparator" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+layout_mode = 2
+
+[node name="CenterRestartButton" type="Button" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "RESTART"
+
+[node name="CenterMenuButton" type="Button" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(240, 50)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "MAIN MENU"
+
+[node name="SettingsPanel" type="PanelContainer" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -220.0
+offset_right = 200.0
+offset_bottom = 220.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="Root/SettingsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 20
+
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/SettingsPanel/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 15
+
+[node name="Title" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "AUDIO SETTINGS"
+horizontal_alignment = 1
+
+[node name="GridContainer" type="GridContainer" parent="Root/SettingsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/h_separation = 20
+columns = 2
+
+[node name="MasterLabel" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "Master"
+
+[node name="MasterSlider" type="HSlider" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="MusicLabel" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "Music"
+
+[node name="MusicSlider" type="HSlider" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.05
+value = 0.6
+
+[node name="SfxLabel" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "SFX"
+
+[node name="SfxSlider" type="HSlider" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+max_value = 1.0
+step = 0.05
+value = 0.8
+
+[node name="MasterMuteLabel" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "Master Mute"
+
+[node name="MasterMuteCheck" type="CheckBox" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+
+[node name="MusicMuteLabel" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "Music Mute"
+
+[node name="MusicMuteCheck" type="CheckBox" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+
+[node name="SfxMuteLabel" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+text = "SFX Mute"
+
+[node name="SfxMuteCheck" type="CheckBox" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer"]
+layout_mode = 2
+
+[node name="HSeparator" type="HSeparator" parent="Root/SettingsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="Root/SettingsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="TestSfxButton" type="Button" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+custom_minimum_size = Vector2(120, 35)
+layout_mode = 2
+text = "Test SFX"
+
+[node name="TestMusicButton" type="Button" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/HBoxContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Test Music"
+
+[node name="ResetAudioButton" type="Button" parent="Root/SettingsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Reset Audio Defaults"
+
+[node name="CloseSettingsButton" type="Button" parent="Root/SettingsPanel/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(100, 40)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "CLOSE"
+
+[node name="VersionLabel" type="Label" parent="Root/SettingsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.5, 0.5, 0.5, 1)
+theme_override_font_sizes/font_size = 11
+text = "v0.1.0 Prototype"
+horizontal_alignment = 1
+
+[node name="TemporaryMessageLabel" type="Label" parent="Root"]
+visible = false
+layout_mode = 1
+anchors_preset = 5
+anchor_left = 0.5
+anchor_right = 0.5
+offset_left = -300.0
+offset_top = 100.0
+offset_right = 300.0
+offset_bottom = 160.0
+grow_horizontal = 2
+theme_override_colors/font_outline_color = Color(0, 0, 0, 1)
+theme_override_constants/outline_size = 8
+theme_override_font_sizes/font_size = 32
+text = "Wave Start!"
+horizontal_alignment = 1
+vertical_alignment = 1

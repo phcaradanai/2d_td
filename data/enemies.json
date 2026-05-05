@@ -1,0 +1,29 @@
+{
+  "basic": {
+    "id": "basic",
+    "name": "Basic Enemy",
+    "max_hp": 45,
+    "speed": 90,
+    "reward_gold": 8,
+    "base_damage": 1,
+    "visual_type": "basic"
+  },
+  "fast": {
+    "id": "fast",
+    "name": "Fast Enemy",
+    "max_hp": 28,
+    "speed": 145,
+    "reward_gold": 9,
+    "base_damage": 1,
+    "visual_type": "fast"
+  },
+  "tank": {
+    "id": "tank",
+    "name": "Tank Enemy",
+    "max_hp": 130,
+    "speed": 55,
+    "reward_gold": 18,
+    "base_damage": 2,
+    "visual_type": "tank"
+  }
+}

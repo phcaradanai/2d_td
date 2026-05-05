@@ -1,0 +1,70 @@
+[
+  {
+	"wave": 1,
+	"name": "First Contact",
+	"completion_reward": 25,
+	"groups": [
+	  {
+		"enemy_type": "basic",
+		"count": 6,
+		"spawn_delay": 1.0
+	  }
+	]
+  },
+  {
+	"wave": 2,
+	"name": "Quick Scout",
+	"completion_reward": 35,
+	"groups": [
+	  {
+		"enemy_type": "basic",
+		"count": 4,
+		"spawn_delay": 0.8
+	  },
+	  {
+		"enemy_type": "fast",
+		"count": 3,
+		"spawn_delay": 0.5
+	  }
+	]
+  },
+  {
+	"wave": 3,
+	"name": "Reinforcements",
+	"completion_reward": 45,
+	"groups": [
+	  {
+		"enemy_type": "basic",
+		"count": 8,
+		"spawn_delay": 0.7
+	  },
+	  {
+		"enemy_type": "tank",
+		"count": 2,
+		"spawn_delay": 1.5
+	  }
+	]
+  },
+  {
+	"wave": 4,
+	"name": "Final Push",
+	"completion_reward": 60,
+	"groups": [
+	  {
+		"enemy_type": "basic",
+		"count": 10,
+		"spawn_delay": 0.6
+	  },
+	  {
+		"enemy_type": "fast",
+		"count": 6,
+		"spawn_delay": 0.4
+	  },
+	  {
+		"enemy_type": "tank",
+		"count": 3,
+		"spawn_delay": 1.2
+	  }
+	]
+  }
+]

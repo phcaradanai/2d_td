@@ -1,0 +1,152 @@
+[gd_scene format=3 uid="uid://be6m5k8l2n3o3"]
+
+[ext_resource type="Script" path="res://scripts/ui/debug_panel.gd" id="1_debug_script"]
+
+[node name="DebugPanel" type="CanvasLayer"]
+layer = 128
+script = ExtResource("1_debug_script")
+
+[node name="Root" type="Control" parent="."]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="Panel" type="PanelContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -256.0
+offset_top = 72.0
+offset_right = -16.0
+offset_bottom = 632.0
+grow_horizontal = 0
+mouse_filter = 0
+
+[node name="MarginContainer" type="MarginContainer" parent="Root/Panel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="Scroll" type="ScrollContainer" parent="Root/Panel/MarginContainer"]
+layout_mode = 2
+horizontal_scroll_mode = 0
+
+[node name="Content" type="VBoxContainer" parent="Root/Panel/MarginContainer/Scroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 6
+
+[node name="Title" type="Label" parent="Root/Panel/MarginContainer/Scroll/Content"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0, 0, 1)
+theme_override_font_sizes/font_size = 16
+text = "DEBUG PANEL"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="Root/Panel/MarginContainer/Scroll/Content"]
+layout_mode = 2
+
+[node name="InfoLabel" type="Label" parent="Root/Panel/MarginContainer/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "FPS: 60
+Gold: 0
+Wave: 0"
+
+[node name="HSeparator2" type="HSeparator" parent="Root/Panel/MarginContainer/Scroll/Content"]
+layout_mode = 2
+
+[node name="Gold100" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "+100 Gold"
+
+[node name="Gold500" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "+500 Gold"
+
+[node name="StartWave" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Next Wave"
+
+[node name="KillAll" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Kill Enemies"
+
+[node name="ClearProj" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Clear Shots"
+
+[node name="Victory" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Win"
+
+[node name="GameOver" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Lose"
+
+[node name="Restart" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "Restart"
+
+[node name="GodModeCheck" type="CheckBox" parent="Root/Panel/MarginContainer/Scroll/Content"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 13
+text = "God Mode"
+
+[node name="HSeparator3" type="HSeparator" parent="Root/Panel/MarginContainer/Scroll/Content"]
+layout_mode = 2
+
+[node name="AudioTests" type="GridContainer" parent="Root/Panel/MarginContainer/Scroll/Content"]
+layout_mode = 2
+columns = 2
+
+[node name="TestSfx" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content/AudioTests"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Test SFX"
+
+[node name="TestMusic" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content/AudioTests"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 12
+text = "Test Music"
+
+[node name="TestSfxMaster" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_colors/font_color = Color(0, 1, 1, 1)
+theme_override_font_sizes/font_size = 12
+text = "Test SFX Master"
+
+[node name="HardAudioTest" type="Button" parent="Root/Panel/MarginContainer/Scroll/Content"]
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 1, 0, 1)
+theme_override_font_sizes/font_size = 13
+text = "Hard Audio Test"
