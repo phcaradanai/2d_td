@@ -104,6 +104,9 @@ var updating_audio_ui := false
 var target_modes = ["first", "last", "nearest", "strongest", "weakest"]
 var tower_prices := {} # id: cost
 
+const RESULT_PANEL_SCENE = preload("res://scenes/ui/ResultPanel.tscn")
+var result_panel: Control = null
+
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
@@ -117,6 +120,18 @@ func _ready() -> void:
 	_setup_wave_intel_panel()
 	_setup_tower_detail_in_right_info_column()
 	
+	# Instantiate Result Panel
+	result_panel = RESULT_PANEL_SCENE.instantiate()
+	$Root.add_child(result_panel)
+	result_panel.visible = false
+	result_panel.retry_pressed.connect(_on_restart_pressed)
+	result_panel.next_level_pressed.connect(func(): next_level_requested.emit())
+	result_panel.level_select_pressed.connect(func(): back_to_map_requested.emit())
+	
+	# Apply theme to result panel
+	var theme_mgr = load("res://scripts/ui/ui_theme_manager.gd").new()
+	theme_mgr.apply_theme(result_panel)
+
 	# Handle dynamic Next Level button if not in scene
 	if center_next_level_button == null:
 		center_next_level_button = Button.new()
@@ -212,6 +227,9 @@ func update_layout_for_viewport() -> void:
 		right_sidebar.custom_minimum_size.y = 0
 	if right_info_column:
 		_layout_right_info_column(right_width)
+	
+	if result_panel:
+		result_panel.pivot_offset = result_panel.size / 2.0
 
 func _on_restart_pressed() -> void:
 	restart_requested.emit()
@@ -397,41 +415,47 @@ func set_paused(paused: bool) -> void:
 		pause_button.text = "Pause"
 		hide_center_message()
 
-func show_run_summary(summary: Dictionary) -> void:
+func show_run_summary(summary: Dictionary, improvements: Dictionary = {}) -> void:
 	enter_end_game_ui_state()
 	if dim_overlay: dim_overlay.show()
 	
-	set_panel_active(center_message_panel, true, true)
-	var result_text = summary.get("result", "Victory").to_upper()
-	center_message_label.text = result_text
-	
-	if result_text == "VICTORY":
-		center_message_label.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
+	# Use new premium result panel
+	if result_panel:
+		result_panel.show_result(summary, improvements)
+		if OS.is_debug_build(): print("[ResultPanel] shown for ", summary.get("result", "Unknown"))
 	else:
-		center_message_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+		# Fallback to old panel if dynamic creation failed (shouldn't happen)
+		set_panel_active(center_message_panel, true, true)
+		var result_text = summary.get("result", "Victory").to_upper()
+		center_message_label.text = result_text
 		
-	stats_container.show()
-	center_restart_button.show()
-	if center_next_level_button:
-		center_next_level_button.visible = (result_text == "VICTORY")
-	
-	center_menu_button.text = "Back to Map"
-	center_menu_button.show()
-	
-	var stars = summary.get("stars", 0)
-	var stars_text = ""
-	for i in range(3):
-		if i < stars:
-			stars_text += "★"
+		if result_text == "VICTORY":
+			center_message_label.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
 		else:
-			stars_text += "☆"
-	stars_label.text = stars_text
-	
-	score_summary_label.text = "Score: " + str(summary.get("score", 0))
-	lives_summary_label.text = "Lives: %d / %d" % [summary.get("lives", 0), summary.get("starting_lives", 20)]
-	kills_summary_label.text = "Kills: " + str(summary.get("enemies_killed", 0))
-	leaks_summary_label.text = "Leaks: " + str(summary.get("enemies_leaked", 0))
-	gold_summary_label.text = "Gold: " + str(summary.get("gold_remaining", 0))
+			center_message_label.add_theme_color_override("font_color", Color(1, 0.3, 0.3))
+			
+		stats_container.show()
+		center_restart_button.show()
+		if center_next_level_button:
+			center_next_level_button.visible = (result_text == "VICTORY")
+		
+		center_menu_button.text = "Back to Map"
+		center_menu_button.show()
+		
+		var stars = summary.get("stars", 0)
+		var stars_text = ""
+		for i in range(3):
+			if i < stars:
+				stars_text += "★"
+			else:
+				stars_text += "☆"
+		stars_label.text = stars_text
+		
+		score_summary_label.text = "Score: " + str(summary.get("score", 0))
+		lives_summary_label.text = "Lives: %d / %d" % [summary.get("lives", 0), summary.get("starting_lives", 20)]
+		kills_summary_label.text = "Kills: " + str(summary.get("enemies_killed", 0))
+		leaks_summary_label.text = "Leaks: " + str(summary.get("enemies_leaked", 0))
+		gold_summary_label.text = "Gold: " + str(summary.get("gold_remaining", 0))
 
 func show_tower_info(info: Dictionary) -> void:
 	show_tower_info_panel()
@@ -538,6 +562,8 @@ func exit_end_game_ui_state() -> void:
 	pause_button.disabled = false
 	if dim_overlay: dim_overlay.hide()
 	hide_center_message()
+	if result_panel:
+		result_panel.hide_result()
 
 func show_hud() -> void:
 	show()

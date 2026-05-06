@@ -63,7 +63,12 @@ func get_level_record(level_id: String) -> Dictionary:
 	return {
 		"best_score": 0,
 		"best_stars": 0,
-		"completed": false
+		"perfect_clear": false,
+		"completed": false,
+		"times_cleared": 0,
+		"last_score": 0,
+		"last_stars": 0,
+		"unlocked": level_id == "level_01"
 	}
 
 const LEVELS_PER_AREA: int = 5
@@ -118,36 +123,68 @@ func get_next_level_id(current_id: String) -> String:
 		return next_id
 	return ""
 
-func update_level_record(level_id: String, summary: Dictionary) -> bool:
+func update_level_record(level_id: String, summary: Dictionary) -> Dictionary:
 	var current = get_level_record(level_id)
-	var updated = false
+	var improvements = {
+		"new_best_score": false,
+		"new_best_stars": false,
+		"new_perfect_clear": false,
+		"first_time_clear": false
+	}
 	
+	var is_victory = summary.get("result", "") == "Victory"
 	var new_score = summary.get("score", 0)
 	var new_stars = summary.get("stars", 0)
+	var is_perfect = summary.get("is_perfect", false)
 	
 	if not save_data["levels"].has(level_id):
-		save_data["levels"][level_id] = {
-			"best_score": 0,
-			"best_stars": 0,
-			"completed": false
-		}
+		save_data["levels"][level_id] = get_level_record(level_id)
 		current = save_data["levels"][level_id]
 	
-	if new_score > current["best_score"]:
+	# Always save last results
+	save_data["levels"][level_id]["last_score"] = new_score
+	save_data["levels"][level_id]["last_stars"] = new_stars
+	
+	if new_score > current.get("best_score", 0):
 		save_data["levels"][level_id]["best_score"] = new_score
-		updated = true
+		improvements["new_best_score"] = true
 	
-	if new_stars > current["best_stars"]:
+	if new_stars > current.get("best_stars", 0):
 		save_data["levels"][level_id]["best_stars"] = new_stars
-		updated = true
+		improvements["new_best_stars"] = true
 	
-	if new_stars > 0:
-		save_data["levels"][level_id]["completed"] = true
+	if is_perfect and not current.get("perfect_clear", false):
+		save_data["levels"][level_id]["perfect_clear"] = true
+		improvements["new_perfect_clear"] = true
 	
-	if updated:
-		save_to_disk()
+	if is_victory:
+		if not current.get("completed", false):
+			improvements["first_time_clear"] = true
+			save_data["levels"][level_id]["completed"] = true
+		
+		save_data["levels"][level_id]["times_cleared"] = current.get("times_cleared", 0) + 1
+		
+		# Auto-unlock next level
+		var next_id = get_next_level_id(level_id)
+		if next_id != "" and not save_data["levels"].has(next_id):
+			save_data["levels"][next_id] = get_level_record(next_id)
+			save_data["levels"][next_id]["unlocked"] = true
 	
-	return updated
+	save_to_disk()
+	return improvements
+
+func print_progress() -> void:
+	print("=== SAVED PROGRESS ===")
+	for level_id in save_data["levels"]:
+		var rec = save_data["levels"][level_id]
+		print("[%s] Best Score: %d, Stars: %d, Perfect: %s, Clears: %d" % [
+			level_id, 
+			rec.get("best_score", 0), 
+			rec.get("best_stars", 0), 
+			str(rec.get("perfect_clear", false)),
+			rec.get("times_cleared", 0)
+		])
+	print("======================")
 
 func get_audio_settings() -> Dictionary:
 	return save_data["settings"]["audio"]

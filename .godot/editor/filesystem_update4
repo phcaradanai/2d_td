@@ -3,3 +3,9 @@ res://scripts/debug/balance_solver.gd
 res://scripts/main/main.gd
 res://scripts/ui/debug_panel.gd
 res://data/levels/level_01.json
+res://scripts/core/game_manager.gd
+res://scripts/core/save_manager.gd
+res://scripts/ui/game_hud.gd
+res://scenes/ui/ResultPanel.tscn
+res://scripts/ui/result_panel.gd
+res://scripts/ui/level_select.gd

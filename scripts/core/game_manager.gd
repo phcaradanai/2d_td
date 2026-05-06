@@ -127,36 +127,61 @@ func add_score(amount: int) -> void:
 	score += amount
 	score_changed.emit(score)
 
-func calculate_final_score() -> int:
-	# Base score is already tracked via add_score during kills and waves
-	# Add bonuses at the end
-	var final_score = score
+func calculate_final_score(total_waves: int = 0) -> int:
+	# New formula based on requirements:
+	# Base clear score: 1000 if level cleared
+	# Remaining lives bonus: lives * 50
+	# Remaining gold bonus: gold * 2
+	# Wave clear bonus: waves_completed * 100 (using waves_completed which is incremented in award_wave_completion)
+	# Perfect clear bonus: +1000 if no lives were lost
+	
+	var final_score = 0
+	
+	# Wave clear bonus (always awarded for completed waves)
+	final_score += waves_completed * 100
+	
+	if is_victory:
+		final_score += 1000 # Base clear score
+		if lives >= starting_lives:
+			final_score += 1000 # Perfect clear bonus
+			
 	final_score += lives * 50
 	final_score += gold * 2
-	final_score -= enemies_leaked * 25
 	
+	if OS.is_debug_build():
+		print("[ScoreSystem] level cleared=%s score=%d" % [str(is_victory), final_score])
+		
 	if final_score < 0: final_score = 0
 	return final_score
 
-func calculate_stars() -> int:
-	if not is_victory:
-		return 0
+func calculate_stars(total_waves: int = 0) -> int:
+	# 3 stars: level cleared and perfect clear (no lives lost)
+	# 2 stars: level cleared but lives were lost
+	# 1 star: level failed but player cleared at least 50% of waves
+	# 0 stars: level failed early
 	
-	var ratio = float(lives) / float(starting_lives)
-	if ratio >= 0.75:
-		return 3
-	if ratio >= 0.4:
+	if is_victory:
+		if lives >= starting_lives:
+			return 3
 		return 2
-	return 1
+	else:
+		if total_waves > 0 and float(waves_completed) / float(total_waves) >= 0.5:
+			return 1
+		return 0
 
-func get_run_summary() -> Dictionary:
-	var final_score = calculate_final_score()
-	var stars = calculate_stars()
+func get_run_summary(total_waves: int = 0) -> Dictionary:
+	var final_score = calculate_final_score(total_waves)
+	var stars = calculate_stars(total_waves)
+	var is_perfect = is_victory and (lives >= starting_lives)
 	
+	if OS.is_debug_build():
+		print("[ScoreSystem] stars=%d perfect_clear=%s" % [stars, str(is_perfect)])
+		
 	return {
 		"result": "Victory" if is_victory else "Game Over",
 		"score": final_score,
 		"stars": stars,
+		"is_perfect": is_perfect,
 		"lives": lives,
 		"starting_lives": starting_lives,
 		"enemies_killed": enemies_killed,
@@ -164,7 +189,8 @@ func get_run_summary() -> Dictionary:
 		"gold_earned": gold_earned,
 		"gold_spent": gold_spent,
 		"gold_remaining": gold,
-		"waves_completed": waves_completed
+		"waves_completed": waves_completed,
+		"total_waves": total_waves
 	}
 
 func trigger_game_over() -> void:

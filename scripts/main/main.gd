@@ -77,6 +77,7 @@ var selected_loadout: Array[String] = ["basic_tower", "rapid_tower", "cannon_tow
 var active_level_loadout: Array[String] = []
 const MAX_TOWER_LOADOUT_SIZE: int = 4
 const MIN_TOWER_LOADOUT_SIZE: int = 1
+var pending_unlock_level_id: String = ""
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -402,6 +403,8 @@ func _connect_signals() -> void:
 		debug_panel.auto_clear_level_7_requested.connect(debug_auto_clear_level_7)
 		debug_panel.generate_balance_report_requested.connect(debug_generate_balance_report)
 		debug_panel.apply_verified_starting_gold_requested.connect(_apply_verified_starting_gold)
+		debug_panel.reset_progress_requested.connect(func(): if save_manager: save_manager.clear_save(); restart_level())
+		debug_panel.print_progress_requested.connect(func(): if save_manager: save_manager.print_progress())
 
 	if auto_play_verifier:
 		auto_play_verifier.state_changed.connect(func(s, msg):
@@ -564,6 +567,9 @@ func _on_level_select_requested() -> void:
 	_play_ui_click()
 	if audio_manager:
 		audio_manager.play_music("menu")
+	if pending_unlock_level_id != "" and level_select:
+		level_select.show_unlocked_notification(pending_unlock_level_id)
+		pending_unlock_level_id = ""
 
 func _on_level_select_back() -> void:
 	set_game_phase(GameState.MENU)
@@ -984,9 +990,15 @@ func _on_game_over() -> void:
 
 	_clear_projectiles_and_targeting()
 
-	var summary = game_manager.get_run_summary()
+	var total_waves = wave_manager.get_total_waves() if wave_manager else 0
+	var summary = game_manager.get_run_summary(total_waves)
+	var improvements = {}
+	if save_manager and level_manager:
+		improvements = save_manager.update_level_record(level_manager.level_id, summary)
+	
 	if game_hud:
-		game_hud.show_run_summary(summary)
+		game_hud.show_run_summary(summary, improvements)
+		if OS.is_debug_build(): print("[ResultPanel] shown for ", current_level_id)
 
 	_refresh_gameplay_hud_state()
 	if audio_manager:
@@ -1010,15 +1022,25 @@ func _on_victory() -> void:
 	if build_manager and build_manager.has_method("cancel_build_mode"):
 		build_manager.cancel_build_mode()
 
-	var summary = game_manager.get_run_summary()
+	var total_waves = wave_manager.get_total_waves() if wave_manager else 0
+	var summary = game_manager.get_run_summary(total_waves)
+	var improvements = {}
 
 	# Save progress
 	if save_manager and level_manager:
-		save_manager.update_level_record(level_manager.level_id, summary)
+		improvements = save_manager.update_level_record(level_manager.level_id, summary)
 		if level_select: level_select.update_ui(save_manager)
+		
+		# If first time clear, check for next level unlock
+		if improvements.get("first_time_clear", false):
+			var next_id = save_manager.get_next_level_id(level_manager.level_id)
+			if next_id != "":
+				pending_unlock_level_id = next_id
+				if OS.is_debug_build(): print("[Main] Pending unlock for: ", next_id)
 
 	if game_hud:
-		game_hud.show_run_summary(summary)
+		game_hud.show_run_summary(summary, improvements)
+		if OS.is_debug_build(): print("[ResultPanel] shown for ", current_level_id)
 
 	_refresh_gameplay_hud_state()
 	if audio_manager:

@@ -26,6 +26,8 @@ signal auto_clear_current_requested()
 signal auto_clear_level_7_requested()
 signal generate_balance_report_requested()
 signal apply_verified_starting_gold_requested()
+signal reset_progress_requested()
+signal print_progress_requested()
 
 @onready var panel: PanelContainer = $Root/Panel
 @onready var info_label: Label = $Root/Panel/MarginContainer/Scroll/Content/InfoLabel
@@ -143,10 +145,16 @@ func _setup_clean_auto_clear_layout() -> void:
 	primary_vbox.add_child(_create_debug_button("AUTO PLAY LAST FOUND PLAN", func(): auto_play_last_plan_requested.emit()))
 	primary_vbox.add_child(_create_debug_button("GENERATE BALANCE REPORT", func(): generate_balance_report_requested.emit()))
 	
-	var apply_btn = _create_debug_button("APPLY INITIAL SETUP GOLD", func(): apply_verified_starting_gold_requested.emit())
-	apply_btn.name = "ApplySetupGoldBtn"
-	apply_btn.disabled = true
-	primary_vbox.add_child(apply_btn)
+	root.add_child(HSeparator.new())
+	var prog_vbox := VBoxContainer.new()
+	prog_vbox.name = "ProgressActions"
+	prog_vbox.add_theme_constant_override("separation", 6)
+	root.add_child(prog_vbox)
+	
+	prog_vbox.add_child(_create_debug_button("PRINT SAVED PROGRESS", func(): print_progress_requested.emit()))
+	var reset_btn = _create_debug_button("RESET ALL PROGRESS", func(): reset_progress_requested.emit())
+	reset_btn.add_theme_color_override("font_color", Color.RED)
+	prog_vbox.add_child(reset_btn)
 	
 	root.add_child(HSeparator.new())
 

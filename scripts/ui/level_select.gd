@@ -14,6 +14,7 @@ var dynamic_list_container: Control = null
 var intel_panel: Control = null
 var loadout_container: Control = null
 var mission_info_labels: Dictionary = {}
+var notification_label: Label = null
 
 func _ready() -> void:
 	# Create a clean panel layout for Level Select
@@ -84,12 +85,47 @@ func _generate_dynamic_ui(save_manager: Node) -> void:
 			level_container_map[level_id] = card
 
 func _create_level_card(level_id: String) -> Control:
+	var root = Control.new()
+	root.custom_minimum_size = Vector2(140, 130) # Increased to fit stars/badge
+	
 	var btn = Button.new()
 	btn.name = "Button"
-	btn.custom_minimum_size = Vector2(140, 96) # Increased for Full HD
+	btn.custom_minimum_size = Vector2(140, 96)
 	btn.pivot_offset = btn.custom_minimum_size / 2.0
 	btn.text = level_id.replace("level_", "L")
 	btn.pressed.connect(func(): _select_level("res://data/levels/%s.json" % level_id))
+	root.add_child(btn)
+	
+	# Stars Container
+	var stars = Label.new()
+	stars.name = "Stars"
+	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	stars.add_theme_font_size_override("font_size", 18)
+	stars.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
+	stars.text = "☆☆☆"
+	stars.position = Vector2(0, 100)
+	stars.size = Vector2(140, 20)
+	root.add_child(stars)
+	
+	# Lock Icon
+	var lock = Label.new()
+	lock.name = "LockIcon"
+	lock.text = "🔒"
+	lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	lock.add_theme_font_size_override("font_size", 32)
+	lock.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(lock)
+	
+	# Perfect Badge
+	var badge = Label.new()
+	badge.name = "PerfectBadge"
+	badge.text = "✨"
+	badge.add_theme_font_size_override("font_size", 24)
+	badge.position = Vector2(110, -5)
+	badge.tooltip_text = "PERFECT CLEAR!"
+	btn.add_child(badge)
 	
 	var label = Label.new()
 	label.name = "Label"
@@ -97,39 +133,55 @@ func _create_level_card(level_id: String) -> Control:
 	label.add_theme_font_size_override("font_size", 10)
 	label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.position = Vector2(0, 120)
+	label.size = Vector2(140, 20)
+	root.add_child(label)
 	
-	var container = VBoxContainer.new()
-	container.add_child(btn)
-	container.add_child(label)
-	return container
+	return root
 
 func _update_dynamic_level_card(level_id: String, container: Control, save_manager: Node) -> void:
 	var btn = container.get_node("Button")
 	var label = container.get_node("Label")
+	var stars_label = container.get_node("Stars")
+	var lock_icon = btn.get_node("LockIcon")
+	var perfect_badge = btn.get_node("PerfectBadge")
 	
 	var record = save_manager.get_level_record(level_id)
 	var unlocked = save_manager.is_level_unlocked(level_id)
 	
 	btn.disabled = not unlocked
+	lock_icon.visible = not unlocked
 	
 	if not unlocked:
-		btn.text = "L%s" % level_id.replace("level_", "")
+		btn.text = ""
 		btn.modulate = Color(0.3, 0.3, 0.3, 0.8)
-		label.text = "Locked"
+		label.text = "LOCKED"
 		label.modulate = Color(0.5, 0.5, 0.5)
+		stars_label.hide()
+		perfect_badge.hide()
 	else:
+		btn.text = level_id.replace("level_", "L")
 		btn.modulate = Color(1, 1, 1)
 		label.modulate = Color(1, 1, 1)
+		stars_label.show()
+		
+		var stars_count = record.get("best_stars", 0)
+		var stars_text = ""
+		for i in range(3):
+			stars_text += "★" if i < stars_count else "☆"
+		stars_label.text = stars_text
+		
+		var is_perfect = record.get("perfect_clear", false)
+		perfect_badge.visible = is_perfect
+		
 		if record.get("completed", false):
-			btn.text = "✓ L%s" % level_id.replace("level_", "")
-			btn.modulate = Color(0.7, 1.0, 0.7) # Muted green
-			label.text = "CLEARED"
-			label.modulate = Color(0.7, 1.0, 0.7)
+			btn.modulate = Color(0.8, 1.0, 0.8)
+			if is_perfect:
+				btn.modulate = Color(1.0, 0.9, 0.6) # Golden hue for perfect
+			label.text = "Best: " + str(record.get("best_score", 0))
 		else:
-			btn.text = "L%s" % level_id.replace("level_", "")
-			label.text = "MISSION"
-			btn.modulate = Color(0.8, 0.9, 1.2) # Soft blue
-			label.modulate = Color(0.8, 0.9, 1.0)
+			label.text = "NEW MISSION"
+			btn.modulate = Color(0.8, 0.9, 1.2)
 
 func _update_selection_visuals() -> void:
 	for level_id in level_container_map:
@@ -217,6 +269,16 @@ func _setup_clean_layout() -> void:
 	title.add_theme_font_size_override("font_size", 48) # Larger for Full HD
 	title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 	header.add_child(title)
+	
+	# Notification Label
+	notification_label = Label.new()
+	notification_label.name = "UnlockNotification"
+	notification_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	notification_label.add_theme_font_size_override("font_size", 24)
+	notification_label.add_theme_color_override("font_color", Color(1, 1, 0.4))
+	notification_label.modulate.a = 0
+	vbox.add_child(notification_label)
+	vbox.move_child(notification_label, 1) # Below header
 	
 	var header_spacer_r = Control.new()
 	header_spacer_r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -556,6 +618,17 @@ func show_select() -> void:
 	show()
 	var sm = get_tree().current_scene.get_node_or_null("SaveManager")
 	if sm: update_ui(sm)
+
+func show_unlocked_notification(level_id: String) -> void:
+	if notification_label == null: return
+	
+	var level_name = level_id.replace("_", " ").capitalize()
+	notification_label.text = "NEW MISSION UNLOCKED: " + level_name + "!"
+	
+	var tween = create_tween()
+	tween.tween_property(notification_label, "modulate:a", 1.0, 0.5)
+	tween.tween_interval(3.0)
+	tween.tween_property(notification_label, "modulate:a", 0.0, 0.5)
 
 func hide_select() -> void:
 	hide()
