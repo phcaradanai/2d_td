@@ -98,6 +98,7 @@ var wave_intel_threats_title_label: Label = null
 var wave_intel_threats_label: Label = null
 var wave_intel_suggested_title_label: Label = null
 var wave_intel_suggested_label: Label = null
+var wave_intel_warnings_label: Label = null
 
 var updating_target_mode_ui := false
 var updating_audio_ui := false
@@ -725,6 +726,10 @@ func _setup_wave_intel_panel() -> void:
 	wave_intel_suggested_label = _create_wave_intel_label("---", 13, Color(0.48, 0.86, 1.0))
 	vbox.add_child(wave_intel_suggested_label)
 	
+	wave_intel_warnings_label = _create_wave_intel_label("", 12, Color(1.0, 0.4, 0.4))
+	wave_intel_warnings_label.visible = false
+	vbox.add_child(wave_intel_warnings_label)
+	
 	_set_next_wave_intel_visible(false)
 	wave_intel_panel.visible = false
 
@@ -875,6 +880,9 @@ func clear_wave_intel() -> void:
 		wave_intel_threats_label.text = ""
 	if wave_intel_suggested_label:
 		wave_intel_suggested_label.text = ""
+	if wave_intel_warnings_label:
+		wave_intel_warnings_label.text = ""
+		wave_intel_warnings_label.visible = false
 	_set_next_wave_intel_visible(false)
 
 func set_wave_intel_visible(visible: bool) -> void:
@@ -910,6 +918,13 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	wave_intel_threats_label.text = _format_wave_intel_list(current_preview.get("traits", []), "None")
 	wave_intel_suggested_label.text = _format_wave_intel_list(current_preview.get("recommended_roles", []), "None")
 	
+	var warnings = current_preview.get("warnings", [])
+	if not warnings.is_empty():
+		wave_intel_warnings_label.text = "Note: " + "\n".join(warnings)
+		wave_intel_warnings_label.visible = true
+	else:
+		wave_intel_warnings_label.visible = false
+	
 	if is_running:
 		var next_idx = display_wave_idx + 1
 		if next_idx < previews.size():
@@ -941,10 +956,26 @@ func _refresh_right_info_column_visibility() -> void:
 		right_sidebar.mouse_filter = Control.MOUSE_FILTER_STOP if tower_visible else Control.MOUSE_FILTER_IGNORE
 
 func _format_wave_preview_summary(preview: Dictionary) -> String:
+	var lane_info = preview.get("lane_info", {})
+	
+	if lane_info.keys().size() > 1:
+		var lane_parts = []
+		var sorted_ids = lane_info.keys()
+		sorted_ids.sort()
+		
+		for p_id in sorted_ids:
+			var info = lane_info[p_id]
+			var counts = info.get("counts", {})
+			var lane_name = "Lane A" if str(p_id) == "default" else str(p_id).capitalize()
+			lane_parts.append("[%s]: %s" % [lane_name, _format_counts(counts)])
+		return "\n".join(lane_parts)
+		
 	var counts = preview.get("enemy_counts", {})
 	if counts.is_empty():
 		return "Malformed Wave"
-	
+	return _format_counts(counts)
+
+func _format_counts(counts: Dictionary) -> String:
 	var parts = []
 	var type_order = ["Normal", "Fast", "Heavy", "Swarm", "Air"]
 	for type_name in type_order:

@@ -1,0 +1,53 @@
+[
+	{
+		"name": "Opening Volley",
+		"reward": 60,
+		"groups": [
+			{"type": "basic", "count": 10, "interval": 1.2, "path": "default"},
+			{"type": "fast", "count": 4, "interval": 0.8, "path": "default"}
+		]
+	},
+	{
+		"name": "Bulwark Shielding",
+		"reward": 75,
+		"groups": [
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 7, "interval": 1.0, "path": "default"}
+		]
+	},
+	{
+		"name": "Heavy Escort",
+		"reward": 90,
+		"groups": [
+			{"type": "basic", "count": 4, "interval": 1.2, "path": "default"},
+			{"type": "bulwark", "count": 2, "interval": 1.0, "path": "default"},
+			{"type": "fast", "count": 5, "interval": 0.6, "path": "default"}
+		]
+	},
+	{
+		"name": "Fortified Advance",
+		"reward": 110,
+		"groups": [
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 8, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "fast", "count": 5, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"}
+		]
+	},
+	{
+		"name": "The Bulwark Line",
+		"reward": 160,
+		"groups": [
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 2.0, "path": "default"},
+			{"type": "fast", "count": 6, "interval": 0.4, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"}
+		]
+	}
+]

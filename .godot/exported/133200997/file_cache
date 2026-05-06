@@ -14,3 +14,5 @@ res://scenes/ui/AudioUnlockOverlay.tscn::735548c43d07a0f8ab26afe8b1173b79::17778
 res://scenes/effects/MuzzleFlash.tscn::9d93a2c0981d62a938bdfe8d958f1b5c::1777989557::res://.godot/exported/133200997/export-c13846d058b30fc7d0a2f7b4a44d76ac-MuzzleFlash.scn
 res://scenes/ui/ResultPanel.tscn::66ce7400b122a606d9cdb466c5721ebb::1778066003::res://.godot/exported/133200997/export-b09ee468033186c6525b3192f41de8f3-ResultPanel.scn
 res://scenes/ui/LeaderboardPanel.tscn::db4bf86c0423254a16104de0c2881c4c::1778066898::res://.godot/exported/133200997/export-815ab5577e909016611d4ceb2de5e233-LeaderboardPanel.scn
+res://scenes/ui/HeroPanel.tscn::515038bb371b85056a3e2cb9d5800da3::1778070390::res://.godot/exported/133200997/export-7bffa69a1068a389c6cd3e856e2081db-HeroPanel.scn
+res://scenes/units/HeroGuardian.tscn::93161da3fc8b73c611649e7e69dc0577::1778070353::res://.godot/exported/133200997/export-960b13341f790b965ab14b72a483d1cd-HeroGuardian.scn

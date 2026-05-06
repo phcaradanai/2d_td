@@ -1,0 +1,51 @@
+[
+	{
+		"name": "Scout Swarm",
+		"reward": 60,
+		"groups": [
+			{"type": "fast", "count": 8, "interval": 0.5, "path": "lane_b"},
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"}
+		]
+	},
+	{
+		"name": "Hunter's Gaze",
+		"reward": 75,
+		"groups": [
+			{"type": "fast", "count": 5, "interval": 0.6, "path": "lane_b"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"},
+			{"type": "fast", "count": 4, "interval": 0.5, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Crossed Arrows",
+		"reward": 90,
+		"groups": [
+			{"type": "hunter", "count": 1, "interval": 2.0, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
+			{"type": "fast", "count": 6, "interval": 0.6, "path": "lane_c"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_c"}
+		]
+	},
+	{
+		"name": "Shielded Hunters",
+		"reward": 110,
+		"groups": [
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
+			{"type": "fast", "count": 5, "interval": 0.5, "path": "lane_b"},
+			{"type": "hunter", "count": 2, "interval": 1.5, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "The Hunter Net",
+		"reward": 180,
+		"groups": [
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
+			{"type": "hunter", "count": 2, "interval": 2.0, "path": "default"},
+			{"type": "fast", "count": 5, "interval": 0.5, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "lane_c"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "lane_c"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_c"}
+		]
+	}
+]

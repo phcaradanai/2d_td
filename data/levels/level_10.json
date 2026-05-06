@@ -2,7 +2,7 @@
   "id": "level_10",
   "name": "Final Hold",
   "area_id": 2,
-  "area_name": "Iron Sector",
+  "area_name": "Forest",
   "difficulty": "Elite",
   "enemy_intel": ["All Types"],
   "recommended_roles": ["Full Loadout"],

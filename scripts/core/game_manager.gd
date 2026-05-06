@@ -108,10 +108,12 @@ func award_wave_completion(amount: int) -> void:
 
 func spend_gold(amount: int) -> bool:
 	if gold >= amount:
+		if OS.is_debug_build(): print("[Economy] spend gold amount=%d gold_before=%d gold_after=%d" % [amount, gold, gold - amount])
 		gold -= amount
 		gold_spent += amount
 		gold_changed.emit(gold)
 		return true
+	if OS.is_debug_build(): print("[Economy] spend failed: not enough gold! (has %d, need %d)" % [gold, amount])
 	return false
 
 func damage_base(amount: int) -> void:

@@ -34,13 +34,13 @@ func update_ui(save_manager: Node) -> void:
 	if level_container_map.is_empty():
 		_generate_dynamic_ui(save_manager)
 	
-	for level_num in range(1, 11):
-		var level_id = "level_%02d" % level_num
+	for l_num in range(1, 21):
+		var level_id = "level_%02d" % l_num
 		if level_container_map.has(level_id):
 			_update_dynamic_level_card(level_id, level_container_map[level_id], save_manager)
 	
 	# Update area headers
-	for area_id in range(1, 3):
+	for area_id in range(1, 5):
 		if area_panels.has(area_id):
 			var unlocked = save_manager.is_area_unlocked(area_id)
 			var panel = area_panels[area_id]
@@ -50,7 +50,11 @@ func update_ui(save_manager: Node) -> void:
 				header.text = "AREA %d: [ LOCKED ]" % area_id
 			else:
 				header.modulate = Color(1, 1, 1)
-				header.text = "AREA %d: %s" % [area_id, "TRAINING SECTOR" if area_id == 1 else "IRON SECTOR"]
+				var area_name = "TRAINING SECTOR"
+				if area_id == 2: area_name = "IRON SECTOR"
+				elif area_id == 3: area_name = "COMMAND SECTOR"
+				elif area_id == 4: area_name = "WARFRONT SECTOR"
+				header.text = "AREA %d: %s" % [area_id, area_name]
 
 func _generate_dynamic_ui(save_manager: Node) -> void:
 	if dynamic_list_container == null: return
@@ -60,7 +64,7 @@ func _generate_dynamic_ui(save_manager: Node) -> void:
 		child.queue_free()
 	
 	# Create Area Containers
-	for area_id in range(1, 3):
+	for area_id in range(1, 5):
 		var area_box = VBoxContainer.new()
 		area_box.name = "Area%d" % area_id
 		dynamic_list_container.add_child(area_box)

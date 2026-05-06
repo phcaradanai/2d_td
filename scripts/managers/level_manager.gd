@@ -8,14 +8,26 @@ var grid_rows: int = 12
 var grid_origin: Vector2 = Vector2.ZERO
 
 var path_cells: Array[Vector2i] = []
+var multi_paths: Dictionary = {} # path_id -> Array[Vector2i]
 var spawn_cell: Vector2i
 var base_cell: Vector2i
 var blocked_cells: Array[Vector2i] = []
 var decorative_blocked_cells: Array[Vector2i] = []
+var buildable_cells: Array[Vector2i] = []
 
 var starting_gold: int = 100
 var starting_lives: int = 20
 var waves_path: String = "res://data/waves.json"
+var hero_config: Dictionary = {
+	"enabled": false,
+	"unlock_message": "",
+	"deploy_cost": 100,
+	"duration": 28,
+	"cooldown": 35
+}
+
+var current_theme: Resource = null
+var theme_manager: Node = null
  
 func reset_state() -> void:
 	level_id = ""
@@ -23,10 +35,20 @@ func reset_state() -> void:
 	starting_gold = 100
 	starting_lives = 20
 	path_cells.clear()
+	multi_paths.clear()
 	blocked_cells.clear()
 	decorative_blocked_cells.clear()
+	buildable_cells.clear()
 	grid_cols = 20
 	grid_rows = 12
+	hero_config = {
+		"enabled": false,
+		"unlock_message": "",
+		"deploy_cost": 100,
+		"duration": 28,
+		"cooldown": 35
+	}
+	current_theme = null
 
 func load_level(path: String) -> bool:
 	reset_state()
@@ -63,14 +85,59 @@ func load_level(path: String) -> bool:
 	var origin_data = data.get("grid_origin", {"x": 0, "y": 0})
 	grid_origin = Vector2(origin_data.get("x", 0), origin_data.get("y", 0))
 	
+	var area_id = data.get("area_id", 1)
+	_load_theme_for_area(area_id)
+	
 	starting_gold = data.get("starting_gold", 100)
 	starting_lives = data.get("starting_lives", 20)
 	waves_path = data.get("waves_path", "res://data/waves.json")
 	
+	hero_config = {
+		"enabled": data.get("hero_enabled", false),
+		"unlock_message": data.get("hero_unlock_message", ""),
+		"deploy_cost": data.get("hero_deploy_cost", 100),
+		"duration": data.get("hero_duration_seconds", 28),
+		"cooldown": data.get("hero_cooldown_seconds", 35),
+		"hp": data.get("hero_hp", 450.0),
+		"damage": data.get("hero_damage", 36.0),
+		"attack_speed": data.get("hero_attack_speed", 1.4),
+		"attack_range": data.get("hero_attack_range", 125.0),
+		"move_speed": data.get("hero_move_speed", 220.0)
+	}
+	
+	# Handle paths
 	path_cells.clear()
-	for p in data.get("path_cells", []):
-		if p is Array and p.size() >= 2:
-			path_cells.append(Vector2i(p[0], p[1]))
+	multi_paths.clear()
+	
+	# Try loading "paths" dictionary first (New Multi-Path support)
+	var paths_dict = data.get("paths", {})
+	if paths_dict is Dictionary and not paths_dict.is_empty():
+		for p_id in paths_dict:
+			var cells: Array[Vector2i] = []
+			for p in paths_dict[p_id]:
+				if p is Array and p.size() >= 2:
+					cells.append(Vector2i(p[0], p[1]))
+			if cells.is_empty():
+				push_error("[PathSystem] ERROR: Path '%s' in level '%s' has no points!" % [p_id, level_id])
+			else:
+				multi_paths[p_id] = cells
+				if OS.is_debug_build():
+					var start = cells[0]
+					var end = cells[cells.size() - 1]
+					print("[PathSystem] lane=%s points=%d start=%s end=%s" % [p_id, cells.size(), start, end])
+		
+		# Set primary path_cells for compatibility
+		if multi_paths.has("default"):
+			path_cells = multi_paths["default"] as Array[Vector2i]
+		elif not multi_paths.is_empty():
+			path_cells = multi_paths.values()[0] as Array[Vector2i]
+	else:
+		# Fallback to legacy path_cells
+		for p in data.get("path_cells", []):
+			if p is Array and p.size() >= 2:
+				path_cells.append(Vector2i(p[0], p[1]))
+		multi_paths["default"] = path_cells
+		if OS.is_debug_build(): print("[PathSystem] default_path=default points=%d" % path_cells.size())
 		
 	var s = data.get("spawn_cell", [0, 0])
 	spawn_cell = Vector2i(s[0], s[1])
@@ -87,22 +154,45 @@ func load_level(path: String) -> bool:
 	for p in data.get("decorative_blocked_cells", []):
 		if p is Array and p.size() >= 2:
 			decorative_blocked_cells.append(Vector2i(p[0], p[1]))
+			
+	buildable_cells.clear()
+	for p in data.get("buildable_cells", []):
+		if p is Array and p.size() >= 2:
+			buildable_cells.append(Vector2i(p[0], p[1]))
 		
-	if OS.is_debug_build(): print("Level loaded: ", level_name, " (", level_id, ")")
+	if OS.is_debug_build(): print("[PathSystem] level=%s paths=%d" % [level_id, multi_paths.size()])
 	return true
 
 func get_all_blocked_cells() -> Array[Vector2i]:
+	# If restricted build zones are defined, then EVERYTHING ELSE is blocked for building
+	if not buildable_cells.is_empty():
+		var all: Array[Vector2i] = []
+		for x in range(grid_cols):
+			for y in range(grid_rows):
+				var cell = Vector2i(x, y)
+				if not (cell in buildable_cells):
+					all.append(cell)
+		return all
+		
 	var all: Array[Vector2i] = []
-	all.append_array(path_cells)
+	for p_id in multi_paths:
+		all.append_array(multi_paths[p_id])
 	all.append_array(blocked_cells)
 	all.append_array(decorative_blocked_cells)
 	return all
 
 func is_path_cell(cell: Vector2i) -> bool:
-	return cell in path_cells
+	for p_id in multi_paths:
+		if cell in multi_paths[p_id]:
+			return true
+	return false
 
 func is_blocked_cell(cell: Vector2i) -> bool:
-	return cell in blocked_cells or cell in decorative_blocked_cells or cell in path_cells
+	# If specific buildable spots are defined, anything NOT in that list is blocked
+	if not buildable_cells.is_empty():
+		return not (cell in buildable_cells)
+		
+	return cell in blocked_cells or cell in decorative_blocked_cells or is_path_cell(cell)
 
 func cell_to_world_center(cell: Vector2i) -> Vector2:
 	return grid_origin + Vector2(cell.x * grid_size + grid_size / 2, cell.y * grid_size + grid_size / 2)
@@ -112,7 +202,42 @@ func world_to_cell(world_pos: Vector2) -> Vector2i:
 	return Vector2i(floor(local_pos.x / grid_size), floor(local_pos.y / grid_size))
 
 func get_path_points() -> PackedVector2Array:
+	return get_path_points_for_id("default")
+
+func get_path_points_for_id(path_id: String) -> PackedVector2Array:
 	var points = PackedVector2Array()
-	for cell in path_cells:
+	var cells = multi_paths.get(path_id, path_cells)
+	for cell in cells:
 		points.append(cell_to_world_center(cell))
 	return points
+
+func get_config_as_dict() -> Dictionary:
+	return {
+		"id": level_id,
+		"name": level_name,
+		"grid_size": grid_size,
+		"grid_cols": grid_cols,
+		"grid_rows": grid_rows,
+		"paths": multi_paths,
+		"path_cells": path_cells,
+		"buildable_cells": buildable_cells,
+		"starting_gold": starting_gold,
+		"starting_lives": starting_lives,
+		"hero_config": hero_config
+	}
+
+func _load_theme_for_area(area_id: int) -> void:
+	if theme_manager == null:
+		var theme_script = load("res://scripts/map/theme_manager.gd")
+		theme_manager = theme_script.new()
+		theme_manager.name = "ThemeManager"
+		add_child(theme_manager)
+	
+	var theme_id = "area_grasslands"
+	match area_id:
+		1: theme_id = "area_grasslands"
+		2: theme_id = "area_forest"
+		3: theme_id = "area_forest_river"
+		4: theme_id = "area_mountain"
+	
+	current_theme = theme_manager.get_theme(theme_id)

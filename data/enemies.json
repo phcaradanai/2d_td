@@ -28,5 +28,27 @@
     "base_damage": 2,
     "category": "land",
     "visual_type": "tank"
+  },
+  "bulwark": {
+    "id": "bulwark",
+    "name": "Bulwark",
+    "max_hp": 450,
+    "speed": 40,
+    "reward_gold": 25,
+    "base_damage": 2,
+    "category": "land",
+    "visual_type": "bulwark",
+    "tags": ["heavy", "shield", "frontline"]
+  },
+  "hunter": {
+    "id": "hunter",
+    "name": "Hunter",
+    "max_hp": 160,
+    "speed": 125,
+    "reward_gold": 14,
+    "base_damage": 1,
+    "category": "land",
+    "visual_type": "hunter",
+    "tags": ["anti_hero", "fast", "danger"]
   }
 }

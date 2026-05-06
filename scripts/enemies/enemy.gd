@@ -22,9 +22,28 @@ var is_active: bool = false
 var reached_base_flag: bool = false
 var is_dead_flag: bool = false
 
-# Slow effect status
+# Effects status
 var active_slow_percent: float = 0.0
 var slow_remaining: float = 0.0
+var shield_remaining: float = 0.0
+var is_flashing: bool = false
+
+# Special Archetypes
+var is_bulwark: bool = false
+var is_hunter: bool = false
+var tags: Array = []
+
+# Bulwark Stats
+var shield_radius: float = 90.0
+var shield_reduction: float = 0.30
+
+# Hunter Stats
+enum HunterState { PATHING, AGGRO_CHASING, AGGRO_ATTACKING }
+var hunter_state: HunterState = HunterState.PATHING
+var aggro_range: float = 160.0
+var hunter_attack_range: float = 90.0
+var hunter_attack_damage: float = 28.0
+var hunter_attack_cooldown: float = 0.0
 
 @onready var body: ColorRect = $Body
 @onready var hp_bar: ProgressBar = $HpBar
@@ -37,6 +56,10 @@ func setup(config: Dictionary) -> void:
 	enemy_category = normalize_enemy_category(config.get("category", ENEMY_CATEGORY_LAND))
 	display_name = config.get("name", "Enemy")
 	visual_type = config.get("visual_type", "basic")
+	tags = config.get("tags", [])
+	
+	is_bulwark = (enemy_type == "bulwark" or tags.has("shield"))
+	is_hunter = (enemy_type == "hunter" or tags.has("anti_hero"))
 	
 	max_hp = config.get("max_hp", config.get("hp", 30.0))
 	hp = max_hp
@@ -58,17 +81,6 @@ func normalize_enemy_category(raw_category) -> String:
 		return normalized
 	return ENEMY_CATEGORY_LAND
 
-func get_enemy_category() -> String:
-	return enemy_category
-
-func is_air_enemy() -> bool:
-	return enemy_category == ENEMY_CATEGORY_AIR
-
-func is_land_enemy() -> bool:
-	return enemy_category == ENEMY_CATEGORY_LAND
-
-var is_flashing: bool = false
-
 func apply_visuals() -> void:
 	if not is_inside_tree(): return
 	if body: body.visible = false
@@ -77,6 +89,9 @@ func apply_visuals() -> void:
 func _draw() -> void:
 	var color = Color(0.8, 0.2, 0.2, 1.0)
 	var size = 16.0
+	
+	if shield_remaining > 0:
+		draw_circle(Vector2.ZERO, size * 1.3, Color(0.4, 0.8, 1.0, 0.3))
 	
 	match visual_type:
 		"basic":
@@ -88,10 +103,16 @@ func _draw() -> void:
 		"tank":
 			color = Color(0.5, 0.1, 0.1, 1.0)
 			_draw_drone_tank(color, size * 1.4)
+		"bulwark":
+			color = Color(0.2, 0.5, 0.8, 1.0)
+			_draw_bulwark(color, size * 1.6)
+			draw_arc(Vector2.ZERO, shield_radius, 0, TAU, 32, Color(0.4, 0.8, 1.0, 0.2), 2.0)
+		"hunter":
+			color = Color(1.0, 0.4, 0.2, 1.0)
+			_draw_hunter(color, size * 1.1)
 			
 	if is_flashing:
-		# Draw white overlay
-		_draw_overlay(Color(1, 1, 1, 0.6))
+		draw_circle(Vector2.ZERO, size * 1.5, Color(1, 1, 1, 0.6))
 
 func _draw_drone_hexagon(color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
@@ -100,14 +121,12 @@ func _draw_drone_hexagon(color: Color, size: float) -> void:
 		pts.append(Vector2(cos(a), sin(a)) * size)
 	draw_colored_polygon(pts, color)
 	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0)
-	# Eye
 	draw_circle(Vector2(size * 0.4, 0), 3, Color.WHITE)
 
 func _draw_drone_triangle(color: Color, size: float) -> void:
 	var pts := PackedVector2Array([Vector2(size * 1.2, 0), Vector2(-size, -size), Vector2(-size, size)])
 	draw_colored_polygon(pts, color)
 	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0)
-	# Glowing core
 	draw_circle(Vector2(0, 0), 4, Color.WHITE)
 
 func _draw_drone_tank(color: Color, size: float) -> void:
@@ -117,12 +136,27 @@ func _draw_drone_tank(color: Color, size: float) -> void:
 		pts.append(Vector2(cos(a), sin(a)) * size)
 	draw_colored_polygon(pts, color)
 	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.WHITE, 1.5)
-	# Reinforced plates
-	draw_rect(Rect2(-size*0.6, -size*0.6, size*1.2, size*1.2), Color(1, 1, 1, 0.1), false, 1.0)
 
-func _draw_overlay(color: Color) -> void:
-	# Simplified overlay for flash
-	draw_circle(Vector2.ZERO, 20, color)
+func _draw_bulwark(color: Color, size: float) -> void:
+	var pts := PackedVector2Array([
+		Vector2(size, -size), Vector2(size, size), 
+		Vector2(-size, size), Vector2(-size, -size)
+	])
+	draw_colored_polygon(pts, color)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.WHITE, 2.0)
+	# Internal cross
+	draw_line(Vector2(-size*0.7, 0), Vector2(size*0.7, 0), Color.WHITE, 1.5)
+	draw_line(Vector2(0, -size*0.7), Vector2(0, size*0.7), Color.WHITE, 1.5)
+
+func _draw_hunter(color: Color, size: float) -> void:
+	var pts := PackedVector2Array([
+		Vector2(size * 1.5, 0), Vector2(-size*0.5, -size), 
+		Vector2(-size, 0), Vector2(-size*0.5, size)
+	])
+	draw_colored_polygon(pts, color)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.YELLOW, 1.5)
+	# Red eye
+	draw_circle(Vector2(size * 0.6, 0), 3, Color.RED)
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -138,86 +172,118 @@ func _process(delta: float) -> void:
 	if not is_active or is_dead_flag or reached_base_flag:
 		return
 		
-	# Update slow timer
+	# Update timers
 	if slow_remaining > 0:
 		slow_remaining -= delta
-		if slow_remaining <= 0:
-			clear_slow()
-		
-	progress += speed * delta
+		if slow_remaining <= 0: clear_slow()
 	
+	if shield_remaining > 0:
+		shield_remaining -= delta
+		if shield_remaining <= 0: queue_redraw()
+		
+	# Archetype Logic
+	if is_bulwark:
+		_process_bulwark_aura()
+		
+	if is_hunter:
+		_process_hunter_ai(delta)
+	else:
+		_process_pathing(delta)
+
+func _process_bulwark_aura() -> void:
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if enemy != self and is_instance_valid(enemy) and enemy.has_method("apply_shield"):
+			if global_position.distance_to(enemy.global_position) <= shield_radius:
+				enemy.apply_shield(0.2)
+
+func apply_shield(duration: float) -> void:
+	if shield_remaining <= 0:
+		queue_redraw()
+	shield_remaining = max(shield_remaining, duration)
+
+func _process_hunter_ai(delta: float) -> void:
+	var hero = null
+	var heroes = get_tree().get_nodes_in_group("heroes")
+	if heroes.size() > 0:
+		hero = heroes[0] # Focus first hero
+		
+	if is_instance_valid(hero) and hero.has_method("is_alive") and hero.is_alive():
+		var dist = global_position.distance_to(hero.global_position)
+		if dist <= aggro_range:
+			if hunter_state == HunterState.PATHING:
+				if OS.is_debug_build(): print("[HunterAI] aggro hero distance=%.1f" % dist)
+			
+			if dist <= hunter_attack_range:
+				hunter_state = HunterState.AGGRO_ATTACKING
+				_attack_hero(hero, delta)
+			else:
+				hunter_state = HunterState.AGGRO_CHASING
+				_move_toward_hero(hero.global_position, delta)
+			return
+			
+	# Fallback to pathing
+	if hunter_state != HunterState.PATHING:
+		hunter_state = HunterState.PATHING
+		if OS.is_debug_build(): print("[HunterAI] return_to_path reason=no_hero_in_range")
+	_process_pathing(delta)
+
+func _move_toward_hero(target_pos: Vector2, delta: float) -> void:
+	var dir = (target_pos - global_position).normalized()
+	global_position += dir * speed * delta
+	# Rotate visual manually when off-path
+	rotation = lerp_angle(rotation, dir.angle(), 10.0 * delta)
+
+func _attack_hero(hero: Node, delta: float) -> void:
+	if hunter_attack_cooldown > 0:
+		hunter_attack_cooldown -= delta
+	
+	if hunter_attack_cooldown <= 0:
+		if hero.has_method("take_damage"):
+			hero.take_damage(hunter_attack_damage)
+			hunter_attack_cooldown = 1.0 # 1 attack per sec
+			if OS.is_debug_build(): print("[HunterAI] attack_hero damage=%.1f" % hunter_attack_damage)
+
+func _process_pathing(delta: float) -> void:
+	progress += speed * delta
 	if progress_ratio >= 1.0:
 		reach_base()
 
+func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO) -> void:
+	if is_dead_flag or reached_base_flag: return
+	
+	var final_damage = amount
+	if shield_remaining > 0 and not is_bulwark:
+		final_damage *= (1.0 - shield_reduction)
+		if OS.is_debug_build(): 
+			print("[Damage] shield_reduced original=%.1f final=%.1f" % [amount, final_damage])
+			
+	var capture_pos = hit_global if hit_global != Vector2.ZERO else global_position
+	hp -= final_damage
+	if hp_bar: hp_bar.value = hp
+		
+	flash_body()
+	spawn_damage_number(int(final_damage), capture_pos)
+	_play_hit_pulse()
+	
+	if hp <= 0:
+		die(capture_pos)
+
 func apply_slow(percent: float, duration: float) -> void:
-	# Stronger slow overrides weaker slow, or refreshes if same/stronger
 	if percent >= active_slow_percent:
 		active_slow_percent = percent
 		slow_remaining = duration
 		update_effective_speed()
-		update_visual_feedback()
 	elif duration > slow_remaining and percent == active_slow_percent:
-		# Refresh duration if same strength but longer duration
 		slow_remaining = duration
 
 func clear_slow() -> void:
 	active_slow_percent = 0.0
 	slow_remaining = 0.0
 	update_effective_speed()
-	update_visual_feedback()
 
 func update_effective_speed() -> void:
-	if active_slow_percent <= 0:
-		speed = base_speed
-		return
-		
-	var slow_factor = 1.0 - active_slow_percent
-	# Clamp minimum speed to 25% of base_speed
-	slow_factor = max(slow_factor, 0.25)
-	speed = base_speed * slow_factor
-
-func update_visual_feedback() -> void:
-	if body:
-		if active_slow_percent > 0:
-			# Tint body slightly cyan/blue
-			body.modulate = Color(0.5, 0.8, 1.0, 1.0)
-		else:
-			# Restore normal modulate
-			body.modulate = Color(1, 1, 1, 1)
-
-func get_hit_origin() -> Vector2:
-	return global_position
-
-func get_aim_point() -> Vector2:
-	# STANDARD: Point for towers to aim at
-	return global_position
-
-func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO) -> void:
-	if is_dead_flag or reached_base_flag:
-		return
-		
-	# STANDARD: Use hit origin if no specific global point provided
-	var capture_pos = hit_global if hit_global != Vector2.ZERO else get_hit_origin()
-	
-	hp -= amount
-	if hp_bar:
-		hp_bar.value = hp
-		
-	flash_body()
-	spawn_damage_number(int(amount), capture_pos)
-	_play_hit_pulse()
-	
-	if hp <= 0:
-		die(capture_pos)
-
-func _play_hit_pulse() -> void:
-	# Quick squash and stretch reaction
-	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
-	
-	# STANDARD: Avoid stacking huge scales, just a quick pulse
-	tween.tween_property(self, "scale", Vector2(1.2, 0.8), 0.05).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	speed = base_speed * max(1.0 - active_slow_percent, 0.25)
 
 func flash_body() -> void:
 	is_flashing = true
@@ -229,55 +295,46 @@ func flash_body() -> void:
 func spawn_damage_number(amount: int, hit_global: Vector2) -> void:
 	if damage_number_scene:
 		var dn = damage_number_scene.instantiate()
-		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if effects_container:
-			effects_container.add_child(dn)
-			# MUST set global_position AFTER add_child
-			dn.global_position = hit_global + Vector2(0, -20)
-			dn.setup(amount)
-		else:
-			get_tree().current_scene.add_child(dn)
-			dn.global_position = hit_global + Vector2(0, -20)
-			dn.setup(amount)
+		get_tree().current_scene.add_child(dn)
+		dn.global_position = hit_global + Vector2(0, -20)
+		dn.setup(amount)
 
 func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag: return
 	is_dead_flag = true
 	is_active = false
-	
 	var capture_pos = death_global if death_global != Vector2.ZERO else global_position
-	
 	spawn_death_effect(capture_pos)
-	
 	died.emit(self, reward_gold)
 	queue_free()
 
 func spawn_death_effect(death_global: Vector2) -> void:
 	if death_pop_scene:
 		var effect = death_pop_scene.instantiate()
-		# STANDARD: Use map-aligned effects container
-		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if effects_container:
-			effects_container.add_child(effect)
-			# MUST set global_position AFTER add_child
-			effect.global_position = death_global
-			
-			if OS.is_debug_build():
-				if OS.is_debug_build(): print("[Enemy] Death effect spawned at global=", effect.global_position, " death_global=", death_global)
-		else:
-			get_tree().current_scene.add_child(effect)
-			effect.global_position = death_global
+		get_tree().current_scene.add_child(effect)
+		effect.global_position = death_global
 
 func reach_base() -> void:
 	if reached_base_flag: return
 	reached_base_flag = true
 	is_active = false
-	var leak_global = global_position
-	reached_base.emit(self, base_damage, leak_global)
+	reached_base.emit(self, base_damage, global_position)
 	queue_free()
 
 func is_alive() -> bool:
 	return hp > 0 and not reached_base_flag and not is_dead_flag
+
+func _play_hit_pulse() -> void:
+	var tween = create_tween()
+	tween.tween_property(self, "scale", Vector2(1.2, 0.8), 0.05).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_BACK)
+
+func get_priority_score() -> float:
+	var score = 1.0
+	if tags.has("fast"): score = 1.2
+	if is_hunter: score = 1.4
+	if is_bulwark: score = 1.6
+	return score
 
 func get_path_progress() -> float:
 	return progress

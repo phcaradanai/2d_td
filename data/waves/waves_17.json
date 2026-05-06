@@ -1,0 +1,48 @@
+[
+	{
+		"name": "Parallel Incursion",
+		"reward": 60,
+		"groups": [
+			{"type": "basic", "count": 6, "interval": 1.2, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.2, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Swift Split",
+		"reward": 70,
+		"groups": [
+			{"type": "fast", "count": 8, "interval": 0.6, "path": "default"},
+			{"type": "basic", "count": 7, "interval": 1.0, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Shielded Hunter",
+		"reward": 85,
+		"groups": [
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 1.5, "path": "lane_b"},
+			{"type": "fast", "count": 5, "interval": 0.7, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Crossed Threats",
+		"reward": 100,
+		"groups": [
+			{"type": "basic", "count": 8, "interval": 1.0, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 1.5, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "lane_b"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "The Merge Test",
+		"reward": 150,
+		"groups": [
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 7, "interval": 1.0, "path": "default"},
+			{"type": "hunter", "count": 2, "interval": 1.2, "path": "lane_b"},
+			{"type": "fast", "count": 7, "interval": 0.5, "path": "lane_b"}
+		]
+	}
+]

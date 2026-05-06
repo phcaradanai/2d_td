@@ -1,0 +1,37 @@
+{
+	"area_id": 4,
+	"area_name": "Mountain",
+	"id": "level_19",
+	"name": "Hunter Net",
+	"description": "High Hunter density detected. The Guardian is a target, not just a protector. Support your hero with well-placed towers.",
+	"hero_enabled": true,
+	"hero_deploy_cost": 100,
+	"hero_duration_seconds": 28,
+	"hero_cooldown_seconds": 35,
+	"grid_size": 64.0,
+	"grid_cols": 20.0,
+	"grid_rows": 12.0,
+	"grid_origin": {"x": 0.0, "y": 0.0},
+	"starting_gold": 390,
+	"starting_lives": 20.0,
+	"difficulty": "Hard",
+	"paths": {
+		"default": [
+			[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [9, 2], [10, 2], [11, 2], [12, 2], [13, 2], [14, 2], [15, 2],
+			[15, 3], [15, 4], [15, 5], [15, 6],
+			[16, 6], [17, 6], [18, 6], [19, 6]
+		],
+		"lane_b": [
+			[0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6], [7, 6], [8, 6], [9, 6], [10, 6], [11, 6], [12, 6], [13, 6], [14, 6], [15, 6], [16, 6], [17, 6], [18, 6], [19, 6]
+		],
+		"lane_c": [
+			[0, 10], [1, 10], [2, 10], [3, 10], [4, 10], [5, 10], [6, 10], [7, 10], [8, 10], [9, 10], [10, 10], [11, 10], [12, 10], [13, 10], [14, 10], [15, 10],
+			[15, 9], [15, 8], [15, 7], [15, 6],
+			[16, 6], [17, 6], [18, 6], [19, 6]
+		]
+	},
+	"buildable_cells": [
+		[5, 1], [10, 1], [14, 1], [5, 7], [10, 7], [14, 7], [5, 9], [10, 9], [14, 9], [16, 5], [16, 7], [18, 4]
+	],
+	"waves_path": "res://data/waves/waves_19.json"
+}

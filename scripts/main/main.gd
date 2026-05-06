@@ -1,11 +1,12 @@
 extends Node2D
 
 # Preload scripts for dynamic node creation if missing in scene
-const LEVEL_MANAGER_SCRIPT = preload("res://scripts/managers/level_manager.gd")
-const MAP_VISUAL_LAYER_SCRIPT = preload("res://scripts/map/map_visual_layer.gd")
+const LEVEL_MANAGER_SCRIPT_PATH = "res://scripts/managers/level_manager.gd"
+const MAP_VISUAL_LAYER_SCRIPT_PATH = "res://scripts/map/map_visual_layer.gd"
 const UI_THEME_MANAGER_SCRIPT = preload("res://scripts/ui/ui_theme_manager.gd")
 const BALANCE_SOLVER_SCRIPT = "res://scripts/debug/balance_solver.gd"
 const AUTO_PLAY_VERIFIER_SCRIPT = preload("res://scripts/debug/auto_play_verifier.gd")
+const LEVEL_VALIDATOR_SCRIPT = preload("res://scripts/debug/level_validator.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -63,6 +64,7 @@ const RIGHT_SIDEBAR_WIDTH = 260
 const OUTER_MARGIN = 10
 
 var level_manager: Node = null
+var level_validator: Node = null
 var balance_solver: Node = null
 var auto_play_verifier: Node = null
 var debug_starting_gold_override: int = -1
@@ -80,6 +82,11 @@ const MIN_TOWER_LOADOUT_SIZE: int = 1
 var pending_unlock_level_id: String = ""
 var leaderboard_service: Node = null
 var leaderboard_panel: Node = null
+var current_hero: Node = null
+var hero_panel: Node = null
+var hero_cooldown: float = 0.0
+var hero_active_duration: float = 0.0
+var hero_is_deployed: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -143,6 +150,10 @@ func _ready() -> void:
 		auto_play_verifier.set_script(AUTO_PLAY_VERIFIER_SCRIPT)
 		add_child(auto_play_verifier)
 		auto_play_verifier.state_changed.connect(_on_verifier_state_changed)
+
+		level_validator = LEVEL_VALIDATOR_SCRIPT.new()
+		level_validator.name = "LevelValidator"
+		add_child(level_validator)
 
 	_connect_signals()
 	_hide_old_path_visuals()
@@ -251,6 +262,8 @@ func _refresh_gameplay_hud_state() -> void:
 	_refresh_start_wave_ui()
 	_refresh_hud_wave_intel()
 
+var active_path_nodes: Dictionary = {}
+
 func _setup_game_from_level() -> void:
 	if level_manager == null: return
 
@@ -260,20 +273,50 @@ func _setup_game_from_level() -> void:
 	if map_visual_layer:
 		map_visual_layer.setup(level_manager)
 
-	if path_visual:
-		path_visual.points = level_manager.get_path_points()
+	# Clear and setup paths
+	for p in active_path_nodes.values():
+		if p != enemy_path and is_instance_valid(p):
+			p.queue_free()
+	active_path_nodes.clear()
+	
+	# Clear extra path visuals
+	for child in map_root.get_children():
+		if child is Line2D and child.name.begins_with("PathVisual_"):
+			child.queue_free()
+
+	for p_id in level_manager.multi_paths:
+		var points = level_manager.get_path_points_for_id(p_id)
+		
+		# Setup Logic Node
+		var p_node = enemy_path if p_id == "default" else Path2D.new()
+		if p_node != enemy_path:
+			p_node.name = "EnemyPath_" + p_id
+			enemy_container.add_child(p_node)
+		
+		p_node.curve = _create_curve_from_points(points)
+		active_path_nodes[p_id] = p_node
+		
+		# Setup Visual
+		if p_id == "default":
+			if path_visual: path_visual.points = points
+		else:
+			if path_visual:
+				var visual = path_visual.duplicate()
+				visual.name = "PathVisual_" + p_id
+				visual.points = points
+				map_root.add_child(visual)
 
 	# Center the map inside the playfield area
 	_center_map_in_playfield()
 
-	if enemy_path:
-		enemy_path.curve = _create_curve_from_points(level_manager.get_path_points())
-
 	if wave_manager:
-		wave_manager.setup(enemy_path)
+		wave_manager.setup(active_path_nodes)
 		wave_manager.load_waves_from_file(level_manager.waves_path)
 		wave_manager.reset_waves()
 		_log_wave_intel_source()
+		
+		if OS.is_debug_build() and level_validator:
+			level_validator.validate_level(level_manager.level_id, level_manager.get_config_as_dict(), wave_manager.waves)
 
 	if build_manager:
 		build_manager.configure_from_level(level_manager)
@@ -298,10 +341,28 @@ func _setup_game_from_level() -> void:
 
 	update_hud()
 	_refresh_hud_wave_intel()
+	# Removed _spawn_hero() as it's now manual deployment
+	_setup_hero_if_enabled()
+
+func _setup_hero_if_enabled() -> void:
+	if game_hud and level_manager and level_manager.hero_config.get("enabled", false):
+		_setup_hero_ui()
+		if level_manager.hero_config.get("unlock_message", "") != "":
+			show_wave_feedback(level_manager.hero_config["unlock_message"], Color(0.4, 0.8, 1.0))
+	elif hero_panel:
+		hero_panel.hide()
 
 	if build_preview:
 		build_preview.setup(level_manager.grid_size, level_manager.grid_cols, level_manager.grid_rows)
 		build_preview.set_blocked_cells(level_manager.get_all_blocked_cells())
+		build_preview.set_buildable_cells(level_manager.buildable_cells)
+		
+		if OS.is_debug_build():
+			print("[BuildZone] level=%s buildable=%d" % [level_manager.level_id, level_manager.buildable_cells.size()])
+			if level_manager.buildable_cells.is_empty():
+				print("[BuildZone] mode=free (no restricted foundations)")
+			else:
+				print("[BuildZone] mode=restricted (foundations only)")
 
 func _create_curve_from_points(points: PackedVector2Array) -> Curve2D:
 	var curve := Curve2D.new()
@@ -342,13 +403,13 @@ func _ensure_level_nodes_exist() -> void:
 	if level_manager == null:
 		level_manager = Node.new()
 		level_manager.name = "LevelManager"
-		level_manager.set_script(LEVEL_MANAGER_SCRIPT)
+		level_manager.set_script(load(LEVEL_MANAGER_SCRIPT_PATH))
 		add_child(level_manager)
 
 	if map_visual_layer == null:
 		map_visual_layer = Node2D.new()
 		map_visual_layer.name = "MapVisualLayer"
-		map_visual_layer.set_script(MAP_VISUAL_LAYER_SCRIPT)
+		map_visual_layer.set_script(load(MAP_VISUAL_LAYER_SCRIPT_PATH))
 		if map_root:
 			map_root.add_child(map_visual_layer)
 			map_root.move_child(map_visual_layer, 0) # Behind path, etc.
@@ -443,7 +504,10 @@ func _connect_signals() -> void:
 		game_manager.game_paused.connect(_on_game_paused)
 		game_manager.game_resumed.connect(_on_game_resumed)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	if current_state == GameState.WAVE or current_state == GameState.BUILD:
+		_update_hero_timers(delta)
+		
 	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 
 	if build_manager and build_manager.is_build_mode_active():
@@ -455,7 +519,9 @@ func _process(_delta: float) -> void:
 
 		if build_preview:
 			var validation = build_manager.validate_placement(cell)
-			build_preview.update_preview(cell, validation["is_valid"], true, build_manager.get_selected_tower_range(), validation["reason"])
+			if OS.is_debug_build() and Engine.get_frames_drawn() % 120 == 0:
+				print("[BuildFlow] preview pos=%s cell=%s can_place=%s reason=%s" % [local_mouse, cell, validation["is_valid"], validation["reason"]])
+			build_preview.update_preview(cell, validation["is_valid"], true, build_manager.get_selected_tower_range(), validation["reason"], build_manager.get_selected_tower_footprint())
 	elif build_preview:
 		build_preview.update_preview(Vector2i(-1, -1), false, false)
 
@@ -552,10 +618,20 @@ func _unhandled_input(event: InputEvent) -> void:
 			if _is_mouse_over_hud(): return
 
 			if build_manager and build_manager.has_selected_tower():
+				var hovered_control = get_viewport().gui_get_hovered_control()
+				if OS.is_debug_build(): print("[BuildInput] click received. mouse_over_hud=%s hovered=%s" % [_is_mouse_over_hud(), hovered_control])
+				
+				if _is_mouse_over_hud(): 
+					if OS.is_debug_build(): print("[BuildInput] click ignored: mouse over HUD")
+					return
+
+				if OS.is_debug_build(): print("[BuildFlow] confirm input received local_mouse_pos=%s" % local_mouse)
 				# Try place tower using local coordinates
 				if build_manager.try_place_tower(local_mouse):
 					get_viewport().set_input_as_handled()
 					return
+				else:
+					if OS.is_debug_build(): print("[BuildFlow] click-to-place failed for %s" % build_manager.selected_tower_id)
 			else:
 				# Manually check for tower selection if not in build mode
 				var tower_clicked = _check_tower_click(local_mouse)
@@ -579,6 +655,32 @@ func _on_level_select_requested() -> void:
 	if pending_unlock_level_id != "" and level_select:
 		level_select.show_unlocked_notification(pending_unlock_level_id)
 		pending_unlock_level_id = ""
+
+func _update_hero_timers(delta: float) -> void:
+	if hero_is_deployed:
+		if is_instance_valid(current_hero):
+			hero_active_duration = current_hero.active_duration_current
+			if hero_panel:
+				hero_panel.update_duration(hero_active_duration)
+		else:
+			# Hero retreated
+			hero_is_deployed = false
+			hero_active_duration = 0
+			if level_manager:
+				hero_cooldown = level_manager.hero_config.get("cooldown", 30)
+				if OS.is_debug_build(): print("[HeroDeploy] cooldown started seconds=%.1f" % hero_cooldown)
+	
+	elif hero_cooldown > 0:
+		hero_cooldown -= delta
+		if hero_panel and level_manager:
+			hero_panel.set_cooldown(hero_cooldown, level_manager.hero_config.get("cooldown", 30))
+		if hero_cooldown <= 0:
+			if hero_panel: hero_panel.set_ready()
+			if OS.is_debug_build(): print("[HeroDeploy] cooldown ready")
+	
+	elif hero_panel and game_manager and level_manager:
+		var cost = level_manager.hero_config.get("deploy_cost", 120)
+		hero_panel.set_insufficient_gold(game_manager.gold < cost)
 
 func _on_level_select_back() -> void:
 	set_game_phase(GameState.MENU)
@@ -681,6 +783,18 @@ func _clear_gameplay_state() -> void:
 		for effect in effects_container.get_children():
 			effect.queue_free()
 
+	if current_hero:
+		current_hero.queue_free()
+		current_hero = null
+	if hero_panel:
+		hero_panel.queue_free()
+		hero_panel = null
+		
+	hero_is_deployed = false
+	hero_cooldown = 0
+	hero_active_duration = 0
+	if OS.is_debug_build(): print("[HeroLifecycle] reset")
+
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		enemy.queue_free()
 
@@ -693,6 +807,141 @@ func _clear_gameplay_state() -> void:
 		build_preview.update_preview(Vector2i(-1, -1), false, false)
 	if game_hud:
 		game_hud.clear_wave_intel()
+
+	# Setup UI
+	if game_hud and level_manager and level_manager.hero_config.get("enabled", false):
+		_setup_hero_ui()
+	elif hero_panel:
+		hero_panel.hide()
+
+func _setup_hero_ui() -> void:
+	if hero_panel:
+		hero_panel.queue_free()
+		
+	var panel_scene = load("res://scenes/ui/HeroPanel.tscn")
+	if not panel_scene: return
+	
+	hero_panel = panel_scene.instantiate()
+	game_hud.add_child(hero_panel)
+	
+	# Position bottom-left
+	hero_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	hero_panel.position += Vector2(20, -100)
+	
+	hero_panel.setup_ui(level_manager.hero_config)
+	hero_panel.deploy_requested.connect(_on_hero_deploy_requested)
+	
+	if hero_cooldown > 0:
+		hero_panel.set_cooldown(hero_cooldown, level_manager.hero_config.get("cooldown", 30))
+	elif hero_is_deployed:
+		# Should not happen on setup unless mid-restart logic is weird
+		pass
+
+func _on_hero_deploy_requested() -> void:
+	if hero_is_deployed or hero_cooldown > 0: return
+	if not level_manager or not game_manager: return
+	
+	var cost = level_manager.hero_config.get("deploy_cost", 120)
+	if game_manager.gold < cost:
+		if OS.is_debug_build(): print("[BuildFlow] place failed: Not enough gold for hero! (needed %d)" % cost)
+		return
+		
+	if game_manager.spend_gold(cost):
+		if OS.is_debug_build(): print("[BuildFlow] hero deployed cost=%d" % cost)
+		_spawn_hero_unit()
+		update_hud() # Update gold display
+
+func _spawn_hero_unit() -> void:
+	var hero_scene = load("res://scenes/units/HeroGuardian.tscn")
+	if not hero_scene: return
+	
+	current_hero = hero_scene.instantiate()
+	
+	# Configuration and Bounds
+	var battlefield_bounds = Rect2(Vector2(0, 0), Vector2(1280, 768))
+	if level_manager:
+		battlefield_bounds = Rect2(Vector2(0, 0), Vector2(level_manager.grid_cols * level_manager.grid_size, level_manager.grid_rows * level_manager.grid_size))
+	
+	# Find rally point: near the base (last path point)
+	var rally_pos = Vector2(1000, 384) # Default
+	if level_manager:
+		var path = level_manager.get_path_points()
+		if path.size() > 0:
+			rally_pos = path[path.size() - 1] + Vector2(-80, 0)
+	
+	# Intelligent Spawn Position
+	var spawn_pos = rally_pos
+	var spawn_mode = "rally_point"
+	var target_enemy = null
+	
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	var active_enemies = []
+	for e in enemies:
+		if is_instance_valid(e) and e.has_method("is_alive") and e.is_alive():
+			active_enemies.append(e)
+			
+	if active_enemies.size() > 0:
+		# Pick best target (furthest along path)
+		var max_prog = -1.0
+		for e in active_enemies:
+			if e.has_method("get_path_progress"):
+				var prog = e.get_path_progress()
+				if prog > max_prog:
+					max_prog = prog
+					target_enemy = e
+		
+		if is_instance_valid(target_enemy):
+			spawn_mode = "near_enemy"
+			# Spawn offset from enemy (approx 100px)
+			# Try to spawn towards the center of map
+			var offset_dir = (Vector2(640, 384) - target_enemy.global_position).normalized()
+			spawn_pos = target_enemy.global_position + offset_dir * 100.0
+	
+	# Clamp spawn position to bounds
+	spawn_pos.x = clamp(spawn_pos.x, battlefield_bounds.position.x + 50, battlefield_bounds.end.x - 50)
+	spawn_pos.y = clamp(spawn_pos.y, battlefield_bounds.position.y + 50, battlefield_bounds.end.y - 50)
+	
+	if OS.is_debug_build():
+		print("[HeroDeploy] active_enemies=%d" % active_enemies.size())
+		if spawn_mode == "near_enemy":
+			print("[HeroDeploy] spawn_mode=near_enemy target=%s spawn_pos=%s" % [target_enemy.name, str(spawn_pos)])
+		else:
+			print("[HeroDeploy] spawn_mode=rally_point spawn_pos=%s" % str(spawn_pos))
+
+	var units_container = get_node_or_null("WorldRoot/MapRoot/UnitsContainer")
+	if units_container:
+		units_container.add_child(current_hero)
+	else:
+		add_child(current_hero)
+		
+	# Initialize Hero stats and position
+	current_hero.initialize_hero(spawn_pos, rally_pos, battlefield_bounds)
+	
+	var h_cfg = level_manager.hero_config
+	current_hero.active_duration_max = h_cfg.get("duration", 28.0)
+	current_hero.active_duration_current = current_hero.active_duration_max
+	current_hero.max_hp = h_cfg.get("hp", 450.0)
+	current_hero.current_hp = current_hero.max_hp
+	current_hero.damage = h_cfg.get("damage", 36.0)
+	current_hero.attack_speed = h_cfg.get("attack_speed", 1.4)
+	current_hero.attack_range = h_cfg.get("attack_range", 125.0)
+	current_hero.move_speed = h_cfg.get("move_speed", 220.0)
+	
+	if current_hero.has_method("_update_range_collision"): current_hero._update_range_collision()
+	if current_hero.has_method("_update_range_visual"): current_hero._update_range_visual()
+	
+	# Trigger Shockwave at FINAL spawn position
+	if current_hero.has_method("trigger_shockwave"):
+		current_hero.trigger_shockwave()
+	
+	hero_is_deployed = true
+	if hero_panel:
+		hero_panel.set_deployed(current_hero, current_hero.active_duration_max)
+		
+	if OS.is_debug_build(): 
+		print("[HeroDeploy] deployed hero=Guardian duration=%.1f" % current_hero.active_duration_max)
+		print("[HeroDeploy] deploy requested cost=%d gold=%d" % [level_manager.hero_config.get("deploy_cost", 100), game_manager.gold])
+
 
 # --- Gameplay Handlers ---
 
@@ -910,7 +1159,8 @@ func _on_tower_selected(_tower_id: String) -> void:
 		var config = build_manager.get_selected_tower_config()
 		var tower_name = config.get("name", _tower_id.capitalize())
 		if game_hud:
-			game_hud.set_build_status("Selected: " + tower_name)
+			var hint = " - Select foundation" if not level_manager.buildable_cells.is_empty() else ""
+			game_hud.set_build_status("Selected: " + tower_name + hint)
 
 func _on_tower_selection_cleared() -> void:
 	if game_hud:
@@ -924,9 +1174,15 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 	if build_manager:
 		var tower_range = build_manager.get_selected_tower_range()
 		if build_preview:
-			build_preview.update_preview(cell, is_valid, true, tower_range)
+			# Only update if build mode is actually active
+			if build_manager.has_selected_tower():
+				build_preview.update_preview(cell, is_valid, true, tower_range, reason, build_manager.get_selected_tower_footprint())
+		
 		if build_manager.has_selected_tower() and game_hud:
-			game_hud.set_build_status("Hover: " + str(cell) + " " + reason)
+			var status = "Ready to build" if is_valid else reason
+			if not is_valid and reason == "Restricted zone":
+				status = "Requires Foundation"
+			game_hud.set_build_status(status + " at " + str(cell))
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
 	set_game_phase(GameState.WAVE)
@@ -1245,28 +1501,83 @@ func format_preview_enemy_label(normalized_type: String, enemy_category: String)
 
 func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categories: Dictionary = {}) -> Array[String]:
 	var traits: Array[String] = []
+	if total_count == 0: return ["Standard"]
+	
 	if categories.has(ENEMY_CATEGORY_AIR): traits.append("Air")
-	if enemy_counts.has("Fast"): traits.append("Fast")
-	elif enemy_counts.has("Air Fast"): traits.append("Fast")
-	if enemy_counts.has("Heavy"): traits.append("Heavy")
-	if enemy_counts.keys().size() >= 2: traits.append("Mixed")
-	if total_count >= 12: traits.append("Swarm")
-	if traits.is_empty(): traits.append("Standard")
+	
+	# Majority/Significance checks
+	var has_fast = false
+	var has_heavy = false
+	var has_swarm = false
+	var has_shield = false
+	var has_anti_hero = false
+	
+	for type_name in enemy_counts.keys():
+		var count = enemy_counts[type_name]
+		var ratio = float(count) / total_count
+		
+		if type_name.contains("Fast") and ratio > 0.2: has_fast = true
+		if type_name.contains("Heavy") and ratio > 0.2: has_heavy = true
+		if type_name.contains("Swarm") and ratio > 0.4: has_swarm = true
+		if type_name.contains("Bulwark") or type_name.contains("Shield"): has_shield = true
+		if type_name.contains("Hunter") or type_name.contains("Anti-Hero"): has_anti_hero = true
+		
+	if has_fast: traits.append("Fast")
+	if has_heavy: traits.append("Heavy")
+	if has_swarm or total_count >= 15: traits.append("Swarm")
+	if has_shield: traits.append("Shield")
+	if has_anti_hero: traits.append("Anti-Hero")
+	
+	if enemy_counts.keys().size() >= 3:
+		traits.append("Mixed")
+	
+	if traits.is_empty():
+		traits.append("Standard")
+		
 	return traits
 
 func recommend_roles_for_wave(traits: Array[String]) -> Array[String]:
 	var roles: Array[String] = []
-	if traits.has("Fast"): roles.append("Rapid")
-	if traits.has("Swarm") or traits.has("Mixed"): roles.append("Cannon")
-	if traits.has("Heavy"): roles.append("Basic")
-	if traits.has("Swarm") or traits.has("Fast") or traits.has("Mixed"): roles.append("Slow")
-	if roles.is_empty(): roles.append("Basic")
-
-	# Unique roles
-	var unique_roles: Array[String] = []
+	
+	if traits.has("Air"):
+		roles.append("Universal")
+		roles.append("Rapid")
+		
+	if traits.has("Fast"):
+		roles.append("Rapid")
+		roles.append("Slow")
+		
+	if traits.has("Heavy"):
+		roles.append("Cannon")
+		roles.append("Basic")
+		
+	if traits.has("Shield"):
+		roles.append("Cannon")
+		roles.append("Slow")
+		roles.append("Guardian")
+		
+	if traits.has("Anti-Hero"):
+		roles.append("Rapid")
+		roles.append("Basic")
+		roles.append("Guardian (Careful)")
+		
+	if traits.has("Swarm"):
+		roles.append("Cannon")
+		roles.append("Slow")
+		
+	if traits.has("Mixed"):
+		roles.append("Basic")
+		roles.append("Slow")
+		
+	if roles.is_empty():
+		roles.append("Basic")
+		
+	# Deduplicate and sort
+	var unique: Array[String] = []
 	for r in roles:
-		if not unique_roles.has(r): unique_roles.append(r)
-	return unique_roles
+		if not unique.has(r): unique.append(r)
+	unique.sort()
+	return unique
 
 func _get_preview_wave_groups(wave_data: Dictionary) -> Array:
 	if wave_data.has("groups") and wave_data["groups"] is Array:
@@ -1287,6 +1598,7 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	var counts = {}
 	var categories = {}
 	var total = 0
+	var lane_info = {} # path_id -> { "counts": {}, "total": 0 }
 
 	var groups = _get_preview_wave_groups(wave_data)
 	for group in groups:
@@ -1295,6 +1607,8 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 
 		var raw_type = group.get("enemy_type", group.get("type", group.get("enemy", "")))
 		var count = int(group.get("count", 0))
+		var path_id = group.get("path", "default")
+		
 		if str(raw_type) == "" or count <= 0:
 			continue
 
@@ -1306,19 +1620,63 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 		counts[display_type] = counts.get(display_type, 0) + count
 		categories[enemy_category] = true
 		total += count
+		
+		# Lane specific tracking
+		if not lane_info.has(path_id):
+			lane_info[path_id] = {"counts": {}, "total": 0}
+		lane_info[path_id]["counts"][display_type] = lane_info[path_id]["counts"].get(display_type, 0) + count
+		lane_info[path_id]["total"] += count
 
 	if counts.is_empty():
 		return {}
 
 	var traits = derive_wave_traits(counts, total, categories)
 	var rec_roles = recommend_roles_for_wave(traits)
+	var warnings = derive_wave_warnings(traits)
+	
+	if lane_info.keys().size() > 1:
+		warnings.append("Dual-Lane Pressure: Enemies arriving from multiple routes.")
+		if current_level_id == "level_12":
+			warnings.append("Note: A = Upper Route | B = Lower Route")
+
+	# Design Validation (Internal Logs)
+	_validate_wave_design(wave_data, traits, total)
 
 	return {
 		"enemy_counts": counts,
 		"total_count": total,
 		"traits": traits,
-		"recommended_roles": rec_roles
+		"recommended_roles": rec_roles,
+		"warnings": warnings,
+		"lane_info": lane_info
 	}
+
+func derive_wave_warnings(traits: Array[String]) -> Array[String]:
+	var warnings: Array[String] = []
+	if traits.has("Shield"):
+		warnings.append("Bulwark protects nearby enemies. Use splash, slow, or Guardian shockwave.")
+	if traits.has("Anti-Hero"):
+		warnings.append("Hunter targets Guardian if he gets close. Protect him with towers.")
+	if traits.has("Shield") and traits.has("Anti-Hero"):
+		warnings.append("High Danger: Shielded enemies and anti-hero threats appear together.")
+	return warnings
+
+func _validate_wave_design(wave_data: Dictionary, traits: Array[String], total_count: int) -> void:
+	if not OS.is_debug_build(): return
+	
+	var wave_name = wave_data.get("name", "Unknown")
+	
+	if traits.has("Shield"):
+		if total_count < 6:
+			print("[WaveDesign] WARNING: Isolated Bulwark in wave '%s' (total_count=%d). Shield aura has low value." % [wave_name, total_count])
+		else:
+			print("[WaveDesign] PASS: Bulwark escorted in wave '%s' (total_count=%d)." % [wave_name, total_count])
+			
+	if traits.has("Anti-Hero"):
+		if total_count < 4:
+			print("[WaveDesign] WARNING: Isolated Hunter in wave '%s' (total_count=%d). No distraction/pressure units." % [wave_name, total_count])
+		else:
+			print("[WaveDesign] PASS: Hunter joined pack in wave '%s' (total_count=%d)." % [wave_name, total_count])
 
 func _get_wave_source_for_preview(level_id: int) -> Array:
 	if level_id <= 0:
@@ -1377,6 +1735,15 @@ func _refresh_hud_wave_intel() -> void:
 		return
 
 	var previews = get_wave_preview_data(selected_level_id)
+
+	if OS.is_debug_build():
+		var idx = wave_manager.current_wave_index
+		if wave_manager.is_wave_running: idx -= 1
+		if idx >= 0 and idx < previews.size():
+			var p = previews[idx]
+			print("[WaveIntel] level=%d wave=%d composition=%s" % [selected_level_id, idx + 1, format_wave_enemy_summary(p)])
+			print("[WaveIntel] threats=%s" % str(p.get("traits", [])))
+			print("[WaveIntel] suggested_towers=%s" % str(p.get("recommended_roles", [])))
 
 	game_hud.refresh_wave_intel(
 		selected_level_id,

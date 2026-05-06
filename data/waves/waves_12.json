@@ -1,0 +1,52 @@
+[
+	{
+		"name": "Split Recon",
+		"reward": 50,
+		"groups": [
+			{"type": "basic", "count": 6, "interval": 1.2, "path": "default"},
+			{"type": "fast", "count": 4, "interval": 0.8, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Heavy Split",
+		"reward": 60,
+		"groups": [
+			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
+			{"type": "fast", "count": 5, "interval": 0.6, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Crossfire Hunters",
+		"reward": 70,
+		"groups": [
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "basic", "count": 4, "interval": 1.2, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"},
+			{"type": "fast", "count": 4, "interval": 0.5, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Fortified Assault",
+		"reward": 85,
+		"groups": [
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
+			{"type": "fast", "count": 4, "interval": 0.5, "path": "default"},
+			{"type": "fast", "count": 6, "interval": 0.4, "path": "lane_b"},
+			{"type": "hunter", "count": 1, "interval": 2.0, "path": "lane_b"}
+		]
+	},
+	{
+		"name": "Final Squeeze",
+		"reward": 100,
+		"groups": [
+			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"},
+			{"type": "fast", "count": 6, "interval": 0.4, "path": "lane_b"},
+			{"type": "basic", "count": 4, "interval": 1.0, "path": "lane_b"}
+		]
+	}
+]

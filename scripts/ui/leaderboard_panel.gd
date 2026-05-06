@@ -14,7 +14,7 @@ func _ready() -> void:
 	
 	# Populate level options
 	level_option.clear()
-	for i in range(1, 11):
+	for i in range(1, 16):
 		level_option.add_item("Level %02d" % i)
 
 func show_leaderboard(service: Node, initial_level_id: String = "level_01") -> void:
@@ -25,7 +25,9 @@ func show_leaderboard(service: Node, initial_level_id: String = "level_01") -> v
 	
 	# Select the level in option button
 	var level_num = int(initial_level_id.replace("level_", ""))
-	level_option.select(level_num - 1)
+	var target_idx = level_num - 1
+	if target_idx >= 0 and target_idx < level_option.item_count:
+		level_option.select(target_idx)
 	
 	_refresh_list(initial_level_id)
 

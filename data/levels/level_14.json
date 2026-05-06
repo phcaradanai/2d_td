@@ -1,0 +1,31 @@
+{
+	"area_id": 3,
+	"area_name": "Forest River",
+	"id": "level_14",
+	"name": "Shield March",
+	"description": "Enemy shield tech is highly active here. Group your fire to break through the Bulwark formations.",
+	"hero_enabled": true,
+	"hero_deploy_cost": 100,
+	"hero_duration_seconds": 28,
+	"hero_cooldown_seconds": 35,
+	"grid_size": 64.0,
+	"grid_cols": 20.0,
+	"grid_rows": 12.0,
+	"grid_origin": {"x": 0.0, "y": 0.0},
+	"starting_gold": 330,
+	"starting_lives": 20.0,
+	"difficulty": "Medium",
+	"paths": {
+		"default": [
+			[0, 6], [1, 6], [2, 6], [3, 6], [4, 6], [5, 6], [6, 6],
+			[6, 5], [6, 4], [6, 3],
+			[7, 3], [8, 3], [9, 3], [10, 3], [11, 3], [12, 3], [13, 3],
+			[13, 4], [13, 5], [13, 6], [13, 7], [13, 8], [13, 9],
+			[14, 9], [15, 9], [16, 9], [17, 9], [18, 9], [19, 9]
+		]
+	},
+	"buildable_cells": [
+		[5, 5], [7, 4], [12, 2], [14, 4], [12, 8], [14, 10], [18, 8], [3, 7], [9, 6]
+	],
+	"waves_path": "res://data/waves/waves_14.json"
+}

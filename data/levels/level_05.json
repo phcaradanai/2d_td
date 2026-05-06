@@ -2,7 +2,7 @@
   "id": "level_05",
   "name": "Area Gate",
   "area_id": 1,
-  "area_name": "Training Sector",
+  "area_name": "Grasslands",
   "difficulty": "Hard",
   "enemy_intel": ["Mixed"],
   "recommended_roles": ["Basic", "Cannon", "Slow"],

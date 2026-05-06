@@ -777,12 +777,17 @@ func get_enemies_in_range() -> Array:
 
 func select_first_target(enemies: Array) -> Node2D:
 	var best_target = null
-	var max_progress = -1.0
+	var max_weighted_prog = -1.0
 	for enemy in enemies:
 		if enemy.has_method("get_path_progress"):
 			var prog = enemy.get_path_progress()
-			if prog > max_progress:
-				max_progress = prog
+			var priority = 1.0
+			if enemy.has_method("get_priority_score"):
+				priority = enemy.get_priority_score()
+				
+			var weighted_prog = prog * priority
+			if weighted_prog > max_weighted_prog:
+				max_weighted_prog = weighted_prog
 				best_target = enemy
 	return best_target
 

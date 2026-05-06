@@ -7,8 +7,11 @@ extends Node2D
 @export var invalid_range_fill: Color = Color(1.0, 0.2, 0.2, 0.15)
 @export var invalid_range_outline: Color = Color(1.0, 0.2, 0.2, 0.8)
 
+@export var footprint_fill: Color = Color(1.0, 1.0, 1.0, 0.2)
+@export var footprint_outline: Color = Color(1.0, 1.0, 1.0, 0.6)
+
 @export var grid_color: Color = Color(1.0, 1.0, 1.0, 0.08)
-@export var blocked_color: Color = Color(1.0, 0.1, 0.1, 0.25)
+@export var blocked_color: Color = Color(1.0, 0.1, 0.1, 0.15)
 
 var grid_size: int = 64
 var grid_cols: int = 20
@@ -17,9 +20,14 @@ var grid_rows: int = 12
 var hover_cell: Vector2i = Vector2i(-1, -1)
 var is_hover_valid: bool = false
 var hover_range: float = 0.0
+var hover_footprint: float = 20.0
+var buildable_cells: Array = []
 var blocked_cells: Array = []
 var is_active: bool = false
 var invalid_reason: String = ""
+
+@export var buildable_tile_color: Color = Color(0.2, 0.8, 1.0, 0.1)
+@export var buildable_outline_color: Color = Color(0.2, 0.8, 1.0, 0.3)
 
 @onready var reason_label: Label = get_node_or_null("ReasonLabel")
 
@@ -33,12 +41,17 @@ func set_blocked_cells(cells: Array) -> void:
 	blocked_cells = cells
 	queue_redraw()
 
-func update_preview(cell: Vector2i, valid: bool, active: bool, range_val: float = 0.0, reason: String = "") -> void:
+func set_buildable_cells(cells: Array) -> void:
+	buildable_cells = cells
+	queue_redraw()
+
+func update_preview(cell: Vector2i, valid: bool, active: bool, range_val: float = 0.0, reason: String = "", footprint: float = 20.0) -> void:
 	hover_cell = cell
 	is_hover_valid = valid
 	is_active = active
 	hover_range = range_val
 	invalid_reason = reason
+	hover_footprint = footprint
 	
 	if reason_label:
 		if is_active and not is_hover_valid and reason != "":
@@ -53,7 +66,29 @@ func update_preview(cell: Vector2i, valid: bool, active: bool, range_val: float 
 func _draw() -> void:
 	if not is_active: return
 	
-	# 1. Subtle tactical grid
+	# 1. Buildable Foundations (Blueprint style)
+	if not buildable_cells.is_empty():
+		for cell in buildable_cells:
+			var rect = Rect2(cell.x * grid_size + 2, cell.y * grid_size + 2, grid_size - 4, grid_size - 4)
+			draw_rect(rect, buildable_tile_color)
+			# Small corner accents for foundations
+			_draw_brackets(Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size), buildable_outline_color)
+	
+	# 2. Blocked Cells Tint (if buildable cells exist, otherwise path/blocked)
+	if not buildable_cells.is_empty():
+		# All non-buildable are effectively blocked
+		for x in range(grid_cols):
+			for y in range(grid_rows):
+				var cell = Vector2i(x, y)
+				if not cell in buildable_cells:
+					var rect = Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size)
+					draw_rect(rect, blocked_color)
+	else:
+		for cell in blocked_cells:
+			var rect = Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size)
+			draw_rect(rect, blocked_color)
+
+	# 3. Subtle tactical grid
 	var grid_alpha_color = Color(grid_color.r, grid_color.g, grid_color.b, 0.03)
 	for x in range(grid_cols + 1):
 		draw_line(Vector2(x * grid_size, 0), Vector2(x * grid_size, grid_rows * grid_size), grid_alpha_color)
@@ -70,10 +105,21 @@ func _draw() -> void:
 		if hover_range > 0:
 			var fill_color = valid_range_fill if is_hover_valid else invalid_range_fill
 			var outline_color = valid_range_outline if is_hover_valid else invalid_range_outline
-			# STANDARD: Draw world-unit range circle by compensating for GLOBAL scale
 			var visual_range = hover_range / global_scale.x
 			draw_circle(center, visual_range, fill_color)
 			draw_arc(center, visual_range, 0, TAU, 64, outline_color, 1.5)
+		
+		# Tower Footprint / Base (more solid)
+		if hover_footprint > 0:
+			var f_fill = Color(footprint_fill.r, footprint_fill.g, footprint_fill.b, 0.3)
+			var f_outline = footprint_outline
+			if not is_hover_valid:
+				f_fill = Color(1.0, 0.2, 0.2, 0.3)
+				f_outline = Color(1.0, 0.2, 0.2, 0.8)
+			
+			var visual_f = hover_footprint / global_scale.x
+			draw_circle(center, visual_f, f_fill)
+			draw_arc(center, visual_f, 0, TAU, 32, f_outline, 2.0)
 		
 		# Cell Highlight + Brackets
 		draw_rect(rect, Color(color.r, color.g, color.b, 0.15))

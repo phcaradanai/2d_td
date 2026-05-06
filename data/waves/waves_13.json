@@ -1,0 +1,47 @@
+[
+	{
+		"name": "Initial Breach",
+		"reward": 50,
+		"groups": [
+			{"type": "basic", "count": 8, "interval": 1.2, "path": "default"},
+			{"type": "fast", "count": 4, "interval": 0.8, "path": "default"}
+		]
+	},
+	{
+		"name": "Rapid Advance",
+		"reward": 60,
+		"groups": [
+			{"type": "basic", "count": 8, "interval": 1.0, "path": "default"},
+			{"type": "fast", "count": 6, "interval": 0.7, "path": "default"}
+		]
+	},
+	{
+		"name": "Shielded Escort",
+		"reward": 75,
+		"groups": [
+			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"}
+		]
+	},
+	{
+		"name": "Hunter's Stalk",
+		"reward": 80,
+		"groups": [
+			{"type": "fast", "count": 5, "interval": 0.6, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"}
+		]
+	},
+	{
+		"name": "Mixed Pressure",
+		"reward": 100,
+		"groups": [
+			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "fast", "count": 5, "interval": 0.5, "path": "default"},
+			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"}
+		]
+	}
+]

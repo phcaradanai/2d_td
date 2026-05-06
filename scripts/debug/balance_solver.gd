@@ -458,7 +458,8 @@ func _get_tower_priority_order() -> Array[String]:
 func _level_has_fast_pressure() -> bool:
 	for wave in current_waves_data:
 		for group in wave.get("groups", []):
-			if str(group.get("enemy_type", "")).to_lower().contains("fast"):
+			var e_type = group.get("enemy_type", group.get("type", ""))
+			if str(e_type).to_lower().contains("fast"):
 				return true
 	for role in current_level_data.get("recommended_roles", []):
 		if str(role).to_lower().contains("rapid") or str(role).to_lower().contains("slow"):
@@ -669,7 +670,8 @@ func _tower_role_bonus(tower_type: String, wave_data: Dictionary) -> float:
 
 func _wave_has_enemy(wave_data: Dictionary, enemy_key: String) -> bool:
 	for group in wave_data.get("groups", []):
-		if str(group.get("enemy_type", "")).to_lower().contains(enemy_key):
+		var e_type = group.get("enemy_type", group.get("type", ""))
+		if str(e_type).to_lower().contains(enemy_key):
 			return true
 	return false
 
@@ -677,7 +679,8 @@ func _wave_summary(wave_index: int) -> String:
 	var wave: Dictionary = get_wave_data_for_solver(wave_index)
 	var parts: Array[String] = []
 	for group in wave.get("groups", []):
-		parts.append("%s x%d" % [str(group.get("enemy_type", "unknown")).capitalize(), int(group.get("count", 0))])
+		var e_type = group.get("enemy_type", group.get("type", "unknown"))
+		parts.append("%s x%d" % [str(e_type).capitalize(), int(group.get("count", 0))])
 	return _join_strings(parts, ", ") if not parts.is_empty() else "unknown"
 
 func _make_tower_action_id(tower_type: String, cell: Vector2i) -> String:
@@ -870,7 +873,8 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 	var queue = []
 	for g in groups:
 		for i in range(g.get("count", 0)):
-			queue.append({"type": g["enemy_type"], "delay": g.get("spawn_delay", 1.0)})
+			var e_type = g.get("enemy_type", g.get("type", "basic"))
+			queue.append({"type": e_type, "delay": g.get("spawn_delay", 1.0)})
 
 	var next_spawn = 0.0
 	var path_len = current_level_data.get("path_cells", []).size() * 64.0
@@ -1027,7 +1031,8 @@ func generate_consolidated_report(results: Array) -> String:
 			r += "#### Wave %d: %s\n" % [i + 1, w_data.get("name", "")]
 			var enemies = ""
 			for g in w_data.get("groups", []):
-				enemies += "%s x%d, " % [g.get("enemy_type", ""), g.get("count", 0)]
+				var e_type = g.get("enemy_type", g.get("type", ""))
+				enemies += "%s x%d, " % [e_type, g.get("count", 0)]
 			r += "- **Composition**: %s\n" % enemies.trim_suffix(", ")
 
 			if i + 1 < res["wave"]:
@@ -1159,7 +1164,7 @@ func _format_wave_note(index: int, result: Dictionary, plan: Dictionary, perfect
 	var composition: Array[String] = []
 	var pressure: String = "mixed pressure"
 	for group in wave.get("groups", []):
-		var enemy_type: String = str(group.get("enemy_type", "unknown"))
+		var enemy_type: String = str(group.get("enemy_type", group.get("type", "unknown")))
 		composition.append("%s x%d" % [enemy_type.capitalize(), int(group.get("count", 0))])
 		if enemy_type.contains("fast"):
 			pressure = "fast rush"

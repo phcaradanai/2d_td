@@ -23,7 +23,7 @@ var is_wave_running: bool = false
 var active_enemy_count: int = 0
 
 var is_spawning: bool = false
-var target_path: Path2D
+var path_nodes: Dictionary = {} # id -> Path2D
 var spawn_generation: int = 0
 
 # Track active wave specifically to avoid index confusion during running wave
@@ -74,8 +74,8 @@ func load_waves_from_file(path: String) -> void:
 	waves_data_path = path
 	load_waves()
 
-func setup(path: Path2D) -> void:
-	target_path = path
+func setup(paths: Dictionary) -> void:
+	path_nodes = paths
 
 func reset_waves() -> void:
 	spawn_generation += 1
@@ -123,7 +123,7 @@ func spawn_wave_groups(groups: Array, gen: int) -> void:
 		if gen != spawn_generation: return
 		
 		var count = group.get("count", 0)
-		var delay = group.get("spawn_delay", 1.0)
+		var delay = group.get("spawn_delay", group.get("interval", 1.0))
 		
 		for i in range(count):
 			if gen != spawn_generation: return
@@ -143,9 +143,11 @@ func _wait_unpaused(seconds: float, gen: int) -> void:
 		elapsed += get_process_delta_time()
 
 func spawn_enemy(group_data: Dictionary) -> void:
-	if not target_path: return
+	var path_id = group_data.get("path", "default")
+	var path_node = path_nodes.get(path_id, path_nodes.get("default"))
+	if not path_node: return
 		
-	var enemy_type = group_data.get("enemy_type", "basic")
+	var enemy_type = group_data.get("enemy_type", group_data.get("type", "basic"))
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
 	base_config["category"] = resolve_enemy_category(group_data)
 	
@@ -161,7 +163,11 @@ func spawn_enemy(group_data: Dictionary) -> void:
 	enemy.died.connect(_on_enemy_died)
 	enemy.reached_base.connect(_on_enemy_reached_base)
 	
-	target_path.add_child(enemy)
+	if OS.is_debug_build():
+		var spawn_pos = path_node.curve.get_point_position(0)
+		print("[EnemySpawn] enemy=%s lane=%s spawn_pos=%s" % [enemy_type, path_id, spawn_pos])
+		
+	path_node.add_child(enemy)
 	active_enemy_count += 1
 
 func resolve_enemy_category(spawn_data: Dictionary) -> String:

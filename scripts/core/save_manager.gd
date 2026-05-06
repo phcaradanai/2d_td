@@ -73,8 +73,8 @@ func get_level_record(level_id: String) -> Dictionary:
 	}
 
 const LEVELS_PER_AREA: int = 5
-const TOTAL_AREAS: int = 2
-const TOTAL_LEVELS: int = 10
+const TOTAL_AREAS: int = 4
+const TOTAL_LEVELS: int = 20
 
 func get_area_id_for_level(level_id_str: String) -> int:
 	var parts = level_id_str.split("_")

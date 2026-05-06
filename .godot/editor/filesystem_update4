@@ -10,3 +10,14 @@ res://scenes/ui/ResultPanel.tscn
 res://scripts/ui/result_panel.gd
 res://scripts/ui/level_select.gd
 res://scripts/ui/leaderboard_panel.gd
+res://scripts/managers/level_manager.gd
+res://scripts/ui/hero_panel.gd
+res://scripts/units/hero.gd
+res://scripts/managers/wave_manager.gd
+res://scripts/enemies/enemy.gd
+res://scripts/towers/tower.gd
+res://scripts/map/map_visual_layer.gd
+res://scripts/managers/build_manager.gd
+res://scripts/ui/build_preview.gd
+res://scripts/debug/level_validator.gd
+res://scripts/map/theme_manager.gd
