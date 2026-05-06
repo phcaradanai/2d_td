@@ -2,6 +2,7 @@ extends CanvasLayer
 
 signal level_selected(level_path: String)
 signal back_pressed()
+signal leaderboard_requested(level_id: String)
 
 @onready var back_button: Button = $Root/BackButton
 
@@ -15,6 +16,7 @@ var intel_panel: Control = null
 var loadout_container: Control = null
 var mission_info_labels: Dictionary = {}
 var notification_label: Label = null
+var leaderboard_button: Button = null
 
 func _ready() -> void:
 	# Create a clean panel layout for Level Select
@@ -219,10 +221,10 @@ func _setup_clean_layout() -> void:
 
 	var outer_margin = MarginContainer.new()
 	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer_margin.add_theme_constant_override("margin_left", 64)
-	outer_margin.add_theme_constant_override("margin_right", 64)
-	outer_margin.add_theme_constant_override("margin_top", 64)
-	outer_margin.add_theme_constant_override("margin_bottom", 64)
+	outer_margin.add_theme_constant_override("margin_left", 32)
+	outer_margin.add_theme_constant_override("margin_right", 32)
+	outer_margin.add_theme_constant_override("margin_top", 32)
+	outer_margin.add_theme_constant_override("margin_bottom", 32)
 	$Root.add_child(outer_margin)
 	
 	var panel = PanelContainer.new()
@@ -238,14 +240,14 @@ func _setup_clean_layout() -> void:
 	panel.add_theme_stylebox_override("panel", panel_style)
 	
 	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 48)
-	margin.add_theme_constant_override("margin_right", 48)
-	margin.add_theme_constant_override("margin_top", 40)
-	margin.add_theme_constant_override("margin_bottom", 40)
+	margin.add_theme_constant_override("margin_left", 24)
+	margin.add_theme_constant_override("margin_right", 24)
+	margin.add_theme_constant_override("margin_top", 20)
+	margin.add_theme_constant_override("margin_bottom", 20)
 	panel.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 40) # Increased separation
+	vbox.add_theme_constant_override("separation", 24)
 	margin.add_child(vbox)
 	
 	# Header Row: Back Button and Title
@@ -256,8 +258,8 @@ func _setup_clean_layout() -> void:
 		back_button.get_parent().remove_child(back_button)
 		header.add_child(back_button)
 		back_button.text = " < BACK"
-		back_button.custom_minimum_size = Vector2(160, 56) # Larger for Full HD
-		back_button.add_theme_font_size_override("font_size", 20)
+		back_button.custom_minimum_size = Vector2(120, 44)
+		back_button.add_theme_font_size_override("font_size", 18)
 	
 	var header_spacer = Control.new()
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -266,7 +268,7 @@ func _setup_clean_layout() -> void:
 	var title = Label.new()
 	title.text = "WORLD EXPEDITION"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 48) # Larger for Full HD
+	title.add_theme_font_size_override("font_size", 32)
 	title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 	header.add_child(title)
 	
@@ -314,11 +316,11 @@ func _setup_clean_layout() -> void:
 	
 	# Right Side: Mission Intel & Loadout
 	var right_vbox = VBoxContainer.new()
-	right_vbox.custom_minimum_size.x = 420 # Wider for Full HD
-	right_vbox.add_theme_constant_override("separation", 24)
+	right_vbox.custom_minimum_size.x = 380
+	right_vbox.add_theme_constant_override("separation", 16)
 	main_hbox.add_child(right_vbox)
 	
-	# Intel Panel (Styled)
+	# Intel Panel (Styled & Scrollable)
 	var intel_bg = PanelContainer.new()
 	intel_bg.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	var intel_style = StyleBoxFlat.new()
@@ -329,19 +331,25 @@ func _setup_clean_layout() -> void:
 	intel_bg.add_theme_stylebox_override("panel", intel_style)
 	right_vbox.add_child(intel_bg)
 	
+	var intel_scroll = ScrollContainer.new()
+	intel_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	intel_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	intel_bg.add_child(intel_scroll)
+	
 	var intel_margin = MarginContainer.new()
-	intel_margin.add_theme_constant_override("margin_left", 20)
-	intel_margin.add_theme_constant_override("margin_right", 20)
-	intel_margin.add_theme_constant_override("margin_top", 20)
-	intel_margin.add_theme_constant_override("margin_bottom", 20)
-	intel_bg.add_child(intel_margin)
+	intel_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	intel_margin.add_theme_constant_override("margin_left", 16)
+	intel_margin.add_theme_constant_override("margin_right", 16)
+	intel_margin.add_theme_constant_override("margin_top", 16)
+	intel_margin.add_theme_constant_override("margin_bottom", 16)
+	intel_scroll.add_child(intel_margin)
 	
 	_setup_intel_panel(intel_margin)
 	
 	# Play Button at the bottom of the right column
 	play_button = Button.new()
 	play_button.text = "SELECT MISSION"
-	play_button.custom_minimum_size = Vector2(0, 96) # Standard height
+	play_button.custom_minimum_size = Vector2(0, 72)
 	play_button.disabled = true
 	
 	var btn_style = StyleBoxFlat.new()
@@ -355,7 +363,7 @@ func _setup_clean_layout() -> void:
 	play_button.add_theme_stylebox_override("normal", btn_style)
 	play_button.add_theme_stylebox_override("hover", btn_hover)
 	play_button.add_theme_stylebox_override("disabled", btn_disabled)
-	play_button.add_theme_font_size_override("font_size", 32) # Larger text
+	play_button.add_theme_font_size_override("font_size", 24)
 	
 	right_vbox.add_child(play_button)
 	play_button.pressed.connect(_on_play_pressed)
@@ -437,6 +445,20 @@ func _setup_intel_panel(container: Control) -> void:
 	var spacer2 = Control.new()
 	spacer2.custom_minimum_size.y = 12
 	intel_panel.add_child(spacer2)
+	
+	leaderboard_button = Button.new()
+	leaderboard_button.text = "VIEW LEADERBOARD"
+	leaderboard_button.custom_minimum_size = Vector2(0, 40)
+	leaderboard_button.pressed.connect(func(): 
+		var level_id = selected_level_path.get_file().get_basename()
+		if OS.is_debug_build(): print("[WorldMap] View leaderboard clicked level_id=%s" % level_id)
+		leaderboard_requested.emit(level_id)
+	)
+	intel_panel.add_child(leaderboard_button)
+	
+	var spacer3 = Control.new()
+	spacer3.custom_minimum_size.y = 12
+	intel_panel.add_child(spacer3)
 	
 	var loadout_title = Label.new()
 	loadout_title.text = "TOWER LOADOUT (MAX 4)"
@@ -572,6 +594,7 @@ func _update_play_button_state() -> void:
 		var completed = record.get("completed", false)
 		
 		play_button.disabled = not unlocked
+		if leaderboard_button: leaderboard_button.disabled = false
 		
 		# Loadout validation
 		var main = get_tree().current_scene

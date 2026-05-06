@@ -13,6 +13,8 @@ signal level_select_pressed()
 @onready var gold_label: Label = %GoldValue
 @onready var waves_label: Label = %WavesValue
 @onready var enemies_label: Label = %EnemiesValue
+@onready var time_label: Label = %TimeValue
+@onready var rank_label: Label = %RankLabel
 
 @onready var retry_button: Button = %RetryButton
 @onready var next_button: Button = %NextButton
@@ -33,7 +35,7 @@ func _ready() -> void:
 	pivot_offset = size / 2.0
 	if record_feedback: record_feedback.visible = false
 
-func show_result(summary: Dictionary, improvements: Dictionary = {}) -> void:
+func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int = -1) -> void:
 	if animation_tween:
 		animation_tween.kill()
 	
@@ -42,6 +44,13 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}) -> void:
 	result_title.text = "LEVEL CLEAR" if is_victory else "DEFEAT"
 	result_title.add_theme_color_override("font_color", Color(0.3, 0.8, 1.0) if is_victory else Color(1.0, 0.3, 0.3))
 	
+	# Rank feedback
+	if rank > 0:
+		rank_label.text = "RANK: #%d" % rank
+		rank_label.show()
+	else:
+		rank_label.hide()
+		
 	# Record feedback
 	_setup_record_feedback(improvements)
 	
@@ -53,6 +62,7 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}) -> void:
 	gold_label.text = str(summary.get("gold_remaining", 0))
 	waves_label.text = str(summary.get("waves_completed", 0)) + " / " + str(summary.get("total_waves", 0))
 	enemies_label.text = str(summary.get("enemies_killed", 0))
+	time_label.text = _format_time(summary.get("clear_time", 0))
 	
 	perfect_clear_badge.visible = summary.get("is_perfect", false)
 	next_button.visible = is_victory
@@ -122,6 +132,11 @@ func _setup_record_feedback(improvements: Dictionary) -> void:
 		)
 	else:
 		record_feedback.visible = false
+
+func _format_time(seconds: int) -> String:
+	var mins = int(seconds / 60)
+	var secs = int(seconds % 60)
+	return "%02d:%02d" % [mins, secs]
 
 func hide_result() -> void:
 	if animation_tween:

@@ -9,3 +9,4 @@ res://scripts/ui/game_hud.gd
 res://scenes/ui/ResultPanel.tscn
 res://scripts/ui/result_panel.gd
 res://scripts/ui/level_select.gd
+res://scripts/ui/leaderboard_panel.gd

@@ -415,13 +415,13 @@ func set_paused(paused: bool) -> void:
 		pause_button.text = "Pause"
 		hide_center_message()
 
-func show_run_summary(summary: Dictionary, improvements: Dictionary = {}) -> void:
+func show_run_summary(summary: Dictionary, improvements: Dictionary = {}, rank: int = -1) -> void:
 	enter_end_game_ui_state()
 	if dim_overlay: dim_overlay.show()
 	
 	# Use new premium result panel
 	if result_panel:
-		result_panel.show_result(summary, improvements)
+		result_panel.show_result(summary, improvements, rank)
 		if OS.is_debug_build(): print("[ResultPanel] shown for ", summary.get("result", "Unknown"))
 	else:
 		# Fallback to old panel if dynamic creation failed (shouldn't happen)

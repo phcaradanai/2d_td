@@ -39,6 +39,8 @@ var is_game_over: bool = false
 var is_victory: bool = false
 var is_paused: bool = false
 var debug_god_mode: bool = false
+var session_start_time: int = 0
+var clear_time_seconds: int = 0
 
 func _ready() -> void:
 	reset_game()
@@ -58,6 +60,9 @@ func reset_runtime_state() -> void:
 	gold_spent = 0
 	waves_completed = 0
 	
+	session_start_time = 0
+	clear_time_seconds = 0
+	
 	is_game_over = false
 	is_victory = false
 	is_paused = false
@@ -69,6 +74,16 @@ func reset_runtime_state() -> void:
 	
 	if OS.is_debug_build(): 
 		print("[GameManager] reset_runtime_state: gold=", gold, " lives=", lives)
+
+func start_timer() -> void:
+	if session_start_time == 0:
+		session_start_time = Time.get_ticks_msec()
+		if OS.is_debug_build(): print("[GameManager] Timer started")
+
+func stop_timer() -> void:
+	if session_start_time > 0 and clear_time_seconds == 0:
+		clear_time_seconds = (Time.get_ticks_msec() - session_start_time) / 1000
+		if OS.is_debug_build(): print("[GameManager] Timer stopped: %d seconds" % clear_time_seconds)
 
 func add_gold(amount: int) -> void:
 	if is_game_over: return
@@ -118,6 +133,8 @@ func damage_base(amount: int) -> void:
 func set_current_wave(wave_number: int) -> void:
 	current_wave = wave_number
 	wave_changed.emit(current_wave)
+	if wave_number == 1:
+		start_timer()
 
 func add_kill_score(enemy_reward: int) -> void:
 	enemies_killed += 1
@@ -182,6 +199,7 @@ func get_run_summary(total_waves: int = 0) -> Dictionary:
 		"score": final_score,
 		"stars": stars,
 		"is_perfect": is_perfect,
+		"clear_time": clear_time_seconds,
 		"lives": lives,
 		"starting_lives": starting_lives,
 		"enemies_killed": enemies_killed,
@@ -196,12 +214,14 @@ func get_run_summary(total_waves: int = 0) -> Dictionary:
 func trigger_game_over() -> void:
 	if is_game_over: return
 	is_game_over = true
+	stop_timer()
 	game_over.emit()
 	if OS.is_debug_build(): print("Game Over triggered!")
 
 func trigger_victory() -> void:
 	if is_victory or is_game_over: return
 	is_victory = true
+	stop_timer()
 	victory.emit()
 	if OS.is_debug_build(): print("Victory triggered!")
 

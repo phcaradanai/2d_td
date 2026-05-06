@@ -78,6 +78,8 @@ var active_level_loadout: Array[String] = []
 const MAX_TOWER_LOADOUT_SIZE: int = 4
 const MIN_TOWER_LOADOUT_SIZE: int = 1
 var pending_unlock_level_id: String = ""
+var leaderboard_service: Node = null
+var leaderboard_panel: Node = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -328,6 +330,12 @@ func _hide_old_path_visuals() -> void:
 				child.visible = false
 
 func _ensure_level_nodes_exist() -> void:
+	if not save_manager:
+		save_manager = get_node_or_null("SaveManager")
+		
+	# Initialize Leaderboard Service
+	leaderboard_service = load("res://scripts/core/leaderboard_service.gd").new()
+	add_child(leaderboard_service)
 	level_manager = get_node_or_null("LevelManager")
 	map_visual_layer = get_node_or_null("MapVisualLayer")
 
@@ -359,6 +367,7 @@ func _connect_signals() -> void:
 	if level_select:
 		level_select.level_selected.connect(start_game)
 		level_select.back_pressed.connect(_on_level_select_back)
+		level_select.leaderboard_requested.connect(_on_leaderboard_requested)
 
 	if game_hud:
 		game_hud.start_wave_requested.connect(_on_start_wave_requested)
@@ -574,6 +583,21 @@ func _on_level_select_requested() -> void:
 func _on_level_select_back() -> void:
 	set_game_phase(GameState.MENU)
 	_play_ui_click()
+
+func _on_leaderboard_requested(level_id: String) -> void:
+	if leaderboard_panel == null:
+		var canvas_layer = CanvasLayer.new()
+		canvas_layer.layer = 5
+		canvas_layer.name = "LeaderboardLayer"
+		add_child(canvas_layer)
+		
+		leaderboard_panel = load("res://scenes/ui/LeaderboardPanel.tscn").instantiate()
+		canvas_layer.add_child(leaderboard_panel)
+		leaderboard_panel.close_pressed.connect(func(): leaderboard_panel.get_parent().visible = false)
+		
+	if OS.is_debug_build(): print("[Main] Opening leaderboard for level: %s" % level_id)
+	leaderboard_panel.get_parent().visible = true
+	leaderboard_panel.show_leaderboard(leaderboard_service, level_id)
 
 func start_game(level_path: String) -> void:
 	# Standard start uses current selected_loadout
@@ -993,11 +1017,15 @@ func _on_game_over() -> void:
 	var total_waves = wave_manager.get_total_waves() if wave_manager else 0
 	var summary = game_manager.get_run_summary(total_waves)
 	var improvements = {}
+	var rank = -1
+	
 	if save_manager and level_manager:
 		improvements = save_manager.update_level_record(level_manager.level_id, summary)
+		if leaderboard_service:
+			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
 	
 	if game_hud:
-		game_hud.show_run_summary(summary, improvements)
+		game_hud.show_run_summary(summary, improvements, rank)
 		if OS.is_debug_build(): print("[ResultPanel] shown for ", current_level_id)
 
 	_refresh_gameplay_hud_state()
@@ -1025,11 +1053,15 @@ func _on_victory() -> void:
 	var total_waves = wave_manager.get_total_waves() if wave_manager else 0
 	var summary = game_manager.get_run_summary(total_waves)
 	var improvements = {}
+	var rank = -1
 
 	# Save progress
 	if save_manager and level_manager:
 		improvements = save_manager.update_level_record(level_manager.level_id, summary)
 		if level_select: level_select.update_ui(save_manager)
+		
+		if leaderboard_service:
+			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
 		
 		# If first time clear, check for next level unlock
 		if improvements.get("first_time_clear", false):
@@ -1039,7 +1071,7 @@ func _on_victory() -> void:
 				if OS.is_debug_build(): print("[Main] Pending unlock for: ", next_id)
 
 	if game_hud:
-		game_hud.show_run_summary(summary, improvements)
+		game_hud.show_run_summary(summary, improvements, rank)
 		if OS.is_debug_build(): print("[ResultPanel] shown for ", current_level_id)
 
 	_refresh_gameplay_hud_state()

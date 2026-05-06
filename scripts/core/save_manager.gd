@@ -3,6 +3,7 @@ extends Node
 const SAVE_PATH = "user://tower_defense_save.json"
 
 var save_data: Dictionary = {
+	"player_name": "Player",
 	"levels": {},
 	"settings": {
 		"audio": {
@@ -186,6 +187,13 @@ func print_progress() -> void:
 		])
 	print("======================")
 
+func get_player_name() -> String:
+	return save_data.get("player_name", "Player")
+
+func set_player_name(new_name: String) -> void:
+	save_data["player_name"] = new_name
+	save_to_disk()
+
 func get_audio_settings() -> Dictionary:
 	return save_data["settings"]["audio"]
 
@@ -195,6 +203,7 @@ func update_audio_settings(settings: Dictionary) -> void:
 
 func clear_save() -> void:
 	save_data = {
+		"player_name": "Player",
 		"levels": {},
 		"settings": {
 			"audio": {
