@@ -3,6 +3,10 @@ extends PathFollow2D
 signal died(enemy, reward_gold)
 signal reached_base(enemy, damage, global_pos)
 
+const ENEMY_CATEGORY_LAND := "land"
+const ENEMY_CATEGORY_AIR := "air"
+const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
+
 var hp: float = 30.0
 var max_hp: float = 30.0
 var base_speed: float = 100.0
@@ -10,6 +14,7 @@ var speed: float = 100.0
 var reward_gold: int = 5
 var base_damage: int = 1
 var enemy_type: String = "basic"
+var enemy_category: String = ENEMY_CATEGORY_LAND
 var visual_type: String = "basic"
 var display_name: String = "Enemy"
 
@@ -29,6 +34,7 @@ var slow_remaining: float = 0.0
 
 func setup(config: Dictionary) -> void:
 	enemy_type = config.get("id", config.get("enemy_type", "basic"))
+	enemy_category = normalize_enemy_category(config.get("category", ENEMY_CATEGORY_LAND))
 	display_name = config.get("name", "Enemy")
 	visual_type = config.get("visual_type", "basic")
 	
@@ -45,6 +51,21 @@ func setup(config: Dictionary) -> void:
 	
 	apply_visuals()
 	is_active = true
+
+func normalize_enemy_category(raw_category) -> String:
+	var normalized = str(raw_category).strip_edges().to_lower()
+	if VALID_ENEMY_CATEGORIES.has(normalized):
+		return normalized
+	return ENEMY_CATEGORY_LAND
+
+func get_enemy_category() -> String:
+	return enemy_category
+
+func is_air_enemy() -> bool:
+	return enemy_category == ENEMY_CATEGORY_AIR
+
+func is_land_enemy() -> bool:
+	return enemy_category == ENEMY_CATEGORY_LAND
 
 var is_flashing: bool = false
 
@@ -146,6 +167,10 @@ func clear_slow() -> void:
 	update_visual_feedback()
 
 func update_effective_speed() -> void:
+	if active_slow_percent <= 0:
+		speed = base_speed
+		return
+		
 	var slow_factor = 1.0 - active_slow_percent
 	# Clamp minimum speed to 25% of base_speed
 	slow_factor = max(slow_factor, 0.25)

@@ -1,6 +1,11 @@
 {
   "id": "level_10",
   "name": "Final Hold",
+  "area_id": 2,
+  "area_name": "Iron Sector",
+  "difficulty": "Elite",
+  "enemy_intel": ["All Types"],
+  "recommended_roles": ["Full Loadout"],
   "grid_size": 64,
   "grid_cols": 20,
   "grid_rows": 12,

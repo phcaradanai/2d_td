@@ -11,6 +11,9 @@ var selected_level_path: String = ""
 var play_button: Button = null
 
 var dynamic_list_container: Control = null
+var intel_panel: Control = null
+var loadout_container: Control = null
+var mission_info_labels: Dictionary = {}
 
 func _ready() -> void:
 	# Create a clean panel layout for Level Select
@@ -62,14 +65,15 @@ func _generate_dynamic_ui(save_manager: Node) -> void:
 		
 		var header = Label.new()
 		header.name = "Header"
-		header.add_theme_font_size_override("font_size", 20)
-		header.add_theme_color_override("font_color", Color(0.7, 0.7, 0.8))
+		header.add_theme_font_size_override("font_size", 32) # Increased for Full HD
+		header.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
+		header.add_theme_constant_override("margin_bottom", 16)
 		area_box.add_child(header)
 		
 		var grid = GridContainer.new()
 		grid.columns = 5
-		grid.add_theme_constant_override("h_separation", 15)
-		grid.add_theme_constant_override("v_separation", 15)
+		grid.add_theme_constant_override("h_separation", 24)
+		grid.add_theme_constant_override("v_separation", 20)
 		area_box.add_child(grid)
 		
 		var start_l = (area_id - 1) * 5 + 1
@@ -82,14 +86,16 @@ func _generate_dynamic_ui(save_manager: Node) -> void:
 func _create_level_card(level_id: String) -> Control:
 	var btn = Button.new()
 	btn.name = "Button"
-	btn.custom_minimum_size = Vector2(100, 80)
+	btn.custom_minimum_size = Vector2(140, 96) # Increased for Full HD
+	btn.pivot_offset = btn.custom_minimum_size / 2.0
 	btn.text = level_id.replace("level_", "L")
 	btn.pressed.connect(func(): _select_level("res://data/levels/%s.json" % level_id))
 	
 	var label = Label.new()
 	label.name = "Label"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	
 	var container = VBoxContainer.new()
@@ -116,13 +122,13 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 		label.modulate = Color(1, 1, 1)
 		if record.get("completed", false):
 			btn.text = "✓ L%s" % level_id.replace("level_", "")
-			btn.modulate = Color(0.6, 1.0, 0.6)
+			btn.modulate = Color(0.7, 1.0, 0.7) # Muted green
 			label.text = "CLEARED"
 			label.modulate = Color(0.7, 1.0, 0.7)
 		else:
 			btn.text = "L%s" % level_id.replace("level_", "")
 			label.text = "MISSION"
-			btn.modulate = Color(1.0, 1.0, 1.5) # Distinct blue highlight for current
+			btn.modulate = Color(0.8, 0.9, 1.2) # Soft blue
 			label.modulate = Color(0.8, 0.9, 1.0)
 
 func _update_selection_visuals() -> void:
@@ -132,8 +138,10 @@ func _update_selection_visuals() -> void:
 		var path = "res://data/levels/%s.json" % level_id
 		
 		if path == selected_level_path:
-			btn.modulate = Color(2.0, 2.0, 1.5) # Very bright when selected
+			btn.modulate = Color(1.5, 1.5, 2.0) # Bright neon blue highlight
+			btn.scale = Vector2(1.05, 1.05)
 		else:
+			btn.scale = Vector2(1.0, 1.0)
 			# Reset to normal based on status
 			var save_manager = get_tree().current_scene.get_node_or_null("SaveManager")
 			if save_manager:
@@ -157,14 +165,18 @@ func _setup_clean_layout() -> void:
 	if has_node("Root/Background"):
 		$Root/Background.modulate = Color(0.4, 0.4, 0.4, 1.0) # Dim original bg a bit more for focus
 
-	var center = CenterContainer.new()
-	center.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	center.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	$Root.add_child(center)
+	var outer_margin = MarginContainer.new()
+	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	outer_margin.add_theme_constant_override("margin_left", 64)
+	outer_margin.add_theme_constant_override("margin_right", 64)
+	outer_margin.add_theme_constant_override("margin_top", 64)
+	outer_margin.add_theme_constant_override("margin_bottom", 64)
+	$Root.add_child(outer_margin)
 	
 	var panel = PanelContainer.new()
-	panel.custom_minimum_size = Vector2(800, 650) # Increased size
-	center.add_child(panel)
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	outer_margin.add_child(panel)
 	
 	var panel_style = StyleBoxFlat.new()
 	panel_style.bg_color = Color(0.06, 0.06, 0.08, 0.94)
@@ -174,52 +186,314 @@ func _setup_clean_layout() -> void:
 	panel.add_theme_stylebox_override("panel", panel_style)
 	
 	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 40)
-	margin.add_theme_constant_override("margin_right", 40)
+	margin.add_theme_constant_override("margin_left", 48)
+	margin.add_theme_constant_override("margin_right", 48)
 	margin.add_theme_constant_override("margin_top", 40)
 	margin.add_theme_constant_override("margin_bottom", 40)
 	panel.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 24) # Increased separation
+	vbox.add_theme_constant_override("separation", 40) # Increased separation
 	margin.add_child(vbox)
+	
+	# Header Row: Back Button and Title
+	var header = HBoxContainer.new()
+	vbox.add_child(header)
+	
+	if back_button:
+		back_button.get_parent().remove_child(back_button)
+		header.add_child(back_button)
+		back_button.text = " < BACK"
+		back_button.custom_minimum_size = Vector2(160, 56) # Larger for Full HD
+		back_button.add_theme_font_size_override("font_size", 20)
+	
+	var header_spacer = Control.new()
+	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(header_spacer)
 	
 	var title = Label.new()
 	title.text = "WORLD EXPEDITION"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
+	title.add_theme_font_size_override("font_size", 48) # Larger for Full HD
 	title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
-	vbox.add_child(title)
+	header.add_child(title)
 	
-	# Container for dynamic content
+	var header_spacer_r = Control.new()
+	header_spacer_r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_child(header_spacer_r)
+	
+	# Dummy node to balance header if needed, or just let title be center-ish
+	var dummy = Control.new()
+	dummy.custom_minimum_size.x = 120
+	header.add_child(dummy)
+	
+	# Main horizontal split
+	var main_hbox = HBoxContainer.new()
+	main_hbox.add_theme_constant_override("separation", 40)
+	main_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(main_hbox)
+	
+	# Left Side: World Map
+	var left_vbox = VBoxContainer.new()
+	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	main_hbox.add_child(left_vbox)
+	
+	# Wrap dynamic list in a scroll container for safety
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	left_vbox.add_child(scroll)
+	
 	dynamic_list_container = VBoxContainer.new()
 	dynamic_list_container.name = "DynamicList"
-	dynamic_list_container.add_theme_constant_override("separation", 32) # Space between Area 1 and Area 2
-	dynamic_list_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	vbox.add_child(dynamic_list_container)
+	dynamic_list_container.add_theme_constant_override("separation", 32)
+	dynamic_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	scroll.add_child(dynamic_list_container)
 	
+	# Right Side: Mission Intel & Loadout
+	var right_vbox = VBoxContainer.new()
+	right_vbox.custom_minimum_size.x = 420 # Wider for Full HD
+	right_vbox.add_theme_constant_override("separation", 24)
+	main_hbox.add_child(right_vbox)
+	
+	# Intel Panel (Styled)
+	var intel_bg = PanelContainer.new()
+	intel_bg.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	var intel_style = StyleBoxFlat.new()
+	intel_style.bg_color = Color(0.1, 0.1, 0.15, 0.6)
+	intel_style.set_border_width_all(1)
+	intel_style.border_color = Color(0.3, 0.4, 0.6, 0.8)
+	intel_style.set_corner_radius_all(10)
+	intel_bg.add_theme_stylebox_override("panel", intel_style)
+	right_vbox.add_child(intel_bg)
+	
+	var intel_margin = MarginContainer.new()
+	intel_margin.add_theme_constant_override("margin_left", 20)
+	intel_margin.add_theme_constant_override("margin_right", 20)
+	intel_margin.add_theme_constant_override("margin_top", 20)
+	intel_margin.add_theme_constant_override("margin_bottom", 20)
+	intel_bg.add_child(intel_margin)
+	
+	_setup_intel_panel(intel_margin)
+	
+	# Play Button at the bottom of the right column
 	play_button = Button.new()
 	play_button.text = "SELECT MISSION"
-	play_button.custom_minimum_size.y = 72 # Larger button
+	play_button.custom_minimum_size = Vector2(0, 96) # Standard height
 	play_button.disabled = true
 	
 	var btn_style = StyleBoxFlat.new()
 	btn_style.bg_color = Color(0.1, 0.5, 0.25)
 	btn_style.set_corner_radius_all(15)
-	play_button.add_theme_stylebox_override("normal", btn_style)
-	play_button.add_theme_font_size_override("font_size", 28)
+	var btn_hover = btn_style.duplicate()
+	btn_hover.bg_color = Color(0.15, 0.65, 0.35)
+	var btn_disabled = btn_style.duplicate()
+	btn_disabled.bg_color = Color(0.2, 0.2, 0.2)
 	
-	vbox.add_child(play_button)
+	play_button.add_theme_stylebox_override("normal", btn_style)
+	play_button.add_theme_stylebox_override("hover", btn_hover)
+	play_button.add_theme_stylebox_override("disabled", btn_disabled)
+	play_button.add_theme_font_size_override("font_size", 32) # Larger text
+	
+	right_vbox.add_child(play_button)
 	play_button.pressed.connect(_on_play_pressed)
 	
+	# Back button was moved to header, so we don't need this legacy logic
+	# but we should ensure it's themed if we care.
 	if back_button:
-		back_button.get_parent().remove_child(back_button)
-		$Root.add_child(back_button)
-		back_button.set_anchors_and_offsets_preset(Control.PRESET_TOP_LEFT)
-		back_button.position = Vector2(30, 30)
+		var back_style = StyleBoxFlat.new()
+		back_style.bg_color = Color(0.2, 0.2, 0.25, 0.8)
+		back_style.set_corner_radius_all(8)
+		back_button.add_theme_stylebox_override("normal", back_style)
+
+func _setup_intel_panel(container: Control) -> void:
+	intel_panel = VBoxContainer.new()
+	intel_panel.name = "IntelVBox"
+	intel_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	intel_panel.add_theme_constant_override("separation", 15)
+	container.add_child(intel_panel)
+	
+	var intel_title = Label.new()
+	intel_title.text = "MISSION INTEL"
+	intel_title.add_theme_font_size_override("font_size", 28) # Slightly larger
+	intel_title.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2))
+	intel_panel.add_child(intel_title)
+	
+	var grid = GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 10)
+	intel_panel.add_child(grid)
+	
+	var fields = [
+		["Name:", "mission_name"],
+		["Area:", "area_name"],
+		["Difficulty:", "difficulty"],
+		["Gold:", "starting_gold"],
+		["Lives:", "starting_lives"],
+		["Intel:", "enemy_intel"]
+	]
+	
+	for field in fields:
+		var label_key = Label.new()
+		label_key.text = field[0]
+		label_key.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+		label_key.add_theme_font_size_override("font_size", 16) # Increased
+		grid.add_child(label_key)
+		
+		var label_val = Label.new()
+		label_val.text = "---"
+		label_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		label_val.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		label_val.add_theme_font_size_override("font_size", 16) # Increased
+		grid.add_child(label_val)
+		mission_info_labels[field[1]] = label_val
+	
+	var rec_val = Label.new()
+	rec_val.text = "---"
+	rec_val.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	rec_val.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	rec_val.add_theme_font_size_override("font_size", 16) # Increased
+	intel_panel.add_child(rec_val)
+	mission_info_labels["recommended"] = rec_val
+	
+	# Add Waves count display
+	var waves_label_hbox = HBoxContainer.new()
+	intel_panel.add_child(waves_label_hbox)
+	
+	var waves_key = Label.new()
+	waves_key.text = "Total Waves:"
+	waves_key.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	waves_key.add_theme_font_size_override("font_size", 14)
+	waves_label_hbox.add_child(waves_key)
+	
+	var waves_val = Label.new()
+	waves_val.text = "---"
+	waves_val.add_theme_font_size_override("font_size", 14)
+	waves_label_hbox.add_child(waves_val)
+	mission_info_labels["total_waves"] = waves_val
+	
+	var spacer2 = Control.new()
+	spacer2.custom_minimum_size.y = 12
+	intel_panel.add_child(spacer2)
+	
+	var loadout_title = Label.new()
+	loadout_title.text = "TOWER LOADOUT (MAX 4)"
+	loadout_title.add_theme_font_size_override("font_size", 18) # Increased
+	loadout_title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	intel_panel.add_child(loadout_title)
+	
+	loadout_container = VBoxContainer.new()
+	loadout_container.add_theme_constant_override("separation", 5)
+	intel_panel.add_child(loadout_container)
+	
+	var loadout_msg = Label.new()
+	loadout_msg.name = "LoadoutMessage"
+	loadout_msg.add_theme_font_size_override("font_size", 12)
+	loadout_msg.add_theme_color_override("font_color", Color(1, 0.4, 0.4))
+	loadout_msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	intel_panel.add_child(loadout_msg)
+	mission_info_labels["loadout_message"] = loadout_msg
+	
+	_create_loadout_ui()
+
+func _create_loadout_ui() -> void:
+	if loadout_container == null: return
+	for child in loadout_container.get_children(): child.queue_free()
+	
+	var main = get_tree().current_scene
+	if not main: return
+	
+	var available = main.get("available_tower_types")
+	var selected = main.get("selected_loadout")
+	if available == null or selected == null: return
+	
+	for tower_id in available:
+		var hbox = HBoxContainer.new()
+		loadout_container.add_child(hbox)
+		
+		var check = CheckBox.new()
+		check.text = tower_id.replace("_tower", "").capitalize()
+		check.button_pressed = selected.has(tower_id)
+		check.toggled.connect(func(v): _on_tower_toggled(tower_id, v))
+		hbox.add_child(check)
+
+func _on_tower_toggled(tower_id: String, active: bool) -> void:
+	var main = get_tree().current_scene
+	if not main: return
+	
+	var selected = main.selected_loadout
+	if active:
+		if not selected.has(tower_id):
+			if selected.size() >= main.MAX_TOWER_LOADOUT_SIZE:
+				_update_play_button_state() # Force refresh to show warning if I add one
+				_create_loadout_ui() # Reset UI state
+				return
+			selected.append(tower_id)
+	else:
+		if selected.has(tower_id):
+			if selected.size() <= main.MIN_TOWER_LOADOUT_SIZE:
+				_create_loadout_ui() # Reset UI state
+				return
+			selected.erase(tower_id)
+	
+	_play_ui_click_sound()
+	_update_play_button_state()
+
+func _update_intel_panel(config: Dictionary) -> void:
+	mission_info_labels["mission_name"].text = config.get("name", "---")
+	mission_info_labels["area_name"].text = config.get("area_name", "---")
+	mission_info_labels["difficulty"].text = config.get("difficulty", "---")
+	mission_info_labels["starting_gold"].text = str(config.get("starting_gold", "---"))
+	mission_info_labels["starting_lives"].text = str(config.get("starting_lives", "---"))
+	
+	var intel = config.get("enemy_intel", [])
+	mission_info_labels["enemy_intel"].text = ", ".join(intel) if not intel.is_empty() else "Unknown"
+	
+	var rec = config.get("recommended_roles", [])
+	mission_info_labels["recommended"].text = ", ".join(rec) if not rec.is_empty() else "None"
+	
+	# Compact Intel Logic
+	var main = get_tree().current_scene
+	if main:
+		var level_id_number = 0
+		if main.has_method("level_id_to_int"):
+			level_id_number = main.level_id_to_int(config.get("id", ""))
+		var wave_previews = main.get_wave_preview_data(level_id_number)
+		
+		mission_info_labels["total_waves"].text = str(wave_previews.size())
+		
+		var all_traits = {}
+		var all_roles = {}
+		for preview in wave_previews:
+			for t in preview.get("traits", []): all_traits[t] = true
+			for r in preview.get("recommended_roles", []): all_roles[r] = true
+		
+		var intel_list = all_traits.keys()
+		mission_info_labels["enemy_intel"].text = ", ".join(intel_list) if not intel_list.is_empty() else "Unknown"
+		
+		var rec_list = all_roles.keys()
+		mission_info_labels["recommended"].text = ", ".join(rec_list) if not rec_list.is_empty() else "None"
+	
+	_create_loadout_ui()
+
+func select_level(path: String) -> void:
+	_select_level(path)
 
 func _select_level(path: String) -> void:
 	selected_level_path = path
+	var main = get_tree().current_scene
+	var level_id = path.get_file().get_basename()
+	var config = {}
+	if main and main.has_method("get_level_config"):
+		config = main.get_level_config(level_id)
+	else:
+		config = _load_config(level_id)
+	
+	if main and main.has_method("get_default_loadout_for_level"):
+		main.selected_loadout = main.get_default_loadout_for_level(level_id)
+	
+	_update_intel_panel(config)
+	
 	_update_selection_visuals()
 	_update_play_button_state()
 	_play_ui_click_sound()
@@ -236,15 +510,32 @@ func _update_play_button_state() -> void:
 		var completed = record.get("completed", false)
 		
 		play_button.disabled = not unlocked
-		if not unlocked:
-			play_button.text = "MISSION LOCKED"
-			play_button.modulate = Color(1, 0.4, 0.4)
-		elif completed:
-			play_button.text = "RE-DEPLOY MISSION"
-			play_button.modulate = Color(0.6, 1.2, 0.6)
+		
+		# Loadout validation
+		var main = get_tree().current_scene
+		var valid_loadout = true
+		if main and main.has_method("is_valid_loadout"):
+			valid_loadout = main.is_valid_loadout(main.selected_loadout)
+		
+		if not valid_loadout:
+			play_button.disabled = true
+			play_button.text = "INVALID LOADOUT"
+			play_button.modulate = Color(1, 0.5, 0.5)
+			if mission_info_labels.has("loadout_message"):
+				mission_info_labels["loadout_message"].text = "Select 1-4 towers"
 		else:
-			play_button.text = "START MISSION"
-			play_button.modulate = Color(1, 1, 1)
+			if mission_info_labels.has("loadout_message"):
+				mission_info_labels["loadout_message"].text = ""
+				
+			if not unlocked:
+				play_button.text = "MISSION LOCKED"
+				play_button.modulate = Color(1, 0.4, 0.4)
+			elif completed:
+				play_button.text = "RE-DEPLOY"
+				play_button.modulate = Color(0.7, 1.0, 0.7)
+			else:
+				play_button.text = "START MISSION"
+				play_button.modulate = Color(0.8, 1.0, 0.8)
 
 func _unlock_audio() -> void:
 	var audio_manager = get_tree().current_scene.get_node_or_null("AudioManager")
@@ -268,3 +559,8 @@ func show_select() -> void:
 
 func hide_select() -> void:
 	hide()
+func _load_waves_config(path: String) -> Array:
+	var main = get_tree().current_scene
+	if main and main.has_method("load_waves_config"):
+		return main.load_waves_config(path)
+	return []

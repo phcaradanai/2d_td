@@ -1,6 +1,11 @@
 {
   "id": "level_05",
   "name": "Area Gate",
+  "area_id": 1,
+  "area_name": "Training Sector",
+  "difficulty": "Hard",
+  "enemy_intel": ["Mixed"],
+  "recommended_roles": ["Basic", "Cannon", "Slow"],
   "grid_size": 64,
   "grid_cols": 20,
   "grid_rows": 12,

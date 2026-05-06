@@ -7,7 +7,7 @@
       {
         "enemy_type": "basic",
         "count": 100,
-        "spawn_delay": 0.1
+        "spawn_delay": 0.15
       }
     ]
   }

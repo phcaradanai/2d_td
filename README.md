@@ -60,3 +60,13 @@ Then visit `http://localhost:8080`.
 - **Engine**: Godot 4.6.2
 - **Assets**: Open Source community assets.
 # 2d_td
+
+# TODO
+Step 38A: Enemy Type Foundation - Land / Air
+Step 38B: Anti-Air Tower + Targeting Rules
+Step 38C: Mission Intel / Wave Intel แสดง Land-Air ให้ถูก
+Step 39: Tower Loadout Constraint ตามชนิดศัตรู
+Step 40: Hero System
+Step 41: Consumable Skill System
+Step 42: Score System
+Step 43: Leaderboard

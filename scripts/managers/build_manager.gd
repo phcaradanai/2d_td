@@ -18,6 +18,7 @@ var towers_config: Dictionary = {}
 var selected_tower_id: String = ""
 var occupied_cells: Dictionary = {} # cell: bool
 var blocked_cells: Array[Vector2i] = [] # path cells + blocked level cells
+var active_loadout: Array[String] = []
 
 var game_manager: Node
 var tower_container: Node2D
@@ -112,6 +113,9 @@ func validate_placement(cell: Vector2i) -> Dictionary:
 	var config = get_selected_tower_config()
 	var cost = config.get("cost", 0)
 	
+	if not active_loadout.is_empty() and not active_loadout.has(selected_tower_id):
+		return {"is_valid": false, "reason": "Not in loadout", "cost": cost}
+	
 	if not is_in_bounds(cell):
 		return {"is_valid": false, "reason": "Out of bounds", "cost": cost}
 	if cell in blocked_cells:
@@ -124,6 +128,8 @@ func validate_placement(cell: Vector2i) -> Dictionary:
 func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	var tower = tower_scene.instantiate()
 	tower_container.add_child(tower)
+	tower.add_to_group("towers")
+	tower.add_to_group("placed_towers")
 	# Set LOCAL position relative to TowerContainer
 	tower.position = cell_to_local_center(cell)
 	

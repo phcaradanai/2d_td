@@ -1,12 +1,17 @@
 extends Node2D
 
+const ENEMY_CATEGORY_LAND := "land"
+const ENEMY_CATEGORY_AIR := "air"
+const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
+
 var target: Node2D = null
 var damage: float = 0.0
 var speed: float = 500.0
 var attack_type: String = "single"
-var splash_radius: float = 0.0
+var effect_radius: float = 0.0
 var slow_percent: float = 0.0
 var slow_duration: float = 0.0
+var target_categories: Array[String] = DEFAULT_TARGET_CATEGORIES.duplicate()
 var lifetime: float = 5.0
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
@@ -17,14 +22,15 @@ var trail_points: Array[Vector2] = []
 @export var max_trail_points: int = 8
 @export var min_point_distance: float = 4.0
 
-func setup(p_target: Node2D, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_splash_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0) -> void:
+func setup(p_target: Node2D, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_effect_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0, p_target_categories: Array = []) -> void:
 	target = p_target
 	damage = p_damage
 	speed = p_speed
 	attack_type = p_attack_type
-	splash_radius = p_splash_radius
+	effect_radius = p_effect_radius
 	slow_percent = p_slow_percent
 	slow_duration = p_slow_duration
+	target_categories = _normalize_target_categories(p_target_categories)
 
 func _process(delta: float) -> void:
 	if game_manager != null and game_manager.is_paused:
@@ -190,22 +196,53 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 		
 		var effect_color = Color(1, 0.5, 0.2) if attack_type == "splash" else Color(0.4, 0.8, 1.0)
 		if effect.has_method("setup"):
-			effect.setup(splash_radius, effect_color)
-	
+			effect.setup(effect_radius, effect_color)
+		
 	# Find enemies in radius
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
-			var enemy_global = enemy.global_position
+			if not can_affect_enemy(enemy):
+				continue
+			
+			# Precision: Use hit center or aim point if available
+			var enemy_pos = enemy.global_position
+			if enemy.has_method("get_hit_origin"):
+				enemy_pos = enemy.get_hit_origin()
+			elif enemy.has_method("get_aim_point"):
+				enemy_pos = enemy.get_aim_point()
+			
 			# STANDARD: Use global distance check for area damage/slow
-			var dist = hit_pos.distance_to(enemy_global)
-			if dist <= splash_radius:
+			var dist = hit_pos.distance_to(enemy_pos)
+			if dist <= effect_radius:
 				if attack_type == "splash":
 					# Linear Falloff: 100% at center, 50% at edge
-					var falloff = 1.0 - (dist / splash_radius) * 0.5
-					enemy.take_damage(damage * falloff, enemy_global)
+					var falloff = 1.0 - (dist / effect_radius) * 0.5
+					enemy.take_damage(damage * falloff, enemy_pos)
 				elif attack_type == "slow":
 					# Area slow deals its low base damage + applies debuff
-					enemy.take_damage(damage, enemy_global)
+					enemy.take_damage(damage, enemy_pos)
 					if enemy.has_method("apply_slow"):
 						enemy.apply_slow(slow_percent, slow_duration)
+
+func can_affect_enemy(enemy: Node) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if not enemy.has_method("get_enemy_category"):
+		return true
+	return target_categories.has(str(enemy.get_enemy_category()).to_lower())
+
+func _normalize_target_categories(raw_categories) -> Array[String]:
+	var normalized: Array[String] = []
+	if raw_categories is Array:
+		for category in raw_categories:
+			var value = str(category).strip_edges().to_lower()
+			if (value == ENEMY_CATEGORY_LAND or value == ENEMY_CATEGORY_AIR) and not normalized.has(value):
+				normalized.append(value)
+	elif raw_categories != null:
+		var value = str(raw_categories).strip_edges().to_lower()
+		if value == ENEMY_CATEGORY_LAND or value == ENEMY_CATEGORY_AIR:
+			normalized.append(value)
+	if normalized.is_empty():
+		normalized.append(ENEMY_CATEGORY_LAND)
+	return normalized

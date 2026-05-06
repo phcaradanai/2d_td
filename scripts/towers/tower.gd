@@ -2,6 +2,10 @@ extends Node2D
 
 signal clicked(tower: Node2D)
 
+const ENEMY_CATEGORY_LAND := "land"
+const ENEMY_CATEGORY_AIR := "air"
+const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
+
 var tower_id: String
 var display_name: String
 var visual_type: String = "basic"
@@ -16,6 +20,7 @@ var splash_radius: float = 0.0
 var slow_percent: float = 0.0
 var slow_duration: float = 0.0
 var slow_radius: float = 0.0
+var target_categories: Array[String] = DEFAULT_TARGET_CATEGORIES.duplicate()
 var grid_cell: Vector2i
 
 # Level tracking
@@ -84,6 +89,7 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 	description = config.get("description", "")
 	cost = config.get("cost", 0)
 	projectile_speed = config.get("projectile_speed", 500.0)
+	target_categories = _normalize_target_categories(config.get("target_categories", DEFAULT_TARGET_CATEGORIES))
 	grid_cell = cell
 	
 	if config.has("levels"):
@@ -139,6 +145,7 @@ func _ensure_sprite_node() -> void:
 func apply_level_stats() -> void:
 	var data = get_current_level_data()
 	if not data.is_empty():
+		target_categories = _normalize_target_categories(data.get("target_categories", config.get("target_categories", DEFAULT_TARGET_CATEGORIES)))
 		damage = data.get("damage", 10.0)
 		attack_range = data.get("range", 160.0)
 		fire_rate = data.get("fire_rate", 1.0)
@@ -465,15 +472,25 @@ func get_info() -> Dictionary:
 		"damage": damage,
 		"range": attack_range,
 		"fire_rate": fire_rate,
-		"upgrade_cost": get_upgrade_cost(),
-		"can_upgrade": can_upgrade(),
-		"attack_type": attack_type,
-		"splash_radius": splash_radius,
-		"slow_percent": slow_percent,
-		"slow_duration": slow_duration,
-		"slow_radius": slow_radius,
-		"target_mode": target_mode
-	}
+			"upgrade_cost": get_upgrade_cost(),
+			"can_upgrade": can_upgrade(),
+			"attack_type": attack_type,
+			"splash_radius": splash_radius,
+			"slow_percent": slow_percent,
+			"slow_duration": slow_duration,
+			"slow_radius": slow_radius,
+			"target_categories": target_categories.duplicate(),
+			"target_mode": target_mode
+		}
+
+func get_tower_id() -> String:
+	return tower_id
+
+func get_grid_cell() -> Vector2i:
+	return grid_cell
+
+func get_tower_level() -> int:
+	return level_index + 1
 
 func get_fire_origin() -> Vector2:
 	if muzzle:
@@ -644,9 +661,9 @@ func shoot() -> void:
 			proj_scale = 1.1
 			proj_color = Color(0.4, 0.8, 1.0, 1.0) # Cyan
 			sfx_name = "tower_shoot_slow"
-			
+		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
-		projectile.setup(current_target, int(damage), projectile_speed, attack_type, radius, slow_percent, slow_duration)
+		projectile.setup(current_target, int(damage), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories)
 		projectile.scale = Vector2(proj_scale, proj_scale)
 		projectile.modulate = proj_color
 		
@@ -699,10 +716,38 @@ func update_target() -> void:
 func is_valid_target(enemy: Node2D) -> bool:
 	if enemy == null or not is_instance_valid(enemy): return false
 	if not enemy.has_method("is_alive") or not enemy.is_alive(): return false
+	if not can_target_enemy(enemy): return false
 	
 	# STANDARD: Use canonical range origin and global distance check
-	var dist = get_range_origin().distance_to(enemy.global_position)
+	var target_pos = enemy.global_position
+	if enemy.has_method("get_aim_point"):
+		target_pos = enemy.get_aim_point()
+	elif enemy.has_method("get_hit_origin"):
+		target_pos = enemy.get_hit_origin()
+	var dist = get_range_origin().distance_to(target_pos)
 	return dist <= attack_range
+
+func can_target_enemy(enemy: Node) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if not enemy.has_method("get_enemy_category"):
+		return true
+	return target_categories.has(str(enemy.get_enemy_category()).to_lower())
+
+func _normalize_target_categories(raw_categories) -> Array[String]:
+	var normalized: Array[String] = []
+	if raw_categories is Array:
+		for category in raw_categories:
+			var value = str(category).strip_edges().to_lower()
+			if (value == ENEMY_CATEGORY_LAND or value == ENEMY_CATEGORY_AIR) and not normalized.has(value):
+				normalized.append(value)
+	elif raw_categories != null:
+		var value = str(raw_categories).strip_edges().to_lower()
+		if value == ENEMY_CATEGORY_LAND or value == ENEMY_CATEGORY_AIR:
+			normalized.append(value)
+	if normalized.is_empty():
+		normalized.append(ENEMY_CATEGORY_LAND)
+	return normalized
 
 func find_target() -> Node2D:
 	var enemies = get_enemies_in_range()

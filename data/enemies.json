@@ -6,6 +6,7 @@
     "speed": 90,
     "reward_gold": 8,
     "base_damage": 1,
+    "category": "land",
     "visual_type": "basic"
   },
   "fast": {
@@ -15,6 +16,7 @@
     "speed": 145,
     "reward_gold": 9,
     "base_damage": 1,
+    "category": "land",
     "visual_type": "fast"
   },
   "tank": {
@@ -24,6 +26,7 @@
     "speed": 55,
     "reward_gold": 18,
     "base_damage": 2,
+    "category": "land",
     "visual_type": "tank"
   }
 }

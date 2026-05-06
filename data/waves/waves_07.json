@@ -2,12 +2,12 @@
   {
     "wave": 1,
     "name": "Velocity Check",
-    "completion_reward": 50,
+    "completion_reward": 60,
     "groups": [
       {
         "enemy_type": "fast",
-        "count": 25,
-        "spawn_delay": 0.4
+        "count": 22,
+        "spawn_delay": 0.45
       }
     ]
   },
@@ -19,7 +19,7 @@
       {
         "enemy_type": "fast",
         "count": 40,
-        "spawn_delay": 0.2
+        "spawn_delay": 0.25
       }
     ]
   }

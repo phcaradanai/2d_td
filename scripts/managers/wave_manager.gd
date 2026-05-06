@@ -12,6 +12,10 @@ signal base_damaged(base_damage: int, global_pos: Vector2)
 @export var waves_data_path: String = "res://data/waves.json"
 @export var enemies_data_path: String = "res://data/enemies.json"
 
+const ENEMY_CATEGORY_LAND := "land"
+const ENEMY_CATEGORY_AIR := "air"
+const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
+
 var waves: Array = []
 var enemies_config: Dictionary = {}
 var current_wave_index: int = 0
@@ -143,6 +147,7 @@ func spawn_enemy(group_data: Dictionary) -> void:
 		
 	var enemy_type = group_data.get("enemy_type", "basic")
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
+	base_config["category"] = resolve_enemy_category(group_data)
 	
 	# Merge group overrides into base config
 	for key in group_data.keys():
@@ -158,6 +163,23 @@ func spawn_enemy(group_data: Dictionary) -> void:
 	
 	target_path.add_child(enemy)
 	active_enemy_count += 1
+
+func resolve_enemy_category(spawn_data: Dictionary) -> String:
+	if spawn_data.has("category"):
+		return normalize_enemy_category(spawn_data["category"])
+	
+	var enemy_type = str(spawn_data.get("enemy_type", spawn_data.get("type", "basic")))
+	var enemy_config = enemies_config.get(enemy_type, {})
+	if enemy_config is Dictionary and enemy_config.has("category"):
+		return normalize_enemy_category(enemy_config["category"])
+	
+	return ENEMY_CATEGORY_LAND
+
+func normalize_enemy_category(raw_category) -> String:
+	var normalized = str(raw_category).strip_edges().to_lower()
+	if VALID_ENEMY_CATEGORIES.has(normalized):
+		return normalized
+	return ENEMY_CATEGORY_LAND
 
 func _on_enemy_died(_enemy: Node, reward: int) -> void:
 	enemy_killed.emit(reward)
