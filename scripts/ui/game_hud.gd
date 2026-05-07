@@ -209,6 +209,18 @@ func _ready() -> void:
 	
 	set_status("Ready")
 	set_build_status("Build: None")
+	
+	# Top Bar Final Polish
+	gold_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2)) # Gold
+	lives_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0)) # Core integrity (Cyan)
+	wave_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
+	status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	next_wave_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	
+	# Align top bar spacing
+	var top_hbox = gold_label.get_parent()
+	if top_hbox is HBoxContainer:
+		top_hbox.add_theme_constant_override("separation", 24)
 
 func set_panel_active(panel: Control, active: bool, block_mouse: bool = true) -> void:
 	if panel == null: return
@@ -227,14 +239,20 @@ func update_layout_for_viewport() -> void:
 	if size.x < 1000:
 		left_sidebar.custom_minimum_size.x = 180
 	else:
-		left_sidebar.custom_minimum_size.x = 200
+		left_sidebar.custom_minimum_size.x = 210 # Slightly wider for cleaner labels
+	
 	if right_sidebar.get_parent() == right_info_vbox:
 		right_sidebar.custom_minimum_size = Vector2(0, 0)
 	else:
 		right_sidebar.custom_minimum_size.x = right_width
 		right_sidebar.custom_minimum_size.y = 0
+		
 	if right_info_column:
 		_layout_right_info_column(right_width)
+	
+	# Update no_selection_panel if it exists
+	if no_selection_panel:
+		no_selection_panel.custom_minimum_size.x = right_width
 	
 	if result_panel:
 		result_panel.pivot_offset = result_panel.size / 2.0
@@ -271,7 +289,7 @@ func set_audio_settings_ui(settings: Dictionary) -> void:
 
 func set_gold(value: int) -> void:
 	var old_text = gold_label.text
-	gold_label.text = "Gold: " + str(value)
+	gold_label.text = "CREDITS: " + str(value)
 	if old_text != gold_label.text:
 		pulse_label(gold_label)
 	_update_tower_affordability(value)
@@ -339,7 +357,8 @@ func set_tower_prices(prices: Dictionary) -> void:
 
 func set_lives(value: int) -> void:
 	var old_text = lives_label.text
-	lives_label.text = "Lives: " + str(value)
+	lives_label.text = "CORE: " + str(value)
+	lives_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0) if value >= 5 else Color(1, 0.3, 0.3))
 	if old_text != lives_label.text:
 		pulse_label(lives_label, 1.2 if value < 5 else 1.1)
 		
@@ -365,10 +384,9 @@ func set_version(text: String) -> void:
 		version_label.text = text
 
 func set_level_name(text: String) -> void:
-	# If we had a dedicated LevelLabel, we'd use it. 
-	# For now, let's prepend it to the status if it's not empty.
 	if status_label:
 		status_label.text = text
+		status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 
 func set_status(text: String) -> void:
 	status_label.text = text
@@ -573,10 +591,16 @@ func show_tower_info_panel() -> void:
 	right_sidebar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	right_sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_refresh_right_info_column_visibility()
+	
+	if no_selection_panel:
+		no_selection_panel.visible = false
 
 func hide_tower_info_panel() -> void:
 	set_panel_active(right_sidebar, false)
 	_refresh_right_info_column_visibility()
+	
+	if no_selection_panel:
+		no_selection_panel.visible = true
 
 func enter_end_game_ui_state() -> void:
 	hide_tower_info_panel()
@@ -781,6 +805,24 @@ func _setup_wave_intel_panel() -> void:
 	wave_intel_warnings_label = _create_wave_intel_label("", 12, Color(1.0, 0.4, 0.4))
 	wave_intel_warnings_label.visible = false
 	body_vbox.add_child(wave_intel_warnings_label)
+	
+	# Placeholder for no selection
+	no_selection_panel = PanelContainer.new()
+	no_selection_panel.name = "NoSelectionPanel"
+	no_selection_panel.custom_minimum_size = Vector2(0, 100)
+	var ns_style = style.duplicate()
+	ns_style.bg_color = Color(0.04, 0.05, 0.08, 0.5)
+	ns_style.border_color = Color(0.2, 0.3, 0.4, 0.3)
+	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
+	right_info_vbox.add_child(no_selection_panel)
+	
+	var ns_label = Label.new()
+	ns_label.text = "SELECT OBJECT FOR INTEL"
+	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ns_label.add_theme_font_size_override("font_size", 12)
+	ns_label.add_theme_color_override("font_color", Color(0.4, 0.5, 0.6))
+	no_selection_panel.add_child(ns_label)
 	
 	_set_next_wave_intel_visible(false)
 	wave_intel_panel.visible = false

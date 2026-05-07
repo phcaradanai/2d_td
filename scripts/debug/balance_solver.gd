@@ -416,13 +416,20 @@ func _get_legal_cells() -> Array:
 	var cells = []
 	var cols = current_level_data.get("grid_cols", 20)
 	var rows = current_level_data.get("grid_rows", 12)
-	var path = current_level_data.get("path_cells", [])
+	
+	var path_cells = []
+	if current_level_data.has("paths"):
+		for p_id in current_level_data["paths"]:
+			path_cells.append_array(current_level_data["paths"][p_id])
+	else:
+		path_cells = current_level_data.get("path_cells", [])
+		
 	var blocked = current_level_data.get("blocked_cells", [])
 
 	for x in range(cols):
 		for y in range(rows):
 			var is_blocked = false
-			for p in path:
+			for p in path_cells:
 				if p[0] == x and p[1] == y:
 					is_blocked = true
 					break
@@ -438,7 +445,13 @@ func _get_legal_cells() -> Array:
 	return cells
 
 func _rank_cells_by_coverage(cells: Array) -> Array:
-	var path = current_level_data.get("path_cells", [])
+	var path = []
+	if current_level_data.has("paths"):
+		for p_id in current_level_data["paths"]:
+			path.append_array(current_level_data["paths"][p_id])
+	else:
+		path = current_level_data.get("path_cells", [])
+	
 	var ranked = []
 	for cell in cells:
 		var score = 0.0
@@ -523,7 +536,13 @@ func _score_state_for_level(state) -> float:
 	return score
 
 func _cell_coverage_score(cell: Vector2i) -> float:
-	var path = current_level_data.get("path_cells", [])
+	var path = []
+	if current_level_data.has("paths"):
+		for p_id in current_level_data["paths"]:
+			path.append_array(current_level_data["paths"][p_id])
+	else:
+		path = current_level_data.get("path_cells", [])
+		
 	var score: float = 0.0
 	for p_idx in range(path.size()):
 		var p = path[p_idx]
@@ -886,16 +905,24 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 			queue.append({"type": e_type, "delay": g.get("spawn_delay", 1.0)})
 
 	var next_spawn = 0.0
-	var path_len = current_level_data.get("path_cells", []).size() * 64.0
 
 	while time < 600.0:
 		if not queue.is_empty() and time >= next_spawn:
 			var s = queue.pop_front()
 			var cfg = enemies_config.get(s["type"], {"max_hp": 30, "speed": 100})
+			var p_id = s.get("path", "default")
+			var p_cells = []
+			if current_level_data.has("paths"):
+				p_cells = current_level_data["paths"].get(p_id, current_level_data["paths"].get("default", []))
+			else:
+				p_cells = current_level_data.get("path_cells", [])
+				
 			enemies.append({
 				"hp": cfg["max_hp"],
 				"speed": cfg["speed"],
 				"progress": 0.0,
+				"path_cells": p_cells,
+				"path_len": p_cells.size() * 64.0,
 				"reward": cfg.get("reward_gold", 5),
 				"type": s["type"],
 				"slow": 1.0,
@@ -908,7 +935,7 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 				e["slow_rem"] -= tick
 				if e["slow_rem"] <= 0: e["slow"] = 1.0
 			e["progress"] += e["speed"] * e["slow"] * tick
-			if e["progress"] >= path_len:
+			if e["progress"] >= e["path_len"]:
 				return {
 					"perfect": false,
 					"state": sim,
@@ -975,17 +1002,17 @@ func _find_target(t, stats, enemies) -> Variant:
 	var best = null
 	var max_p = -1.0
 	for e in enemies:
-		var e_pos = _get_pos(e["progress"])
+		var e_pos = _get_pos(e["progress"], e["path_cells"])
 		if t_pos.distance_to(e_pos) <= r:
 			if e["progress"] > max_p:
 				max_p = e["progress"]
 				best = e
 	return best
 
-func _get_pos(prog: float) -> Vector2:
-	var path = current_level_data.get("path_cells", [])
+func _get_pos(prog: float, path: Array) -> Vector2:
 	var idx = int(prog / 64.0)
 	if idx >= path.size(): idx = path.size() - 1
+	if idx < 0: return Vector2.ZERO
 	var c = path[idx]
 	return Vector2(c[0], c[1]) * 64.0 + Vector2(32, 32)
 
@@ -994,16 +1021,16 @@ func _apply_dmg(t, stats, target, enemies):
 	var type = towers_config[t["type"]].get("attack_type", "single")
 	if type == "splash":
 		var rad = stats.get("splash_radius", 100.0)
-		var center = _get_pos(target["progress"])
+		var center = _get_pos(target["progress"], target["path_cells"])
 		for e in enemies:
-			if center.distance_to(_get_pos(e["progress"])) <= rad: e["hp"] -= dmg
+			if center.distance_to(_get_pos(e["progress"], e["path_cells"])) <= rad: e["hp"] -= dmg
 	elif type == "slow":
 		var rad = stats.get("slow_radius", 65.0)
-		var center = _get_pos(target["progress"])
+		var center = _get_pos(target["progress"], target["path_cells"])
 		var s_pct = stats.get("slow_percent", 0.4)
 		var s_dur = stats.get("slow_duration", 2.0)
 		for e in enemies:
-			if center.distance_to(_get_pos(e["progress"])) <= rad:
+			if center.distance_to(_get_pos(e["progress"], e["path_cells"])) <= rad:
 				e["hp"] -= dmg
 				e["slow"] = 1.0 - s_pct
 				e["slow_rem"] = s_dur

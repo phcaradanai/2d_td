@@ -13,11 +13,11 @@ var preview_target_alpha: float = 0.0
 var show_path_overlays: bool = true
 
 const PREVIEW_FADE_SPEED := 6.0
-const PATH_EDGE_CYAN := Color(0.0, 0.82, 1.0, 1.0)
-const PATH_EDGE_BLUE := Color(0.12, 0.42, 1.0, 1.0)
-const PATH_INNER_AMBER := Color(1.0, 0.55, 0.08, 1.0)
-const PATH_METAL_DARK := Color(0.015, 0.025, 0.04, 1.0)
-const PATH_METAL_MID := Color(0.045, 0.07, 0.095, 1.0)
+const PATH_EDGE_CYAN := Color(0.2, 0.9, 1.0, 1.0)
+const PATH_EDGE_BLUE := Color(0.1, 0.5, 1.0, 1.0)
+const PATH_INNER_AMBER := Color(1.0, 0.7, 0.2, 1.0)
+const PATH_METAL_DARK := Color(0.01, 0.02, 0.03, 1.0)
+const PATH_METAL_MID := Color(0.05, 0.08, 0.12, 1.0)
 
 func setup(p_level_manager: Node) -> void:
 	level_manager = p_level_manager
@@ -261,8 +261,8 @@ func _draw_preview_pulses() -> void:
 			var d = offset
 			while d < dist:
 				var pos = p1 + dir * d
-				var edge_fade = min(d, dist - d) / 20.0
-				var a_color = _with_alpha(PATH_EDGE_CYAN, 0.74 * preview_alpha * clamp(edge_fade, 0.0, 1.0))
+				var edge_fade = min(d, dist - d) / 30.0 # Increased fade distance
+				var a_color = _with_alpha(PATH_EDGE_CYAN, 0.85 * preview_alpha * clamp(edge_fade, 0.0, 1.0))
 				
 				_draw_chevron(pos, dir, a_color)
 				d += arrow_spacing
@@ -372,12 +372,15 @@ func _draw_energy_core(pos: Vector2, radius: float, color: Color, active: bool =
 
 func _draw_chevron(pos: Vector2, dir: Vector2, color: Color) -> void:
 	var perp = Vector2(-dir.y, dir.x)
-	var tip = pos + dir * 13.0
-	var back = pos - dir * 8.0
-	draw_line(back + perp * 8.0, tip, color, 3.0, true)
-	draw_line(back - perp * 8.0, tip, color, 3.0, true)
-	draw_line(back + perp * 8.0, tip, _with_alpha(Color.WHITE, color.a * 0.45), 1.0, true)
-	draw_line(back - perp * 8.0, tip, _with_alpha(Color.WHITE, color.a * 0.45), 1.0, true)
+	var tip = pos + dir * 14.0
+	var back = pos - dir * 6.0
+	
+	# Glow layer
+	draw_polyline([back + perp * 10.0, tip, back - perp * 10.0], _with_alpha(color, color.a * 0.2), 6.0, true)
+	# Main line
+	draw_polyline([back + perp * 8.0, tip, back - perp * 8.0], color, 3.5, true)
+	# High contrast center
+	draw_polyline([back + perp * 8.0, tip, back - perp * 8.0], _with_alpha(Color.WHITE, color.a * 0.6), 1.0, true)
 
 func _preview_has_base_at(base_pos: Vector2) -> bool:
 	if preview_alpha <= 0.01:
