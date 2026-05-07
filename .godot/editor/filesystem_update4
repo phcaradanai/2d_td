@@ -16,3 +16,4 @@ res://data/towers.json
 res://data/levels/level_01.json
 res://scripts/units/hero.gd
 res://data/levels/level_20.json
+res://data/waves/waves_20.json
