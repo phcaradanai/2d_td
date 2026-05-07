@@ -1,26 +1,58 @@
 [
-  {
-    "wave": 1,
-    "name": "Tank Column",
-    "completion_reward": 80,
-    "groups": [
-      {
-        "enemy_type": "tank",
-        "count": 15,
-        "spawn_delay": 1.2
-      }
-    ]
-  },
-  {
-    "wave": 2,
-    "name": "Heavy Resistance",
-    "completion_reward": 100,
-    "groups": [
-      {
-        "enemy_type": "tank",
-        "count": 25,
-        "spawn_delay": 0.8
-      }
-    ]
-  }
+	{
+		"wave": 1,
+		"name": "Heavy Advance",
+		"reward": 50,
+		"groups": [
+			{ "type": "tank",  "count": 4, "interval": 1.7 },
+			{ "type": "basic", "count": 8, "interval": 0.9 }
+		],
+		"intel": "Heavy units on a narrow U-path. Both corners are chokepoints — Cannon at each bend."
+	},
+	{
+		"wave": 2,
+		"name": "Fragmenters",
+		"reward": 60,
+		"intel": "Fragmenter: splits into 3 Corrupted Nodes on death. Cannon splash handles the fragments automatically.",
+		"groups": [
+			{ "type": "splitter", "count": 3, "interval": 2.5 },
+			{ "type": "basic",    "count": 8, "interval": 0.9 }
+		]
+	},
+	{
+		"wave": 3,
+		"name": "Fragment Swarm",
+		"reward": 70,
+		"groups": [
+			{ "type": "splitter", "count": 3,  "interval": 2.0 },
+			{ "type": "swarm",    "count": 15, "interval": 0.25 },
+			{ "type": "tank",     "count": 2,  "interval": 1.8  }
+		],
+		"intel": "Fragmenters plus Swarm. When they die, swarms multiply — do not let the fragments escape the bend."
+	},
+	{
+		"wave": 4,
+		"name": "Shielded Splitters",
+		"reward": 80,
+		"groups": [
+			{ "type": "shieldbearer", "count": 1, "interval": 0.6 },
+			{ "type": "splitter",     "count": 4, "interval": 2.0 },
+			{ "type": "healer",       "count": 1, "interval": 0.8 },
+			{ "type": "tank",         "count": 3, "interval": 1.7 }
+		],
+		"intel": "Shieldbearer protects the Fragmenters. Kill the shield source first or fragments get through."
+	},
+	{
+		"wave": 5,
+		"name": "Heavy Bend Finale",
+		"reward": 100,
+		"groups": [
+			{ "type": "shieldbearer", "count": 2, "interval": 1.5 },
+			{ "type": "splitter",     "count": 4, "interval": 1.8 },
+			{ "type": "healer",       "count": 2, "interval": 0.8 },
+			{ "type": "swarm",        "count": 12,"interval": 0.2  },
+			{ "type": "tank",         "count": 4, "interval": 1.6  }
+		],
+		"intel": "Maximum pressure. Slow at both corners, AoE for swarms and fragments, Sniper for supports."
+	}
 ]

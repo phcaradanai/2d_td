@@ -1,111 +1,36 @@
 {
-	"area_id": 2,
-	"area_name": "Forest",
-	"base_cell": [
-		19.0,
-		5.0
-	],
-	"difficulty": "Normal",
-	"enemy_intel": [
-		"Fast",
-		"Heavy"
-	],
-	"grid_cols": 20.0,
-	"grid_rows": 12.0,
-	"grid_size": 64.0,
 	"id": "level_07",
 	"name": "Fast Lane",
-	"path_cells": [
-		[
-			0.0,
-			5.0
-		],
-		[
-			1.0,
-			5.0
-		],
-		[
-			2.0,
-			5.0
-		],
-		[
-			3.0,
-			5.0
-		],
-		[
-			4.0,
-			5.0
-		],
-		[
-			5.0,
-			5.0
-		],
-		[
-			6.0,
-			5.0
-		],
-		[
-			7.0,
-			5.0
-		],
-		[
-			8.0,
-			5.0
-		],
-		[
-			9.0,
-			5.0
-		],
-		[
-			10.0,
-			5.0
-		],
-		[
-			11.0,
-			5.0
-		],
-		[
-			12.0,
-			5.0
-		],
-		[
-			13.0,
-			5.0
-		],
-		[
-			14.0,
-			5.0
-		],
-		[
-			15.0,
-			5.0
-		],
-		[
-			16.0,
-			5.0
-		],
-		[
-			17.0,
-			5.0
-		],
-		[
-			18.0,
-			5.0
-		],
-		[
-			19.0,
-			5.0
-		]
-	],
-	"recommended_roles": [
-		"Rapid",
-		"Slow"
-	],
-	"spawn_cell": [
-		0.0,
-		5.0
-	],
+	"area_id": 2,
+	"area_name": "Forest",
+	"difficulty": "Normal",
+	"description": "A straight path but with a tight mid-funnel. Healers keep enemies alive longer — kill them first before they restore allies.",
+	"enemy_intel": ["Fast", "Heavy"],
+	"recommended_roles": ["Rapid", "Slow"],
+	"grid_size": 64.0,
+	"grid_cols": 20.0,
+	"grid_rows": 12.0,
+	"grid_origin": { "x": 0.0, "y": 0.0 },
 	"starting_gold": 260,
-	"starting_lives": 20.0,
+	"starting_lives": 20,
+	"spawn_cell": [0, 5],
+	"base_cell": [19, 5],
+	"path_cells": [
+		[0, 5], [1, 5], [2, 5], [3, 5], [4, 5], [5, 5],
+		[6, 5], [7, 5], [8, 5], [9, 5], [10, 5], [11, 5],
+		[12, 5], [13, 5], [14, 5], [15, 5], [16, 5], [17, 5],
+		[18, 5], [19, 5]
+	],
+	"blocked_cells": [
+		[4, 4], [5, 4], [6, 4], [7, 4],
+		[4, 6], [5, 6], [6, 6], [7, 6]
+	],
+	"buildable_cells": [
+		[2, 3], [9, 3], [13, 3], [17, 3],
+		[2, 7], [9, 7], [13, 7], [17, 7],
+		[3, 4], [3, 6],
+		[8, 4], [8, 6],
+		[15, 4], [15, 6]
+	],
 	"waves_path": "res://data/waves/waves_07.json"
 }

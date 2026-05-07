@@ -1,58 +1,52 @@
 [
-  {
-    "wave": 1,
-    "name": "Endgame Stage 1",
-    "completion_reward": 100,
-    "groups": [
-      {
-        "enemy_type": "basic",
-        "count": 50,
-        "spawn_delay": 0.5
-      },
-      {
-        "enemy_type": "fast",
-        "count": 30,
-        "spawn_delay": 0.3
-      }
-    ]
-  },
-  {
-    "wave": 2,
-    "name": "Endgame Stage 2",
-    "completion_reward": 150,
-    "groups": [
-      {
-        "enemy_type": "tank",
-        "count": 40,
-        "spawn_delay": 0.8
-      },
-      {
-        "enemy_type": "fast",
-        "count": 40,
-        "spawn_delay": 0.2
-      }
-    ]
-  },
-  {
-    "wave": 3,
-    "name": "The Final Stand",
-    "completion_reward": 500,
-    "groups": [
-      {
-        "enemy_type": "tank",
-        "count": 60,
-        "spawn_delay": 0.5
-      },
-      {
-        "enemy_type": "fast",
-        "count": 100,
-        "spawn_delay": 0.1
-      },
-      {
-        "enemy_type": "basic",
-        "count": 150,
-        "spawn_delay": 0.2
-      }
-    ]
-  }
+	{
+		"wave": 1,
+		"name": "Iron Front",
+		"reward": 55,
+		"groups": [
+			{ "type": "shieldbearer", "count": 2, "interval": 1.5 },
+			{ "type": "healer",       "count": 2, "interval": 0.7 },
+			{ "type": "tank",         "count": 4, "interval": 1.6 },
+			{ "type": "basic",        "count": 8, "interval": 0.8 }
+		],
+		"intel": "Area 2 elite. Supports are doubled. Establish kill priority immediately."
+	},
+	{
+		"wave": 2,
+		"name": "Splinter Tide",
+		"reward": 65,
+		"groups": [
+			{ "type": "splitter",     "count": 6, "interval": 1.7 },
+			{ "type": "healer",       "count": 2, "interval": 0.8 },
+			{ "type": "swarm",        "count": 20,"interval": 0.2  },
+			{ "type": "runner",       "count": 6, "interval": 0.45 }
+		],
+		"intel": "Six Fragmenters. If Healers keep them alive, each will spawn three nodes. AoE is mandatory."
+	},
+	{
+		"wave": 3,
+		"name": "Shield Wall",
+		"reward": 80,
+		"groups": [
+			{ "type": "shieldbearer", "count": 3, "interval": 1.4 },
+			{ "type": "tank",         "count": 6, "interval": 1.5 },
+			{ "type": "healer",       "count": 2, "interval": 0.8 },
+			{ "type": "fast",         "count": 10,"interval": 0.35 }
+		],
+		"intel": "Triple Shieldbearer screen. Focus fire on one at a time — overlapping domes stack protection."
+	},
+	{
+		"wave": 4,
+		"name": "The Long March",
+		"reward": 110,
+		"groups": [
+			{ "type": "shieldbearer", "count": 2, "interval": 1.5 },
+			{ "type": "healer",       "count": 2, "interval": 0.7 },
+			{ "type": "splitter",     "count": 4, "interval": 1.8 },
+			{ "type": "tank",         "count": 5, "interval": 1.5 },
+			{ "type": "runner",       "count": 6, "interval": 0.4 },
+			{ "type": "swarm",        "count": 14,"interval": 0.2  }
+		],
+		"intel": "Maximum Area 2 pressure. Every support type at once. This is the final exam before the Forest River."
+	}
 ]

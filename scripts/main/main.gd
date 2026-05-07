@@ -333,8 +333,8 @@ func _setup_game_from_level() -> void:
 		game_manager.apply_level_config(gold_to_apply, level_manager.starting_lives)
 		game_manager.reset_runtime_state()
 
-		# User requested specific log format
-		print("START LEVEL ", level_manager.level_id, " money ", game_manager.gold, " hp ", game_manager.lives)
+		if OS.is_debug_build():
+			print("START LEVEL ", level_manager.level_id, " money ", game_manager.gold, " hp ", game_manager.lives)
 
 	if game_hud:
 		game_hud.set_level_name(level_manager.level_name)

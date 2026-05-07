@@ -1,65 +1,59 @@
 [
-  {
-    "wave": 1,
-    "name": "The Long March",
-    "completion_reward": 40,
-    "groups": [
-      {
-        "enemy_type": "basic",
-        "count": 15,
-        "spawn_delay": 1.0
-      }
-    ]
-  },
-  {
-    "wave": 2,
-    "name": "Armor Platoon",
-    "completion_reward": 50,
-    "groups": [
-      {
-        "enemy_type": "tank",
-        "count": 6,
-        "spawn_delay": 2.0
-      },
-      {
-        "enemy_type": "basic",
-        "count": 10,
-        "spawn_delay": 0.8
-      }
-    ]
-  },
-  {
-    "wave": 3,
-    "name": "Rapid Response",
-    "completion_reward": 60,
-    "groups": [
-      {
-        "enemy_type": "fast",
-        "count": 15,
-        "spawn_delay": 0.4
-      }
-    ]
-  },
-  {
-    "wave": 4,
-    "name": "Final Gatekeeper",
-    "completion_reward": 100,
-    "groups": [
-      {
-        "enemy_type": "tank",
-        "count": 10,
-        "spawn_delay": 1.5
-      },
-      {
-        "enemy_type": "fast",
-        "count": 12,
-        "spawn_delay": 0.5
-      },
-      {
-        "enemy_type": "basic",
-        "count": 20,
-        "spawn_delay": 0.6
-      }
-    ]
-  }
+	{
+		"wave": 1,
+		"name": "Full Advance",
+		"reward": 40,
+		"groups": [
+			{ "type": "basic",  "count": 8,  "interval": 0.85 },
+			{ "type": "fast",   "count": 5,  "interval": 0.5  },
+			{ "type": "runner", "count": 3,  "interval": 0.55 }
+		],
+		"intel": "Three speed types at once. Slow Tower at both chokepoints keeps them in kill zones."
+	},
+	{
+		"wave": 2,
+		"name": "Swarm Surge",
+		"reward": 50,
+		"groups": [
+			{ "type": "swarm",  "count": 20, "interval": 0.2  },
+			{ "type": "tank",   "count": 3,  "interval": 1.8  },
+			{ "type": "runner", "count": 4,  "interval": 0.5  }
+		],
+		"intel": "Tanks backed by swarms. AoE clears the swarms — then focus fire on tanks."
+	},
+	{
+		"wave": 3,
+		"name": "Speed Blitz",
+		"reward": 55,
+		"groups": [
+			{ "type": "runner", "count": 8,  "interval": 0.4  },
+			{ "type": "fast",   "count": 10, "interval": 0.35 },
+			{ "type": "basic",  "count": 8,  "interval": 0.8  }
+		],
+		"intel": "All-speed wave. Slow towers on both straights (col 5 and col 15) are essential."
+	},
+	{
+		"wave": 4,
+		"name": "Armored Tide",
+		"reward": 65,
+		"groups": [
+			{ "type": "tank",   "count": 6,  "interval": 1.5  },
+			{ "type": "swarm",  "count": 18, "interval": 0.2  },
+			{ "type": "fast",   "count": 8,  "interval": 0.4  }
+		],
+		"intel": "Tank column protected by swarm screen. Cannon handles both if placed correctly."
+	},
+	{
+		"wave": 5,
+		"name": "Area Gate",
+		"reward": 90,
+		"groups": [
+			{ "type": "tank",   "count": 4,  "interval": 1.6  },
+			{ "type": "runner", "count": 6,  "interval": 0.4  },
+			{ "type": "swarm",  "count": 16, "interval": 0.2  },
+			{ "type": "fast",   "count": 8,  "interval": 0.35 },
+			{ "type": "basic",  "count": 8,  "interval": 0.8  }
+		],
+		"intel": "Area 1 finale. All ground types. Slow both chokepoints, then mop up with AoE and single-target."
+	}
 ]

@@ -13,3 +13,6 @@ res://scenes/ui/ResultPanel.tscn
 res://scripts/ui/leaderboard_panel.gd
 res://scripts/debug/balance_solver.gd
 res://data/towers.json
+res://data/levels/level_01.json
+res://scripts/units/hero.gd
+res://data/levels/level_20.json

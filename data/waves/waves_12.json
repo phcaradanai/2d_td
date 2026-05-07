@@ -1,52 +1,61 @@
 [
 	{
-		"name": "Split Recon",
-		"reward": 50,
+		"wave": 1,
+		"name": "Divided Front",
+		"reward": 55,
 		"groups": [
-			{"type": "basic", "count": 6, "interval": 1.2, "path": "default"},
-			{"type": "fast", "count": 4, "interval": 0.8, "path": "lane_b"}
-		]
+			{ "type": "basic", "count": 6, "interval": 1.0,  "path": "default" },
+			{ "type": "fast",  "count": 6, "interval": 0.5,  "path": "lane_b"  }
+		],
+		"intel": "Two lanes, restricted build space. The centre spot covers both — position your strongest tower there."
 	},
 	{
-		"name": "Heavy Split",
-		"reward": 60,
+		"wave": 2,
+		"name": "Healer Column",
+		"reward": 65,
 		"groups": [
-			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.6, "path": "lane_b"}
-		]
+			{ "type": "healer", "count": 2, "interval": 0.8,  "path": "default" },
+			{ "type": "tank",   "count": 3, "interval": 1.6,  "path": "default" },
+			{ "type": "runner", "count": 6, "interval": 0.45, "path": "lane_b"  }
+		],
+		"intel": "Sniper from centre covers both lanes. Healers on the top path are high priority."
 	},
 	{
-		"name": "Crossfire Hunters",
-		"reward": 70,
+		"wave": 3,
+		"name": "Shield Both Lanes",
+		"reward": 75,
 		"groups": [
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "basic", "count": 4, "interval": 1.2, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"},
-			{"type": "fast", "count": 4, "interval": 0.5, "path": "lane_b"}
-		]
+			{ "type": "shieldbearer", "count": 1, "interval": 0.6, "path": "default" },
+			{ "type": "tank",         "count": 4, "interval": 1.6, "path": "default" },
+			{ "type": "shieldbearer", "count": 1, "interval": 0.6, "path": "lane_b"  },
+			{ "type": "fast",         "count": 8, "interval": 0.4, "path": "lane_b"  }
+		],
+		"intel": "Both lanes shielded. Lightning at the merge junction hits both at once."
 	},
 	{
-		"name": "Fortified Assault",
+		"wave": 4,
+		"name": "Hunter Crossfire",
 		"reward": 85,
 		"groups": [
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 4, "interval": 0.5, "path": "default"},
-			{"type": "fast", "count": 6, "interval": 0.4, "path": "lane_b"},
-			{"type": "hunter", "count": 1, "interval": 2.0, "path": "lane_b"}
-		]
+			{ "type": "hunter",  "count": 1, "interval": 0.5,  "path": "default" },
+			{ "type": "splitter","count": 3, "interval": 1.8,  "path": "default" },
+			{ "type": "swarm",   "count": 15,"interval": 0.25, "path": "lane_b"  },
+			{ "type": "runner",  "count": 6, "interval": 0.45, "path": "lane_b"  }
+		],
+		"intel": "Hunter on top lane targets Guardian if active. Do not deploy without Sniper protection."
 	},
 	{
-		"name": "Final Squeeze",
-		"reward": 100,
+		"wave": 5,
+		"name": "Junction Siege",
+		"reward": 110,
 		"groups": [
-			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"},
-			{"type": "fast", "count": 6, "interval": 0.4, "path": "lane_b"},
-			{"type": "basic", "count": 4, "interval": 1.0, "path": "lane_b"}
-		]
+			{ "type": "bulwark",      "count": 1, "interval": 1.0, "path": "default" },
+			{ "type": "healer",       "count": 2, "interval": 0.8, "path": "default" },
+			{ "type": "tank",         "count": 4, "interval": 1.6, "path": "default" },
+			{ "type": "shieldbearer", "count": 1, "interval": 0.6, "path": "lane_b"  },
+			{ "type": "splitter",     "count": 3, "interval": 1.8, "path": "lane_b"  },
+			{ "type": "runner",       "count": 6, "interval": 0.45,"path": "lane_b"  }
+		],
+		"intel": "Maximum pressure on restricted space. Guardian handles the Bulwark column — every tower spot matters."
 	}
 ]

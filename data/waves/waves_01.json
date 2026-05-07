@@ -1,70 +1,40 @@
 [
-  {
-	"wave": 1,
-	"name": "First Contact",
-	"completion_reward": 25,
-	"groups": [
-	  {
-		"enemy_type": "basic",
-		"count": 6,
-		"spawn_delay": 1.0
-	  }
-	]
-  },
-  {
-	"wave": 2,
-	"name": "Quick Scout",
-	"completion_reward": 35,
-	"groups": [
-	  {
-		"enemy_type": "basic",
-		"count": 4,
-		"spawn_delay": 0.8
-	  },
-	  {
-		"enemy_type": "fast",
-		"count": 3,
-		"spawn_delay": 0.5
-	  }
-	]
-  },
-  {
-	"wave": 3,
-	"name": "Reinforcements",
-	"completion_reward": 45,
-	"groups": [
-	  {
-		"enemy_type": "basic",
-		"count": 8,
-		"spawn_delay": 0.7
-	  },
-	  {
-		"enemy_type": "tank",
-		"count": 2,
-		"spawn_delay": 1.5
-	  }
-	]
-  },
-  {
-	"wave": 4,
-	"name": "Final Push",
-	"completion_reward": 60,
-	"groups": [
-	  {
-		"enemy_type": "basic",
-		"count": 10,
-		"spawn_delay": 0.6
-	  },
-	  {
-		"enemy_type": "fast",
-		"count": 6,
-		"spawn_delay": 0.4
-	  },
-	  {
-		"enemy_type": "tank",
-		"count": 3,
-		"spawn_delay": 1.2
-	  }
-	]
-  }
+	{
+		"wave": 1,
+		"name": "First Contact",
+		"reward": 20,
+		"groups": [
+			{ "type": "basic", "count": 5, "interval": 1.2 }
+		],
+		"intel": "Corrupted Nodes. Steady, predictable. Place towers along the straight path."
+	},
+	{
+		"wave": 2,
+		"name": "Node Surge",
+		"reward": 25,
+		"groups": [
+			{ "type": "basic", "count": 8, "interval": 0.9 }
+		],
+		"intel": "More incoming. Build additional towers now."
+	},
+	{
+		"wave": 3,
+		"name": "Signal Runners",
+		"reward": 30,
+		"intel": "Signal Runner: a fast ground unit. It moves quicker than basic towers can track — use Rapid Tower.",
+		"groups": [
+			{ "type": "basic", "count": 5, "interval": 1.0 },
+			{ "type": "fast",  "count": 4, "interval": 0.6 }
+		]
+	},
+	{
+		"wave": 4,
+		"name": "Armored Shell",
+		"reward": 40,
+		"intel": "Heavy Shell detected. High HP. Needs sustained fire to stop — upgrade or add towers.",
+		"groups": [
+			{ "type": "basic", "count": 6, "interval": 0.9 },
+			{ "type": "tank",  "count": 2, "interval": 1.8 }
+		]
+	}
 ]

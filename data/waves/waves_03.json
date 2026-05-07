@@ -1,94 +1,54 @@
 [
-  {
-	"wave": 1,
-	"name": "Heavy Guard",
-	"completion_reward": 40,
-	"groups": [
-	  {
-		"enemy_type": "tank",
-		"count": 4,
-		"spawn_delay": 1.5
-	  }
-	]
-  },
-  {
-	"wave": 2,
-	"name": "Stinger Swarm",
-	"completion_reward": 50,
-	"groups": [
-	  {
-		"enemy_type": "fast",
-		"count": 15,
-		"spawn_delay": 0.25
-	  }
-	]
-  },
-  {
-	"wave": 3,
-	"name": "Double Trouble",
-	"completion_reward": 60,
-	"groups": [
-	  {
-		"enemy_type": "tank",
-		"count": 8,
-		"spawn_delay": 1.0
-	  },
-	  {
-		"enemy_type": "basic",
-		"count": 10,
-		"spawn_delay": 0.5
-	  }
-	]
-  },
-  {
-	"wave": 4,
-	"name": "Rush Hour",
-	"completion_reward": 70,
-	"groups": [
-	  {
-		"enemy_type": "fast",
-		"count": 20,
-		"spawn_delay": 0.2
-	  },
-	  {
-		"enemy_type": "basic",
-		"count": 15,
-		"spawn_delay": 0.4
-	  }
-	]
-  },
-  {
-	"wave": 5,
-	"name": "Iron Wall",
-	"completion_reward": 80,
-	"groups": [
-	  {
-		"enemy_type": "tank",
-		"count": 12,
-		"spawn_delay": 0.8
-	  }
-	]
-  },
-  {
-	"wave": 6,
-	"name": "The Apocalypse",
-	"completion_reward": 150,
-	"groups": [
-	  {
-		"enemy_type": "tank",
-		"count": 15,
-		"spawn_delay": 0.7
-	  },
-	  {
-		"enemy_type": "fast",
-		"count": 25,
-		"spawn_delay": 0.2
-	  },
-	  {
-		"enemy_type": "basic",
-		"count": 20,
-		"spawn_delay": 0.3
-	  }
-	]
-  }
+	{
+		"wave": 1,
+		"name": "Iron Vanguard",
+		"reward": 35,
+		"groups": [
+			{ "type": "basic", "count": 6, "interval": 1.0 },
+			{ "type": "tank",  "count": 2, "interval": 2.0 }
+		],
+		"intel": "Heavy Shells now arrive early. They walk through weak fire — build Cannon near the bends."
+	},
+	{
+		"wave": 2,
+		"name": "Speeding Threat",
+		"reward": 40,
+		"groups": [
+			{ "type": "fast",  "count": 8, "interval": 0.45 },
+			{ "type": "basic", "count": 6, "interval": 0.9 }
+		],
+		"intel": "Runners mixed with normals. The narrow terrain limits your build options — make them count."
+	},
+	{
+		"wave": 3,
+		"name": "Armored Column",
+		"reward": 45,
+		"groups": [
+			{ "type": "tank",  "count": 4, "interval": 1.6 },
+			{ "type": "basic", "count": 8, "interval": 0.8 }
+		],
+		"intel": "Tank column. Cannon splash clears both simultaneously. Upgrade if available."
+	},
+	{
+		"wave": 4,
+		"name": "Fast and Heavy",
+		"reward": 55,
+		"groups": [
+			{ "type": "fast",  "count": 8,  "interval": 0.4 },
+			{ "type": "tank",  "count": 3,  "interval": 1.8 },
+			{ "type": "basic", "count": 6,  "interval": 0.8 }
+		],
+		"intel": "Mixed column. Tanks follow fast units — Slow + Cannon combination is optimal here."
+	},
+	{
+		"wave": 5,
+		"name": "Iron Route Finale",
+		"reward": 70,
+		"groups": [
+			{ "type": "tank",  "count": 5,  "interval": 1.5 },
+			{ "type": "fast",  "count": 10, "interval": 0.35 },
+			{ "type": "basic", "count": 8,  "interval": 0.7 }
+		],
+		"intel": "Maximum pressure. Tanks absorb while fast units slip through gaps. No shortcuts."
+	}
 ]

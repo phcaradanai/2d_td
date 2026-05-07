@@ -1,47 +1,60 @@
 [
 	{
-		"name": "Initial Breach",
-		"reward": 50,
+		"wave": 1,
+		"name": "Ghostwalk",
+		"reward": 55,
+		"intel": "Ghost Code: a cloaked unit. Only Rapid and Lightning can acquire it. Build at least one before this wave.",
 		"groups": [
-			{"type": "basic", "count": 8, "interval": 1.2, "path": "default"},
-			{"type": "fast", "count": 4, "interval": 0.8, "path": "default"}
+			{ "type": "cloaked", "count": 3, "interval": 1.2 },
+			{ "type": "basic",   "count": 6, "interval": 0.9 }
 		]
 	},
 	{
-		"name": "Rapid Advance",
-		"reward": 60,
+		"wave": 2,
+		"name": "Stealth Screen",
+		"reward": 65,
 		"groups": [
-			{"type": "basic", "count": 8, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 6, "interval": 0.7, "path": "default"}
-		]
+			{ "type": "cloaked", "count": 4,  "interval": 1.0 },
+			{ "type": "fast",    "count": 8,  "interval": 0.4 },
+			{ "type": "healer",  "count": 1,  "interval": 0.8 }
+		],
+		"intel": "Cloaked units screen a Healer. Lightning hits both simultaneously. Do not ignore the stealth units."
 	},
 	{
-		"name": "Shielded Escort",
+		"wave": 3,
+		"name": "Hunter Stalk",
 		"reward": 75,
 		"groups": [
-			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"},
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"}
-		]
+			{ "type": "hunter",  "count": 2, "interval": 0.4 },
+			{ "type": "cloaked", "count": 4, "interval": 1.0 },
+			{ "type": "tank",    "count": 3, "interval": 1.7 }
+		],
+		"intel": "Hunters plus cloaked units. Guardian cannot detect Ghost Code — deploy only if Sniper is covering it."
 	},
 	{
-		"name": "Hunter's Stalk",
-		"reward": 80,
+		"wave": 4,
+		"name": "Special Ground Mix",
+		"reward": 85,
 		"groups": [
-			{"type": "fast", "count": 5, "interval": 0.6, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"}
-		]
+			{ "type": "splitter", "count": 3, "interval": 1.8 },
+			{ "type": "cloaked",  "count": 5, "interval": 0.9 },
+			{ "type": "healer",   "count": 2, "interval": 0.8 },
+			{ "type": "runner",   "count": 5, "interval": 0.45}
+		],
+		"intel": "Stealth, splitters, and runners simultaneously. Lightning handles cloaked and chain-hits the pack."
 	},
 	{
-		"name": "Mixed Pressure",
-		"reward": 100,
+		"wave": 5,
+		"name": "Broken Corridor Finale",
+		"reward": 110,
 		"groups": [
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
-			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.5, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"}
-		]
+			{ "type": "hunter",       "count": 2, "interval": 0.4 },
+			{ "type": "cloaked",      "count": 6, "interval": 0.8 },
+			{ "type": "shieldbearer", "count": 1, "interval": 0.6 },
+			{ "type": "splitter",     "count": 4, "interval": 1.7 },
+			{ "type": "healer",       "count": 2, "interval": 0.8 },
+			{ "type": "tank",         "count": 4, "interval": 1.6 }
+		],
+		"intel": "Every special ground type at once. Rapid detects cloaked, Lightning chains, Sniper eliminates Hunters."
 	}
 ]

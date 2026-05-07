@@ -1,0 +1,2288 @@
+[
+  {
+    "id": "level_01",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "1 - Grasslands",
+      "difficulty": "Easy",
+      "starting_gold": 110,
+      "total_wave_rewards": 115,
+      "total_enemy_gold_est": 264,
+      "buildable_count": 12,
+      "path_count": 1,
+      "wave_count": 4,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "First Contact",
+          "hp": 225,
+          "enemy_gold": 40,
+          "reward": 20,
+          "capacity_est": 455,
+          "hp_ratio": 0.49,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Node Surge",
+          "hp": 360,
+          "enemy_gold": 64,
+          "reward": 25,
+          "capacity_est": 683,
+          "hp_ratio": 0.53,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Signal Runners",
+          "hp": 337,
+          "enemy_gold": 76,
+          "reward": 30,
+          "capacity_est": 910,
+          "hp_ratio": 0.37,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Armored Shell",
+          "hp": 550,
+          "enemy_gold": 84,
+          "reward": 40,
+          "capacity_est": 1138,
+          "hp_ratio": 0.48,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_02",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "1 - Grasslands",
+      "difficulty": "Easy",
+      "starting_gold": 170,
+      "total_wave_rewards": 210,
+      "total_enemy_gold_est": 610,
+      "buildable_count": 14,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Patrol Line",
+          "hp": 270,
+          "enemy_gold": 48,
+          "reward": 25,
+          "capacity_est": 705,
+          "hp_ratio": 0.38,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Fast Approach",
+          "hp": 348,
+          "enemy_gold": 86,
+          "reward": 30,
+          "capacity_est": 1411,
+          "hp_ratio": 0.25,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Heavy Pressure",
+          "hp": 645,
+          "enemy_gold": 94,
+          "reward": 40,
+          "capacity_est": 2116,
+          "hp_ratio": 0.3,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Rush and Brace",
+          "hp": 774,
+          "enemy_gold": 156,
+          "reward": 50,
+          "capacity_est": 2822,
+          "hp_ratio": 0.27,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Bend Assault",
+          "hp": 1200,
+          "enemy_gold": 226,
+          "reward": 65,
+          "capacity_est": 4233,
+          "hp_ratio": 0.28,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_03",
+    "status": "WARN",
+    "critical": [],
+    "issues": [],
+    "warnings": [
+      "WAVE 5 'Iron Route Finale': Final wave HP ratio=0.24 (may be too trivial)"
+    ],
+    "meta": {
+      "area": "1 - Grasslands",
+      "difficulty": "Normal",
+      "starting_gold": 175,
+      "total_wave_rewards": 245,
+      "total_enemy_gold_est": 758,
+      "buildable_count": 10,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Iron Vanguard",
+          "hp": 550,
+          "enemy_gold": 84,
+          "reward": 35,
+          "capacity_est": 1195,
+          "hp_ratio": 0.46,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Speeding Threat",
+          "hp": 494,
+          "enemy_gold": 120,
+          "reward": 40,
+          "capacity_est": 1991,
+          "hp_ratio": 0.25,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Armored Column",
+          "hp": 920,
+          "enemy_gold": 136,
+          "reward": 45,
+          "capacity_est": 2788,
+          "hp_ratio": 0.33,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Fast and Heavy",
+          "hp": 914,
+          "enemy_gold": 174,
+          "reward": 55,
+          "capacity_est": 3982,
+          "hp_ratio": 0.23,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "tank"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Iron Route Finale",
+          "hp": 1340,
+          "enemy_gold": 244,
+          "reward": 70,
+          "capacity_est": 5575,
+          "hp_ratio": 0.24,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "tank"
+          ],
+          "trivial": true,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_04",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "1 - Grasslands",
+      "difficulty": "Normal",
+      "starting_gold": 160,
+      "total_wave_rewards": 235,
+      "total_enemy_gold_est": 573,
+      "buildable_count": 14,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Fragment Storm",
+          "hp": 180,
+          "enemy_gold": 36,
+          "reward": 30,
+          "capacity_est": 614,
+          "hp_ratio": 0.29,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "swarm"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Runners Ahead",
+          "hp": 470,
+          "enemy_gold": 103,
+          "reward": 35,
+          "capacity_est": 1229,
+          "hp_ratio": 0.38,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "runner"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Swarm and Sprint",
+          "hp": 385,
+          "enemy_gold": 89,
+          "reward": 45,
+          "capacity_est": 1843,
+          "hp_ratio": 0.21,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "swarm"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Corner Crunch",
+          "hp": 524,
+          "enemy_gold": 141,
+          "reward": 55,
+          "capacity_est": 2458,
+          "hp_ratio": 0.21,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "runner",
+            "swarm"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Speed Choke",
+          "hp": 1060,
+          "enemy_gold": 204,
+          "reward": 70,
+          "capacity_est": 3379,
+          "hp_ratio": 0.31,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "runner",
+            "tank",
+            "swarm"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_05",
+    "status": "WARN",
+    "critical": [],
+    "issues": [],
+    "warnings": [
+      "WAVE 5 'Area Gate': Final wave HP ratio=0.2 (may be too trivial)"
+    ],
+    "meta": {
+      "area": "1 - Grasslands",
+      "difficulty": "Hard",
+      "starting_gold": 150,
+      "total_wave_rewards": 300,
+      "total_enemy_gold_est": 1098,
+      "buildable_count": 14,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Full Advance",
+          "hp": 620,
+          "enemy_gold": 142,
+          "reward": 40,
+          "capacity_est": 1297,
+          "hp_ratio": 0.48,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "runner"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Swarm Surge",
+          "hp": 880,
+          "enemy_gold": 158,
+          "reward": 50,
+          "capacity_est": 2594,
+          "hp_ratio": 0.34,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "tank",
+            "swarm"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Speed Blitz",
+          "hp": 960,
+          "enemy_gold": 242,
+          "reward": 55,
+          "capacity_est": 4324,
+          "hp_ratio": 0.22,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "runner"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Armored Tide",
+          "hp": 1334,
+          "enemy_gold": 234,
+          "reward": 65,
+          "capacity_est": 6053,
+          "hp_ratio": 0.22,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "tank",
+            "swarm"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Area Gate",
+          "hp": 1624,
+          "enemy_gold": 322,
+          "reward": 90,
+          "capacity_est": 8215,
+          "hp_ratio": 0.2,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "fast",
+            "swarm",
+            "tank",
+            "basic"
+          ],
+          "trivial": true,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_06",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "2 - Forest",
+      "difficulty": "Normal",
+      "starting_gold": 210,
+      "total_wave_rewards": 345,
+      "total_enemy_gold_est": 844,
+      "buildable_count": 11,
+      "path_count": 2,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Parallel Approach",
+          "hp": 540,
+          "enemy_gold": 96,
+          "reward": 45,
+          "capacity_est": 1047,
+          "hp_ratio": 0.52,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Shield Vanguard",
+          "hp": 910,
+          "enemy_gold": 122,
+          "reward": 55,
+          "capacity_est": 1570,
+          "hp_ratio": 0.58,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank",
+            "shieldbearer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Dual Shield",
+          "hp": 1220,
+          "enemy_gold": 158,
+          "reward": 65,
+          "capacity_est": 2355,
+          "hp_ratio": 0.52,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank",
+            "shieldbearer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Merge Push",
+          "hp": 1044,
+          "enemy_gold": 182,
+          "reward": 80,
+          "capacity_est": 3140,
+          "hp_ratio": 0.33,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "tank",
+            "shieldbearer",
+            "swarm"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Iron Gate",
+          "hp": 1880,
+          "enemy_gold": 286,
+          "reward": 100,
+          "capacity_est": 4449,
+          "hp_ratio": 0.42,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "runner",
+            "tank",
+            "shieldbearer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_07",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "2 - Forest",
+      "difficulty": "Normal",
+      "starting_gold": 260,
+      "total_wave_rewards": 335,
+      "total_enemy_gold_est": 935,
+      "buildable_count": 14,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Warm Up",
+          "hp": 500,
+          "enemy_gold": 109,
+          "reward": 45,
+          "capacity_est": 910,
+          "hp_ratio": 0.55,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Repair Drones",
+          "hp": 870,
+          "enemy_gold": 124,
+          "reward": 55,
+          "capacity_est": 1593,
+          "hp_ratio": 0.55,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Healing Column",
+          "hp": 1280,
+          "enemy_gold": 180,
+          "reward": 65,
+          "capacity_est": 2276,
+          "hp_ratio": 0.56,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Speed Heal",
+          "hp": 1094,
+          "enemy_gold": 230,
+          "reward": 75,
+          "capacity_est": 3186,
+          "hp_ratio": 0.34,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "runner",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Fast Lane Finale",
+          "hp": 1660,
+          "enemy_gold": 292,
+          "reward": 95,
+          "capacity_est": 4324,
+          "hp_ratio": 0.38,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "fast",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_08",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "2 - Forest",
+      "difficulty": "Hard",
+      "starting_gold": 250,
+      "total_wave_rewards": 360,
+      "total_enemy_gold_est": 919,
+      "buildable_count": 13,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Heavy Advance",
+          "hp": 920,
+          "enemy_gold": 136,
+          "reward": 50,
+          "capacity_est": 2276,
+          "hp_ratio": 0.4,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Fragmenters",
+          "hp": 960,
+          "enemy_gold": 139,
+          "reward": 60,
+          "capacity_est": 3186,
+          "hp_ratio": 0.3,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "splitter"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Fragment Swarm",
+          "hp": 1105,
+          "enemy_gold": 156,
+          "reward": 70,
+          "capacity_est": 4551,
+          "hp_ratio": 0.24,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "tank",
+            "splitter",
+            "swarm"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Shielded Splitters",
+          "hp": 1620,
+          "enemy_gold": 196,
+          "reward": 80,
+          "capacity_est": 6372,
+          "hp_ratio": 0.25,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "tank",
+            "splitter",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Heavy Bend Finale",
+          "hp": 2340,
+          "enemy_gold": 292,
+          "reward": 100,
+          "capacity_est": 8647,
+          "hp_ratio": 0.27,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "splitter",
+            "swarm",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_09",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "2 - Forest",
+      "difficulty": "Hard",
+      "starting_gold": 265,
+      "total_wave_rewards": 375,
+      "total_enemy_gold_est": 1132,
+      "buildable_count": 18,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Opening Move",
+          "hp": 1090,
+          "enemy_gold": 144,
+          "reward": 50,
+          "capacity_est": 1365,
+          "hp_ratio": 0.8,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Swarm Screen",
+          "hp": 1040,
+          "enemy_gold": 166,
+          "reward": 60,
+          "capacity_est": 2185,
+          "hp_ratio": 0.48,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "tank",
+            "shieldbearer",
+            "swarm"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Splitter + Healer",
+          "hp": 1384,
+          "enemy_gold": 216,
+          "reward": 70,
+          "capacity_est": 3277,
+          "hp_ratio": 0.42,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "splitter",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Combo Stack",
+          "hp": 2140,
+          "enemy_gold": 267,
+          "reward": 80,
+          "capacity_est": 4369,
+          "hp_ratio": 0.49,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "splitter",
+            "swarm",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Swarm Bridge Finale",
+          "hp": 2410,
+          "enemy_gold": 339,
+          "reward": 115,
+          "capacity_est": 6007,
+          "hp_ratio": 0.4,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "splitter",
+            "swarm",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_10",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "2 - Forest",
+      "difficulty": "Elite",
+      "starting_gold": 250,
+      "total_wave_rewards": 310,
+      "total_enemy_gold_est": 1224,
+      "buildable_count": 15,
+      "path_count": 1,
+      "wave_count": 4,
+      "hero_enabled": false,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Iron Front",
+          "hp": 1720,
+          "enemy_gold": 220,
+          "reward": 55,
+          "capacity_est": 2662,
+          "hp_ratio": 0.65,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Splinter Tide",
+          "hp": 2100,
+          "enemy_gold": 320,
+          "reward": 65,
+          "capacity_est": 4881,
+          "hp_ratio": 0.43,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "splitter",
+            "swarm",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Shield Wall",
+          "hp": 2140,
+          "enemy_gold": 302,
+          "reward": 80,
+          "capacity_est": 7100,
+          "hp_ratio": 0.3,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "The Long March",
+          "hp": 2750,
+          "enemy_gold": 382,
+          "reward": 110,
+          "capacity_est": 9762,
+          "hp_ratio": 0.28,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "splitter",
+            "swarm",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_11",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "3 - Forest River",
+      "difficulty": "Medium",
+      "starting_gold": 300,
+      "total_wave_rewards": 360,
+      "total_enemy_gold_est": 780,
+      "buildable_count": 14,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Scout Screen",
+          "hp": 500,
+          "enemy_gold": 109,
+          "reward": 50,
+          "capacity_est": 1138,
+          "hp_ratio": 0.44,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Bulwark Arrival",
+          "hp": 1140,
+          "enemy_gold": 127,
+          "reward": 60,
+          "capacity_est": 1593,
+          "hp_ratio": 0.72,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "bulwark",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Hunter Ambush",
+          "hp": 908,
+          "enemy_gold": 136,
+          "reward": 70,
+          "capacity_est": 2276,
+          "hp_ratio": 0.4,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "hunter",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Shielded Push",
+          "hp": 1680,
+          "enemy_gold": 187,
+          "reward": 80,
+          "capacity_est": 2958,
+          "hp_ratio": 0.57,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "tank",
+            "basic",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Command Convoy",
+          "hp": 1950,
+          "enemy_gold": 221,
+          "reward": 100,
+          "capacity_est": 3868,
+          "hp_ratio": 0.5,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "hunter",
+            "splitter",
+            "tank",
+            "basic"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_12",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "3 - Forest River",
+      "difficulty": "Hard",
+      "starting_gold": 320,
+      "total_wave_rewards": 390,
+      "total_enemy_gold_est": 952,
+      "buildable_count": 9,
+      "path_count": 2,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Divided Front",
+          "hp": 438,
+          "enemy_gold": 102,
+          "reward": 55,
+          "capacity_est": 1365,
+          "hp_ratio": 0.32,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Healer Column",
+          "hp": 1020,
+          "enemy_gold": 164,
+          "reward": 65,
+          "capacity_est": 2185,
+          "hp_ratio": 0.47,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "runner",
+            "tank",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Shield Both Lanes",
+          "hp": 1224,
+          "enemy_gold": 184,
+          "reward": 75,
+          "capacity_est": 3004,
+          "hp_ratio": 0.41,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "tank",
+            "shieldbearer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Hunter Crossfire",
+          "hp": 1225,
+          "enemy_gold": 200,
+          "reward": 85,
+          "capacity_est": 4096,
+          "hp_ratio": 0.3,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "hunter",
+            "runner",
+            "splitter",
+            "swarm"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Junction Siege",
+          "hp": 2430,
+          "enemy_gold": 302,
+          "reward": 110,
+          "capacity_est": 5461,
+          "hp_ratio": 0.44,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "runner",
+            "splitter",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_13",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "3 - Forest River",
+      "difficulty": "Medium",
+      "starting_gold": 320,
+      "total_wave_rewards": 390,
+      "total_enemy_gold_est": 992,
+      "buildable_count": 11,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Ghostwalk",
+          "hp": 510,
+          "enemy_gold": 93,
+          "reward": 55,
+          "capacity_est": 1877,
+          "hp_ratio": 0.27,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "cloaked"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Stealth Screen",
+          "hp": 724,
+          "enemy_gold": 154,
+          "reward": 65,
+          "capacity_est": 3004,
+          "hp_ratio": 0.24,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "cloaked",
+            "healer"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Hunter Stalk",
+          "hp": 1060,
+          "enemy_gold": 142,
+          "reward": 75,
+          "capacity_est": 4130,
+          "hp_ratio": 0.26,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "tank",
+            "hunter",
+            "cloaked"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Special Ground Mix",
+          "hp": 1560,
+          "enemy_gold": 249,
+          "reward": 85,
+          "capacity_est": 5632,
+          "hp_ratio": 0.28,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "cloaked",
+            "runner",
+            "splitter",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Broken Corridor Finale",
+          "hp": 2740,
+          "enemy_gold": 354,
+          "reward": 110,
+          "capacity_est": 7885,
+          "hp_ratio": 0.35,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "hunter",
+            "splitter",
+            "cloaked",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_14",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "3 - Forest River",
+      "difficulty": "Medium",
+      "starting_gold": 330,
+      "total_wave_rewards": 415,
+      "total_enemy_gold_est": 1079,
+      "buildable_count": 12,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Shield March",
+          "hp": 1140,
+          "enemy_gold": 127,
+          "reward": 60,
+          "capacity_est": 1980,
+          "hp_ratio": 0.58,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "bulwark",
+            "tank"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Healed Convoy",
+          "hp": 1640,
+          "enemy_gold": 189,
+          "reward": 70,
+          "capacity_est": 2970,
+          "hp_ratio": 0.55,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "bulwark",
+            "tank",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Double Column",
+          "hp": 1810,
+          "enemy_gold": 181,
+          "reward": 80,
+          "capacity_est": 3959,
+          "hp_ratio": 0.46,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Hunter Guard",
+          "hp": 2150,
+          "enemy_gold": 226,
+          "reward": 90,
+          "capacity_est": 5279,
+          "hp_ratio": 0.41,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "hunter",
+            "splitter",
+            "tank",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Shield March Finale",
+          "hp": 3560,
+          "enemy_gold": 356,
+          "reward": 115,
+          "capacity_est": 7259,
+          "hp_ratio": 0.49,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "hunter",
+            "splitter",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_15",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "3 - Forest River",
+      "difficulty": "Hard",
+      "starting_gold": 340,
+      "total_wave_rewards": 420,
+      "total_enemy_gold_est": 1144,
+      "buildable_count": 13,
+      "path_count": 2,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": false,
+      "first_air_wave": null,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Fork Split",
+          "hp": 654,
+          "enemy_gold": 134,
+          "reward": 60,
+          "capacity_est": 1570,
+          "hp_ratio": 0.42,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "hunter",
+            "basic"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Cloaked Fork",
+          "hp": 1520,
+          "enemy_gold": 211,
+          "reward": 70,
+          "capacity_est": 2355,
+          "hp_ratio": 0.65,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "splitter",
+            "tank",
+            "cloaked",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Hunter Net",
+          "hp": 1410,
+          "enemy_gold": 127,
+          "reward": 80,
+          "capacity_est": 3140,
+          "hp_ratio": 0.45,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "hunter",
+            "tank",
+            "shieldbearer",
+            "bulwark"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Dual Special",
+          "hp": 2330,
+          "enemy_gold": 272,
+          "reward": 90,
+          "capacity_est": 4449,
+          "hp_ratio": 0.52,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "hunter",
+            "splitter",
+            "cloaked",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Hunter's Fork Finale",
+          "hp": 3450,
+          "enemy_gold": 400,
+          "reward": 120,
+          "capacity_est": 6019,
+          "hp_ratio": 0.57,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "hunter",
+            "cloaked",
+            "splitter",
+            "tank",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_16",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "4 - Mountain",
+      "difficulty": "Hard",
+      "starting_gold": 360,
+      "total_wave_rewards": 445,
+      "total_enemy_gold_est": 1231,
+      "buildable_count": 12,
+      "path_count": 2,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": true,
+      "first_air_wave": 1,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "First Air Contact",
+          "hp": 470,
+          "enemy_gold": 96,
+          "reward": 65,
+          "capacity_est": 1570,
+          "hp_ratio": 0.3,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Air and Ground",
+          "hp": 1214,
+          "enemy_gold": 246,
+          "reward": 75,
+          "capacity_est": 2617,
+          "hp_ratio": 0.46,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "tank",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Shielded Ground Rush",
+          "hp": 1534,
+          "enemy_gold": 241,
+          "reward": 85,
+          "capacity_est": 3664,
+          "hp_ratio": 0.42,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "fast",
+            "bulwark",
+            "tank",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Hunter Diversion",
+          "hp": 1505,
+          "enemy_gold": 241,
+          "reward": 95,
+          "capacity_est": 4710,
+          "hp_ratio": 0.32,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "hunter",
+            "tank",
+            "swarm",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Twin Pressure Finale",
+          "hp": 2770,
+          "enemy_gold": 407,
+          "reward": 125,
+          "capacity_est": 6542,
+          "hp_ratio": 0.42,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "runner",
+            "tank",
+            "flyer",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_17",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "4 - Mountain",
+      "difficulty": "Hard",
+      "starting_gold": 370,
+      "total_wave_rewards": 470,
+      "total_enemy_gold_est": 1396,
+      "buildable_count": 13,
+      "path_count": 2,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": true,
+      "first_air_wave": 1,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Speed Strike",
+          "hp": 535,
+          "enemy_gold": 134,
+          "reward": 70,
+          "capacity_est": 1638,
+          "hp_ratio": 0.33,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast_flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Air + Ground Pressure",
+          "hp": 1170,
+          "enemy_gold": 259,
+          "reward": 80,
+          "capacity_est": 3004,
+          "hp_ratio": 0.39,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "fast_flyer",
+            "runner",
+            "tank",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Flanking Air",
+          "hp": 1650,
+          "enemy_gold": 253,
+          "reward": 90,
+          "capacity_est": 4096,
+          "hp_ratio": 0.4,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "healer",
+            "fast_flyer",
+            "tank",
+            "bulwark"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Hunter Air Cover",
+          "hp": 1800,
+          "enemy_gold": 315,
+          "reward": 100,
+          "capacity_est": 5461,
+          "hp_ratio": 0.33,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "hunter",
+            "fast_flyer",
+            "splitter",
+            "cloaked"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Core Split Finale",
+          "hp": 2940,
+          "enemy_gold": 435,
+          "reward": 130,
+          "capacity_est": 7646,
+          "hp_ratio": 0.38,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "fast_flyer",
+            "hunter",
+            "tank",
+            "flyer",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_18",
+    "status": "WARN",
+    "critical": [],
+    "issues": [],
+    "warnings": [
+      "WAVE 4: Air-only wave \u2014 Guardian does nothing (correct design, note only)",
+      "WAVE 5 'Bulwark Line Finale': Final wave HP ratio=0.23 (may be too trivial)"
+    ],
+    "meta": {
+      "area": "4 - Mountain",
+      "difficulty": "Hard",
+      "starting_gold": 380,
+      "total_wave_rewards": 495,
+      "total_enemy_gold_est": 1591,
+      "buildable_count": 10,
+      "path_count": 1,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": true,
+      "first_air_wave": 1,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Heavy Air",
+          "hp": 900,
+          "enemy_gold": 139,
+          "reward": 75,
+          "capacity_est": 3618,
+          "hp_ratio": 0.25,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "armored_flyer"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Armored Advance",
+          "hp": 1455,
+          "enemy_gold": 242,
+          "reward": 85,
+          "capacity_est": 6633,
+          "hp_ratio": 0.22,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "fast_flyer",
+            "tank",
+            "armored_flyer"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Restricted Crunch",
+          "hp": 2710,
+          "enemy_gold": 306,
+          "reward": 95,
+          "capacity_est": 9648,
+          "hp_ratio": 0.28,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "tank",
+            "armored_flyer",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "All Air",
+          "hp": 1760,
+          "enemy_gold": 358,
+          "reward": 105,
+          "capacity_est": 13266,
+          "hp_ratio": 0.13,
+          "has_air": true,
+          "has_land": false,
+          "enemy_types": [
+            "fast_flyer",
+            "armored_flyer",
+            "flyer"
+          ],
+          "trivial": true,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Bulwark Line Finale",
+          "hp": 4360,
+          "enemy_gold": 546,
+          "reward": 135,
+          "capacity_est": 18694,
+          "hp_ratio": 0.23,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "hunter",
+            "fast_flyer",
+            "splitter",
+            "armored_flyer",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": true,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_19",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "4 - Mountain",
+      "difficulty": "Hard",
+      "starting_gold": 390,
+      "total_wave_rewards": 525,
+      "total_enemy_gold_est": 1921,
+      "buildable_count": 13,
+      "path_count": 3,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": true,
+      "first_air_wave": 2,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Three-Lane Probe",
+          "hp": 728,
+          "enemy_gold": 173,
+          "reward": 75,
+          "capacity_est": 1805,
+          "hp_ratio": 0.4,
+          "has_air": false,
+          "has_land": true,
+          "enemy_types": [
+            "basic",
+            "fast",
+            "runner"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "EMP Wasp",
+          "hp": 1670,
+          "enemy_gold": 265,
+          "reward": 85,
+          "capacity_est": 3095,
+          "hp_ratio": 0.54,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "runner",
+            "disruptor",
+            "tank",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "EMP Escort",
+          "hp": 2860,
+          "enemy_gold": 413,
+          "reward": 95,
+          "capacity_est": 4642,
+          "hp_ratio": 0.62,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "disruptor",
+            "hunter",
+            "fast_flyer",
+            "tank",
+            "armored_flyer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Air Suppression",
+          "hp": 3850,
+          "enemy_gold": 590,
+          "reward": 110,
+          "capacity_est": 6963,
+          "hp_ratio": 0.55,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "disruptor",
+            "fast_flyer",
+            "hunter",
+            "cloaked",
+            "splitter",
+            "armored_flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Hunter Net Finale",
+          "hp": 3400,
+          "enemy_gold": 480,
+          "reward": 160,
+          "capacity_est": 9026,
+          "hp_ratio": 0.38,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "shieldbearer",
+            "disruptor",
+            "hunter",
+            "fast_flyer",
+            "splitter",
+            "armored_flyer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  },
+  {
+    "id": "level_20",
+    "status": "PASS",
+    "critical": [],
+    "issues": [],
+    "warnings": [],
+    "meta": {
+      "area": "4 - Mountain",
+      "difficulty": "Extreme",
+      "starting_gold": 420,
+      "total_wave_rewards": 555,
+      "total_enemy_gold_est": 2533,
+      "buildable_count": 16,
+      "path_count": 2,
+      "wave_count": 5,
+      "hero_enabled": true,
+      "has_air": true,
+      "first_air_wave": 1,
+      "waves": [
+        {
+          "wave": 1,
+          "name": "Siege Opening",
+          "hp": 1400,
+          "enemy_gold": 179,
+          "reward": 80,
+          "capacity_est": 1911,
+          "hp_ratio": 0.73,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "healer",
+            "fast_flyer",
+            "tank",
+            "shieldbearer",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 2,
+          "name": "Hunter Ground",
+          "hp": 3060,
+          "enemy_gold": 499,
+          "reward": 90,
+          "capacity_est": 4096,
+          "hp_ratio": 0.75,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "disruptor",
+            "hunter",
+            "fast_flyer",
+            "splitter",
+            "cloaked",
+            "armored_flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 3,
+          "name": "Double Bulwark",
+          "hp": 4460,
+          "enemy_gold": 522,
+          "reward": 105,
+          "capacity_est": 6281,
+          "hp_ratio": 0.71,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "disruptor",
+            "hunter",
+            "tank",
+            "armored_flyer",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 4,
+          "name": "Full Air Sweep",
+          "hp": 2970,
+          "enemy_gold": 578,
+          "reward": 120,
+          "capacity_est": 8738,
+          "hp_ratio": 0.34,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "disruptor",
+            "hunter",
+            "fast_flyer",
+            "armored_flyer",
+            "flyer"
+          ],
+          "trivial": false,
+          "impossible": false
+        },
+        {
+          "wave": 5,
+          "name": "Command Siege Finale",
+          "hp": 5325,
+          "enemy_gold": 755,
+          "reward": 160,
+          "capacity_est": 12015,
+          "hp_ratio": 0.44,
+          "has_air": true,
+          "has_land": true,
+          "enemy_types": [
+            "bulwark",
+            "disruptor",
+            "hunter",
+            "fast_flyer",
+            "splitter",
+            "cloaked",
+            "armored_flyer",
+            "shieldbearer",
+            "healer"
+          ],
+          "trivial": false,
+          "impossible": false
+        }
+      ]
+    }
+  }
+]

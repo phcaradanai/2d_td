@@ -310,7 +310,9 @@ func _update_tower_affordability(current_gold: int) -> void:
 		var targets = "Land Only"
 		match btn_info["id"]:
 			"basic_tower": role = "Balanced / Single Target"
-			"rapid_tower": role = "High Fire Rate / Anti-Swarm"
+			"rapid_tower": 
+				role = "High Fire Rate / Anti-Swarm"
+				targets = "Land & Air"
 			"cannon_tower": role = "Area Damage / Splash"
 			"slow_tower": role = "Support / Movement Reduction"
 			"sniper_tower": 

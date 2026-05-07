@@ -1,195 +1,35 @@
 {
-	"area_id": 1.0,
-	"area_name": "Grasslands",
-	"base_cell": [
-		19.0,
-		3.0
-	],
-	"blocked_cells": [
-		[
-			3.0,
-			4.0
-		],
-		[
-			4.0,
-			4.0
-		],
-		[
-			5.0,
-			4.0
-		],
-		[
-			6.0,
-			4.0
-		]
-	],
-	"decorative_blocked_cells": [
-		[
-			10.0,
-			2.0
-		],
-		[
-			11.0,
-			2.0
-		],
-		[
-			16.0,
-			6.0
-		],
-		[
-			17.0,
-			6.0
-		]
-	],
-	"description": "A winding path with multiple curves. Requires better coverage and planning.",
-	"difficulty": "Easy",
-	"enemy_intel": [
-		"Normal",
-		"Fast"
-	],
-	"grid_cols": 20.0,
-	"grid_origin": {
-		"x": 0.0,
-		"y": 0.0
-	},
-	"grid_rows": 12.0,
-	"grid_size": 64.0,
 	"id": "level_02",
 	"name": "Crossroad Bend",
-	"path_cells": [
-		[
-			2.0,
-			0.0
-		],
-		[
-			2.0,
-			1.0
-		],
-		[
-			2.0,
-			2.0
-		],
-		[
-			2.0,
-			3.0
-		],
-		[
-			3.0,
-			3.0
-		],
-		[
-			4.0,
-			3.0
-		],
-		[
-			5.0,
-			3.0
-		],
-		[
-			6.0,
-			3.0
-		],
-		[
-			7.0,
-			3.0
-		],
-		[
-			8.0,
-			3.0
-		],
-		[
-			8.0,
-			4.0
-		],
-		[
-			8.0,
-			5.0
-		],
-		[
-			8.0,
-			6.0
-		],
-		[
-			8.0,
-			7.0
-		],
-		[
-			8.0,
-			8.0
-		],
-		[
-			9.0,
-			8.0
-		],
-		[
-			10.0,
-			8.0
-		],
-		[
-			11.0,
-			8.0
-		],
-		[
-			12.0,
-			8.0
-		],
-		[
-			13.0,
-			8.0
-		],
-		[
-			14.0,
-			8.0
-		],
-		[
-			14.0,
-			7.0
-		],
-		[
-			14.0,
-			6.0
-		],
-		[
-			14.0,
-			5.0
-		],
-		[
-			14.0,
-			4.0
-		],
-		[
-			14.0,
-			3.0
-		],
-		[
-			15.0,
-			3.0
-		],
-		[
-			16.0,
-			3.0
-		],
-		[
-			17.0,
-			3.0
-		],
-		[
-			18.0,
-			3.0
-		],
-		[
-			19.0,
-			3.0
-		]
-	],
-	"recommended_roles": [
-		"Rapid"
-	],
-	"spawn_cell": [
-		2.0,
-		0.0
-	],
+	"area_id": 1,
+	"area_name": "Grasslands",
+	"difficulty": "Easy",
+	"description": "A winding path with two bends. Fast enemies require towers placed at corners. Learn to anticipate turns.",
+	"enemy_intel": ["Normal", "Fast"],
+	"recommended_roles": ["Rapid"],
+	"grid_size": 64.0,
+	"grid_cols": 20.0,
+	"grid_rows": 12.0,
+	"grid_origin": { "x": 0.0, "y": 0.0 },
 	"starting_gold": 170,
-	"starting_lives": 20.0,
+	"starting_lives": 20,
+	"spawn_cell": [2, 0],
+	"base_cell": [19, 3],
+	"path_cells": [
+		[2, 0], [2, 1], [2, 2], [2, 3],
+		[3, 3], [4, 3], [5, 3], [6, 3], [7, 3], [8, 3],
+		[8, 4], [8, 5], [8, 6], [8, 7], [8, 8],
+		[9, 8], [10, 8], [11, 8], [12, 8], [13, 8], [14, 8],
+		[14, 7], [14, 6], [14, 5], [14, 4], [14, 3],
+		[15, 3], [16, 3], [17, 3], [18, 3], [19, 3]
+	],
+	"buildable_cells": [
+		[1, 2], [3, 2], [7, 2], [9, 3],
+		[7, 5], [9, 5],
+		[7, 9], [9, 9],
+		[13, 9], [15, 9],
+		[13, 4], [15, 4],
+		[16, 2], [18, 2]
+	],
 	"waves_path": "res://data/waves/waves_02.json"
 }

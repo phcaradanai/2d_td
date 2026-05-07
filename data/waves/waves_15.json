@@ -1,50 +1,65 @@
 [
 	{
-		"name": "Twin Incursion",
-		"reward": 55,
+		"wave": 1,
+		"name": "Fork Split",
+		"reward": 60,
 		"groups": [
-			{"type": "basic", "count": 6, "interval": 1.2, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.8, "path": "lane_b"}
-		]
+			{ "type": "hunter", "count": 1, "interval": 0.4, "path": "default" },
+			{ "type": "fast",   "count": 8, "interval": 0.4, "path": "default" },
+			{ "type": "basic",  "count": 6, "interval": 0.9, "path": "lane_b"  }
+		],
+		"intel": "Hunter enters the top lane. If Guardian is deployed, it becomes the immediate target."
 	},
 	{
-		"name": "Hunter's Trap",
-		"reward": 65,
+		"wave": 2,
+		"name": "Cloaked Fork",
+		"reward": 70,
 		"groups": [
-			{"type": "fast", "count": 5, "interval": 0.6, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 1.5, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "lane_b"}
-		]
+			{ "type": "cloaked",  "count": 4, "interval": 0.9, "path": "default" },
+			{ "type": "healer",   "count": 1, "interval": 0.8, "path": "default" },
+			{ "type": "splitter", "count": 3, "interval": 1.8, "path": "lane_b"  },
+			{ "type": "tank",     "count": 3, "interval": 1.7, "path": "lane_b"  }
+		],
+		"intel": "Top lane: cloaked + healer. Bottom lane: splitter + tank. AoE on bottom, Lightning/Rapid on top."
 	},
 	{
-		"name": "Deadly Duo",
+		"wave": 3,
+		"name": "Hunter Net",
 		"reward": 80,
 		"groups": [
-			{"type": "basic", "count": 4, "interval": 1.2, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 2.0, "path": "default"},
-			{"type": "fast", "count": 6, "interval": 0.5, "path": "lane_b"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"}
-		]
+			{ "type": "hunter",       "count": 2, "interval": 0.4, "path": "default" },
+			{ "type": "bulwark",      "count": 1, "interval": 1.0, "path": "lane_b"  },
+			{ "type": "shieldbearer", "count": 1, "interval": 0.6, "path": "lane_b"  },
+			{ "type": "tank",         "count": 3, "interval": 1.7, "path": "lane_b"  }
+		],
+		"intel": "Hunters on top, Bulwark convoy below. Both require Guardian attention but cooldown only allows one."
 	},
 	{
-		"name": "Shield and Scythe",
-		"reward": 95,
+		"wave": 4,
+		"name": "Dual Special",
+		"reward": 90,
 		"groups": [
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 6, "interval": 0.4, "path": "lane_b"},
-			{"type": "hunter", "count": 1, "interval": 2.0, "path": "lane_b"}
-		]
+			{ "type": "cloaked",  "count": 5, "interval": 0.8, "path": "default" },
+			{ "type": "hunter",   "count": 2, "interval": 0.4, "path": "default" },
+			{ "type": "bulwark",  "count": 1, "interval": 1.0, "path": "lane_b"  },
+			{ "type": "splitter", "count": 4, "interval": 1.7, "path": "lane_b"  },
+			{ "type": "healer",   "count": 2, "interval": 0.8, "path": "lane_b"  }
+		],
+		"intel": "Every special ground type across both lanes. Lightning at the merge covers both paths on exit."
 	},
 	{
-		"name": "Final Fork",
+		"wave": 5,
+		"name": "Hunter's Fork Finale",
 		"reward": 120,
 		"groups": [
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
-			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
-			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.5, "path": "lane_b"},
-			{"type": "hunter", "count": 2, "interval": 1.5, "path": "lane_b"}
-		]
+			{ "type": "hunter",       "count": 3, "interval": 0.4, "path": "default" },
+			{ "type": "cloaked",      "count": 5, "interval": 0.8, "path": "default" },
+			{ "type": "shieldbearer", "count": 1, "interval": 0.6, "path": "default" },
+			{ "type": "bulwark",      "count": 1, "interval": 1.0, "path": "lane_b"  },
+			{ "type": "healer",       "count": 3, "interval": 0.7, "path": "lane_b"  },
+			{ "type": "splitter",     "count": 4, "interval": 1.7, "path": "lane_b"  },
+			{ "type": "tank",         "count": 4, "interval": 1.6, "path": "lane_b"  }
+		],
+		"intel": "Area 3 finale. Hunters demand Guardian attention, Bulwark demands it too. Sniper covers Guardian, Guardian takes Bulwark. No idle towers."
 	}
 ]

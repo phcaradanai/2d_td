@@ -8,6 +8,7 @@ signal hero_retreated()
 enum HeroState { IDLE, CHASING, ATTACKING, RETURNING, RETREATING }
 
 @export var hero_name: String = "Guardian"
+@export var hero_tooltip: String = "Ground-only emergency defender. Cannot attack air enemies."
 @export var max_hp: float = 450.0
 @export var damage: float = 36.0
 @export var attack_range: float = 125.0
@@ -71,6 +72,9 @@ func trigger_shockwave() -> void:
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
+			# Guardian land-only: skip air enemies
+			if enemy.has_method("get_enemy_category") and enemy.get_enemy_category() != "land":
+				continue
 			if global_position.distance_to(enemy.global_position) <= shockwave_radius:
 				if enemy.has_method("take_damage"):
 					enemy.take_damage(int(shockwave_damage))
@@ -211,6 +215,9 @@ func find_best_target() -> Node2D:
 	var max_progress = -1.0
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
+			# Guardian land-only: skip air enemies
+			if enemy.has_method("get_enemy_category") and enemy.get_enemy_category() != "land":
+				continue
 			if enemy.has_method("get_path_progress"):
 				var prog = enemy.get_path_progress()
 				if prog > max_progress:
@@ -222,6 +229,10 @@ func find_best_target() -> Node2D:
 
 func attack() -> void:
 	if not is_instance_valid(current_target): return
+	# Guardian land-only: abort if target is an air enemy
+	if current_target.has_method("get_enemy_category") and current_target.get_enemy_category() != "land":
+		current_target = null
+		return
 	var dist = global_position.distance_to(current_target.global_position)
 	if dist > attack_range: return
 	
@@ -272,6 +283,9 @@ func cast_skill() -> void:
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
+			# Guardian land-only: Rally Strike does not hit air enemies
+			if enemy.has_method("get_enemy_category") and enemy.get_enemy_category() != "land":
+				continue
 			if global_position.distance_to(enemy.global_position) <= skill_radius:
 				if enemy.has_method("take_damage"):
 					enemy.take_damage(int(skill_damage))

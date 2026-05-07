@@ -1,51 +1,72 @@
 [
 	{
-		"name": "Scout Swarm",
-		"reward": 60,
-		"groups": [
-			{"type": "fast", "count": 8, "interval": 0.5, "path": "lane_b"},
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"}
-		]
-	},
-	{
-		"name": "Hunter's Gaze",
+		"wave": 1,
+		"name": "Three-Lane Probe",
 		"reward": 75,
 		"groups": [
-			{"type": "fast", "count": 5, "interval": 0.6, "path": "lane_b"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"},
-			{"type": "fast", "count": 4, "interval": 0.5, "path": "lane_b"}
-		]
+			{ "type": "fast",   "count": 6, "interval": 0.5, "path": "default" },
+			{ "type": "basic",  "count": 8, "interval": 0.9, "path": "lane_b"  },
+			{ "type": "runner", "count": 5, "interval": 0.5, "path": "lane_c"  }
+		],
+		"intel": "Three lanes active simultaneously. The funnel at [15,6] handles all — position Lightning or Cannon there."
 	},
 	{
-		"name": "Crossed Arrows",
-		"reward": 90,
+		"wave": 2,
+		"name": "EMP Wasp",
+		"reward": 85,
+		"intel": "EMP Wasp: emits a field that slows tower fire rates by 50%. Kill it immediately — every second it lives multiplies enemy damage output.",
 		"groups": [
-			{"type": "hunter", "count": 1, "interval": 2.0, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 6, "interval": 0.6, "path": "lane_c"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_c"}
+			{ "type": "disruptor",   "count": 1, "interval": 0.5, "path": "default" },
+			{ "type": "flyer",       "count": 6, "interval": 0.8, "path": "default" },
+			{ "type": "bulwark",     "count": 1, "interval": 1.0, "path": "lane_b"  },
+			{ "type": "tank",        "count": 4, "interval": 1.6, "path": "lane_b"  },
+			{ "type": "runner",      "count": 6, "interval": 0.5, "path": "lane_c"  }
 		]
 	},
 	{
-		"name": "Shielded Hunters",
+		"wave": 3,
+		"name": "EMP Escort",
+		"reward": 95,
+		"groups": [
+			{ "type": "disruptor",    "count": 2, "interval": 2.0, "path": "default" },
+			{ "type": "armored_flyer","count": 4, "interval": 1.3, "path": "default" },
+			{ "type": "fast_flyer",   "count": 6, "interval": 0.6, "path": "lane_b"  },
+			{ "type": "hunter",       "count": 2, "interval": 0.4, "path": "lane_b"  },
+			{ "type": "bulwark",      "count": 1, "interval": 1.0, "path": "lane_c"  },
+			{ "type": "healer",       "count": 2, "interval": 0.8, "path": "lane_c"  },
+			{ "type": "tank",         "count": 4, "interval": 1.6, "path": "lane_c"  }
+		],
+		"intel": "Two Disruptors with air escorts. Sniper priority on Disruptors — their EMP slows your AA making them cascade."
+	},
+	{
+		"wave": 4,
+		"name": "Air Suppression",
 		"reward": 110,
 		"groups": [
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.5, "path": "lane_b"},
-			{"type": "hunter", "count": 2, "interval": 1.5, "path": "lane_b"}
-		]
+			{ "type": "disruptor",    "count": 2, "interval": 1.8, "path": "default" },
+			{ "type": "armored_flyer","count": 6, "interval": 1.2, "path": "default" },
+			{ "type": "fast_flyer",   "count": 8, "interval": 0.55,"path": "lane_b"  },
+			{ "type": "cloaked",      "count": 6, "interval": 0.8, "path": "lane_b"  },
+			{ "type": "bulwark",      "count": 1, "interval": 1.0, "path": "lane_c"  },
+			{ "type": "splitter",     "count": 5, "interval": 1.7, "path": "lane_c"  },
+			{ "type": "hunter",       "count": 2, "interval": 0.4, "path": "lane_c"  }
+		],
+		"intel": "Disruptors + air surge on A+B, heavy ground with Hunters on C. Guardian needed on C — but Hunters will target it."
 	},
 	{
-		"name": "The Hunter Net",
-		"reward": 180,
+		"wave": 5,
+		"name": "Hunter Net Finale",
+		"reward": 160,
 		"groups": [
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
-			{"type": "hunter", "count": 2, "interval": 2.0, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.5, "path": "default"},
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "lane_c"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "lane_c"},
-			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_c"}
-		]
+			{ "type": "disruptor",    "count": 3, "interval": 1.8, "path": "default" },
+			{ "type": "armored_flyer","count": 4, "interval": 1.2, "path": "default" },
+			{ "type": "fast_flyer",   "count": 6, "interval": 0.55,"path": "lane_b"  },
+			{ "type": "hunter",       "count": 3, "interval": 0.4, "path": "lane_b"  },
+			{ "type": "bulwark",      "count": 1, "interval": 2.5, "path": "lane_c"  },
+			{ "type": "shieldbearer", "count": 1, "interval": 1.2, "path": "lane_c"  },
+			{ "type": "healer",       "count": 2, "interval": 0.7, "path": "lane_c"  },
+			{ "type": "splitter",     "count": 3, "interval": 1.7, "path": "lane_c"  }
+		],
+		"intel": "Maximum 3-lane pressure. Three Disruptors slow all towers — kill them first or nothing else fires at full rate."
 	}
 ]

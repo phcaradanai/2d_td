@@ -1,77 +1,53 @@
 [
-  {
-	"wave": 1,
-	"name": "The Patrol",
-	"completion_reward": 30,
-	"groups": [
-	  {
-		"enemy_type": "basic",
-		"count": 10,
-		"spawn_delay": 0.8
-	  }
-	]
-  },
-  {
-	"wave": 2,
-	"name": "Swift Squad",
-	"completion_reward": 40,
-	"groups": [
-	  {
-		"enemy_type": "fast",
-		"count": 8,
-		"spawn_delay": 0.4
-	  }
-	]
-  },
-  {
-	"wave": 3,
-	"name": "Battering Ram",
-	"completion_reward": 50,
-	"groups": [
-	  {
-		"enemy_type": "tank",
-		"count": 4,
-		"spawn_delay": 1.2
-	  },
-	  {
-		"enemy_type": "basic",
-		"count": 6,
-		"spawn_delay": 0.6
-	  }
-	]
-  },
-  {
-	"wave": 4,
-	"name": "Infiltration",
-	"completion_reward": 60,
-	"groups": [
-	  {
-		"enemy_type": "fast",
-		"count": 12,
-		"spawn_delay": 0.35
-	  }
-	]
-  },
-  {
-	"wave": 5,
-	"name": "Siege Force",
-	"completion_reward": 100,
-	"groups": [
-	  {
-		"enemy_type": "tank",
-		"count": 6,
-		"spawn_delay": 1.0
-	  },
-	  {
-		"enemy_type": "fast",
-		"count": 10,
-		"spawn_delay": 0.3
-	  },
-	  {
-		"enemy_type": "basic",
-		"count": 10,
-		"spawn_delay": 0.5
-	  }
-	]
-  }
+	{
+		"wave": 1,
+		"name": "Patrol Line",
+		"reward": 25,
+		"groups": [
+			{ "type": "basic", "count": 6, "interval": 1.0 }
+		],
+		"intel": "Normal patrol. Cover the bend corners — enemies slow down on turns."
+	},
+	{
+		"wave": 2,
+		"name": "Fast Approach",
+		"reward": 30,
+		"intel": "Signal Runners enter the bend. They bunch up at corners — this is your window.",
+		"groups": [
+			{ "type": "fast",  "count": 6, "interval": 0.5 },
+			{ "type": "basic", "count": 4, "interval": 0.9 }
+		]
+	},
+	{
+		"wave": 3,
+		"name": "Heavy Pressure",
+		"reward": 40,
+		"groups": [
+			{ "type": "tank",  "count": 3, "interval": 1.8 },
+			{ "type": "basic", "count": 5, "interval": 0.9 }
+		],
+		"intel": "Heavy Shells arrive. They are slow but absorb damage — target them early."
+	},
+	{
+		"wave": 4,
+		"name": "Rush and Brace",
+		"reward": 50,
+		"groups": [
+			{ "type": "fast",  "count": 8, "interval": 0.4 },
+			{ "type": "tank",  "count": 2, "interval": 2.0 },
+			{ "type": "basic", "count": 6, "interval": 0.8 }
+		],
+		"intel": "Mixed column. Runners sprint ahead of the heavies — don't let either slip through."
+	},
+	{
+		"wave": 5,
+		"name": "Bend Assault",
+		"reward": 65,
+		"groups": [
+			{ "type": "fast",  "count": 10, "interval": 0.35 },
+			{ "type": "tank",  "count": 4,  "interval": 1.6 },
+			{ "type": "basic", "count": 8,  "interval": 0.7 }
+		],
+		"intel": "Final push. All three types together. Prioritise tanks while Rapid handles runners."
+	}
 ]
