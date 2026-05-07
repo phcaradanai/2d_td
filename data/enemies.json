@@ -45,7 +45,7 @@
     "id": "bulwark",
     "name": "Bulwark Alpha",
     "max_hp": 450,
-    "speed": 40,
+    "speed": 50,
     "reward_gold": 25,
     "base_damage": 2,
     "category": "land",
@@ -54,10 +54,10 @@
     "tags": ["heavy", "shield", "frontline"],
     "skill": "shield_aura",
     "skill_params": {
-      "radius": 100,
+      "radius": 120,
       "reduction": 0.35
     },
-    "description": "Shield generator unit. Protects all nearby allies from damage.",
+    "description": "Shield generator unit. Leads heavy convoys with a protective energy dome.",
     "counter_towers": ["cannon", "lightning", "slow"]
   },
   "hunter": {

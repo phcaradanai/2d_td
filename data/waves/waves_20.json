@@ -8,14 +8,15 @@
 		]
 	},
 	{
-		"name": "Shield Pressure",
+		"name": "Shield Convoy",
 		"reward": 80,
 		"groups": [
-			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"},
 			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 6, "interval": 1.0, "path": "default"},
+			{"type": "tank", "count": 2, "interval": 1.2, "path": "default"},
+			{"type": "basic", "count": 6, "interval": 1.5, "path": "default"},
 			{"type": "fast", "count": 8, "interval": 0.5, "path": "lane_b"}
-		]
+		],
+		"intel": "Bulwark leads a shielded convoy. Use AoE or Lightning to break the formation."
 	},
 	{
 		"name": "Hunter Siege",
@@ -28,39 +29,43 @@
 		]
 	},
 	{
-		"name": "Dual Threat",
+		"name": "Dual Threat Convoy",
 		"reward": 120,
 		"groups": [
 			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 8, "interval": 1.0, "path": "default"},
+			{"type": "splitter", "count": 2, "interval": 1.0, "path": "default"},
+			{"type": "basic", "count": 8, "interval": 1.5, "path": "default"},
 			{"type": "hunter", "count": 1, "interval": 2.0, "path": "default"},
 			{"type": "fast", "count": 8, "interval": 0.4, "path": "lane_b"},
 			{"type": "hunter", "count": 1, "interval": 1.0, "path": "lane_b"}
-		]
+		],
+		"intel": "A heavy shielded push. Protected units take reduced damage inside the dome."
 	},
 	{
-		"name": "The Siege Wave",
+		"name": "The Siege Convoy",
 		"reward": 150,
 		"groups": [
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
 			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 1.5, "path": "default"},
-			{"type": "fast", "count": 6, "interval": 0.4, "path": "lane_b"},
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "lane_b"},
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "lane_b"}
-		]
+			{"type": "tank", "count": 3, "interval": 1.2, "path": "default"},
+			{"type": "healer", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 2.0, "path": "lane_b"},
+			{"type": "basic", "count": 8, "interval": 1.2, "path": "lane_b"},
+			{"type": "fast", "count": 6, "interval": 0.4, "path": "lane_b"}
+		],
+		"intel": "Bulwark leads a shielded convoy. Use AoE, Slow, or Lightning to break the formation."
 	},
 	{
-		"name": "FINAL COMMAND",
+		"name": "FINAL COMMAND CONVOY",
 		"reward": 250,
 		"groups": [
-			{"type": "bulwark", "count": 2, "interval": 1.0, "path": "default"},
-			{"type": "basic", "count": 8, "interval": 0.8, "path": "default"},
+			{"type": "bulwark", "count": 2, "interval": 2.0, "path": "default"},
+			{"type": "tank", "count": 4, "interval": 1.5, "path": "default"},
+			{"type": "healer", "count": 1, "interval": 1.0, "path": "default"},
 			{"type": "hunter", "count": 1, "interval": 2.0, "path": "default"},
 			{"type": "hunter", "count": 2, "interval": 1.0, "path": "lane_b"},
 			{"type": "fast", "count": 8, "interval": 0.4, "path": "lane_b"},
 			{"type": "basic", "count": 6, "interval": 0.8, "path": "lane_b"}
-		]
+		],
+		"intel": "Elite convoy approach. Use Slow and AoE to break the defense."
 	}
 ]

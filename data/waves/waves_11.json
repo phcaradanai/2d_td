@@ -8,14 +8,15 @@
 		]
 	},
 	{
-		"name": "Bulwark Escort",
+		"name": "Bulwark Convoy",
 		"reward": 60,
 		"groups": [
-			{"type": "basic", "count": 4, "interval": 1.0},
 			{"type": "bulwark", "count": 1, "interval": 0.5},
-			{"type": "basic", "count": 6, "interval": 1.0},
-			{"type": "fast", "count": 2, "interval": 0.6}
-		]
+			{"type": "tank", "count": 2, "interval": 1.5},
+			{"type": "basic", "count": 6, "interval": 2.0},
+			{"type": "fast", "count": 2, "interval": 1.0}
+		],
+		"intel": "Bulwark leads a shielded convoy. Use AoE or Lightning to break the formation."
 	},
 	{
 		"name": "Hunter Ambush",
@@ -32,25 +33,23 @@
 		"name": "Shielded Push",
 		"reward": 80,
 		"groups": [
-			{"type": "basic", "count": 3, "interval": 0.8},
-			{"type": "bulwark", "count": 1, "interval": 0.5},
-			{"type": "basic", "count": 6, "interval": 0.8},
-			{"type": "fast", "count": 3, "interval": 0.4},
-			{"type": "bulwark", "count": 1, "interval": 0.5},
-			{"type": "basic", "count": 4, "interval": 1.0}
-		]
+			{"type": "bulwark", "count": 1, "interval": 1.0},
+			{"type": "tank", "count": 4, "interval": 1.2},
+			{"type": "healer", "count": 1, "interval": 0.5},
+			{"type": "basic", "count": 6, "interval": 1.5}
+		],
+		"intel": "A heavy shielded push. Protected units take reduced damage inside the dome."
 	},
 	{
-		"name": "Command Test",
+		"name": "Command Convoy",
 		"reward": 100,
 		"groups": [
-			{"type": "basic", "count": 4, "interval": 1.0},
-			{"type": "bulwark", "count": 1, "interval": 0.5},
-			{"type": "basic", "count": 5, "interval": 1.0},
-			{"type": "hunter", "count": 1, "interval": 0.2},
-			{"type": "fast", "count": 4, "interval": 0.5},
-			{"type": "hunter", "count": 1, "interval": 0.5},
-			{"type": "basic", "count": 4, "interval": 1.2}
-		]
+			{"type": "bulwark", "count": 1, "interval": 1.0},
+			{"type": "splitter", "count": 2, "interval": 1.0},
+			{"type": "tank", "count": 2, "interval": 1.5},
+			{"type": "basic", "count": 8, "interval": 2.0},
+			{"type": "fast", "count": 4, "interval": 1.0}
+		],
+		"intel": "Elite convoy approach. Use Slow to keep them in kill zones longer."
 	}
 ]

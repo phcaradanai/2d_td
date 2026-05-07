@@ -1677,6 +1677,9 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	var rec_roles = recommend_roles_for_wave(traits)
 	var warnings = derive_wave_warnings(traits)
 	
+	if wave_data.has("intel") and wave_data["intel"] != "":
+		warnings.append(wave_data["intel"])
+	
 	if lane_info.keys().size() > 1:
 		warnings.append("Dual-Lane Pressure: Enemies arriving from multiple routes.")
 		if current_level_id == "level_12":
@@ -1697,11 +1700,11 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 func derive_wave_warnings(traits: Array[String]) -> Array[String]:
 	var warnings: Array[String] = []
 	if traits.has("Shield"):
-		warnings.append("Bulwark protects nearby enemies. Use splash, slow, or Guardian shockwave.")
+		warnings.append("Protected units take reduced damage inside the dome.")
 	if traits.has("Anti-Hero"):
-		warnings.append("Hunter targets Guardian if he gets close. Protect him with towers.")
+		warnings.append("Hunter targets Guardian directly. Priority target him.")
 	if traits.has("Shield") and traits.has("Anti-Hero"):
-		warnings.append("High Danger: Shielded enemies and anti-hero threats appear together.")
+		warnings.append("Danger: Shielded high-threat units detected.")
 	return warnings
 
 func _validate_wave_design(wave_data: Dictionary, traits: Array[String], total_count: int) -> void:

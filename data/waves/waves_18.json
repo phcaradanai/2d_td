@@ -8,46 +8,47 @@
 		]
 	},
 	{
-		"name": "Bulwark Shielding",
+		"name": "Bulwark Convoy",
 		"reward": 75,
 		"groups": [
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
 			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 7, "interval": 1.0, "path": "default"}
-		]
+			{"type": "tank", "count": 2, "interval": 1.2, "path": "default"},
+			{"type": "basic", "count": 10, "interval": 1.5, "path": "default"}
+		],
+		"intel": "Bulwark leads a shielded convoy. Protected units take reduced damage inside the dome."
 	},
 	{
-		"name": "Heavy Escort",
+		"name": "Heavy Convoy Escort",
 		"reward": 90,
 		"groups": [
-			{"type": "basic", "count": 4, "interval": 1.2, "path": "default"},
-			{"type": "bulwark", "count": 2, "interval": 1.0, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.6, "path": "default"}
-		]
+			{"type": "bulwark", "count": 2, "interval": 2.0, "path": "default"},
+			{"type": "tank", "count": 4, "interval": 1.5, "path": "default"},
+			{"type": "basic", "count": 8, "interval": 2.0, "path": "default"}
+		],
+		"intel": "A heavy shielded push. Use AoE or Lightning to break the formation."
 	},
 	{
-		"name": "Fortified Advance",
+		"name": "Fortified Convoy",
 		"reward": 110,
 		"groups": [
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 8, "interval": 1.0, "path": "default"},
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "fast", "count": 5, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"}
-		]
+			{"type": "bulwark", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "healer", "count": 1, "interval": 1.0, "path": "default"},
+			{"type": "tank", "count": 3, "interval": 1.2, "path": "default"},
+			{"type": "basic", "count": 8, "interval": 1.5, "path": "default"}
+		],
+		"intel": "Shielded and healed advance. Use Sniper to target the Healer first."
 	},
 	{
-		"name": "The Bulwark Line",
+		"name": "The Bulwark Chain",
 		"reward": 160,
 		"groups": [
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
 			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 5, "interval": 1.0, "path": "default"},
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "hunter", "count": 1, "interval": 2.0, "path": "default"},
-			{"type": "fast", "count": 6, "interval": 0.4, "path": "default"},
-			{"type": "bulwark", "count": 1, "interval": 0.5, "path": "default"},
-			{"type": "basic", "count": 4, "interval": 1.0, "path": "default"}
-		]
+			{"type": "tank", "count": 3, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 2.0, "path": "default"},
+			{"type": "splitter", "count": 2, "interval": 1.0, "path": "default"},
+			{"type": "bulwark", "count": 1, "interval": 2.0, "path": "default"},
+			{"type": "basic", "count": 10, "interval": 1.2, "path": "default"}
+		],
+		"intel": "Elite convoy approach. Use Slow and AoE to break the defense."
 	}
 ]
