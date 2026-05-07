@@ -21,3 +21,9 @@ res://scripts/managers/build_manager.gd
 res://scripts/ui/build_preview.gd
 res://scripts/debug/level_validator.gd
 res://scripts/map/theme_manager.gd
+res://scripts/map/area_theme.gd
+res://scripts/map/map_renderer.gd
+res://scripts/map/tilemap_painter.gd
+res://scenes/enemies/Enemy.tscn
+res://scenes/towers/Tower.tscn
+res://scripts/map/simple_prop_drawer.gd
