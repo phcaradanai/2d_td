@@ -66,7 +66,7 @@ func _refresh_list(level_id: String) -> void:
 			"#%d" % (i + 1),
 			e.player_name,
 			str(e.score),
-			"★".repeat(int(e.stars)) + "☆".repeat(3 - int(e.stars)),
+			int(e.stars),
 			_format_time(int(e.clear_time))
 		)
 		
@@ -78,7 +78,7 @@ func _refresh_list(level_id: String) -> void:
 				
 		entry_list.add_child(row)
 
-func _create_entry_row(rank: String, p_name: String, score: String, stars: String, time: String, is_header: bool = false) -> HBoxContainer:
+func _create_entry_row(rank: String, p_name: String, score: String, stars_val: Variant, time: String, is_header: bool = false) -> HBoxContainer:
 	var hbox = HBoxContainer.new()
 	hbox.add_theme_constant_override("separation", 20)
 	
@@ -88,7 +88,13 @@ func _create_entry_row(rank: String, p_name: String, score: String, stars: Strin
 	var l_rank = _create_cell(rank, 60, font_size, color)
 	var l_name = _create_cell(p_name, 150, font_size, color)
 	var l_score = _create_cell(score, 100, font_size, color)
-	var l_stars = _create_cell(stars, 100, font_size, color)
+	
+	var l_stars
+	if stars_val is String:
+		l_stars = _create_cell(stars_val, 100, font_size, color)
+	else:
+		l_stars = _create_stars_cell(int(stars_val), 100)
+		
 	var l_time = _create_cell(time, 80, font_size, color)
 	
 	hbox.add_child(l_rank)
@@ -103,9 +109,27 @@ func _create_cell(txt: String, width: float, f_size: int, color: Color) -> Label
 	var l = Label.new()
 	l.text = txt
 	l.custom_minimum_size.x = width
+	l.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	l.add_theme_font_size_override("font_size", f_size)
 	l.add_theme_color_override("font_color", color)
 	return l
+
+func _create_stars_cell(count: int, width: float) -> HBoxContainer:
+	var hbox = HBoxContainer.new()
+	hbox.custom_minimum_size.x = width
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.add_theme_constant_override("separation", 4)
+	
+	var StarIconScript = load("res://scripts/ui/star_icon.gd")
+	for i in range(3):
+		var star = Control.new()
+		star.set_script(StarIconScript)
+		star.custom_minimum_size = Vector2(20, 20)
+		if star.has_method("set"):
+			star.filled = (i < count)
+		hbox.add_child(star)
+		
+	return hbox
 
 func _on_close_button_pressed() -> void:
 	if OS.is_debug_build(): print("[LeaderboardPanel] close")

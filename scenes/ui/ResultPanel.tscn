@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://be1v8w2q3n7u2"]
 
 [ext_resource type="Script" path="res://scripts/ui/result_panel.gd" id="1_result_script"]
+[ext_resource type="Script" path="res://scripts/ui/star_icon.gd" id="2_star_script"]
 
 [node name="ResultPanel" type="PanelContainer"]
 custom_minimum_size = Vector2(450, 520)
@@ -54,23 +55,20 @@ layout_mode = 2
 theme_override_constants/separation = 15
 alignment = 1
 
-[node name="Star1" type="Label" parent="MarginContainer/VBoxContainer/StarsContainer"]
+[node name="Star1" type="Control" parent="MarginContainer/VBoxContainer/StarsContainer"]
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 48
-text = "★"
+script = ExtResource("2_star_script")
 
-[node name="Star2" type="Label" parent="MarginContainer/VBoxContainer/StarsContainer"]
+[node name="Star2" type="Control" parent="MarginContainer/VBoxContainer/StarsContainer"]
+custom_minimum_size = Vector2(80, 80)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 64
-text = "★"
+script = ExtResource("2_star_script")
 
-[node name="Star3" type="Label" parent="MarginContainer/VBoxContainer/StarsContainer"]
+[node name="Star3" type="Control" parent="MarginContainer/VBoxContainer/StarsContainer"]
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-theme_override_font_sizes/font_size = 48
-text = "★"
+script = ExtResource("2_star_script")
 
 [node name="ScoreContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer"]
 layout_mode = 2

@@ -102,7 +102,7 @@ func _generate_dynamic_ui(save_manager: Node) -> void:
 
 func _create_level_card(level_id: String) -> Control:
 	var root = Control.new()
-	root.custom_minimum_size = Vector2(140, 130) # Increased to fit stars/badge
+	root.custom_minimum_size = Vector2(140, 160) # Increased height for cleaner spacing
 	
 	var btn = Button.new()
 	btn.name = "Button"
@@ -112,50 +112,86 @@ func _create_level_card(level_id: String) -> Control:
 	btn.pressed.connect(func(): _select_level("res://data/levels/%s.json" % level_id))
 	root.add_child(btn)
 	
+	# Selection Frame (Inset neon border)
+	var sel_frame = Panel.new()
+	sel_frame.name = "SelectionFrame"
+	sel_frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sel_frame.visible = false
+	var sel_style = StyleBoxFlat.new()
+	sel_style.draw_center = false
+	sel_style.set_border_width_all(2)
+	sel_style.border_color = Color(0.3, 0.9, 1.0, 0.9) # Neon Cyan
+	sel_style.set_corner_radius_all(6)
+	# Inner glow effect (inset shadow)
+	sel_style.shadow_color = Color(0.3, 0.9, 1.0, 0.2)
+	sel_style.shadow_size = 4
+	sel_style.shadow_offset = Vector2(0, 0)
+	
+	sel_frame.add_theme_stylebox_override("panel", sel_style)
+	sel_frame.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	# Apply inset margin to ensure it never overflows card bounds
+	sel_frame.offset_left = 3
+	sel_frame.offset_top = 3
+	sel_frame.offset_right = -3
+	sel_frame.offset_bottom = -3
+	btn.add_child(sel_frame)
+	
 	# Stars Container
-	var stars = Label.new()
+	var stars = HBoxContainer.new()
 	stars.name = "Stars"
-	stars.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	stars.add_theme_font_size_override("font_size", 18)
-	stars.add_theme_color_override("font_color", Color(1, 0.8, 0.2))
-	stars.text = "☆☆☆"
-	stars.position = Vector2(0, 100)
-	stars.size = Vector2(140, 20)
+	stars.alignment = BoxContainer.ALIGNMENT_CENTER
+	stars.position = Vector2(0, 102) # Adjusted vertical spacing
+	stars.size = Vector2(140, 18)
 	root.add_child(stars)
 	
-	# Lock Icon
+	var StarIconScript = load("res://scripts/ui/star_icon.gd")
+	for i in range(3):
+		var star = Control.new()
+		star.set_script(StarIconScript)
+		star.custom_minimum_size = Vector2(18, 18) # Smaller stars for cleaner look
+		stars.add_child(star)
+	
+	# Lock Icon (Procedural overlay)
 	var lock = Label.new()
+	var lock_style = StyleBoxFlat.new()
+	lock_style.bg_color = Color(0.02, 0.02, 0.05, 0.75) # Darker overlay
+	lock_style.set_corner_radius_all(4)
 	lock.name = "LockIcon"
-	lock.text = "LOCKED"
+	lock.text = "SECURE" # Change text to 'SECURE' for a more sci-fi 'locked' feel
 	lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lock.add_theme_font_size_override("font_size", 16)
-	lock.add_theme_color_override("font_color", Color(1, 0.4, 0.4))
-	var lock_style = StyleBoxFlat.new()
-	lock_style.bg_color = Color(0, 0, 0, 0.6)
+	lock.add_theme_font_size_override("font_size", 13)
+	lock.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
 	lock.add_theme_stylebox_override("normal", lock_style)
 	lock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(lock)
 	
 	# Perfect Badge
+	var badge_style = StyleBoxFlat.new()
+	badge_style.bg_color = Color(1, 0.8, 0.2, 0.2)
+	badge_style.set_border_width_all(1)
+	badge_style.border_color = Color(1, 0.8, 0.2, 0.5)
+	badge_style.set_corner_radius_all(4)
+	
 	var badge = Label.new()
 	badge.name = "PerfectBadge"
-	badge.text = "PERFECT"
-	badge.add_theme_font_size_override("font_size", 10)
-	badge.add_theme_color_override("font_color", Color(1, 0.9, 0.2))
-	badge.position = Vector2(85, -5)
+	badge.text = " PERFECT "
+	badge.add_theme_font_size_override("font_size", 9)
+	badge.add_theme_color_override("font_color", Color(1, 0.9, 0.3))
+	badge.add_theme_stylebox_override("normal", badge_style)
+	badge.position = Vector2(86, 6) # Adjusted for better corner breathing
 	badge.tooltip_text = "PERFECT CLEAR!"
 	btn.add_child(badge)
 	
 	var label = Label.new()
 	label.name = "Label"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	label.add_theme_font_size_override("font_size", 10)
-	label.add_theme_color_override("font_color", Color(0.6, 0.7, 0.8))
+	label.add_theme_font_size_override("font_size", 11) # Slightly larger font for readability
+	label.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	label.position = Vector2(0, 120)
-	label.size = Vector2(140, 20)
+	label.position = Vector2(0, 126) # Proper spacing below stars
+	label.size = Vector2(140, 34)
 	root.add_child(label)
 	
 	return root
@@ -175,9 +211,9 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 	
 	if not unlocked:
 		btn.text = ""
-		btn.modulate = Color(0.3, 0.3, 0.3, 0.8)
-		label.text = "LOCKED"
-		label.modulate = Color(0.5, 0.5, 0.5)
+		btn.modulate = Color(0.4, 0.4, 0.5, 0.6)
+		label.text = "---" # Cleaner than 'LOCKED' redundancy
+		label.modulate = Color(0.3, 0.3, 0.4)
 		stars_label.hide()
 		perfect_badge.hide()
 	else:
@@ -187,22 +223,24 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 		stars_label.show()
 		
 		var stars_count = record.get("best_stars", 0)
-		var stars_text = ""
 		for i in range(3):
-			stars_text += "★" if i < stars_count else "☆"
-		stars_label.text = stars_text
+			var star = stars_label.get_child(i)
+			if star.has_method("set"):
+				star.filled = (i < stars_count)
 		
 		var is_perfect = record.get("perfect_clear", false)
 		perfect_badge.visible = is_perfect
 		
 		if record.get("completed", false):
-			btn.modulate = Color(0.8, 1.0, 0.8)
+			btn.modulate = Color(0.8, 1.0, 0.9) # Subtle success tint
 			if is_perfect:
-				btn.modulate = Color(1.0, 0.9, 0.6) # Golden hue for perfect
+				btn.modulate = Color(1.0, 0.95, 0.7) # Golden tint
 			label.text = "Best: " + str(record.get("best_score", 0))
+			label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
 		else:
 			label.text = "NEW MISSION"
-			btn.modulate = Color(0.8, 0.9, 1.2)
+			label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0)) # Electric cyan for new missions
+			btn.modulate = Color(0.9, 1.0, 1.1)
 
 func _update_selection_visuals() -> void:
 	for level_id in level_container_map:
@@ -212,18 +250,12 @@ func _update_selection_visuals() -> void:
 		
 		if path == selected_level_path:
 			btn.add_theme_color_override("font_color", Color(1, 1, 1))
-			btn.scale = Vector2(1.05, 1.05)
-			var sel_style = btn.get_theme_stylebox("normal").duplicate() if btn.has_theme_stylebox_override("normal") else StyleBoxFlat.new()
-			if sel_style is StyleBoxFlat:
-				sel_style.border_width_left = 4
-				sel_style.border_width_top = 4
-				sel_style.border_width_right = 4
-				sel_style.border_width_bottom = 4
-				sel_style.border_color = Color(0.4, 0.8, 1.0)
-				btn.add_theme_stylebox_override("normal", sel_style)
+			var sel_frame = btn.get_node_or_null("SelectionFrame")
+			if sel_frame: sel_frame.show()
 		else:
 			btn.scale = Vector2(1.0, 1.0)
-			btn.remove_theme_stylebox_override("normal")
+			var sel_frame = btn.get_node_or_null("SelectionFrame")
+			if sel_frame: sel_frame.hide()
 			# Reset to normal based on status
 			var save_manager = get_tree().current_scene.get_node_or_null("SaveManager")
 			if save_manager:
@@ -338,7 +370,7 @@ func _setup_clean_layout() -> void:
 	
 	dynamic_list_container = VBoxContainer.new()
 	dynamic_list_container.name = "DynamicList"
-	dynamic_list_container.add_theme_constant_override("separation", 32)
+	dynamic_list_container.add_theme_constant_override("separation", 52) # Increased area separation
 	dynamic_list_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	scroll.add_child(dynamic_list_container)
 	

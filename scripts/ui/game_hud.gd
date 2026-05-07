@@ -61,7 +61,7 @@ signal back_to_map_requested()
 
 # Summary Stats
 @onready var stats_container: VBoxContainer = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer
-@onready var stars_label: Label = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/StarsLabel
+@onready var stars_container: HBoxContainer = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/StarsContainer
 @onready var score_summary_label: Label = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/ScoreLabel
 @onready var lives_summary_label: Label = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/LivesLabel
 @onready var kills_summary_label: Label = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/KillsLabel
@@ -474,14 +474,11 @@ func show_run_summary(summary: Dictionary, improvements: Dictionary = {}, rank: 
 		center_menu_button.text = "Back to Map"
 		center_menu_button.show()
 		
-		var stars = summary.get("stars", 0)
-		var stars_text = ""
-		for i in range(3):
-			if i < stars:
-				stars_text += "★"
-			else:
-				stars_text += "☆"
-		stars_label.text = stars_text
+		var stars_count = summary.get("stars", 0)
+		for i in range(stars_container.get_child_count()):
+			var star = stars_container.get_child(i)
+			if star.has_method("set"):
+				star.filled = (i < stars_count)
 		
 		score_summary_label.text = "Score: " + str(summary.get("score", 0))
 		lives_summary_label.text = "Lives: %d / %d" % [summary.get("lives", 0), summary.get("starting_lives", 20)]

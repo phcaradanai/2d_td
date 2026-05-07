@@ -1,6 +1,7 @@
 [gd_scene load_steps=2 format=3 uid="uid://d4k3j5l8n2m1"]
 
 [ext_resource type="Script" path="res://scripts/ui/game_hud.gd" id="1_hud_script"]
+[ext_resource type="Script" path="res://scripts/ui/star_icon.gd" id="2_star_script"]
 
 [node name="GameHUD" type="CanvasLayer"]
 process_mode = 3
@@ -316,12 +317,24 @@ visible = false
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="StarsLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
+[node name="StarsContainer" type="HBoxContainer" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.9, 0, 1)
-theme_override_font_sizes/font_size = 36
-text = "★★★"
-horizontal_alignment = 1
+alignment = 1
+
+[node name="Star1" type="Control" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/StarsContainer"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+script = ExtResource("2_star_script")
+
+[node name="Star2" type="Control" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/StarsContainer"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+script = ExtResource("2_star_script")
+
+[node name="Star3" type="Control" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer/StarsContainer"]
+custom_minimum_size = Vector2(40, 40)
+layout_mode = 2
+script = ExtResource("2_star_script")
 
 [node name="ScoreLabel" type="Label" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2

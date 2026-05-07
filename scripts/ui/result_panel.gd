@@ -72,7 +72,9 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 	
 	# Reset stars
 	for star in stars_container.get_children():
-		star.modulate.a = 0.2
+		if star.has_method("set"):
+			star.filled = false
+		star.modulate.a = 0.3 # Dim base
 		star.scale = Vector2.ONE
 	
 	# Show panel animation
@@ -92,10 +94,14 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 		var star = stars_container.get_child(i)
 		var star_tween = create_tween().set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		star_tween.tween_interval(star_delay + (i * 0.4))
-		star_tween.tween_property(star, "modulate:a", 1.0, 0.3)
+		star_tween.tween_callback(func(): 
+			if star.has_method("set"):
+				star.filled = true
+			_play_star_sound(i)
+		)
+		star_tween.parallel().tween_property(star, "modulate:a", 1.0, 0.2)
 		star_tween.parallel().tween_property(star, "scale", Vector2(1.5, 1.5), 0.2)
 		star_tween.tween_property(star, "scale", Vector2.ONE, 0.2)
-		star_tween.tween_callback(func(): _play_star_sound(i))
 
 	if OS.is_debug_build():
 		print("[ResultPanel] shown for level result. score=%d stars=%d" % [target_score, stars_count])
