@@ -142,5 +142,119 @@
 		"slow_radius": 110
 	  }
 	]
+  },
+  "sniper_tower": {
+	"id": "sniper_tower",
+	"name": "Sniper Tower",
+	"cost": 150,
+	"description": "High damage, extreme range, slow rate",
+	"projectile_speed": 1200,
+	"visual_type": "sniper",
+	"attack_type": "single",
+	"target_categories": ["land", "air"],
+	"levels": [
+	  {
+		"level": 1,
+		"damage": 55,
+		"range": 380,
+		"fire_rate": 2.2,
+		"upgrade_cost": 120
+	  },
+	  {
+		"level": 2,
+		"damage": 110,
+		"range": 420,
+		"fire_rate": 2.0,
+		"upgrade_cost": 200
+	  },
+	  {
+		"level": 3,
+		"damage": 220,
+		"range": 480,
+		"fire_rate": 1.8,
+		"upgrade_cost": 0
+	  }
+	]
+  },
+  "lightning_tower": {
+	"id": "lightning_tower",
+	"name": "Lightning Tower",
+	"cost": 130,
+	"description": "Chain lightning jump between targets",
+	"projectile_speed": 1500,
+	"visual_type": "lightning",
+	"attack_type": "chain",
+	"target_categories": ["land", "air"],
+	"levels": [
+	  {
+		"level": 1,
+		"damage": 15,
+		"range": 180,
+		"fire_rate": 0.8,
+		"upgrade_cost": 110,
+		"chain_jumps": 2,
+		"chain_range": 100,
+		"chain_falloff": 0.7
+	  },
+	  {
+		"level": 2,
+		"damage": 26,
+		"range": 210,
+		"fire_rate": 0.7,
+		"upgrade_cost": 180,
+		"chain_jumps": 3,
+		"chain_range": 120,
+		"chain_falloff": 0.75
+	  },
+	  {
+		"level": 3,
+		"damage": 45,
+		"range": 240,
+		"fire_rate": 0.6,
+		"upgrade_cost": 0,
+		"chain_jumps": 4,
+		"chain_range": 140,
+		"chain_falloff": 0.8
+	  }
+	]
+  },
+  "sawblade_tower": {
+	"id": "sawblade_tower",
+	"name": "Sawblade Tower",
+	"cost": 120,
+	"description": "Short range aura: High damage + Bleed (+15% dmg)",
+	"projectile_speed": 0,
+	"visual_type": "sawblade",
+	"attack_type": "aura",
+	"target_categories": ["land"],
+	"levels": [
+	  {
+		"level": 1,
+		"damage": 6,
+		"range": 95,
+		"fire_rate": 0.4,
+		"upgrade_cost": 100,
+		"vulnerability_percent": 0.15,
+		"vulnerability_duration": 1.5
+	  },
+	  {
+		"level": 2,
+		"damage": 10,
+		"range": 105,
+		"fire_rate": 0.35,
+		"upgrade_cost": 160,
+		"vulnerability_percent": 0.15,
+		"vulnerability_duration": 2.0
+	  },
+	  {
+		"level": 3,
+		"damage": 18,
+		"range": 115,
+		"fire_rate": 0.3,
+		"upgrade_cost": 0,
+		"vulnerability_percent": 0.15,
+		"vulnerability_duration": 2.5
+	  }
+	]
   }
 }

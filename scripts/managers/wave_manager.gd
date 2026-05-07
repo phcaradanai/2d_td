@@ -169,6 +169,21 @@ func spawn_enemy(group_data: Dictionary) -> void:
 		
 	path_node.add_child(enemy)
 	active_enemy_count += 1
+	
+	# VISUAL: Spawn effect at portal
+	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if not container: container = get_tree().current_scene
+	
+	var spawn_pos = path_node.curve.get_point_position(0)
+	var effect = Node2D.new()
+	effect.set_script(load("res://scripts/effects/spawn_effect.gd"))
+	container.add_child(effect)
+	effect.global_position = path_node.to_global(spawn_pos)
+	if effect.has_method("setup"):
+		var spawn_color = Color(0.4, 0.7, 1.0, 0.6)
+		if base_config.get("category") == ENEMY_CATEGORY_AIR:
+			spawn_color = Color(1.0, 0.8, 0.4, 0.6) # Yellow for air
+		effect.setup(spawn_color, 20.0)
 
 func resolve_enemy_category(spawn_data: Dictionary) -> String:
 	if spawn_data.has("category"):

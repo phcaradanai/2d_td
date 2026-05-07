@@ -1,12 +1,12 @@
 extends Node
 
 # UI Theme Colors
-const COLOR_PANEL_BG = Color(0.05, 0.08, 0.12, 0.85)
-const COLOR_PANEL_BORDER = Color(0.2, 0.4, 0.6, 0.5)
-const COLOR_BUTTON_NORMAL = Color(0.1, 0.2, 0.3, 1.0)
-const COLOR_BUTTON_HOVER = Color(0.2, 0.4, 0.6, 1.0)
-const COLOR_BUTTON_PRESSED = Color(0.05, 0.1, 0.15, 1.0)
-const COLOR_ACCENT = Color(0.3, 0.8, 1.0, 1.0)
+const COLOR_PANEL_BG = Color(0.02, 0.04, 0.08, 0.9)
+const COLOR_PANEL_BORDER = Color(0.2, 0.8, 1.0, 0.6)
+const COLOR_BUTTON_NORMAL = Color(0.05, 0.1, 0.2, 1.0)
+const COLOR_BUTTON_HOVER = Color(0.1, 0.3, 0.5, 1.0)
+const COLOR_BUTTON_PRESSED = Color(0.02, 0.05, 0.1, 1.0)
+const COLOR_ACCENT = Color(0.0, 1.0, 1.0, 1.0) # Full Neon Cyan
 
 func apply_theme(root: Node) -> void:
 	_process_node(root)
@@ -30,22 +30,29 @@ func _apply_panel_style(panel: PanelContainer) -> void:
 	style.border_width_right = 1
 	style.border_width_bottom = 1
 	style.border_color = COLOR_PANEL_BORDER
-	style.corner_radius_top_left = 4
-	style.corner_radius_top_right = 4
-	style.corner_radius_bottom_left = 4
-	style.corner_radius_bottom_right = 4
+	style.corner_radius_top_left = 2
+	style.corner_radius_top_right = 2
+	style.corner_radius_bottom_left = 2
+	style.corner_radius_bottom_right = 2
+	
+	# Glow effect
+	style.shadow_color = Color(0, 1, 1, 0.1)
+	style.shadow_size = 4
 	panel.add_theme_stylebox_override("panel", style)
 
 func _apply_button_style(btn: Button) -> void:
 	# Normal
 	var normal = StyleBoxFlat.new()
 	normal.bg_color = COLOR_BUTTON_NORMAL
-	normal.border_width_bottom = 3
+	normal.border_width_left = 1
+	normal.border_width_top = 1
+	normal.border_width_right = 1
+	normal.border_width_bottom = 1
 	normal.border_color = COLOR_PANEL_BORDER
-	normal.corner_radius_top_left = 4
-	normal.corner_radius_top_right = 4
-	normal.corner_radius_bottom_left = 4
-	normal.corner_radius_bottom_right = 4
+	normal.corner_radius_top_left = 2
+	normal.corner_radius_top_right = 2
+	normal.corner_radius_bottom_left = 2
+	normal.corner_radius_bottom_right = 2
 	btn.add_theme_stylebox_override("normal", normal)
 	
 	# Hover

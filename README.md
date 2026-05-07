@@ -1,72 +1,59 @@
 # Clone Tower Defense
 
-A polished, web-ready Tower Defense prototype built with Godot 4.6.2.
+A high-fidelity, industrial sci-fi Tower Defense experience built with **Godot 4.6.2**. This prototype features modular procedural visuals, advanced wave previews, and a campaign progression system.
+
+## Current Build Scope
+- **Levels**: 20 Playable missions across 4 distinct thematic areas.
+- **Towers**: 7 Unique tower types (Basic, Rapid, Cannon, Slow, Sniper, Lightning, Sawblade).
+- **Environment**: Modular industrial "dark mode" aesthetic with glowing circuit paths.
+- **Hero System**: Guardian deployment available starting from Level 11.
+- **Map Mechanics**: Transition from "Free Build" to "Restricted Foundations" starting at Level 12.
+- **Progression**: Local save system, score/star ratings, and leaderboard scaffolding.
+- **Platform**: Optimized for high-performance Web (WASM/WebGL) and Desktop.
 
 ## Features
-- 3 Playable levels with distinct paths and difficulties.
-- 4 Unique towers (Basic, Rapid, Cannon, Slow).
-- Progression system with level unlocking and high-score saving.
-- Responsive HUD with audio settings and credits.
-- Optimized for Web (itch.io, GitHub Pages).
-
-## Version
-**v0.1.0 Prototype**
+- **Wave Preview UI**: Authorization-style holographic energy walls and triple-chevron flow indicators.
+- **Procedural Graphics**: All towers and environments use high-performance vector-style drawing for maximum clarity.
+- **Area Themes**: Distinct color palettes and decorative layers (Vents, Cables, Circuitry) for different facility sectors.
+- **Release Hygiene**: Gated debug/dev tools and optimized console logging for a clean production experience.
 
 ## How to Play
-- **Place Towers**: Select a tower from the left sidebar and click on a valid grid cell.
-- **Select/Upgrade**: Click an existing tower to view stats and upgrade it.
-- **Cancel**: Right-click or press `Esc` to cancel build mode or selection.
-- **Start Wave**: Click the button in the top bar when ready.
-- **Pause**: Press `Space` or the Pause button.
+- **Build**: Select a tower from the left sidebar and click on a valid grid cell (highlighted in cyan).
+- **Hero (Level 11+)**: Click the Guardian icon in the bottom-left to deploy your hero when gold and cooldown allow.
+- **Select/Upgrade**: Click an existing tower to view advanced stats and upgrade levels.
+- **Cancel**: Right-click or press `Esc` to exit build mode or deselect units.
+- **Start Wave**: Press the "Start Wave" button or hit `F3` (Debug only).
+- **Pause**: Press `Space` or the Pause button to toggle game speed.
 
-## Development
-### Requirements
-- Godot 4.6.2 (or compatible Godot 4.x)
+## Development Status
 
-### Running in Editor
-1. Clone the repository.
-2. Open `project.godot` in the Godot Editor.
-3. Press `F5` to run.
+### [x] Implemented
+- Modular Map Visual Layer (Procedural walls/trench look).
+- Hero Guardian logic and manual deployment system.
+- Foundation-restricted build mode for advanced levels.
+- 20-level campaign data structure and area theme engine.
+- Web-optimized audio manager with unlock-on-gesture.
+- Score/Star calculation based on health, gold, and time.
 
-### Web Export Instructions
-1. Go to `Project -> Export`.
-2. Select the **Web** preset.
-3. Ensure the export path is a clean directory (e.g., `builds/web/`).
-4. Set the filename to `index.html`.
-5. Export Project.
+### [/] In Progress
+- Enemy Type Foundation (Land / Air logic refinement).
+- Tower Loadout Constraints (Selecting specific towers per mission).
+- Tactical Wave Intel (Detailed composition reports in HUD).
 
-### Local Web Testing
-To test the web build locally, you must use a local server to handle the required headers:
-```bash
-python3 -m http.server 8080
-```
-Then visit `http://localhost:8080`.
+### [ ] Backlog
+- Anti-Air specific towers and targeting rules.
+- Consumable Skill System (One-time use active abilities).
+- Persistent Global Leaderboard integration.
 
-**Note**: Browser audio will only start after your first click on the game.
-
-## Asset Guidelines
-### Tower Sprites
-- **Default System**: The game uses **procedural drawing** (Godot vector art) by default for maximum clarity and web performance.
-- **External Sprites (Optional)**: Can be enabled by setting `@export var use_external_sprite = true` in `Tower.gd`.
-- **Format**: RGBA PNG (Transparent background).
-- **Resolution**: 64x64 or 128x128 pixels (auto-scaled in-game).
-- **Layers**: Supports single full tower OR split Base/Turret sprites.
-  - **Single Sprite**: `[name]_tower_lv1.png`
-  - **Split Sprites**: `[name]_tower_base_lv1.png` and `[name]_tower_turret_lv1.png`.
-- **Direction**: Turrets should ideally point **Right (East)** or **Up (North)**.
+## Technical Setup
+- **Engine**: Godot 4.6.2 (Stable).
+- **Running in Editor**: Open `project.godot` and press `F5`.
+- **Web Testing**: Use a local server to handle SharedArrayBuffer headers:
+  ```bash
+  python3 -m http.server 8080
+  ```
+  Then visit `http://localhost:8080`.
 
 ## Credits
 - **Developed by**: Antigravity AI
-- **Engine**: Godot 4.6.2
-- **Assets**: Open Source community assets.
-# 2d_td
-
-# TODO
-Step 38A: Enemy Type Foundation - Land / Air
-Step 38B: Anti-Air Tower + Targeting Rules
-Step 38C: Mission Intel / Wave Intel แสดง Land-Air ให้ถูก
-Step 39: Tower Loadout Constraint ตามชนิดศัตรู
-Step 40: Hero System
-Step 41: Consumable Skill System
-Step 42: Score System
-Step 43: Leaderboard
+- **Assets**: Procedural generation and curated open-source sound effects.

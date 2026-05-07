@@ -14,12 +14,19 @@ var description: String = ""
 var cost: int
 var damage: float
 var attack_range: float
+var fire_timer: float = 0.0
+var idle_rotation: float = 0.0
 var fire_rate: float # Seconds between shots
 var projectile_speed: float = 500.0
 var splash_radius: float = 0.0
 var slow_percent: float = 0.0
 var slow_duration: float = 0.0
 var slow_radius: float = 0.0
+var vulnerability_percent: float = 0.0
+var vulnerability_duration: float = 0.0
+var chain_jumps: int = 0
+var chain_range: float = 0.0
+var chain_falloff: float = 1.0
 var target_categories: Array[String] = DEFAULT_TARGET_CATEGORIES.duplicate()
 var grid_cell: Vector2i
 
@@ -102,6 +109,11 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 		fire_rate = config.get("fire_rate", 1.0)
 		splash_radius = config.get("splash_radius", 0.0)
 		slow_duration = config.get("slow_duration", 0.0)
+		vulnerability_percent = config.get("vulnerability_percent", 0.0)
+		vulnerability_duration = config.get("vulnerability_duration", 0.0)
+		chain_jumps = config.get("chain_jumps", 0)
+		chain_range = config.get("chain_range", 0.0)
+		chain_falloff = config.get("chain_falloff", 1.0)
 		_update_range_collision()
 	
 	_ensure_sprite_node()
@@ -153,6 +165,11 @@ func apply_level_stats() -> void:
 		slow_percent = data.get("slow_percent", 0.0)
 		slow_duration = data.get("slow_duration", 0.0)
 		slow_radius = data.get("slow_radius", 0.0)
+		vulnerability_percent = data.get("vulnerability_percent", 0.0)
+		vulnerability_duration = data.get("vulnerability_duration", 0.0)
+		chain_jumps = data.get("chain_jumps", 0)
+		chain_range = data.get("chain_range", 0.0)
+		chain_falloff = data.get("chain_falloff", 1.0)
 		_update_range_collision()
 		apply_level_visuals()
 		queue_redraw()
@@ -287,10 +304,12 @@ func _ensure_aim_visual() -> void:
 func _get_tower_color() -> Color:
 	match visual_type:
 		"basic": return Color(0.2, 0.8, 1.0) # Cyan
-		"rapid": return Color(0.3, 1.0, 0.6) # Emerald/Greenish-Cyan
-		"cannon": return Color(1.0, 0.5, 0.2) # Orange
-		"slow": return Color(0.7, 0.4, 1.0) # Purple
-		"poison": return Color(0.2, 0.9, 0.3) # Green
+		"rapid": return Color(0.0, 1.0, 0.8) # Teal
+		"cannon": return Color(1.0, 0.4, 0.1) # Amber/Orange-Red
+		"slow": return Color(0.6, 1.0, 1.0) # Frost Cyan
+		"sniper": return Color(0.1, 0.5, 1.0) # Electric Blue
+		"lightning": return Color(0.5, 0.4, 1.0) # Neon Blue-Violet
+		"sawblade": return Color(0.9, 0.1, 0.1) # Industrial Red
 		_: return Color.WHITE
 
 func _draw() -> void:
@@ -323,14 +342,14 @@ func _draw_base_plate() -> void:
 	
 	match visual_type:
 		"cannon":
-			base_color = Color(0.12, 0.1, 0.1, 1.0)
-			accent_color = Color(1.0, 0.4, 0.1, 0.4)
+			base_color = Color(0.12, 0.08, 0.08, 1.0)
+			accent_color = Color(1.0, 0.3, 0.1, 0.4)
 		"slow":
-			base_color = Color(0.1, 0.08, 0.15, 1.0)
-			accent_color = Color(0.6, 0.4, 1.0, 0.4)
+			base_color = Color(0.08, 0.12, 0.15, 1.0)
+			accent_color = Color(0.6, 0.9, 1.0, 0.4)
 		"rapid":
-			base_color = Color(0.08, 0.15, 0.12, 1.0)
-			accent_color = Color(0.2, 1.0, 0.6, 0.4)
+			base_color = Color(0.05, 0.12, 0.1, 1.0)
+			accent_color = Color(0.0, 1.0, 0.7, 0.4)
 
 	# Main Base Rect
 	draw_rect(Rect2(-24, -24, 48, 48), base_color)
@@ -354,6 +373,7 @@ func _draw_turret_top() -> void:
 	var lvl = level_index + 1
 	var main_color = Color(0.3, 0.8, 1.0, 1.0)
 	var core_color = Color(0.6, 0.9, 1.0, 1.0)
+	var size = 20.0
 	
 	match visual_type:
 		"basic":
@@ -388,8 +408,8 @@ func _draw_turret_top() -> void:
 			draw_rect(Rect2(-10, -12, 6, 24), core_color)
 			
 		"slow":
-			main_color = Color(0.7, 0.5, 1.0, 1.0)
-			core_color = Color(0.9, 0.8, 1.0, 1.0)
+			main_color = Color(0.6, 0.9, 1.0, 1.0)
+			core_color = Color(0.9, 1.0, 1.0, 1.0)
 			# Shard
 			var pts = PackedVector2Array([Vector2(0, -20 - lvl*2), Vector2(16, 0), Vector2(0, 20 + lvl*2), Vector2(-16, 0)])
 			draw_colored_polygon(pts, main_color)
@@ -398,6 +418,54 @@ func _draw_turret_top() -> void:
 			draw_rect(Rect2(-6, -6, 12, 12), core_color)
 			# Aura ring
 			draw_arc(Vector2.ZERO, 22, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2), 2.0)
+			
+		"sniper":
+			main_color = Color(0.1, 0.6, 1.0, 1.0)
+			core_color = Color(0.6, 0.9, 1.0, 1.0)
+			# Long thin barrel
+			draw_rect(Rect2(0, -4, 40 + lvl * 6, 8), main_color)
+			draw_rect(Rect2(36 + lvl * 6, -5, 6, 10), Color.BLACK)
+			# Sleek Body
+			var pts = PackedVector2Array([Vector2(-18, -12), Vector2(12, -8), Vector2(12, 8), Vector2(-18, 12)])
+			draw_colored_polygon(pts, main_color)
+			draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0)
+			draw_circle(Vector2(-4, 0), 5, core_color)
+			
+		"lightning":
+			main_color = Color(0.5, 0.4, 1.0, 1.0)
+			core_color = Color(0.8, 0.7, 1.0, 1.0)
+			# Tesla Coil look
+			draw_circle(Vector2.ZERO, 16, main_color)
+			draw_arc(Vector2.ZERO, 16, 0, TAU, 32, Color.WHITE, 1.5)
+			# Spikes
+			for i in range(4):
+				var a = i * PI/2 + (idle_rotation * 0.3)
+				draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * 24, main_color, 3.0)
+				draw_circle(Vector2(cos(a), sin(a)) * 24, 4, core_color)
+			
+			# Electrical Crackle (Jagged lines around tower)
+			for i in range(2):
+				var crackle_pts = PackedVector2Array()
+				var start_a = randf() * TAU
+				var dist = randf_range(18, 30)
+				crackle_pts.append(Vector2.RIGHT.rotated(start_a) * 12)
+				crackle_pts.append(Vector2.RIGHT.rotated(start_a + 0.2) * dist)
+				crackle_pts.append(Vector2.RIGHT.rotated(start_a - 0.2) * (dist + 5))
+				draw_polyline(crackle_pts, core_color, 1.0)
+				
+		"sawblade":
+			var blade_size = size + lvl * 2.0
+			# Base
+			draw_circle(Vector2.ZERO, blade_size * 0.7, Color(0.3, 0.3, 0.3))
+			# Saw blade
+			var teeth = 12
+			var pts = []
+			for i in range(teeth * 2):
+				var angle = (float(i) / (teeth * 2)) * TAU + idle_rotation
+				var r = blade_size * (1.0 if i % 2 == 0 else 0.7)
+				pts.append(Vector2.RIGHT.rotated(angle) * r)
+			draw_colored_polygon(PackedVector2Array(pts), Color(0.9, 0.1, 0.1))
+			draw_circle(Vector2.ZERO, blade_size * 0.3, Color(0.5, 0.5, 0.5))
 			
 	# Level Indicators (Glow dots)
 	for i in range(lvl):
@@ -543,6 +611,10 @@ func _process(delta: float) -> void:
 	update_target()
 	_update_aim_indicator(delta)
 	
+	idle_rotation += delta * 15.0 # Constant spin for visual flair
+	if visual_type == "sawblade" or visual_type == "lightning":
+		queue_redraw()
+	
 	# Smooth visual rotation
 	if turret_pivot:
 		if is_valid_target(current_target):
@@ -584,7 +656,6 @@ func _update_aim_indicator(delta: float) -> void:
 		
 	var target_active = is_valid_target(current_target)
 	
-	# Debug print for first activation
 	if target_active and aim_alpha < 0.1 and OS.is_debug_build():
 		print("[Tower] Aim indicator activating for target: ", current_target.name)
 	
@@ -627,6 +698,10 @@ func _update_aim_indicator(delta: float) -> void:
 			target_marker.visible = false
 
 func shoot() -> void:
+	if attack_type == "aura":
+		_perform_aura_attack()
+		return
+		
 	if projectile_scene:
 		var projectile = projectile_scene.instantiate()
 		var container = projectile_container if projectile_container else get_tree().current_scene
@@ -661,9 +736,21 @@ func shoot() -> void:
 			proj_scale = 1.1
 			proj_color = Color(0.4, 0.8, 1.0, 1.0) # Cyan
 			sfx_name = "tower_shoot_slow"
+		elif visual_type == "sniper":
+			proj_scale = 0.9
+			proj_color = Color(1.0, 0.9, 0.4, 1.0)
+			sfx_name = "tower_shoot_sniper"
+		elif visual_type == "lightning":
+			proj_scale = 1.0
+			proj_color = Color(0.5, 0.8, 1.0, 1.0)
+			sfx_name = "tower_shoot_slow"
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
 		projectile.setup(current_target, int(damage), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories)
+		
+		if attack_type == "chain":
+			if projectile.has_method("setup_chain"):
+				projectile.setup_chain(chain_jumps, chain_range, chain_falloff)
 		projectile.scale = Vector2(proj_scale, proj_scale)
 		projectile.modulate = proj_color
 		
@@ -673,6 +760,49 @@ func shoot() -> void:
 		
 		if audio_manager:
 			audio_manager.play_sfx(sfx_name)
+
+func _perform_aura_attack() -> void:
+	var enemies = get_enemies_in_range()
+	var tower_color = _get_tower_color()
+	
+	# Visual effect for aura
+	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if not container: container = get_tree().current_scene
+	
+	if visual_type == "sawblade":
+		var effect = Node2D.new()
+		effect.set_script(load("res://scripts/effects/sawblade_aoe_effect.gd"))
+		container.add_child(effect)
+		effect.global_position = global_position
+		if effect.has_method("setup"):
+			effect.setup(tower_color, attack_range)
+	elif muzzle_flash_scene:
+		var flash = muzzle_flash_scene.instantiate()
+		container.add_child(flash)
+		flash.global_position = global_position
+		if flash.has_method("setup"):
+			flash.setup(tower_color, attack_range / 30.0) # Scale with range
+
+	for enemy in enemies:
+		if is_instance_valid(enemy):
+			var enemy_pos = enemy.global_position
+			enemy.take_damage(damage, enemy_pos)
+			
+			# Apply vulnerability if sawblade
+			if vulnerability_percent > 0 and enemy.has_method("apply_vulnerability"):
+				enemy.apply_vulnerability(1.0 + vulnerability_percent, vulnerability_duration)
+				
+			# Small impact effect on each enemy
+			var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
+			if impact_scene:
+				var effect = impact_scene.instantiate()
+				get_tree().current_scene.add_child(effect)
+				effect.global_position = enemy_pos
+				if effect.has_method("setup"):
+					effect.setup(tower_color, 0.6)
+	
+	if not enemies.is_empty() and audio_manager:
+		audio_manager.play_sfx("tower_shoot_sawblade")
 
 func play_fire_recoil() -> void:
 	# Recoil effect: Kick the turret sprite or pivot backward
@@ -686,11 +816,25 @@ func play_fire_recoil() -> void:
 	elif visual_type == "rapid": recoil_dist = 3.0
 	
 	var original_pos = target_node.position
+	
+	if visual_type == "sawblade":
+		# Vibrating 'spin' recoil
+		tween.tween_property(target_node, "position", original_pos + Vector2(randf_range(-2, 2), randf_range(-2, 2)), 0.05)
+		tween.tween_property(target_node, "position", original_pos, 0.05)
+		return
+
 	# Kick back (opposite of muzzle direction, which is X+)
-	tween.tween_property(target_node, "position", original_pos + Vector2(-recoil_dist, 0), 0.05)\
+	var recoil_vec = Vector2(-recoil_dist, 0)
+	if visual_type == "sniper": recoil_vec = Vector2(-15.0, 0) # Stronger kick for sniper
+	
+	tween.tween_property(target_node, "position", original_pos + recoil_vec, 0.05)\
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	# Snap back
-	tween.tween_property(target_node, "position", original_pos, 0.15)\
+	var snap_time = 0.15
+	if visual_type == "cannon": snap_time = 0.25
+	elif visual_type == "sniper": snap_time = 0.3
+	
+	tween.tween_property(target_node, "position", original_pos, snap_time)\
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func spawn_muzzle_flash(color: Color) -> void:
@@ -706,8 +850,10 @@ func spawn_muzzle_flash(color: Color) -> void:
 		
 		if flash.has_method("setup"):
 			var flash_scale = 1.0
-			if visual_type == "cannon": flash_scale = 1.5
-			elif visual_type == "rapid": flash_scale = 0.7
+			if visual_type == "cannon": flash_scale = 1.6
+			elif visual_type == "rapid": flash_scale = 0.6
+			elif visual_type == "sniper": flash_scale = 1.2
+			elif visual_type == "lightning": flash_scale = 1.4
 			flash.setup(color, flash_scale)
 
 func update_target() -> void:

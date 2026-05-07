@@ -16,38 +16,41 @@ signal next_level_requested()
 signal back_to_map_requested()
 
 # Top Bar
-@onready var gold_label: Label = $Root/TopBar/MarginContainer/HBoxContainer/GoldLabel
-@onready var lives_label: Label = $Root/TopBar/MarginContainer/HBoxContainer/LivesLabel
-@onready var wave_label: Label = $Root/TopBar/MarginContainer/HBoxContainer/WaveLabel
-@onready var status_label: Label = $Root/TopBar/MarginContainer/HBoxContainer/StatusLabel
-@onready var next_wave_label: Label = $Root/TopBar/MarginContainer/HBoxContainer/NextWaveLabel
-@onready var start_wave_button: Button = $Root/TopBar/MarginContainer/HBoxContainer/StartWaveButton
-@onready var settings_button: Button = $Root/TopBar/MarginContainer/HBoxContainer/SettingsButton
-@onready var pause_button: Button = $Root/TopBar/MarginContainer/HBoxContainer/PauseButton
-@onready var restart_button: Button = $Root/TopBar/MarginContainer/HBoxContainer/RestartButton
+@onready var gold_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/GoldLabel
+@onready var lives_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/LivesLabel
+@onready var wave_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/WaveLabel
+@onready var status_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/StatusLabel
+@onready var next_wave_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/NextWaveLabel
+@onready var start_wave_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/StartWaveButton
+@onready var settings_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/SettingsButton
+@onready var pause_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/PauseButton
+@onready var restart_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/RestartButton
 
 # Sidebar Panels
-@onready var left_sidebar: PanelContainer = $Root/LeftSidebar
-@onready var basic_tower_button: Button = $Root/LeftSidebar/MarginContainer/VBoxContainer/BasicTowerButton
-@onready var rapid_tower_button: Button = $Root/LeftSidebar/MarginContainer/VBoxContainer/RapidTowerButton
-@onready var cannon_tower_button: Button = $Root/LeftSidebar/MarginContainer/VBoxContainer/CannonTowerButton
-@onready var slow_tower_button: Button = $Root/LeftSidebar/MarginContainer/VBoxContainer/SlowTowerButton
-@onready var build_status_label: Label = $Root/LeftSidebar/MarginContainer/VBoxContainer/BuildStatusLabel
-@onready var cancel_build_button: Button = $Root/LeftSidebar/MarginContainer/VBoxContainer/CancelBuildButton
+@onready var left_sidebar: PanelContainer = $Root/ScreenLayout/MainContent/LeftSidebar
+@onready var basic_tower_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/BasicTowerButton
+@onready var rapid_tower_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/RapidTowerButton
+@onready var cannon_tower_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/CannonTowerButton
+@onready var slow_tower_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/SlowTowerButton
+@onready var sniper_tower_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/SniperTowerButton
+@onready var lightning_tower_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/LightningTowerButton
+@onready var sawblade_tower_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/SawbladeTowerButton
+@onready var build_status_label: Label = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/BuildStatusLabel
+@onready var cancel_build_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/CancelBuildButton
 
 # Right Sidebar (Tower Info)
-@onready var right_sidebar: PanelContainer = $Root/RightSidebar
-@onready var tower_name_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerNameLabel
-@onready var tower_level_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerLevelLabel
-@onready var tower_damage_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerDamageLabel
-@onready var tower_range_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerRangeLabel
-@onready var tower_fire_rate_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerFireRateLabel
-@onready var tower_splash_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerSplashLabel
-@onready var tower_slow_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerSlowLabel
-@onready var target_mode_option_button: OptionButton = $Root/RightSidebar/MarginContainer/VBoxContainer/TargetModeOptionButton
-@onready var tower_upgrade_cost_label: Label = $Root/RightSidebar/MarginContainer/VBoxContainer/TowerUpgradeCostLabel
-@onready var upgrade_tower_button: Button = $Root/RightSidebar/MarginContainer/VBoxContainer/UpgradeTowerButton
-@onready var deselect_tower_button: Button = $Root/RightSidebar/MarginContainer/VBoxContainer/DeselectTowerButton
+@onready var right_sidebar: PanelContainer = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar
+@onready var tower_name_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerNameLabel
+@onready var tower_level_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerLevelLabel
+@onready var tower_damage_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerDamageLabel
+@onready var tower_range_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerRangeLabel
+@onready var tower_fire_rate_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerFireRateLabel
+@onready var tower_splash_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerSplashLabel
+@onready var tower_slow_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerSlowLabel
+@onready var target_mode_option_button: OptionButton = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TargetModeOptionButton
+@onready var tower_upgrade_cost_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerUpgradeCostLabel
+@onready var upgrade_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/UpgradeTowerButton
+@onready var deselect_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/DeselectTowerButton
 
 # Center Message Panel
 @onready var center_message_panel: PanelContainer = $Root/CenterMessagePanel
@@ -99,6 +102,7 @@ var wave_intel_threats_label: Label = null
 var wave_intel_suggested_title_label: Label = null
 var wave_intel_suggested_label: Label = null
 var wave_intel_warnings_label: Label = null
+var no_selection_panel: PanelContainer = null
 
 var updating_target_mode_ui := false
 var updating_audio_ui := false
@@ -165,6 +169,9 @@ func _ready() -> void:
 	rapid_tower_button.pressed.connect(func(): _on_tower_btn_pressed("rapid_tower", rapid_tower_button))
 	cannon_tower_button.pressed.connect(func(): _on_tower_btn_pressed("cannon_tower", cannon_tower_button))
 	slow_tower_button.pressed.connect(func(): _on_tower_btn_pressed("slow_tower", slow_tower_button))
+	sniper_tower_button.pressed.connect(func(): _on_tower_btn_pressed("sniper_tower", sniper_tower_button))
+	lightning_tower_button.pressed.connect(func(): _on_tower_btn_pressed("lightning_tower", lightning_tower_button))
+	sawblade_tower_button.pressed.connect(func(): _on_tower_btn_pressed("sawblade_tower", sawblade_tower_button))
 	cancel_build_button.pressed.connect(func(): cancel_build_requested.emit())
 	upgrade_tower_button.pressed.connect(func(): upgrade_tower_requested.emit())
 	deselect_tower_button.pressed.connect(func(): deselect_tower_requested.emit())
@@ -275,7 +282,10 @@ func _update_tower_affordability(current_gold: int) -> void:
 		{"btn": basic_tower_button, "id": "basic_tower"},
 		{"btn": rapid_tower_button, "id": "rapid_tower"},
 		{"btn": cannon_tower_button, "id": "cannon_tower"},
-		{"btn": slow_tower_button, "id": "slow_tower"}
+		{"btn": slow_tower_button, "id": "slow_tower"},
+		{"btn": sniper_tower_button, "id": "sniper_tower"},
+		{"btn": lightning_tower_button, "id": "lightning_tower"},
+		{"btn": sawblade_tower_button, "id": "sawblade_tower"}
 	]:
 		var cost = tower_prices.get(btn_info["id"], 999)
 		if current_gold < cost:
@@ -286,17 +296,38 @@ func _update_tower_affordability(current_gold: int) -> void:
 		# Update label with price if possible
 		var base_name = btn_info["id"].replace("_tower", "").capitalize()
 		btn_info["btn"].text = "%s ($%d)" % [base_name, cost]
+		
+		# Enhanced Tooltip
+		var role = "Balanced"
+		var targets = "Land Only"
+		match btn_info["id"]:
+			"basic_tower": role = "Balanced / Single Target"
+			"rapid_tower": role = "High Fire Rate / Anti-Swarm"
+			"cannon_tower": role = "Area Damage / Splash"
+			"slow_tower": role = "Support / Movement Reduction"
+			"sniper_tower": 
+				role = "Extreme Range / Heavy Armor Piercing"
+				targets = "Land & Air"
+			"lightning_tower": 
+				role = "Chain Lightning / Multi-Target"
+				targets = "Land & Air"
+			"sawblade_tower": role = "Close Range / Bleed Aura"
+		
+		btn_info["btn"].tooltip_text = "Role: %s\nTargets: %s\nCost: $%d" % [role, targets, cost]
 
 func refresh_tower_shop(active_loadout: Array[String]) -> void:
 	# If empty, default to everything (safety)
 	var final_loadout = active_loadout
 	if final_loadout.is_empty():
-		final_loadout = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower"]
+		final_loadout = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
 	
 	basic_tower_button.visible = final_loadout.has("basic_tower")
 	rapid_tower_button.visible = final_loadout.has("rapid_tower")
 	cannon_tower_button.visible = final_loadout.has("cannon_tower")
 	slow_tower_button.visible = final_loadout.has("slow_tower")
+	sniper_tower_button.visible = final_loadout.has("sniper_tower")
+	lightning_tower_button.visible = final_loadout.has("lightning_tower")
+	sawblade_tower_button.visible = final_loadout.has("sawblade_tower")
 	
 	# Update layout to collapse gaps
 	var container = basic_tower_button.get_parent()
@@ -480,6 +511,11 @@ func show_tower_info(info: Dictionary) -> void:
 		tower_slow_label.text = "Slow: %d%% (%0.1fs) R:%d" % [slow_pct, slow_dur, slow_rad]
 	else:
 		tower_slow_label.hide()
+		
+	if info.get("attack_type") == "aura" and info.has("vulnerability_percent"):
+		tower_splash_label.show() # Re-use splash label for debuff info
+		var vuln = int(info.get("vulnerability_percent") * 100)
+		tower_splash_label.text = "Bleed: +%d%% Damage" % vuln
 	
 	updating_target_mode_ui = true
 	var current_mode = info.get("target_mode", "first")
@@ -663,10 +699,10 @@ func _setup_wave_intel_panel() -> void:
 	
 	wave_intel_panel = PanelContainer.new()
 	wave_intel_panel.name = "WaveIntelPanel"
-	wave_intel_panel.custom_minimum_size = Vector2(0, 190)
+	wave_intel_panel.custom_minimum_size = Vector2(0, 200)
 	wave_intel_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wave_intel_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_PASS # Allow scrolling
 	right_info_vbox.add_child(wave_intel_panel)
 	
 	var style = StyleBoxFlat.new()
@@ -677,78 +713,85 @@ func _setup_wave_intel_panel() -> void:
 	wave_intel_panel.add_theme_stylebox_override("panel", style)
 	
 	var margin = MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 16)
-	margin.add_theme_constant_override("margin_right", 16)
-	margin.add_theme_constant_override("margin_top", 14)
-	margin.add_theme_constant_override("margin_bottom", 14)
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	margin.add_theme_constant_override("margin_left", 14)
+	margin.add_theme_constant_override("margin_right", 14)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	wave_intel_panel.add_child(margin)
 	
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 7)
-	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_child(vbox)
+	var outer_vbox = VBoxContainer.new()
+	outer_vbox.add_theme_constant_override("separation", 8)
+	outer_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	margin.add_child(outer_vbox)
+	
+	# --- Header (Always Visible) ---
+	var header_vbox = VBoxContainer.new()
+	header_vbox.add_theme_constant_override("separation", 4)
+	header_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	outer_vbox.add_child(header_vbox)
 	
 	var title = _create_wave_intel_label("WAVE INTEL", 17, Color(0.72, 0.90, 1.0))
-	vbox.add_child(title)
+	header_vbox.add_child(title)
 	
 	wave_intel_current_label = _create_wave_intel_label("Wave 1 / 1", 15, Color(0.94, 0.98, 1.0))
-	vbox.add_child(wave_intel_current_label)
+	header_vbox.add_child(wave_intel_current_label)
 	
 	wave_intel_status_label = _create_wave_intel_label("Status: Ready", 13, Color(0.95, 0.78, 0.36))
-	vbox.add_child(wave_intel_status_label)
+	header_vbox.add_child(wave_intel_status_label)
 	
-	vbox.add_child(_create_wave_intel_separator())
+	# --- Scrollable Body (Details) ---
+	var scroll = ScrollContainer.new()
+	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
+	outer_vbox.add_child(scroll)
+	
+	var body_vbox = VBoxContainer.new()
+	body_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body_vbox.add_theme_constant_override("separation", 8)
+	body_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	scroll.add_child(body_vbox)
+	
+	body_vbox.add_child(_create_wave_intel_separator())
 	
 	wave_intel_section_label = _create_wave_intel_label("Upcoming", 12, Color(0.55, 0.72, 0.88))
-	vbox.add_child(wave_intel_section_label)
+	body_vbox.add_child(wave_intel_section_label)
 	
 	wave_intel_main_summary_label = _create_wave_intel_label("---", 15, Color(0.98, 1.0, 1.0))
-	vbox.add_child(wave_intel_main_summary_label)
+	body_vbox.add_child(wave_intel_main_summary_label)
 	
 	wave_intel_next_title_label = _create_wave_intel_label("Next", 12, Color(0.55, 0.72, 0.88))
-	vbox.add_child(wave_intel_next_title_label)
+	body_vbox.add_child(wave_intel_next_title_label)
 	
 	wave_intel_next_summary_label = _create_wave_intel_label("---", 13, Color(0.78, 0.84, 0.90))
-	vbox.add_child(wave_intel_next_summary_label)
+	body_vbox.add_child(wave_intel_next_summary_label)
 	
-	vbox.add_child(_create_wave_intel_separator())
+	body_vbox.add_child(_create_wave_intel_separator())
 	
 	wave_intel_threats_title_label = _create_wave_intel_label("Threats", 12, Color(0.55, 0.72, 0.88))
-	vbox.add_child(wave_intel_threats_title_label)
+	body_vbox.add_child(wave_intel_threats_title_label)
 	
 	wave_intel_threats_label = _create_wave_intel_label("---", 13, Color(1.0, 0.62, 0.42))
-	vbox.add_child(wave_intel_threats_label)
+	body_vbox.add_child(wave_intel_threats_label)
 	
 	wave_intel_suggested_title_label = _create_wave_intel_label("Suggested Towers", 12, Color(0.55, 0.72, 0.88))
-	vbox.add_child(wave_intel_suggested_title_label)
+	body_vbox.add_child(wave_intel_suggested_title_label)
 	
 	wave_intel_suggested_label = _create_wave_intel_label("---", 13, Color(0.48, 0.86, 1.0))
-	vbox.add_child(wave_intel_suggested_label)
+	body_vbox.add_child(wave_intel_suggested_label)
 	
 	wave_intel_warnings_label = _create_wave_intel_label("", 12, Color(1.0, 0.4, 0.4))
 	wave_intel_warnings_label.visible = false
-	vbox.add_child(wave_intel_warnings_label)
+	body_vbox.add_child(wave_intel_warnings_label)
 	
 	_set_next_wave_intel_visible(false)
 	wave_intel_panel.visible = false
-
-	right_info_spacer = Control.new()
-	right_info_spacer.name = "RightInfoSpacer"
-	right_info_spacer.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_info_spacer.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right_info_vbox.add_child(right_info_spacer)
 
 func _setup_tower_detail_in_right_info_column() -> void:
 	_setup_right_info_column()
 	if right_sidebar == null or right_info_vbox == null:
 		return
-	
-	if right_sidebar.get_parent() != right_info_vbox:
-		var old_parent = right_sidebar.get_parent()
-		if old_parent:
-			old_parent.remove_child(right_sidebar)
-		right_info_vbox.add_child(right_sidebar)
 	
 	right_sidebar.name = "TowerDetailPanel"
 	right_sidebar.set_anchors_preset(Control.PRESET_TOP_LEFT)
@@ -756,9 +799,9 @@ func _setup_tower_detail_in_right_info_column() -> void:
 	right_sidebar.offset_top = 0.0
 	right_sidebar.offset_right = 0.0
 	right_sidebar.offset_bottom = 0.0
-	right_sidebar.custom_minimum_size = Vector2(0, 420)
+	right_sidebar.custom_minimum_size = Vector2(0, 360)
 	right_sidebar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_sidebar.size_flags_vertical = Control.SIZE_SHRINK_END
 	
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.025, 0.045, 0.085, 0.94)
@@ -787,8 +830,7 @@ func _setup_tower_detail_in_right_info_column() -> void:
 			right_sidebar.add_child(scroll)
 			scroll.add_child(detail_margin)
 	
-	if right_info_spacer and right_info_spacer.get_parent() == right_info_vbox:
-		right_info_vbox.move_child(right_sidebar, max(0, right_info_spacer.get_index()))
+	# Handled by VBoxContainer
 	
 	set_panel_active(right_sidebar, false)
 	_refresh_right_info_column_visibility()
@@ -801,8 +843,8 @@ func _setup_right_info_column() -> void:
 	right_info_column.name = "RightInfoColumn"
 	right_info_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	right_info_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_info_column.size_flags_horizontal = Control.SIZE_FILL
-	$Root.add_child(right_info_column)
+	right_info_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	$Root/ScreenLayout/MainContent/RightSidebarContainer.add_child(right_info_column)
 	
 	var style = StyleBoxFlat.new()
 	style.bg_color = Color(0.035, 0.045, 0.065, 0.72)
@@ -827,17 +869,40 @@ func _setup_right_info_column() -> void:
 	right_info_vbox.add_theme_constant_override("separation", 12)
 	margin.add_child(right_info_vbox)
 	
+	# Placeholder for when no tower is selected
+	no_selection_panel = PanelContainer.new()
+	no_selection_panel.name = "NoSelectionPanel"
+	no_selection_panel.custom_minimum_size = Vector2(0, 80)
+	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_END
+	
+	var ns_style = StyleBoxFlat.new()
+	ns_style.bg_color = Color(0.1, 0.1, 0.12, 0.4)
+	ns_style.set_border_width_all(1)
+	ns_style.border_color = Color(0.2, 0.2, 0.25, 0.6)
+	ns_style.set_corner_radius_all(8)
+	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
+	
+	var ns_label = Label.new()
+	ns_label.text = "Select a tower or build tile to view details"
+	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ns_label.add_theme_font_size_override("font_size", 13)
+	ns_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	no_selection_panel.add_child(ns_label)
+	
+	$Root/ScreenLayout/MainContent/RightSidebarContainer.add_child(no_selection_panel)
+	
 	_layout_right_info_column()
 
 func _layout_right_info_column(width: float = 260.0) -> void:
 	if right_info_column == null:
 		return
 	
-	right_info_column.set_anchors_preset(Control.PRESET_RIGHT_WIDE)
-	right_info_column.offset_left = -width
-	right_info_column.offset_top = 60.0
-	right_info_column.offset_right = 0.0
-	right_info_column.offset_bottom = 0.0
+	right_info_column.set_anchors_preset(Control.PRESET_FULL_RECT)
+	right_info_column.offset_left = 0
+	right_info_column.offset_top = 0
+	right_info_column.offset_right = 0
+	right_info_column.offset_bottom = 0
 	right_info_column.custom_minimum_size.x = width
 
 func _create_wave_intel_label(text: String, font_size: int, color: Color) -> Label:
@@ -944,16 +1009,17 @@ func _refresh_right_info_column_visibility() -> void:
 	
 	var wave_visible = wave_intel_panel != null and wave_intel_panel.visible
 	var tower_visible = right_sidebar != null and right_sidebar.visible
-	right_info_column.visible = wave_visible or tower_visible
-	right_info_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
-	if right_info_spacer:
-		right_info_spacer.visible = not tower_visible
-	
-	if wave_intel_panel:
-		wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	right_info_column.visible = wave_visible
+	if no_selection_panel:
+		no_selection_panel.visible = not tower_visible and wave_visible
 	if right_sidebar:
-		right_sidebar.mouse_filter = Control.MOUSE_FILTER_STOP if tower_visible else Control.MOUSE_FILTER_IGNORE
+		right_sidebar.visible = tower_visible
+	
+	right_info_column.visible = wave_visible or (no_selection_panel and no_selection_panel.visible) or tower_visible
+	
+	# Actually the container visibility is enough
+	$Root/ScreenLayout/MainContent/RightSidebarContainer.visible = right_info_column.visible
 
 func _format_wave_preview_summary(preview: Dictionary) -> String:
 	var lane_info = preview.get("lane_info", {})
@@ -991,5 +1057,22 @@ func _format_wave_intel_list(values: Array, fallback: String) -> String:
 		return fallback
 	var parts = []
 	for value in values:
-		parts.append(str(value))
-	return ", ".join(parts)
+		parts.append(_get_trait_description(str(value)))
+	return "\n• ".join(parts) if parts.size() > 1 else parts[0]
+
+func _get_trait_description(trait_name: String) -> String:
+	match trait_name.to_lower():
+		"shield": return "Bulwark: Energy shield protects nearby."
+		"anti-hero": return "Hunter: Focuses on your Guardian."
+		"fast": return "High Speed: Fast, hard to track."
+		"armored": return "Heavy Armor: Reduces incoming damage."
+		"boss": return "COMMAND UNIT: Extreme durability."
+		"healing": return "Support: Heals nearby units."
+		"invisible": return "Stealth: Hidden unless close/scanned."
+		"air": return "Airborne: Requires anti-air."
+		"splash": return "Area Damage: Strong against swarms."
+		"slow": return "Support: Reduces movement speed."
+		"sniper": return "Precision: High dmg, extreme range."
+		"lightning": return "Chain: Hits multiple targets."
+		"sawblade": return "Bleed: Extra damage over time."
+		_: return trait_name.capitalize()

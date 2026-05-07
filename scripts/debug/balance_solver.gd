@@ -348,6 +348,12 @@ func generate_initial_build_candidates(gold: int) -> Array:
 	recipes.append(["cannon_tower", "rapid_tower", "slow_tower"])
 	recipes.append(["cannon_tower", "basic_tower", "basic_tower"])
 	recipes.append(["slow_tower", "rapid_tower", "basic_tower", "basic_tower"])
+	
+	# New specialized tower recipes
+	recipes.append(["sniper_tower", "basic_tower"])
+	recipes.append(["lightning_tower", "slow_tower"])
+	recipes.append(["sawblade_tower", "rapid_tower"])
+	recipes.append(["sniper_tower", "lightning_tower", "basic_tower"])
 
 	for recipe in recipes:
 		var recipe_cost: int = _recipe_cost(recipe)
@@ -450,9 +456,9 @@ func _rank_cells_by_coverage(cells: Array) -> Array:
 	return res
 
 func _get_tower_priority_order() -> Array[String]:
-	var order: Array[String] = ["rapid_tower", "slow_tower", "basic_tower", "cannon_tower"]
+	var order: Array[String] = ["sniper_tower", "lightning_tower", "sawblade_tower", "rapid_tower", "slow_tower", "basic_tower", "cannon_tower"]
 	if not _level_has_fast_pressure():
-		order = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower"]
+		order = ["basic_tower", "rapid_tower", "sawblade_tower", "lightning_tower", "cannon_tower", "slow_tower", "sniper_tower"]
 	return order
 
 func _level_has_fast_pressure() -> bool:
@@ -663,6 +669,9 @@ func _tower_role_bonus(tower_type: String, wave_data: Dictionary) -> float:
 	if _wave_has_enemy(wave_data, "tank") or _wave_has_enemy(wave_data, "heavy"):
 		match tower_type:
 			"basic_tower": return 24.0
+			"sniper_tower": return 60.0
+			"lightning_tower": return 30.0
+			"sawblade_tower": return 25.0
 			"cannon_tower": return 16.0
 			"rapid_tower": return 8.0
 			"slow_tower": return 8.0

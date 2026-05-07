@@ -18,6 +18,8 @@ var sfx_paths: Dictionary = {
 	"tower_shoot_rapid": "res://assets/audio/sfx/tower_shoot_rapid",
 	"tower_shoot_cannon": "res://assets/audio/sfx/tower_shoot_cannon",
 	"tower_shoot_slow": "res://assets/audio/sfx/tower_shoot_slow",
+	"tower_shoot_sniper": "res://assets/audio/sfx/tower_shoot_basic", # TODO: Re-check asset if dedicated exists
+	"tower_shoot_sawblade": "res://assets/audio/sfx/tower_shoot_rapid", # TODO: Re-check asset if dedicated exists
 	"projectile_hit": "res://assets/audio/sfx/projectile_hit",
 	"splash_hit": "res://assets/audio/sfx/splash_hit",
 	"enemy_die": "res://assets/audio/sfx/enemy_die",

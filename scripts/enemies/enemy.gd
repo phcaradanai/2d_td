@@ -27,6 +27,9 @@ var active_slow_percent: float = 0.0
 var slow_remaining: float = 0.0
 var shield_remaining: float = 0.0
 var is_flashing: bool = false
+var vulnerability_multiplier: float = 1.0
+var vulnerability_remaining: float = 0.0
+var bleed_particle_timer: float = 0.0
 
 # Special Archetypes
 var is_bulwark: bool = false
@@ -93,20 +96,25 @@ func _draw() -> void:
 	if shield_remaining > 0:
 		draw_circle(Vector2.ZERO, size * 1.3, Color(0.4, 0.8, 1.0, 0.3))
 	
+	if active_slow_percent > 0:
+		# Frost/Slow glow
+		draw_circle(Vector2.ZERO, size * 1.2, Color(0.6, 0.9, 1.0, 0.25))
+		draw_arc(Vector2.ZERO, size * 1.1, 0, TAU, 24, Color(0.6, 0.9, 1.0, 0.4), 2.0)
+	
 	match visual_type:
 		"basic":
-			color = Color(0.8, 0.2, 0.2, 1.0)
+			color = Color(1.0, 0.2, 0.2, 1.0) # Electric Red
 			_draw_drone_hexagon(color, size)
 		"fast":
 			color = Color(1.0, 0.8, 0.2, 1.0)
 			_draw_drone_triangle(color, size * 0.7)
 		"tank":
-			color = Color(0.5, 0.1, 0.1, 1.0)
+			color = Color(0.6, 0.1, 0.1, 1.0) # Dark Industrial Red
 			_draw_drone_tank(color, size * 1.4)
 		"bulwark":
-			color = Color(0.2, 0.5, 0.8, 1.0)
+			color = Color(0.1, 0.6, 1.0, 1.0) # Secure Blue
 			_draw_bulwark(color, size * 1.6)
-			draw_arc(Vector2.ZERO, shield_radius, 0, TAU, 32, Color(0.4, 0.8, 1.0, 0.2), 2.0)
+			draw_arc(Vector2.ZERO, shield_radius, 0, TAU, 32, Color(0.2, 0.8, 1.0, 0.2), 2.0)
 		"hunter":
 			color = Color(1.0, 0.4, 0.2, 1.0)
 			_draw_hunter(color, size * 1.1)
@@ -176,10 +184,25 @@ func _process(delta: float) -> void:
 	if slow_remaining > 0:
 		slow_remaining -= delta
 		if slow_remaining <= 0: clear_slow()
+		
+		# VISUAL: Slow particles (blue sparks)
+		if Engine.get_process_frames() % 10 == 0:
+			_spawn_impact_particle(Color(0.4, 0.8, 1.0, 0.6))
 	
 	if shield_remaining > 0:
 		shield_remaining -= delta
 		if shield_remaining <= 0: queue_redraw()
+	
+	if vulnerability_remaining > 0:
+		vulnerability_remaining -= delta
+		if vulnerability_remaining <= 0:
+			vulnerability_multiplier = 1.0
+		
+		# Bleed effect (blood particles)
+		bleed_particle_timer -= delta
+		if bleed_particle_timer <= 0:
+			_spawn_bleed_particle()
+			bleed_particle_timer = 0.15 # Every 150ms
 		
 	# Archetype Logic
 	if is_bulwark:
@@ -201,6 +224,14 @@ func apply_shield(duration: float) -> void:
 	if shield_remaining <= 0:
 		queue_redraw()
 	shield_remaining = max(shield_remaining, duration)
+
+func apply_vulnerability(multiplier: float, duration: float) -> void:
+	# Keep the highest multiplier
+	if multiplier >= vulnerability_multiplier:
+		vulnerability_multiplier = multiplier
+		vulnerability_remaining = duration
+	elif duration > vulnerability_remaining and multiplier == vulnerability_multiplier:
+		vulnerability_remaining = duration
 
 func _process_hunter_ai(delta: float) -> void:
 	var hero = null
@@ -259,11 +290,20 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO) -> void:
 			print("[Damage] shield_reduced original=%.1f final=%.1f" % [amount, final_damage])
 			
 	var capture_pos = hit_global if hit_global != Vector2.ZERO else global_position
+	
+	# Apply vulnerability
+	if vulnerability_remaining > 0:
+		final_damage *= vulnerability_multiplier
+		
 	hp -= final_damage
 	if hp_bar: hp_bar.value = hp
 		
 	flash_body()
-	spawn_damage_number(int(final_damage), capture_pos)
+	var dn_color = Color.WHITE
+	if shield_remaining > 0 and not is_bulwark:
+		dn_color = Color(0.4, 0.8, 1.0) # Light blue for shielded hits
+		
+	spawn_damage_number(int(final_damage), capture_pos, dn_color)
 	_play_hit_pulse()
 	
 	if hp <= 0:
@@ -288,16 +328,20 @@ func update_effective_speed() -> void:
 func flash_body() -> void:
 	is_flashing = true
 	queue_redraw()
-	await get_tree().create_timer(0.08).timeout
-	is_flashing = false
-	queue_redraw()
+	# Strong white flash
+	var tween = create_tween()
+	tween.tween_interval(0.06)
+	tween.tween_callback(func():
+		is_flashing = false
+		queue_redraw()
+	)
 
-func spawn_damage_number(amount: int, hit_global: Vector2) -> void:
+func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE) -> void:
 	if damage_number_scene:
 		var dn = damage_number_scene.instantiate()
 		get_tree().current_scene.add_child(dn)
-		dn.global_position = hit_global + Vector2(0, -20)
-		dn.setup(amount)
+		dn.global_position = hit_global + Vector2(randf_range(-5, 5), -20 + randf_range(-5, 5))
+		dn.setup(amount, color)
 
 func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag: return
@@ -326,8 +370,16 @@ func is_alive() -> bool:
 
 func _play_hit_pulse() -> void:
 	var tween = create_tween()
-	tween.tween_property(self, "scale", Vector2(1.2, 0.8), 0.05).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_trans(Tween.TRANS_BACK)
+	var s = randf_range(1.15, 1.25)
+	tween.tween_property(self, "scale", Vector2(s, 1.0/s), 0.04).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "scale", Vector2.ONE, 0.08).set_trans(Tween.TRANS_BACK)
+	
+	# Small hit shake
+	var original_pos = position
+	var shake_tween = create_tween()
+	var shake_dir = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized() * 3.0
+	shake_tween.tween_property(self, "position", original_pos + shake_dir, 0.03)
+	shake_tween.tween_property(self, "position", original_pos, 0.03)
 
 func get_priority_score() -> float:
 	var score = 1.0
@@ -341,3 +393,28 @@ func get_path_progress() -> float:
 
 func get_current_hp() -> float:
 	return hp
+
+func _spawn_bleed_particle() -> void:
+	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if not container: container = get_tree().current_scene
+	
+	var p = Node2D.new()
+	p.set_script(load("res://scripts/effects/bleed_particle.gd"))
+	container.add_child(p)
+	
+	# Spawn randomly around center
+	var offset = Vector2(randf_range(-10, 10), randf_range(-10, 10))
+	p.global_position = global_position + offset
+
+func _spawn_impact_particle(color: Color) -> void:
+	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if not container: container = get_tree().current_scene
+	
+	var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
+	if impact_scene:
+		var effect = impact_scene.instantiate()
+		container.add_child(effect)
+		var offset = Vector2(randf_range(-12, 12), randf_range(-12, 12))
+		effect.global_position = global_position + offset
+		if effect.has_method("setup"):
+			effect.setup(color, 0.4)

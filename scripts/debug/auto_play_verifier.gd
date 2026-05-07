@@ -350,7 +350,7 @@ func _try_fallback_for_unaffordable_action(failed_action: Dictionary) -> void:
 	var cell = Vector2i(failed_action.cell[0], failed_action.cell[1])
 	
 	# Try cheaper towers in order
-	var fallbacks = ["rapid_tower", "basic_tower"]
+	var fallbacks = ["rapid_tower", "basic_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
 	for fb_type in fallbacks:
 		build_manager.set_selected_tower(fb_type)
 		var val = build_manager.validate_placement(cell)
@@ -743,7 +743,12 @@ func auto_clear_find_best_in_wave_build(risk: Dictionary) -> Dictionary:
 			# Basic bounds check if possible
 			if cell.x < 0 or cell.y < 0: continue
 			
-			build_manager.set_selected_tower("rapid_tower" if gold >= 100 else "basic_tower")
+			var best_id = "basic_tower"
+			if gold >= 150: best_id = "sniper_tower"
+			elif gold >= 130: best_id = "lightning_tower"
+			elif gold >= 120: best_id = "sawblade_tower"
+			elif gold >= 100: best_id = "rapid_tower"
+			build_manager.set_selected_tower(best_id)
 			var val = build_manager.validate_placement(cell)
 			if val.is_valid:
 				return {

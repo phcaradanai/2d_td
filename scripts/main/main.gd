@@ -74,10 +74,10 @@ var current_state: GameState = GameState.MENU
 var current_level_path: String = ""
 var current_level_id: String = ""
 var selected_level_id: int = 0
-var available_tower_types: Array[String] = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower"]
-var selected_loadout: Array[String] = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower"]
+var available_tower_types: Array[String] = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
+var selected_loadout: Array[String] = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
 var active_level_loadout: Array[String] = []
-const MAX_TOWER_LOADOUT_SIZE: int = 4
+const MAX_TOWER_LOADOUT_SIZE: int = 8
 const MIN_TOWER_LOADOUT_SIZE: int = 1
 var pending_unlock_level_id: String = ""
 var leaderboard_service: Node = null
@@ -121,7 +121,7 @@ func _ready() -> void:
 		build_manager.setup(game_manager, tower_container, projectile_container)
 		if game_hud:
 			var prices = {}
-			for id in ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower"]:
+			for id in ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]:
 				var config = build_manager.towers_config.get(id, {})
 				prices[id] = config.get("cost", 0)
 			game_hud.set_tower_prices(prices)
@@ -261,6 +261,7 @@ func _refresh_start_wave_ui() -> void:
 func _refresh_gameplay_hud_state() -> void:
 	_refresh_start_wave_ui()
 	_refresh_hud_wave_intel()
+	_refresh_route_preview()
 
 var active_path_nodes: Dictionary = {}
 
@@ -341,6 +342,7 @@ func _setup_game_from_level() -> void:
 
 	update_hud()
 	_refresh_hud_wave_intel()
+	_refresh_route_preview()
 	# Removed _spawn_hero() as it's now manual deployment
 	_setup_hero_if_enabled()
 
@@ -524,6 +526,10 @@ func _process(delta: float) -> void:
 			build_preview.update_preview(cell, validation["is_valid"], true, build_manager.get_selected_tower_range(), validation["reason"], build_manager.get_selected_tower_footprint())
 	elif build_preview:
 		build_preview.update_preview(Vector2i(-1, -1), false, false)
+		
+	# Density Control: Prune effects periodically
+	if Engine.get_process_frames() % 60 == 0:
+		_clean_effects_container()
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
@@ -642,6 +648,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func return_to_menu() -> void:
 	set_game_phase(GameState.MENU)
+	_clear_route_preview()
 	_resume_game()
 	_clear_gameplay_state()
 	if audio_manager:
@@ -649,6 +656,7 @@ func return_to_menu() -> void:
 
 func _on_level_select_requested() -> void:
 	set_game_phase(GameState.LEVEL_SELECT)
+	_clear_route_preview()
 	_play_ui_click()
 	if audio_manager:
 		audio_manager.play_music("menu")
@@ -684,6 +692,7 @@ func _update_hero_timers(delta: float) -> void:
 
 func _on_level_select_back() -> void:
 	set_game_phase(GameState.MENU)
+	_clear_route_preview()
 	_play_ui_click()
 
 func _on_leaderboard_requested(level_id: String) -> void:
@@ -733,6 +742,7 @@ func start_level(level_path: String) -> void:
 
 	set_game_phase(GameState.BUILD)
 	_refresh_hud_wave_intel()
+	_refresh_route_preview()
 
 	if audio_manager:
 		audio_manager.play_music("gameplay")
@@ -763,7 +773,7 @@ func start_next_level() -> void:
 		return_to_menu()
 
 func get_default_loadout_for_level(_level_id: String) -> Array[String]:
-	return ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower"]
+	return ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
 
 func is_valid_loadout(loadout: Array[String]) -> bool:
 	if loadout.size() < MIN_TOWER_LOADOUT_SIZE: return false
@@ -807,6 +817,7 @@ func _clear_gameplay_state() -> void:
 		build_preview.update_preview(Vector2i(-1, -1), false, false)
 	if game_hud:
 		game_hud.clear_wave_intel()
+	_clear_route_preview()
 
 	# Setup UI
 	if game_hud and level_manager and level_manager.hero_config.get("enabled", false):
@@ -1185,6 +1196,7 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status(status + " at " + str(cell))
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
+	_clear_route_preview()
 	set_game_phase(GameState.WAVE)
 	if game_manager:
 		game_manager.set_current_wave(wave_number)
@@ -1207,6 +1219,7 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 func _on_all_waves_completed() -> void:
 	if game_manager:
 		game_manager.trigger_victory()
+	_clear_route_preview()
 	_refresh_gameplay_hud_state()
 	if game_hud and game_hud.has_method("set_wave_intel_visible"):
 		game_hud.set_wave_intel_visible(false)
@@ -1259,6 +1272,7 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 func _on_game_over() -> void:
 	if OS.is_debug_build(): print("[Main] Game Over Triggered")
 	set_game_phase(GameState.GAME_OVER)
+	_clear_route_preview()
 
 	clear_selected_tower()
 	if build_manager and build_manager.has_method("cancel_build_mode"):
@@ -1301,6 +1315,7 @@ func _clear_projectiles_and_targeting() -> void:
 
 func _on_victory() -> void:
 	set_game_phase(GameState.VICTORY)
+	_clear_route_preview()
 
 	clear_selected_tower()
 	if build_manager and build_manager.has_method("cancel_build_mode"):
@@ -1365,6 +1380,18 @@ func _on_reset_audio_requested() -> void:
 func _play_ui_click() -> void:
 	if audio_manager:
 		audio_manager.play_sfx("ui_click")
+
+func _clean_effects_container() -> void:
+	var container = get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if not container: return
+	
+	var children = container.get_children()
+	if children.size() > 60: # Limit active visual effects
+		# Kill the oldest ones first
+		for i in range(children.size() - 60):
+			var child = children[i]
+			if child.has_method("queue_free"):
+				child.queue_free()
 
 # --- Debug Actions ---
 
@@ -1752,6 +1779,51 @@ func _refresh_hud_wave_intel() -> void:
 		wave_manager.get_total_waves(),
 		wave_manager.is_wave_running
 	)
+
+func _refresh_route_preview() -> void:
+	if not map_visual_layer or not wave_manager or not level_manager:
+		return
+	
+	if current_state != GameState.BUILD or wave_manager.is_wave_running or not wave_manager.has_next_wave():
+		_clear_route_preview()
+		return
+	
+	map_visual_layer.set_preview_paths(_get_upcoming_wave_active_paths())
+
+func _clear_route_preview() -> void:
+	if map_visual_layer and map_visual_layer.has_method("set_preview_paths"):
+		map_visual_layer.set_preview_paths([])
+
+func _get_upcoming_wave_active_paths() -> Array[String]:
+	var active_paths: Array[String] = []
+	if not wave_manager or not level_manager:
+		return active_paths
+	
+	var wave_data = wave_manager.get_current_wave_data()
+	if wave_data.is_empty():
+		return active_paths
+	
+	var groups = _extract_wave_groups_for_route_preview(wave_data)
+	for group in groups:
+		if not (group is Dictionary):
+			continue
+		
+		var path_id = str(group.get("path", "default"))
+		if level_manager.multi_paths.has(path_id) and not active_paths.has(path_id):
+			active_paths.append(path_id)
+	
+	return active_paths
+
+func _extract_wave_groups_for_route_preview(wave_data: Dictionary) -> Array:
+	if wave_data.has("groups") and wave_data["groups"] is Array:
+		return wave_data["groups"]
+	if wave_data.has("spawns") and wave_data["spawns"] is Array:
+		return wave_data["spawns"]
+	if wave_data.has("enemies") and wave_data["enemies"] is Array:
+		return wave_data["enemies"]
+	if wave_data.has("enemy_type") or wave_data.has("type"):
+		return [wave_data]
+	return []
 
 func _log_wave_intel_source() -> void:
 	if not OS.is_debug_build(): return

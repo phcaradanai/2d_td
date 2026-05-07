@@ -5,13 +5,13 @@
 [ext_resource type="Script" path="res://scripts/core/game_manager.gd" id="3_game_manager"]
 [ext_resource type="Script" path="res://scripts/managers/build_manager.gd" id="5_build_manager"]
 [ext_resource type="Script" path="res://scripts/ui/build_preview.gd" id="6_build_preview"]
-[ext_resource type="PackedScene" uid="uid://d4k3j5l8n2m1" path="res://scenes/ui/GameHUD.tscn" id="4_game_hud"]
-[ext_resource type="PackedScene" uid="uid://c8n4j2k8m1p2" path="res://scenes/ui/MainMenu.tscn" id="7_main_menu"]
-[ext_resource type="PackedScene" uid="uid://d1k3j5l8n2m1" path="res://scenes/ui/LevelSelect.tscn" id="8_level_select"]
+[ext_resource type="PackedScene" path="res://scenes/ui/GameHUD.tscn" id="4_game_hud"]
+[ext_resource type="PackedScene" path="res://scenes/ui/MainMenu.tscn" id="7_main_menu"]
+[ext_resource type="PackedScene" path="res://scenes/ui/LevelSelect.tscn" id="8_level_select"]
 [ext_resource type="Script" path="res://scripts/core/save_manager.gd" id="9_save_manager"]
 [ext_resource type="Script" path="res://scripts/managers/audio_manager.gd" id="10_audio_manager"]
 [ext_resource type="Script" path="res://scripts/ui/camera_shake.gd" id="11_camera_shake"]
-[ext_resource type="PackedScene" uid="uid://be6m5k8l2n3o3" path="res://scenes/ui/DebugPanel.tscn" id="12_debug_panel"]
+[ext_resource type="PackedScene" path="res://scenes/ui/DebugPanel.tscn" id="12_debug_panel"]
 
 [node name="Main" type="Node2D"]
 script = ExtResource("1_main_script")

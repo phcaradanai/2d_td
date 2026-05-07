@@ -13,14 +13,22 @@ var play_button: Button = null
 
 var dynamic_list_container: Control = null
 var intel_panel: Control = null
+var main_hbox: BoxContainer = null
+var left_vbox: VBoxContainer = null
+var right_vbox: VBoxContainer = null
 var loadout_container: Control = null
 var mission_info_labels: Dictionary = {}
 var notification_label: Label = null
 var leaderboard_button: Button = null
+var loadout_title_label: Label = null
 
 func _ready() -> void:
+	process_mode = Node.PROCESS_MODE_ALWAYS
 	# Create a clean panel layout for Level Select
 	_setup_clean_layout()
+	
+	get_viewport().size_changed.connect(update_layout_for_viewport)
+	update_layout_for_viewport()
 	
 	back_button.visible = true # Restore Back button to return to Main Menu
 	back_button.pressed.connect(func(): back_pressed.emit())
@@ -29,6 +37,7 @@ func update_ui(save_manager: Node) -> void:
 	# Always ensure nodes are setup
 	if dynamic_list_container == null:
 		_setup_clean_layout()
+		update_layout_for_viewport()
 	
 	# Generate cards if they haven't been created yet
 	if level_container_map.is_empty():
@@ -78,6 +87,7 @@ func _generate_dynamic_ui(save_manager: Node) -> void:
 		area_box.add_child(header)
 		
 		var grid = GridContainer.new()
+		grid.name = "Grid"
 		grid.columns = 5
 		grid.add_theme_constant_override("h_separation", 24)
 		grid.add_theme_constant_override("v_separation", 20)
@@ -116,20 +126,25 @@ func _create_level_card(level_id: String) -> Control:
 	# Lock Icon
 	var lock = Label.new()
 	lock.name = "LockIcon"
-	lock.text = "🔒"
+	lock.text = "LOCKED"
 	lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	lock.add_theme_font_size_override("font_size", 32)
-	lock.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	lock.add_theme_font_size_override("font_size", 16)
+	lock.add_theme_color_override("font_color", Color(1, 0.4, 0.4))
+	var lock_style = StyleBoxFlat.new()
+	lock_style.bg_color = Color(0, 0, 0, 0.6)
+	lock.add_theme_stylebox_override("normal", lock_style)
+	lock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(lock)
 	
 	# Perfect Badge
 	var badge = Label.new()
 	badge.name = "PerfectBadge"
-	badge.text = "✨"
-	badge.add_theme_font_size_override("font_size", 24)
-	badge.position = Vector2(110, -5)
+	badge.text = "PERFECT"
+	badge.add_theme_font_size_override("font_size", 10)
+	badge.add_theme_color_override("font_color", Color(1, 0.9, 0.2))
+	badge.position = Vector2(85, -5)
 	badge.tooltip_text = "PERFECT CLEAR!"
 	btn.add_child(badge)
 	
@@ -196,10 +211,19 @@ func _update_selection_visuals() -> void:
 		var path = "res://data/levels/%s.json" % level_id
 		
 		if path == selected_level_path:
-			btn.modulate = Color(1.5, 1.5, 2.0) # Bright neon blue highlight
+			btn.add_theme_color_override("font_color", Color(1, 1, 1))
 			btn.scale = Vector2(1.05, 1.05)
+			var sel_style = btn.get_theme_stylebox("normal").duplicate() if btn.has_theme_stylebox_override("normal") else StyleBoxFlat.new()
+			if sel_style is StyleBoxFlat:
+				sel_style.border_width_left = 4
+				sel_style.border_width_top = 4
+				sel_style.border_width_right = 4
+				sel_style.border_width_bottom = 4
+				sel_style.border_color = Color(0.4, 0.8, 1.0)
+				btn.add_theme_stylebox_override("normal", sel_style)
 		else:
 			btn.scale = Vector2(1.0, 1.0)
+			btn.remove_theme_stylebox_override("normal")
 			# Reset to normal based on status
 			var save_manager = get_tree().current_scene.get_node_or_null("SaveManager")
 			if save_manager:
@@ -296,13 +320,13 @@ func _setup_clean_layout() -> void:
 	header.add_child(dummy)
 	
 	# Main horizontal split
-	var main_hbox = HBoxContainer.new()
+	main_hbox = HBoxContainer.new()
 	main_hbox.add_theme_constant_override("separation", 40)
 	main_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(main_hbox)
 	
 	# Left Side: World Map
-	var left_vbox = VBoxContainer.new()
+	left_vbox = VBoxContainer.new()
 	left_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	main_hbox.add_child(left_vbox)
 	
@@ -319,7 +343,7 @@ func _setup_clean_layout() -> void:
 	scroll.add_child(dynamic_list_container)
 	
 	# Right Side: Mission Intel & Loadout
-	var right_vbox = VBoxContainer.new()
+	right_vbox = VBoxContainer.new()
 	right_vbox.custom_minimum_size.x = 380
 	right_vbox.add_theme_constant_override("separation", 16)
 	main_hbox.add_child(right_vbox)
@@ -372,13 +396,54 @@ func _setup_clean_layout() -> void:
 	right_vbox.add_child(play_button)
 	play_button.pressed.connect(_on_play_pressed)
 	
-	# Back button was moved to header, so we don't need this legacy logic
-	# but we should ensure it's themed if we care.
-	if back_button:
-		var back_style = StyleBoxFlat.new()
-		back_style.bg_color = Color(0.2, 0.2, 0.25, 0.8)
-		back_style.set_corner_radius_all(8)
-		back_button.add_theme_stylebox_override("normal", back_style)
+func update_layout_for_viewport() -> void:
+	if not is_inside_tree() or main_hbox == null: return
+	var size = get_viewport().get_visible_rect().size
+	
+	# Responsive Columns
+	var columns = 5
+	if size.x < 1000: columns = 3
+	if size.x < 700: columns = 2
+	
+	for area_id in area_panels:
+		var grid = area_panels[area_id].get_node_or_null("Grid")
+		if grid: grid.columns = columns
+	
+	# Responsive Split
+	if size.x < 1100:
+		if main_hbox is HBoxContainer:
+			# Switch to vertical
+			var new_vbox = VBoxContainer.new()
+			_swap_container_type(main_hbox, new_vbox)
+			main_hbox = new_vbox
+			right_vbox.custom_minimum_size.x = 0
+	else:
+		if main_hbox is VBoxContainer:
+			# Switch to horizontal
+			var new_hbox = HBoxContainer.new()
+			_swap_container_type(main_hbox, new_hbox)
+			main_hbox = new_hbox
+			right_vbox.custom_minimum_size.x = 380
+
+func _swap_container_type(old_node: BoxContainer, new_node: BoxContainer) -> void:
+	var parent = old_node.get_parent()
+	var idx = old_node.get_index()
+	
+	# Copy properties
+	new_node.size_flags_horizontal = old_node.size_flags_horizontal
+	new_node.size_flags_vertical = old_node.size_flags_vertical
+	new_node.add_theme_constant_override("separation", old_node.get_theme_constant("separation"))
+	
+	# Move children
+	var children = old_node.get_children()
+	for c in children:
+		old_node.remove_child(c)
+		new_node.add_child(c)
+	
+	parent.remove_child(old_node)
+	parent.add_child(new_node)
+	parent.move_child(new_node, idx)
+	old_node.queue_free()
 
 func _setup_intel_panel(container: Control) -> void:
 	intel_panel = VBoxContainer.new()
@@ -446,6 +511,24 @@ func _setup_intel_panel(container: Control) -> void:
 	waves_label_hbox.add_child(waves_val)
 	mission_info_labels["total_waves"] = waves_val
 	
+	var briefing_vbox = VBoxContainer.new()
+	briefing_vbox.add_theme_constant_override("separation", 5)
+	intel_panel.add_child(briefing_vbox)
+	
+	var briefing_title = Label.new()
+	briefing_title.text = "TACTICAL BRIEFING:"
+	briefing_title.add_theme_font_size_override("font_size", 14)
+	briefing_title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	briefing_vbox.add_child(briefing_title)
+	
+	var briefing_val = Label.new()
+	briefing_val.text = "Select a mission for tactical analysis."
+	briefing_val.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	briefing_val.add_theme_font_size_override("font_size", 14)
+	briefing_val.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	briefing_vbox.add_child(briefing_val)
+	mission_info_labels["briefing"] = briefing_val
+	
 	var spacer2 = Control.new()
 	spacer2.custom_minimum_size.y = 12
 	intel_panel.add_child(spacer2)
@@ -464,11 +547,11 @@ func _setup_intel_panel(container: Control) -> void:
 	spacer3.custom_minimum_size.y = 12
 	intel_panel.add_child(spacer3)
 	
-	var loadout_title = Label.new()
-	loadout_title.text = "TOWER LOADOUT (MAX 4)"
-	loadout_title.add_theme_font_size_override("font_size", 18) # Increased
-	loadout_title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
-	intel_panel.add_child(loadout_title)
+	loadout_title_label = Label.new()
+	loadout_title_label.text = "TOWER LOADOUT (MAX 8)"
+	loadout_title_label.add_theme_font_size_override("font_size", 18) # Increased
+	loadout_title_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	intel_panel.add_child(loadout_title_label)
 	
 	loadout_container = VBoxContainer.new()
 	loadout_container.add_theme_constant_override("separation", 5)
@@ -495,12 +578,30 @@ func _create_loadout_ui() -> void:
 	var selected = main.get("selected_loadout")
 	if available == null or selected == null: return
 	
+	if loadout_title_label:
+		if available.size() <= main.MAX_TOWER_LOADOUT_SIZE:
+			loadout_title_label.text = "EQUIPPED TOWERS"
+		else:
+			loadout_title_label.text = "TOWER LOADOUT (MAX %d)" % main.MAX_TOWER_LOADOUT_SIZE
+	
+	var roles = {
+		"basic_tower": "Balanced",
+		"rapid_tower": "Fast",
+		"cannon_tower": "AoE",
+		"slow_tower": "Slow",
+		"sniper_tower": "Long Range",
+		"lightning_tower": "Chain",
+		"sawblade_tower": "Close Range"
+	}
+	
 	for tower_id in available:
 		var hbox = HBoxContainer.new()
 		loadout_container.add_child(hbox)
 		
 		var check = CheckBox.new()
-		check.text = tower_id.replace("_tower", "").capitalize()
+		var base_name = tower_id.replace("_tower", "").capitalize()
+		var role = roles.get(tower_id, "Special")
+		check.text = "%s - %s" % [base_name, role]
 		check.button_pressed = selected.has(tower_id)
 		check.toggled.connect(func(v): _on_tower_toggled(tower_id, v))
 		hbox.add_child(check)
@@ -561,6 +662,17 @@ func _update_intel_panel(config: Dictionary) -> void:
 		
 		var rec_list = all_roles.keys()
 		mission_info_labels["recommended"].text = ", ".join(rec_list) if not rec_list.is_empty() else "None"
+		
+		# Teaching Copy Logic
+		var briefing_text = config.get("description", "Mission parameters nominal.")
+		if level_id_number == 11:
+			briefing_text = "TACTICAL: Guardian unit available. Deploy from HUD for mobile defense. Watch for Hunters—they specialize in tracking and disabling your Hero."
+		elif level_id_number == 12:
+			briefing_text = "TACTICAL: Restricted foundations detected. Construction allowed on designated industrial plates only."
+		elif level_id_number == 14:
+			briefing_text = "INTEL: Bulwarks project energy shields that protect nearby allies. Focus fire or use Area/Chain damage to break through."
+		
+		mission_info_labels["briefing"].text = briefing_text
 	
 	_create_loadout_ui()
 
@@ -611,7 +723,7 @@ func _update_play_button_state() -> void:
 			play_button.text = "INVALID LOADOUT"
 			play_button.modulate = Color(1, 0.5, 0.5)
 			if mission_info_labels.has("loadout_message"):
-				mission_info_labels["loadout_message"].text = "Select 1-4 towers"
+				mission_info_labels["loadout_message"].text = "Select 1-8 towers"
 		else:
 			if mission_info_labels.has("loadout_message"):
 				mission_info_labels["loadout_message"].text = ""

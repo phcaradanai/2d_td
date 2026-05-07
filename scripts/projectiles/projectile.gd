@@ -13,6 +13,10 @@ var slow_percent: float = 0.0
 var slow_duration: float = 0.0
 var target_categories: Array[String] = DEFAULT_TARGET_CATEGORIES.duplicate()
 var lifetime: float = 5.0
+var chain_jumps: int = 0
+var chain_range: float = 0.0
+var chain_falloff: float = 1.0
+var chained_enemies: Array[Node2D] = []
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
@@ -31,6 +35,22 @@ func setup(p_target: Node2D, p_damage: float, p_speed: float = 500.0, p_attack_t
 	slow_percent = p_slow_percent
 	slow_duration = p_slow_duration
 	target_categories = _normalize_target_categories(p_target_categories)
+	
+	# Density Control: Shorten trail for fast/rapid projectiles to avoid clutter
+	if p_speed > 600:
+		max_trail_points = 4
+	elif p_speed > 400:
+		max_trail_points = 6
+	else:
+		max_trail_points = 8
+
+func setup_chain(jumps: int, p_range: float, falloff: float, excluded: Array[Node2D] = []) -> void:
+	chain_jumps = jumps
+	chain_range = p_range
+	chain_falloff = falloff
+	chained_enemies = excluded
+	if is_instance_valid(target) and not chained_enemies.has(target):
+		chained_enemies.append(target)
 
 func _process(delta: float) -> void:
 	if game_manager != null and game_manager.is_paused:
@@ -81,6 +101,10 @@ func _update_trail() -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if attack_type == "chain":
+		_draw_lightning_projectile()
+		return
+		
 	# 1. Draw Trail (Global points converted to local space)
 	if trail_points.size() >= 2:
 		var base_color = modulate
@@ -145,10 +169,48 @@ func hit_target() -> void:
 			# STANDARD: Use captured hit point and current pos for angle
 			var impact_angle = (hit_global - global_position).angle()
 			_spawn_impact_effect(hit_global, Color.WHITE, impact_angle)
+			
+			if attack_type == "chain" and chain_jumps > 0:
+				_handle_chain_jump(hit_global)
+			
 			if audio_manager:
 				audio_manager.play_sfx("projectile_hit")
 	
 	queue_free()
+
+func _handle_chain_jump(hit_pos: Vector2) -> void:
+	var next_target = _find_next_chain_target(hit_pos)
+	if next_target:
+		# VISUAL: Spawn arc from previous target to next
+		var arc = Node2D.new()
+		arc.set_script(load("res://scripts/effects/lightning_arc.gd"))
+		get_parent().add_child(arc)
+		arc.global_position = hit_pos
+		arc.setup(hit_pos, next_target.global_position, Color(0.5, 0.8, 1.0))
+		
+		var next_proj = duplicate()
+		get_parent().add_child(next_proj)
+		next_proj.global_position = hit_pos
+		next_proj.setup(next_target, damage * chain_falloff, speed, "chain", effect_radius, slow_percent, slow_duration, target_categories)
+		next_proj.setup_chain(chain_jumps - 1, chain_range, chain_falloff, chained_enemies)
+		next_proj.modulate = modulate # Keep lightning color
+
+func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
+	var best_target = null
+	var min_dist = chain_range
+	
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
+			if chained_enemies.has(enemy): continue
+			if not can_affect_enemy(enemy): continue
+			
+			var dist = hit_pos.distance_to(enemy.global_position)
+			if dist < min_dist:
+				min_dist = dist
+				best_target = enemy
+				
+	return best_target
 
 func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
 	if impact_effect_scene:
@@ -246,3 +308,25 @@ func _normalize_target_categories(raw_categories) -> Array[String]:
 	if normalized.is_empty():
 		normalized.append(ENEMY_CATEGORY_LAND)
 	return normalized
+func _draw_lightning_projectile() -> void:
+	# Jagged tail behind the projectile head
+	var pts = PackedVector2Array()
+	pts.append(Vector2.ZERO)
+	
+	# Create 3-4 jagged points backward
+	var back_dir = Vector2.LEFT
+	if is_instance_valid(target):
+		var target_pos = target.global_position
+		if target.has_method("get_hit_origin"):
+			target_pos = target.get_hit_origin()
+		back_dir = (global_position - target_pos).normalized()
+	
+	for i in range(1, 4):
+		var base = back_dir * i * 8.0
+		var perp = Vector2(-back_dir.y, back_dir.x)
+		var offset = perp * randf_range(-6.0, 6.0)
+		pts.append(base + offset)
+	
+	draw_polyline(pts, Color(0.5, 0.8, 1.0, 0.8), 3.0, true)
+	draw_polyline(pts, Color.WHITE, 1.0, true)
+	draw_circle(Vector2.ZERO, 3.0, Color.WHITE)

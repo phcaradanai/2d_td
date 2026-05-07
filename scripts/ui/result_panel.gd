@@ -23,6 +23,7 @@ signal level_select_pressed()
 var target_score: int = 0
 var current_display_score: int = 0
 var animation_tween: Tween
+var record_tween: Tween # New: Track feedback loop tween
 
 func _ready() -> void:
 	retry_button.pressed.connect(func(): retry_pressed.emit())
@@ -38,6 +39,8 @@ func _ready() -> void:
 func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int = -1) -> void:
 	if animation_tween:
 		animation_tween.kill()
+	if record_tween:
+		record_tween.kill()
 	
 	# Setup data
 	var is_victory = summary.get("result", "") == "Victory"
@@ -119,18 +122,20 @@ func _setup_record_feedback(improvements: Dictionary) -> void:
 	if messages.size() > 0:
 		record_feedback.text = messages[0]
 		record_feedback.visible = true
-		record_feedback.modulate.a = 0
-		
-		var ft = create_tween().set_loops()
-		ft.tween_property(record_feedback, "modulate:a", 1.0, 0.5)
-		ft.tween_interval(1.0)
-		ft.tween_property(record_feedback, "modulate:a", 0.0, 0.5)
-		ft.tween_callback(func():
+		if record_tween:
+			record_tween.kill()
+		record_tween = create_tween().set_loops()
+		record_tween.tween_property(record_feedback, "modulate:a", 1.0, 0.5)
+		record_tween.tween_interval(1.0)
+		record_tween.tween_property(record_feedback, "modulate:a", 0.0, 0.5)
+		record_tween.tween_callback(func():
 			var current_idx = messages.find(record_feedback.text)
 			var next_idx = (current_idx + 1) % messages.size()
 			record_feedback.text = messages[next_idx]
 		)
 	else:
+		if record_tween:
+			record_tween.kill()
 		record_feedback.visible = false
 
 func _format_time(seconds: int) -> String:
@@ -141,6 +146,8 @@ func _format_time(seconds: int) -> String:
 func hide_result() -> void:
 	if animation_tween:
 		animation_tween.kill()
+	if record_tween:
+		record_tween.kill()
 	
 	animation_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	animation_tween.tween_property(self, "modulate:a", 0.0, 0.3)

@@ -26,224 +26,254 @@ grow_vertical = 2
 mouse_filter = 2
 color = Color(0, 0, 0, 0.55)
 
-[node name="TopBar" type="PanelContainer" parent="Root"]
-layout_mode = 1
-anchors_preset = 10
-anchor_right = 1.0
-offset_bottom = 60.0
-grow_horizontal = 2
+	[node name="ScreenLayout" type="VBoxContainer" parent="Root"]
+	layout_mode = 1
+	anchors_preset = 15
+	anchor_right = 1.0
+	anchor_bottom = 1.0
+	grow_horizontal = 2
+	grow_vertical = 2
+	theme_override_constants/separation = 0
+	mouse_filter = 2
+	
+	[node name="TopBar" type="PanelContainer" parent="Root/ScreenLayout"]
+	custom_minimum_size = Vector2(0, 60)
+	layout_mode = 2
+	
+	[node name="MarginContainer" type="MarginContainer" parent="Root/ScreenLayout/TopBar"]
+	layout_mode = 2
+	theme_override_constants/margin_left = 20
+	theme_override_constants/margin_top = 12
+	theme_override_constants/margin_right = 20
+	theme_override_constants/margin_bottom = 12
+	
+	[node name="HBoxContainer" type="HBoxContainer" parent="Root/ScreenLayout/TopBar/MarginContainer"]
+	layout_mode = 2
+	theme_override_constants/separation = 15
+	
+	[node name="GoldLabel" type="Label" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	layout_mode = 2
+	text = "Gold: 0"
+	vertical_alignment = 1
+	
+	[node name="LivesLabel" type="Label" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	layout_mode = 2
+	text = "Lives: 0"
+	vertical_alignment = 1
+	
+	[node name="WaveLabel" type="Label" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	layout_mode = 2
+	text = "Wave: 0"
+	vertical_alignment = 1
+	
+	[node name="StatusLabel" type="Label" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	layout_mode = 2
+	theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
+	text = "Ready"
+	vertical_alignment = 1
+	
+	[node name="NextWaveLabel" type="Label" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	layout_mode = 2
+	theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+	theme_override_font_sizes/font_size = 14
+	text = "Next: Wave 1"
+	vertical_alignment = 1
+	
+	[node name="Spacer" type="Control" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	layout_mode = 2
+	size_flags_horizontal = 3
+	mouse_filter = 2
+	
+	[node name="StartWaveButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	custom_minimum_size = Vector2(140, 36)
+	layout_mode = 2
+	size_flags_vertical = 4
+	text = "Start Wave 1"
+	
+	[node name="SettingsButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	custom_minimum_size = Vector2(90, 36)
+	layout_mode = 2
+	size_flags_vertical = 4
+	text = "Settings"
+	
+	[node name="PauseButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	custom_minimum_size = Vector2(90, 36)
+	layout_mode = 2
+	size_flags_vertical = 4
+	text = "Pause"
+	
+	[node name="RestartButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	custom_minimum_size = Vector2(90, 36)
+	layout_mode = 2
+	size_flags_vertical = 4
+	text = "Restart"
+	
+	[node name="RightMarginSpacer" type="Control" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer"]
+	custom_minimum_size = Vector2(80, 0)
+	layout_mode = 2
+	mouse_filter = 2
+	
+	[node name="MainContent" type="HBoxContainer" parent="Root/ScreenLayout"]
+	layout_mode = 2
+	size_flags_vertical = 3
+	theme_override_constants/separation = 0
+	mouse_filter = 2
+	
+	[node name="LeftSidebar" type="PanelContainer" parent="Root/ScreenLayout/MainContent"]
+	custom_minimum_size = Vector2(180, 0)
+	layout_mode = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="Root/TopBar"]
-layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_right = 20
+	[node name="MarginContainer" type="MarginContainer" parent="Root/ScreenLayout/MainContent/LeftSidebar"]
+	layout_mode = 2
+	theme_override_constants/margin_left = 12
+	theme_override_constants/margin_top = 12
+	theme_override_constants/margin_right = 12
+	theme_override_constants/margin_bottom = 12
 
-[node name="HBoxContainer" type="HBoxContainer" parent="Root/TopBar/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 15
-
-[node name="GoldLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Gold: 0"
-vertical_alignment = 1
-
-[node name="LivesLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Lives: 0"
-vertical_alignment = 1
-
-[node name="WaveLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-layout_mode = 2
-text = "Wave: 0"
-vertical_alignment = 1
-
-[node name="StatusLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0.2, 1)
-text = "Ready"
-vertical_alignment = 1
-
-[node name="NextWaveLabel" type="Label" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
-theme_override_font_sizes/font_size = 14
-text = "Next: Wave 1"
-vertical_alignment = 1
-
-[node name="Spacer" type="Control" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-mouse_filter = 2
-
-[node name="StartWaveButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(140, 36)
-layout_mode = 2
-size_flags_vertical = 4
-text = "Start Wave 1"
-
-[node name="SettingsButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(90, 36)
-layout_mode = 2
-size_flags_vertical = 4
-text = "Settings"
-
-[node name="PauseButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(90, 36)
-layout_mode = 2
-size_flags_vertical = 4
-text = "Pause"
-
-[node name="RestartButton" type="Button" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(90, 36)
-layout_mode = 2
-size_flags_vertical = 4
-text = "Restart"
-
-[node name="RightMarginSpacer" type="Control" parent="Root/TopBar/MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(80, 0)
-layout_mode = 2
-mouse_filter = 2
-
-[node name="LeftSidebar" type="PanelContainer" parent="Root"]
-layout_mode = 1
-anchors_preset = 9
-anchor_bottom = 1.0
-offset_top = 60.0
-offset_right = 200.0
-grow_vertical = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="Root/LeftSidebar"]
-layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 15
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Root/LeftSidebar/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Label" type="Label" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="Label" type="Label" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Towers"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="BasicTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="BasicTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 text = "Basic ($50)"
 
-[node name="RapidTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="RapidTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 text = "Rapid ($65)"
 
-[node name="CannonTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="CannonTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 text = "Cannon ($90)"
 
-[node name="SlowTowerButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="SlowTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 text = "Slow ($75)"
 
-[node name="Spacer" type="Control" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="SniperTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Sniper ($150)"
+
+[node name="LightningTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Lightning ($130)"
+
+[node name="SawbladeTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
+custom_minimum_size = Vector2(0, 45)
+layout_mode = 2
+text = "Sawblade ($120)"
+
+[node name="Spacer" type="Control" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2
 
-[node name="BuildStatusLabel" type="Label" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="BuildStatusLabel" type="Label" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 12
 text = "None"
 autowrap_mode = 3
 
-[node name="CancelBuildButton" type="Button" parent="Root/LeftSidebar/MarginContainer/VBoxContainer"]
+[node name="CancelBuildButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "Cancel Build"
 
-[node name="RightSidebar" type="PanelContainer" parent="Root"]
-visible = false
-layout_mode = 1
-anchors_preset = 11
-anchor_left = 1.0
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = -260.0
-offset_top = 60.0
-grow_horizontal = 0
-grow_vertical = 2
+	[node name="CenterSpacer" type="Control" parent="Root/ScreenLayout/MainContent"]
+	layout_mode = 2
+	size_flags_horizontal = 3
+	mouse_filter = 2
+	
+	[node name="RightSidebarContainer" type="VBoxContainer" parent="Root/ScreenLayout/MainContent"]
+	custom_minimum_size = Vector2(260, 0)
+	layout_mode = 2
+	theme_override_constants/separation = 12
+	mouse_filter = 2
+	
+	[node name="RightSidebar" type="PanelContainer" parent="Root/ScreenLayout/MainContent/RightSidebarContainer"]
+	visible = false
+	layout_mode = 2
+	size_flags_vertical = 10
 
-[node name="MarginContainer" type="MarginContainer" parent="Root/RightSidebar"]
+[node name="MarginContainer" type="MarginContainer" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar"]
 layout_mode = 2
 theme_override_constants/margin_left = 15
 theme_override_constants/margin_top = 15
 theme_override_constants/margin_right = 15
 theme_override_constants/margin_bottom = 15
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Root/RightSidebar/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="TowerNameLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerNameLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.6, 1, 1)
 theme_override_font_sizes/font_size = 20
 text = "Tower Name"
 horizontal_alignment = 1
 
-[node name="TowerLevelLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerLevelLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Level: 1/3"
 
-[node name="TowerDamageLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerDamageLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Damage: 10"
 
-[node name="TowerRangeLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerRangeLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Range: 160"
 
-[node name="TowerFireRateLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerFireRateLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Fire Rate: 1.0s"
 
-[node name="TowerSplashLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerSplashLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Splash: 0"
 
-[node name="TowerSlowLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerSlowLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Slow: 0%"
 
-[node name="TowerTargetModeLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerTargetModeLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 text = "Target Mode:"
 
-[node name="TargetModeOptionButton" type="OptionButton" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TargetModeOptionButton" type="OptionButton" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 35)
 layout_mode = 2
 
-[node name="TowerUpgradeCostLabel" type="Label" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="TowerUpgradeCostLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_colors/font_color = Color(1, 0.8, 0, 1)
 text = "Upgrade: 40 Gold"
 
-[node name="HSeparator" type="HSeparator" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 layout_mode = 2
 
-[node name="UpgradeTowerButton" type="Button" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="UpgradeTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 45)
 layout_mode = 2
 text = "Upgrade"
 
-[node name="DeselectTowerButton" type="Button" parent="Root/RightSidebar/MarginContainer/VBoxContainer"]
+[node name="DeselectTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer"]
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "Close"
