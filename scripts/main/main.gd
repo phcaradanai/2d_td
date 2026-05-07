@@ -50,9 +50,9 @@ enum AutoClearState {
 
 @export var debug_panel_enabled: bool = false
 @export var debug_coordinates: bool = false
-@export var enable_debug_tools: bool = true
+@export var enable_debug_tools: bool = false
 
-const VERSION = "v0.1.0 Prototype"
+const VERSION = "v1.0.0-RC1"
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
@@ -533,7 +533,7 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F1:
+		if event.keycode == KEY_F1 and (OS.is_debug_build() or enable_debug_tools):
 			_toggle_debug_panel()
 			get_viewport().set_input_as_handled()
 			return
@@ -1548,6 +1548,10 @@ func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categories: 
 		if type_name.contains("Swarm") and ratio > 0.4: has_swarm = true
 		if type_name.contains("Bulwark") or type_name.contains("Shield"): has_shield = true
 		if type_name.contains("Hunter") or type_name.contains("Anti-Hero"): has_anti_hero = true
+		if type_name.contains("Healer"): traits.append("Healing")
+		if type_name.contains("Cloaked") or type_name.contains("Ghost"): traits.append("Stealth")
+		if type_name.contains("Disruptor") or type_name.contains("EMP"): traits.append("Disruption")
+		if type_name.contains("Splitter"): traits.append("Splitting")
 		
 	if has_fast: traits.append("Fast")
 	if has_heavy: traits.append("Heavy")
@@ -1595,6 +1599,18 @@ func recommend_roles_for_wave(traits: Array[String]) -> Array[String]:
 	if traits.has("Mixed"):
 		roles.append("Basic")
 		roles.append("Slow")
+		
+	if traits.has("Stealth"):
+		roles.append("Rapid")
+		roles.append("Lightning")
+		
+	if traits.has("Healing") or traits.has("Splitting"):
+		roles.append("Sniper")
+		roles.append("Lightning")
+		
+	if traits.has("Disruption"):
+		roles.append("Sniper")
+		roles.append("Guardian")
 		
 	if roles.is_empty():
 		roles.append("Basic")

@@ -12,3 +12,4 @@ res://scripts/ui/ui_theme_manager.gd
 res://scenes/ui/ResultPanel.tscn
 res://scripts/ui/leaderboard_panel.gd
 res://scripts/debug/balance_solver.gd
+res://data/towers.json

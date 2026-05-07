@@ -36,6 +36,15 @@ var is_bulwark: bool = false
 var is_hunter: bool = false
 var tags: Array = []
 
+# Visual State
+var pulse_time: float = 0.0
+const COLOR_BODY = Color(0.08, 0.08, 0.12) # Dark Gunmetal
+const COLOR_NEON_BASIC = Color(0.2, 0.8, 1.0) # Electric Cyan
+const COLOR_NEON_FAST = Color(0.0, 1.0, 0.7) # Teal/Green
+const COLOR_NEON_TANK = Color(1.0, 0.45, 0.1) # Amber/Orange
+const COLOR_NEON_BULWARK = Color(0.1, 0.6, 1.0) # Blue
+const COLOR_NEON_HUNTER = Color(1.0, 0.1, 0.4) # Magenta/Red
+
 # Bulwark Stats
 var shield_radius: float = 90.0
 var shield_reduction: float = 0.30
@@ -47,6 +56,12 @@ var aggro_range: float = 160.0
 var hunter_attack_range: float = 90.0
 var hunter_attack_damage: float = 28.0
 var hunter_attack_cooldown: float = 0.0
+
+# Skill Stats
+var skill_id: String = ""
+var skill_params: Dictionary = {}
+var skill_timer: float = 0.0
+var is_stealth: bool = false
 
 @onready var body: ColorRect = $Body
 @onready var hp_bar: ProgressBar = $HpBar
@@ -60,6 +75,12 @@ func setup(config: Dictionary) -> void:
 	display_name = config.get("name", "Enemy")
 	visual_type = config.get("visual_type", "basic")
 	tags = config.get("tags", [])
+	skill_id = config.get("skill", "")
+	skill_params = config.get("skill_params", {})
+	
+	is_stealth = (skill_id == "stealth" or tags.has("stealth"))
+	if is_stealth:
+		modulate.a = 0.4 # Visual feedback for stealth
 	
 	is_bulwark = (enemy_type == "bulwark" or tags.has("shield"))
 	is_hunter = (enemy_type == "hunter" or tags.has("anti_hero"))
@@ -84,17 +105,22 @@ func normalize_enemy_category(raw_category) -> String:
 		return normalized
 	return ENEMY_CATEGORY_LAND
 
+func get_enemy_category() -> String:
+	return enemy_category
+
 func apply_visuals() -> void:
 	if not is_inside_tree(): return
 	if body: body.visible = false
 	queue_redraw()
 
 func _draw() -> void:
-	var color = Color(0.8, 0.2, 0.2, 1.0)
 	var size = 16.0
 	
 	if shield_remaining > 0:
-		draw_circle(Vector2.ZERO, size * 1.3, Color(0.4, 0.8, 1.0, 0.3))
+		# Subtle hex-style or thin ring indicator for protected units
+		var p_pulse = sin(pulse_time * 5.0) * 0.1 + 0.9
+		draw_arc(Vector2.ZERO, size * 1.4 * p_pulse, 0, TAU, 16, Color(0.4, 0.8, 1.0, 0.4), 1.5)
+		draw_circle(Vector2.ZERO, size * 1.4, Color(0.4, 0.8, 1.0, 0.08))
 	
 	if active_slow_percent > 0:
 		# Frost/Slow glow
@@ -103,68 +129,252 @@ func _draw() -> void:
 	
 	match visual_type:
 		"basic":
-			color = Color(1.0, 0.2, 0.2, 1.0) # Electric Red
-			_draw_drone_hexagon(color, size)
+			_draw_cyber_node(COLOR_NEON_BASIC, size)
 		"fast":
-			color = Color(1.0, 0.8, 0.2, 1.0)
-			_draw_drone_triangle(color, size * 0.7)
+			_draw_cyber_runner(COLOR_NEON_FAST, size)
 		"tank":
-			color = Color(0.6, 0.1, 0.1, 1.0) # Dark Industrial Red
-			_draw_drone_tank(color, size * 1.4)
+			_draw_cyber_tank(COLOR_NEON_TANK, size * 1.4)
 		"bulwark":
-			color = Color(0.1, 0.6, 1.0, 1.0) # Secure Blue
-			_draw_bulwark(color, size * 1.6)
-			draw_arc(Vector2.ZERO, shield_radius, 0, TAU, 32, Color(0.2, 0.8, 1.0, 0.2), 2.0)
+			_draw_cyber_bulwark(COLOR_NEON_BULWARK, size * 1.6)
 		"hunter":
-			color = Color(1.0, 0.4, 0.2, 1.0)
-			_draw_hunter(color, size * 1.1)
+			_draw_cyber_hunter(COLOR_NEON_HUNTER, size * 1.3)
+		"swarm":
+			_draw_cyber_swarm(COLOR_NEON_FAST, size * 0.5)
+		"runner":
+			_draw_cyber_runner(COLOR_NEON_BASIC, size)
+		"shieldbearer":
+			_draw_cyber_bulwark(Color(0.3, 0.8, 1.0), size * 1.3)
+		"healer":
+			_draw_cyber_healer(Color(0.4, 1.0, 0.4), size * 1.1)
+		"splitter":
+			_draw_cyber_splitter(Color(0.8, 0.4, 1.0), size * 1.3)
+		"cloaked":
+			_draw_cyber_cloaked(Color(0.7, 0.7, 1.0), size)
+		"flyer":
+			_draw_cyber_drone(COLOR_NEON_BULWARK, size, false)
+		"fast_flyer":
+			_draw_cyber_drone(COLOR_NEON_FAST, size * 0.8, true)
+		"armored_flyer":
+			_draw_cyber_drone(COLOR_NEON_TANK, size * 1.5, false)
+		"disruptor":
+			_draw_cyber_disruptor(Color(0.6, 0.3, 1.0), size * 1.2)
 			
 	if is_flashing:
-		draw_circle(Vector2.ZERO, size * 1.5, Color(1, 1, 1, 0.6))
+		draw_circle(Vector2.ZERO, size * 2.0, Color(1, 1, 1, 0.7))
 
-func _draw_drone_hexagon(color: Color, size: float) -> void:
+# --- High-Fidelity Procedural Visuals ---
+
+func _draw_glow_core(pos: Vector2, radius: float, color: Color) -> void:
+	var p = (sin(pulse_time * 8.0) * 0.5 + 0.5) * 0.2
+	var r = radius * (1.0 + p)
+	# Outer glow
+	draw_circle(pos, r * 1.5, Color(color.r, color.g, color.b, 0.15))
+	# Mid glow
+	draw_circle(pos, r, Color(color.r, color.g, color.b, 0.4))
+	# Hot core
+	draw_circle(pos, r * 0.4, Color.WHITE)
+
+func _draw_circuit_line(p1: Vector2, p2: Vector2, color: Color, width: float = 1.0) -> void:
+	var alpha = (sin(pulse_time * 12.0 + p1.x) * 0.5 + 0.5) * 0.4 + 0.1
+	draw_line(p1, p2, Color(color.r, color.g, color.b, alpha), width)
+
+func _draw_shield_dome(radius: float, color: Color) -> void:
+	var pulse = sin(pulse_time * 3.0) * 0.5 + 0.5
+	var r_anim = radius * (0.98 + pulse * 0.04)
+	
+	# Layer 1: Faint Fill
+	draw_circle(Vector2.ZERO, radius, Color(color.r, color.g, color.b, 0.04 + pulse * 0.02))
+	
+	# Layer 2: Main Ring
+	draw_arc(Vector2.ZERO, r_anim, 0, TAU, 64, Color(color.r, color.g, color.b, 0.2 + pulse * 0.1), 1.5)
+	
+	# Layer 3: Shimmer Nodes
+	var node_count = 6
+	for i in range(node_count):
+		var a = i * (TAU / node_count) + (pulse_time * 0.5)
+		var node_pos = Vector2(cos(a), sin(a)) * r_anim
+		draw_circle(node_pos, 2.0, Color(color.r, color.g, color.b, 0.4))
+
+func _draw_cyber_node(color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
 	for i in range(6):
 		var a : float = i * PI/3
 		pts.append(Vector2(cos(a), sin(a)) * size)
-	draw_colored_polygon(pts, color)
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0)
-	draw_circle(Vector2(size * 0.4, 0), 3, Color.WHITE)
+	
+	# Layer 1: Base
+	draw_colored_polygon(pts, COLOR_BODY)
+	
+	# Layer 2: Circuit Seams
+	for i in range(6):
+		_draw_circuit_line(Vector2.ZERO, pts[i], color)
+	
+	# Layer 3: Neon Border
+	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.0)
+	
+	# Layer 4: Pulsing Core
+	_draw_glow_core(Vector2.ZERO, size * 0.35, color)
 
-func _draw_drone_triangle(color: Color, size: float) -> void:
-	var pts := PackedVector2Array([Vector2(size * 1.2, 0), Vector2(-size, -size), Vector2(-size, size)])
-	draw_colored_polygon(pts, color)
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0)
-	draw_circle(Vector2(0, 0), 4, Color.WHITE)
+func _draw_cyber_runner(color: Color, size: float) -> void:
+	var pts := PackedVector2Array([
+		Vector2(size * 1.5, 0), 
+		Vector2(-size * 1.0, -size * 0.7), 
+		Vector2(-size * 0.5, 0),
+		Vector2(-size * 1.0, size * 0.7)
+	])
+	
+	# Layer 1: Base
+	draw_colored_polygon(pts, COLOR_BODY)
+	
+	# Layer 2: Speed Trails
+	var trail_alpha = 0.3 + (sin(pulse_time * 20.0) * 0.2)
+	draw_line(Vector2(-size * 0.8, -size * 0.4), Vector2(-size * 2.5, -size * 0.4), Color(color.r, color.g, color.b, trail_alpha), 2.0)
+	draw_line(Vector2(-size * 0.8, size * 0.4), Vector2(-size * 2.5, size * 0.4), Color(color.r, color.g, color.b, trail_alpha), 2.0)
+	
+	# Layer 3: Neon Edges
+	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.5)
+	
+	# Layer 4: Agile Core
+	_draw_glow_core(Vector2(size * 0.4, 0), size * 0.25, color)
 
-func _draw_drone_tank(color: Color, size: float) -> void:
+func _draw_cyber_tank(color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
 	for i in range(8):
 		var a : float = i * PI/4
 		pts.append(Vector2(cos(a), sin(a)) * size)
-	draw_colored_polygon(pts, color)
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.WHITE, 1.5)
+	
+	# Layer 1: Base Heavy Body
+	draw_colored_polygon(pts, COLOR_BODY)
+	
+	# Layer 2: Heavy Armor Plates (Beveled)
+	for i in range(8):
+		var mid = (pts[i] + pts[(i+1)%8]) * 0.5
+		var inner_mid = mid * 0.7
+		draw_line(mid, inner_mid, Color.WHITE, 1.0)
+		
+	# Layer 3: Thick Neon Border
+	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 4.0)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0) # Separation line
+	
+	# Layer 4: Heavy Energy Core
+	_draw_glow_core(Vector2.ZERO, size * 0.45, color)
+	# Secondary lights
+	for i in range(4):
+		var a = i * PI/2 + PI/4
+		draw_circle(Vector2(cos(a), sin(a)) * size * 0.8, 3, color)
 
-func _draw_bulwark(color: Color, size: float) -> void:
-	var pts := PackedVector2Array([
-		Vector2(size, -size), Vector2(size, size), 
-		Vector2(-size, size), Vector2(-size, -size)
-	])
-	draw_colored_polygon(pts, color)
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.WHITE, 2.0)
-	# Internal cross
-	draw_line(Vector2(-size*0.7, 0), Vector2(size*0.7, 0), Color.WHITE, 1.5)
-	draw_line(Vector2(0, -size*0.7), Vector2(0, size*0.7), Color.WHITE, 1.5)
+func _draw_cyber_bulwark(color: Color, size: float) -> void:
+	var rect = Rect2(-size, -size * 0.8, size * 2, size * 1.6)
+	
+	# Layer 1: Base Silhouette
+	draw_rect(rect, COLOR_BODY)
+	
+	# Layer 2: Plate Segments
+	draw_line(Vector2(0, -size * 0.8), Vector2(0, size * 0.8), color * 0.5)
+	
+	# Layer 3: Shield Rails
+	draw_polyline(PackedVector2Array([
+		Vector2(size, -size * 0.8), Vector2(size, size * 0.8)
+	]), color, 3.0)
+	draw_polyline(PackedVector2Array([
+		Vector2(-size, -size * 0.8), Vector2(-size, size * 0.8)
+	]), color, 3.0)
+	
+	# Layer 4: Emitter Nodes
+	for i in range(3):
+		var y = -size * 0.4 + i * (size * 0.4)
+		_draw_glow_core(Vector2(size * 0.8, y), 4, color)
+		_draw_glow_core(Vector2(-size * 0.8, y), 4, color)
+	
+	# Shield Field (Dome)
+	_draw_shield_dome(shield_radius, color)
 
-func _draw_hunter(color: Color, size: float) -> void:
+func _draw_cyber_hunter(color: Color, size: float) -> void:
 	var pts := PackedVector2Array([
-		Vector2(size * 1.5, 0), Vector2(-size*0.5, -size), 
-		Vector2(-size, 0), Vector2(-size*0.5, size)
+		Vector2(size * 1.8, 0), 
+		Vector2(size * 0.4, -size * 0.5), 
+		Vector2(-size * 1.2, -size * 1.2), 
+		Vector2(-size * 0.4, 0),
+		Vector2(-size * 1.2, size * 1.2), 
+		Vector2(size * 0.4, size * 0.5)
 	])
-	draw_colored_polygon(pts, color)
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.YELLOW, 1.5)
-	# Red eye
-	draw_circle(Vector2(size * 0.6, 0), 3, Color.RED)
+	
+	# Layer 1: Base Sharp Body
+	draw_colored_polygon(pts, COLOR_BODY)
+	
+	# Layer 2: Circuit Ribs
+	_draw_circuit_line(Vector2.ZERO, Vector2(-size, -size), color)
+	_draw_circuit_line(Vector2.ZERO, Vector2(-size, size), color)
+	
+	# Layer 3: High-contrast Neon
+	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.0)
+	
+	# Layer 4: Predatory Eyes
+	_draw_glow_core(Vector2(size * 0.7, -size * 0.3), 4, Color.RED)
+	_draw_glow_core(Vector2(size * 0.7, size * 0.3), 4, Color.RED)
+	_draw_glow_core(Vector2(size * 1.2, 0), 3, color)
+
+func _draw_cyber_swarm(color: Color, size: float) -> void:
+	var count = 3
+	for i in range(count):
+		var a = (pulse_time * 10.0) + (i * TAU / count)
+		var offset = Vector2(cos(a), sin(a)) * size * 1.2
+		_draw_glow_core(offset, size * 0.8, color)
+
+func _draw_cyber_healer(color: Color, size: float) -> void:
+	var pts := PackedVector2Array()
+	for i in range(12):
+		var a = i * PI/6
+		var r = size if i % 3 != 0 else size * 0.6
+		pts.append(Vector2(cos(a), sin(a)) * r)
+	
+	draw_colored_polygon(pts, COLOR_BODY)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.0)
+	# Rotating healing ring
+	draw_arc(Vector2.ZERO, size * 0.8, pulse_time * 5.0, pulse_time * 5.0 + PI, 24, color, 2.0)
+	_draw_glow_core(Vector2.ZERO, size * 0.5, color)
+
+func _draw_cyber_splitter(color: Color, size: float) -> void:
+	_draw_cyber_node(color, size)
+	# Unstable Cracks
+	var noise = sin(pulse_time * 25.0) * 2.0
+	draw_line(Vector2.ZERO, Vector2(size + noise, size), Color.WHITE, 1.5)
+	draw_line(Vector2.ZERO, Vector2(-size - noise, size), Color.WHITE, 1.5)
+	draw_line(Vector2.ZERO, Vector2(0, -size - noise), Color.WHITE, 1.5)
+
+func _draw_cyber_cloaked(color: Color, size: float) -> void:
+	var pts := PackedVector2Array()
+	for i in range(4):
+		var a = i * PI/2 + PI/4
+		pts.append(Vector2(cos(a), sin(a)) * size)
+	# Distortion effect
+	var d = (sin(pulse_time * 15.0) * 0.5 + 0.5) * 0.2
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(color.r, color.g, color.b, 0.2 + d), 1.5)
+	draw_circle(Vector2.ZERO, size * (0.2 + d), Color(color.r, color.g, color.b, 0.15))
+
+func _draw_cyber_drone(color: Color, size: float, is_fast: bool) -> void:
+	# Base
+	draw_circle(Vector2.ZERO, size * 0.6, COLOR_BODY)
+	draw_arc(Vector2.ZERO, size * 0.6, 0, TAU, 24, color, 2.0)
+	
+	# Rotor arms
+	for i in range(4):
+		var a = i * PI/2 + (pulse_time * 15.0)
+		draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * size, color, 2.0)
+		draw_circle(Vector2(cos(a), sin(a)) * size, 3, Color.WHITE)
+	
+	if is_fast:
+		var trail = (sin(pulse_time * 30.0) * 0.5 + 0.5) * 10.0
+		draw_line(Vector2(-size, 0), Vector2(-size - trail, 0), color, 3.0)
+	
+	_draw_glow_core(Vector2.ZERO, size * 0.3, color)
+
+func _draw_cyber_disruptor(color: Color, size: float) -> void:
+	_draw_cyber_drone(color, size, false)
+	# EMP interference rings
+	var r_pulse = (sin(pulse_time * 10.0) * 0.5 + 0.5)
+	draw_arc(Vector2.ZERO, size * (1.2 + r_pulse * 0.3), 0, TAU, 32, Color(color.r, color.g, color.b, 0.4 - r_pulse * 0.3), 2.0)
+	draw_arc(Vector2.ZERO, size * (1.5 + r_pulse * 0.5), 0, TAU, 32, Color(color.r, color.g, color.b, 0.2 - r_pulse * 0.2), 1.5)
+
 
 func _ready() -> void:
 	add_to_group("enemies")
@@ -180,6 +390,9 @@ func _process(delta: float) -> void:
 	if not is_active or is_dead_flag or reached_base_flag:
 		return
 		
+	pulse_time += delta
+	queue_redraw()
+	
 	# Update timers
 	if slow_remaining > 0:
 		slow_remaining -= delta
@@ -204,21 +417,59 @@ func _process(delta: float) -> void:
 			_spawn_bleed_particle()
 			bleed_particle_timer = 0.15 # Every 150ms
 		
-	# Archetype Logic
-	if is_bulwark:
-		_process_bulwark_aura()
+	# Skill Logic
+	if skill_id != "":
+		skill_timer -= delta
+		match skill_id:
+			"shield_aura":
+				_process_shield_aura()
+			"healer":
+				if skill_timer <= 0:
+					_process_healer_aura()
+					skill_timer = skill_params.get("interval", 1.0)
+			"disrupt_aura":
+				_process_disrupt_aura()
+		
+	# Archetype Logic (Legacy)
+	if is_bulwark and skill_id == "":
+		_process_shield_aura()
 		
 	if is_hunter:
 		_process_hunter_ai(delta)
 	else:
 		_process_pathing(delta)
 
-func _process_bulwark_aura() -> void:
+func _process_shield_aura() -> void:
+	var radius = skill_params.get("radius", shield_radius)
+	var reduction = skill_params.get("reduction", shield_reduction)
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if enemy != self and is_instance_valid(enemy) and enemy.has_method("apply_shield"):
-			if global_position.distance_to(enemy.global_position) <= shield_radius:
-				enemy.apply_shield(0.2)
+			if global_position.distance_to(enemy.global_position) <= radius:
+				enemy.apply_shield(0.2) # Short duration, refreshed by aura
+
+func _process_healer_aura() -> void:
+	var radius = skill_params.get("radius", 100.0)
+	var amount = skill_params.get("heal_amount", 5.0)
+	var enemies = get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if enemy != self and is_instance_valid(enemy) and enemy.has_method("heal"):
+			if global_position.distance_to(enemy.global_position) <= radius:
+				enemy.heal(amount)
+
+func _process_disrupt_aura() -> void:
+	var radius = skill_params.get("radius", 150.0)
+	var penalty = skill_params.get("fire_rate_penalty", 0.5)
+	var towers = get_tree().get_nodes_in_group("towers")
+	# This requires tower support to apply a 'disrupted' state. 
+	# For now, we'll just log or stub it.
+	pass
+
+func heal(amount: float) -> void:
+	if hp < max_hp:
+		hp = min(hp + amount, max_hp)
+		if hp_bar: hp_bar.value = hp
+		_spawn_impact_particle(Color(0.4, 1.0, 0.4, 0.6)) # Green pulse
 
 func apply_shield(duration: float) -> void:
 	if shield_remaining <= 0:
@@ -349,8 +600,22 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	is_active = false
 	var capture_pos = death_global if death_global != Vector2.ZERO else global_position
 	spawn_death_effect(capture_pos)
+	
+	if skill_id == "split_on_death":
+		_handle_split_on_death(capture_pos)
+		
 	died.emit(self, reward_gold)
 	queue_free()
+
+func _handle_split_on_death(death_pos: Vector2) -> void:
+	var count = skill_params.get("count", 2)
+	var type = skill_params.get("type", "basic")
+	var wave_manager = get_tree().current_scene.get_node_or_null("WaveManager")
+	if wave_manager and wave_manager.has_method("spawn_enemy_at_progress"):
+		for i in range(count):
+			# Spawn slightly behind or ahead
+			var offset_prog = (i - (count-1)/2.0) * 20.0
+			wave_manager.spawn_enemy_at_progress(type, progress + offset_prog, get_parent())
 
 func spawn_death_effect(death_global: Vector2) -> void:
 	if death_pop_scene:

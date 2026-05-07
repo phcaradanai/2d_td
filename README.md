@@ -2,14 +2,14 @@
 
 A high-fidelity, industrial sci-fi Tower Defense experience built with **Godot 4.6.2**. This prototype features modular procedural visuals, advanced wave previews, and a campaign progression system.
 
-## Current Build Scope
-- **Levels**: 20 Playable missions across 4 distinct thematic areas.
+## Release Candidate (v1.0.0-RC1)
+- **Levels**: 20 Playable missions across 4 distinct thematic areas (Grasslands, Forest, River, Mountain).
 - **Towers**: 7 Unique tower types (Basic, Rapid, Cannon, Slow, Sniper, Lightning, Sawblade).
-- **Environment**: Modular industrial "dark mode" aesthetic with glowing circuit paths.
+- **Environment**: High-fidelity modular sci-fi facility aesthetic with neon energy paths.
 - **Hero System**: Guardian deployment available starting from Level 11.
-- **Map Mechanics**: Transition from "Free Build" to "Restricted Foundations" starting at Level 12.
-- **Progression**: Local save system, score/star ratings, and leaderboard scaffolding.
-- **Platform**: Optimized for high-performance Web (WASM/WebGL) and Desktop.
+- **Map Mechanics**: "Restricted Foundations" mechanics introduced from Level 12 for tactical variety.
+- **Progression**: Full campaign progression, star ratings, and local save persistence.
+- **Platform**: Production-ready Web (WASM/WebGL) and Desktop exports.
 
 ## Features
 - **Wave Preview UI**: Authorization-style holographic energy walls and triple-chevron flow indicators.
@@ -17,33 +17,28 @@ A high-fidelity, industrial sci-fi Tower Defense experience built with **Godot 4
 - **Area Themes**: Distinct color palettes and decorative layers (Vents, Cables, Circuitry) for different facility sectors.
 - **Release Hygiene**: Gated debug/dev tools and optimized console logging for a clean production experience.
 
-## How to Play
-- **Build**: Select a tower from the left sidebar and click on a valid grid cell (highlighted in cyan).
-- **Hero (Level 11+)**: Click the Guardian icon in the bottom-left to deploy your hero when gold and cooldown allow.
-- **Select/Upgrade**: Click an existing tower to view advanced stats and upgrade levels.
-- **Cancel**: Right-click or press `Esc` to exit build mode or deselect units.
-- **Start Wave**: Press the "Start Wave" button or hit `F3` (Debug only).
-- **Pause**: Press `Space` or the Pause button to toggle game speed.
+- **Build**: Select a tower from the sidebar and click on a valid cell (cyan highlight).
+- **Hero (Level 11+)**: Click the Guardian icon or press `H` to deploy.
+- **Upgrade**: Click an existing tower to view stats and upgrade levels.
+- **Cancel**: Right-click or press `Esc` to exit build mode.
+- **Pause**: Press `Space` or the Pause button.
+- **Debug Tools**: Internal only (`F1` for menu, `F9/F10` for auto-solve).
 
 ## Development Status
 
 ### [x] Implemented
-- Modular Map Visual Layer (Procedural walls/trench look).
-- Hero Guardian logic and manual deployment system.
-- Foundation-restricted build mode for advanced levels.
-- 20-level campaign data structure and area theme engine.
-- Web-optimized audio manager with unlock-on-gesture.
-- Score/Star calculation based on health, gold, and time.
+- Complete 20-level campaign with increasing difficulty.
+- Modular Map Visual Layer with procedural sci-fi geometry.
+- Hero Guardian logic and manual tactical deployment.
+- "Restricted Foundations" build mode for advanced mission design.
+- Web-optimized audio manager with unlock-on-gesture logic.
+- Production-safe Star rating and score persistence.
+- Gated internal debug tools and automated health-check scripts.
 
 ### [/] In Progress
-- Enemy Type Foundation (Land / Air logic refinement).
-- Tower Loadout Constraints (Selecting specific towers per mission).
-- Tactical Wave Intel (Detailed composition reports in HUD).
-
-### [ ] Backlog
-- Anti-Air specific towers and targeting rules.
-- Consumable Skill System (One-time use active abilities).
-- Persistent Global Leaderboard integration.
+- Additional Enemy Type varieties (refined Air logic).
+- Enhanced Tactical Wave Intel (real-time composition tooltips).
+- Global Leaderboard service integration.
 
 ## Technical Setup
 - **Engine**: Godot 4.6.2 (Stable).

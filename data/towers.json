@@ -40,7 +40,7 @@
 	"projectile_speed": 750,
 	"visual_type": "rapid",
 	"attack_type": "single",
-	"target_categories": ["land"],
+	"target_categories": ["land", "air"],
 	"levels": [
 	  {
 		"level": 1,

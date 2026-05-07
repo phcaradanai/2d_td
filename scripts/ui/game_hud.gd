@@ -49,6 +49,7 @@ signal back_to_map_requested()
 @onready var tower_slow_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerSlowLabel
 @onready var target_mode_option_button: OptionButton = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TargetModeOptionButton
 @onready var tower_upgrade_cost_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerUpgradeCostLabel
+@onready var tower_target_label: Label = null # Will be added dynamically or linked
 @onready var upgrade_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/UpgradeTowerButton
 @onready var deselect_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/DeselectTowerButton
 
@@ -87,9 +88,6 @@ signal back_to_map_requested()
 @onready var close_settings_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/CloseSettingsButton
 
 # Wave Intel Panel
-var right_info_column: PanelContainer = null
-var right_info_vbox: VBoxContainer = null
-var right_info_spacer: Control = null
 var wave_intel_panel: PanelContainer = null
 var wave_intel_current_label: Label = null
 var wave_intel_status_label: Label = null
@@ -122,8 +120,7 @@ func _ready() -> void:
 	restart_button.pressed.connect(_on_restart_pressed)
 	center_restart_button.pressed.connect(_on_restart_pressed)
 	
-	_setup_wave_intel_panel()
-	_setup_tower_detail_in_right_info_column()
+	_setup_right_sidebar_layout()
 	
 	# Instantiate Result Panel
 	result_panel = RESULT_PANEL_SCENE.instantiate()
@@ -241,14 +238,7 @@ func update_layout_for_viewport() -> void:
 	else:
 		left_sidebar.custom_minimum_size.x = 210 # Slightly wider for cleaner labels
 	
-	if right_sidebar.get_parent() == right_info_vbox:
-		right_sidebar.custom_minimum_size = Vector2(0, 0)
-	else:
-		right_sidebar.custom_minimum_size.x = right_width
-		right_sidebar.custom_minimum_size.y = 0
-		
-	if right_info_column:
-		_layout_right_info_column(right_width)
+	_layout_right_sidebar_container(right_width)
 	
 	# Update no_selection_panel if it exists
 	if no_selection_panel:
@@ -512,6 +502,15 @@ func show_tower_info(info: Dictionary) -> void:
 	tower_range_label.text = "Range: " + str(info["range"])
 	tower_fire_rate_label.text = "Fire Rate: " + str(info["fire_rate"]) + "s"
 	
+	if tower_target_label:
+		var targets = info.get("target_categories", ["land"])
+		var target_str = "Targets: "
+		if targets.size() >= 2: target_str += "Land + Air"
+		elif targets.has("air"): target_str += "Air Only"
+		else: target_str += "Land Only"
+		tower_target_label.text = target_str
+		tower_target_label.modulate = Color(0.6, 0.9, 1.0) if targets.has("air") else Color(0.8, 0.8, 0.8)
+	
 	if info.get("attack_type") == "splash":
 		tower_splash_label.show()
 		tower_splash_label.text = "Splash: " + str(info["splash_radius"])
@@ -588,19 +587,11 @@ func hide_build_panel() -> void:
 
 func show_tower_info_panel() -> void:
 	set_panel_active(right_sidebar, true, true)
-	right_sidebar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	_refresh_right_info_column_visibility()
-	
-	if no_selection_panel:
-		no_selection_panel.visible = false
 
 func hide_tower_info_panel() -> void:
 	set_panel_active(right_sidebar, false)
 	_refresh_right_info_column_visibility()
-	
-	if no_selection_panel:
-		no_selection_panel.visible = true
 
 func enter_end_game_ui_state() -> void:
 	hide_tower_info_panel()
@@ -715,23 +706,73 @@ func shake_node(node: Control, strength: float = 10.0) -> void:
 		tween.tween_property(node, "position", original_pos + offset, 0.04)
 	tween.tween_property(node, "position", original_pos, 0.04)
 
-func _setup_wave_intel_panel() -> void:
-	_setup_right_info_column()
+func _setup_right_sidebar_layout() -> void:
+	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
+	if container == null: return
 	
+	# 1. Setup Tower Detail Panel (Existing RightSidebar)
+	right_sidebar.name = "TowerDetailPanel"
+	right_sidebar.custom_minimum_size = Vector2(0, 260)
+	right_sidebar.size_flags_vertical = Control.SIZE_FILL
+	
+	var style_detail = StyleBoxFlat.new()
+	style_detail.bg_color = Color(0.025, 0.045, 0.085, 0.94)
+	style_detail.set_border_width_all(1)
+	style_detail.border_color = Color(0.22, 0.36, 0.58, 0.85)
+	style_detail.set_corner_radius_all(8)
+	right_sidebar.add_theme_stylebox_override("panel", style_detail)
+	
+	# Clean up margins
+	var detail_margin = right_sidebar.get_node_or_null("MarginContainer")
+	if detail_margin is MarginContainer:
+		detail_margin.add_theme_constant_override("margin_left", 14)
+		detail_margin.add_theme_constant_override("margin_right", 14)
+		detail_margin.add_theme_constant_override("margin_top", 14)
+		detail_margin.add_theme_constant_override("margin_bottom", 14)
+	
+	# Add Target Category Label if missing
+	var detail_vbox = right_sidebar.get_node_or_null("MarginContainer/VBoxContainer")
+	if detail_vbox:
+		tower_target_label = Label.new()
+		tower_target_label.name = "TowerTargetLabel"
+		tower_target_label.add_theme_font_size_override("font_size", 12)
+		tower_target_label.text = "Targets: Land"
+		detail_vbox.add_child(tower_target_label)
+		# Move it after fire rate
+		detail_vbox.move_child(tower_target_label, tower_fire_rate_label.get_index() + 1)
+
+	# 2. Setup No Selection Panel (Placeholder)
+	no_selection_panel = PanelContainer.new()
+	no_selection_panel.name = "NoSelectionPanel"
+	no_selection_panel.custom_minimum_size = Vector2(0, 120)
+	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	
+	var ns_style = style_detail.duplicate()
+	ns_style.bg_color = Color(0.04, 0.05, 0.08, 0.5)
+	ns_style.border_color = Color(0.2, 0.3, 0.4, 0.3)
+	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
+	container.add_child(no_selection_panel)
+	container.move_child(no_selection_panel, 1)
+	
+	var ns_label = Label.new()
+	ns_label.text = "Select a tower or build tile\nto view details"
+	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	ns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	ns_label.add_theme_font_size_override("font_size", 13)
+	ns_label.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+	no_selection_panel.add_child(ns_label)
+
+	# 3. Setup Wave Intel Panel
 	wave_intel_panel = PanelContainer.new()
 	wave_intel_panel.name = "WaveIntelPanel"
-	wave_intel_panel.custom_minimum_size = Vector2(0, 200)
-	wave_intel_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_PASS # Allow scrolling
-	right_info_vbox.add_child(wave_intel_panel)
+	wave_intel_panel.custom_minimum_size = Vector2(0, 160)
+	wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL # Use remaining space
+	wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	container.add_child(wave_intel_panel)
 	
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.045, 0.085, 0.94)
-	style.set_border_width_all(1)
-	style.border_color = Color(0.20, 0.42, 0.66, 0.80)
-	style.set_corner_radius_all(8)
-	wave_intel_panel.add_theme_stylebox_override("panel", style)
+	var style_intel = style_detail.duplicate()
+	style_intel.bg_color = Color(0.02, 0.03, 0.06, 0.85)
+	wave_intel_panel.add_theme_stylebox_override("panel", style_intel)
 	
 	var margin = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 14)
@@ -741,208 +782,76 @@ func _setup_wave_intel_panel() -> void:
 	margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	wave_intel_panel.add_child(margin)
 	
-	var outer_vbox = VBoxContainer.new()
-	outer_vbox.add_theme_constant_override("separation", 8)
-	outer_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
-	margin.add_child(outer_vbox)
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 6) # Tighter spacing
+	vbox.mouse_filter = Control.MOUSE_FILTER_PASS
+	margin.add_child(vbox)
 	
-	# --- Header (Always Visible) ---
-	var header_vbox = VBoxContainer.new()
-	header_vbox.add_theme_constant_override("separation", 4)
-	header_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	outer_vbox.add_child(header_vbox)
+	# Header
+	var header = VBoxContainer.new()
+	header.add_theme_constant_override("separation", 1)
+	vbox.add_child(header)
 	
-	var title = _create_wave_intel_label("WAVE INTEL", 17, Color(0.72, 0.90, 1.0))
-	header_vbox.add_child(title)
+	var title = _create_wave_intel_label("WAVE INTEL", 15, Color(0.7, 0.9, 1.0))
+	header.add_child(title)
 	
-	wave_intel_current_label = _create_wave_intel_label("Wave 1 / 1", 15, Color(0.94, 0.98, 1.0))
-	header_vbox.add_child(wave_intel_current_label)
+	wave_intel_current_label = _create_wave_intel_label("", 13, Color(0.9, 0.95, 1.0))
+	header.add_child(wave_intel_current_label)
 	
-	wave_intel_status_label = _create_wave_intel_label("Status: Ready", 13, Color(0.95, 0.78, 0.36))
-	header_vbox.add_child(wave_intel_status_label)
+	wave_intel_status_label = _create_wave_intel_label("", 11, Color(0.9, 0.8, 0.4))
+	header.add_child(wave_intel_status_label)
 	
-	# --- Scrollable Body (Details) ---
+	vbox.add_child(_create_wave_intel_separator())
+	
+	# Scrollable Body
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
-	outer_vbox.add_child(scroll)
+	vbox.add_child(scroll)
 	
-	var body_vbox = VBoxContainer.new()
-	body_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	body_vbox.add_theme_constant_override("separation", 8)
-	body_vbox.mouse_filter = Control.MOUSE_FILTER_PASS
-	scroll.add_child(body_vbox)
+	var body = VBoxContainer.new()
+	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	body.add_theme_constant_override("separation", 8)
+	body.mouse_filter = Control.MOUSE_FILTER_PASS
+	scroll.add_child(body)
 	
-	body_vbox.add_child(_create_wave_intel_separator())
+	wave_intel_section_label = _create_wave_intel_label("Upcoming", 11, Color(0.5, 0.7, 0.9))
+	body.add_child(wave_intel_section_label)
 	
-	wave_intel_section_label = _create_wave_intel_label("Upcoming", 12, Color(0.55, 0.72, 0.88))
-	body_vbox.add_child(wave_intel_section_label)
+	wave_intel_main_summary_label = _create_wave_intel_label("---", 13, Color(1, 1, 1))
+	body.add_child(wave_intel_main_summary_label)
 	
-	wave_intel_main_summary_label = _create_wave_intel_label("---", 15, Color(0.98, 1.0, 1.0))
-	body_vbox.add_child(wave_intel_main_summary_label)
+	wave_intel_next_title_label = _create_wave_intel_label("Next", 10, Color(0.5, 0.7, 0.9))
+	body.add_child(wave_intel_next_title_label)
 	
-	wave_intel_next_title_label = _create_wave_intel_label("Next", 12, Color(0.55, 0.72, 0.88))
-	body_vbox.add_child(wave_intel_next_title_label)
+	wave_intel_next_summary_label = _create_wave_intel_label("---", 12, Color(0.8, 0.8, 0.8))
+	body.add_child(wave_intel_next_summary_label)
 	
-	wave_intel_next_summary_label = _create_wave_intel_label("---", 13, Color(0.78, 0.84, 0.90))
-	body_vbox.add_child(wave_intel_next_summary_label)
+	body.add_child(_create_wave_intel_separator())
 	
-	body_vbox.add_child(_create_wave_intel_separator())
+	var threats_title = _create_wave_intel_label("Threats", 10, Color(0.5, 0.7, 0.9))
+	body.add_child(threats_title)
 	
-	wave_intel_threats_title_label = _create_wave_intel_label("Threats", 12, Color(0.55, 0.72, 0.88))
-	body_vbox.add_child(wave_intel_threats_title_label)
+	wave_intel_threats_label = _create_wave_intel_label("---", 12, Color(1, 0.6, 0.4))
+	body.add_child(wave_intel_threats_label)
 	
-	wave_intel_threats_label = _create_wave_intel_label("---", 13, Color(1.0, 0.62, 0.42))
-	body_vbox.add_child(wave_intel_threats_label)
+	var suggested_title = _create_wave_intel_label("Recommended", 10, Color(0.5, 0.7, 0.9))
+	body.add_child(suggested_title)
 	
-	wave_intel_suggested_title_label = _create_wave_intel_label("Suggested Towers", 12, Color(0.55, 0.72, 0.88))
-	body_vbox.add_child(wave_intel_suggested_title_label)
+	wave_intel_suggested_label = _create_wave_intel_label("---", 12, Color(0.5, 0.9, 1.0))
+	body.add_child(wave_intel_suggested_label)
 	
-	wave_intel_suggested_label = _create_wave_intel_label("---", 13, Color(0.48, 0.86, 1.0))
-	body_vbox.add_child(wave_intel_suggested_label)
-	
-	wave_intel_warnings_label = _create_wave_intel_label("", 12, Color(1.0, 0.4, 0.4))
+	wave_intel_warnings_label = _create_wave_intel_label("", 10, Color(1, 0.4, 0.4))
 	wave_intel_warnings_label.visible = false
-	body_vbox.add_child(wave_intel_warnings_label)
-	
-	# Placeholder for no selection
-	no_selection_panel = PanelContainer.new()
-	no_selection_panel.name = "NoSelectionPanel"
-	no_selection_panel.custom_minimum_size = Vector2(0, 100)
-	var ns_style = style.duplicate()
-	ns_style.bg_color = Color(0.04, 0.05, 0.08, 0.5)
-	ns_style.border_color = Color(0.2, 0.3, 0.4, 0.3)
-	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
-	right_info_vbox.add_child(no_selection_panel)
-	
-	var ns_label = Label.new()
-	ns_label.text = "SELECT OBJECT FOR INTEL"
-	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ns_label.add_theme_font_size_override("font_size", 12)
-	ns_label.add_theme_color_override("font_color", Color(0.4, 0.5, 0.6))
-	no_selection_panel.add_child(ns_label)
-	
-	_set_next_wave_intel_visible(false)
-	wave_intel_panel.visible = false
+	body.add_child(wave_intel_warnings_label)
 
-func _setup_tower_detail_in_right_info_column() -> void:
-	_setup_right_info_column()
-	if right_sidebar == null or right_info_vbox == null:
-		return
-	
-	right_sidebar.name = "TowerDetailPanel"
-	right_sidebar.set_anchors_preset(Control.PRESET_TOP_LEFT)
-	right_sidebar.offset_left = 0.0
-	right_sidebar.offset_top = 0.0
-	right_sidebar.offset_right = 0.0
-	right_sidebar.offset_bottom = 0.0
-	right_sidebar.custom_minimum_size = Vector2(0, 360)
-	right_sidebar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_sidebar.size_flags_vertical = Control.SIZE_SHRINK_END
-	
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.025, 0.045, 0.085, 0.94)
-	style.set_border_width_all(1)
-	style.border_color = Color(0.22, 0.36, 0.58, 0.85)
-	style.set_corner_radius_all(8)
-	right_sidebar.add_theme_stylebox_override("panel", style)
-	
-	var detail_margin = right_sidebar.get_node_or_null("MarginContainer")
-	if detail_margin is MarginContainer:
-		detail_margin.add_theme_constant_override("margin_left", 14)
-		detail_margin.add_theme_constant_override("margin_right", 14)
-		detail_margin.add_theme_constant_override("margin_top", 14)
-		detail_margin.add_theme_constant_override("margin_bottom", 14)
-		detail_margin.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		detail_margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		
-		if detail_margin.get_parent() == right_sidebar:
-			right_sidebar.remove_child(detail_margin)
-			var scroll = ScrollContainer.new()
-			scroll.name = "TowerDetailScroll"
-			scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
-			scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-			scroll.mouse_filter = Control.MOUSE_FILTER_PASS
-			right_sidebar.add_child(scroll)
-			scroll.add_child(detail_margin)
-	
-	# Handled by VBoxContainer
-	
-	set_panel_active(right_sidebar, false)
 	_refresh_right_info_column_visibility()
 
-func _setup_right_info_column() -> void:
-	if right_info_column != null:
-		return
-	
-	right_info_column = PanelContainer.new()
-	right_info_column.name = "RightInfoColumn"
-	right_info_column.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right_info_column.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_info_column.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	$Root/ScreenLayout/MainContent/RightSidebarContainer.add_child(right_info_column)
-	
-	var style = StyleBoxFlat.new()
-	style.bg_color = Color(0.035, 0.045, 0.065, 0.72)
-	style.set_border_width(SIDE_LEFT, 1)
-	style.border_color = Color(0.16, 0.25, 0.36, 0.80)
-	right_info_column.add_theme_stylebox_override("panel", style)
-	
-	var margin = MarginContainer.new()
-	margin.name = "MarginContainer"
-	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 16)
-	margin.add_theme_constant_override("margin_bottom", 16)
-	right_info_column.add_child(margin)
-	
-	right_info_vbox = VBoxContainer.new()
-	right_info_vbox.name = "VBoxContainer"
-	right_info_vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	right_info_vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	right_info_vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	right_info_vbox.add_theme_constant_override("separation", 12)
-	margin.add_child(right_info_vbox)
-	
-	# Placeholder for when no tower is selected
-	no_selection_panel = PanelContainer.new()
-	no_selection_panel.name = "NoSelectionPanel"
-	no_selection_panel.custom_minimum_size = Vector2(0, 80)
-	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_END
-	
-	var ns_style = StyleBoxFlat.new()
-	ns_style.bg_color = Color(0.1, 0.1, 0.12, 0.4)
-	ns_style.set_border_width_all(1)
-	ns_style.border_color = Color(0.2, 0.2, 0.25, 0.6)
-	ns_style.set_corner_radius_all(8)
-	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
-	
-	var ns_label = Label.new()
-	ns_label.text = "Select a tower or build tile to view details"
-	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	ns_label.add_theme_font_size_override("font_size", 13)
-	ns_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
-	no_selection_panel.add_child(ns_label)
-	
-	$Root/ScreenLayout/MainContent/RightSidebarContainer.add_child(no_selection_panel)
-	
-	_layout_right_info_column()
-
-func _layout_right_info_column(width: float = 260.0) -> void:
-	if right_info_column == null:
-		return
-	
-	right_info_column.set_anchors_preset(Control.PRESET_FULL_RECT)
-	right_info_column.offset_left = 0
-	right_info_column.offset_top = 0
-	right_info_column.offset_right = 0
-	right_info_column.offset_bottom = 0
-	right_info_column.custom_minimum_size.x = width
+func _layout_right_sidebar_container(width: float = 260.0) -> void:
+	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
+	if container:
+		container.custom_minimum_size.x = width
 
 func _create_wave_intel_label(text: String, font_size: int, color: Color) -> Label:
 	var label = Label.new()
@@ -1043,22 +952,22 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	_refresh_right_info_column_visibility()
 
 func _refresh_right_info_column_visibility() -> void:
-	if right_info_column == null:
-		return
+	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
+	if container == null: return
 	
-	var wave_visible = wave_intel_panel != null and wave_intel_panel.visible
 	var tower_visible = right_sidebar != null and right_sidebar.visible
+	var wave_visible = wave_intel_panel != null and wave_intel_panel.visible
 	
-	right_info_column.visible = wave_visible
-	if no_selection_panel:
-		no_selection_panel.visible = not tower_visible and wave_visible
 	if right_sidebar:
 		right_sidebar.visible = tower_visible
 	
-	right_info_column.visible = wave_visible or (no_selection_panel and no_selection_panel.visible) or tower_visible
+	if no_selection_panel:
+		no_selection_panel.visible = not tower_visible
 	
-	# Actually the container visibility is enough
-	$Root/ScreenLayout/MainContent/RightSidebarContainer.visible = right_info_column.visible
+	if wave_intel_panel:
+		wave_intel_panel.visible = wave_visible
+	
+	container.visible = true
 
 func _format_wave_preview_summary(preview: Dictionary) -> String:
 	var lane_info = preview.get("lane_info", {})
