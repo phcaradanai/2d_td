@@ -1,40 +1,219 @@
 {
-	"id": "level_13",
-	"name": "Broken Corridor",
-	"area_id": 3,
-	"area_name": "Forest River",
-	"difficulty": "Medium",
-	"description": "A winding corridor with cloaked and special ground enemies. Only specific towers can detect Ghost Code — invest in Rapid and Lightning.",
-	"hero_enabled": true,
-	"hero_deploy_cost": 100,
-	"hero_duration_seconds": 28,
-	"hero_cooldown_seconds": 35,
-	"enemy_intel": ["Cloaked", "Special Ground"],
-	"recommended_roles": ["Rapid", "Lightning"],
-	"grid_size": 64.0,
-	"grid_cols": 20.0,
-	"grid_rows": 12.0,
-	"grid_origin": { "x": 0.0, "y": 0.0 },
-	"starting_gold": 320,
-	"starting_lives": 20,
-	"paths": {
-		"default": [
-			[0, 4], [1, 4], [2, 4], [3, 4], [4, 4],
-			[4, 5], [4, 6], [4, 7], [4, 8],
-			[5, 8], [6, 8], [7, 8], [8, 8], [9, 8], [10, 8],
-			[10, 7], [10, 6], [10, 5], [10, 4], [10, 3],
-			[11, 3], [12, 3], [13, 3], [14, 3], [15, 3], [16, 3],
-			[16, 4], [16, 5], [16, 6], [16, 7],
-			[17, 7], [18, 7], [19, 7]
-		]
-	},
-	"spawn_cell": [0, 4],
-	"base_cell": [19, 7],
-	"buildable_cells": [
-		[3, 3], [5, 3], [8, 3],
-		[5, 5], [9, 7],
-		[11, 4], [13, 2], [15, 2],
-		[15, 6], [17, 8], [18, 6]
-	],
-	"waves_path": "res://data/waves/waves_13.json"
+    "id": "level_13",
+    "name": "Broken Corridor",
+    "area_id": 3,
+    "area_name": "Forest River",
+    "difficulty": "Medium",
+    "description": "A winding corridor with cloaked and special ground enemies. Only specific towers can detect Ghost Code \u2014 invest in Rapid and Lightning.",
+    "hero_enabled": true,
+    "hero_deploy_cost": 100,
+    "hero_duration_seconds": 28,
+    "hero_cooldown_seconds": 35,
+    "enemy_intel": [
+        "Ghost Code"
+    ],
+    "recommended_roles": [
+        "Rapid",
+        "Lightning"
+    ],
+    "grid_size": 64.0,
+    "grid_cols": 20.0,
+    "grid_rows": 12.0,
+    "grid_origin": {
+        "x": 0.0,
+        "y": 0.0
+    },
+    "starting_gold": 320,
+    "starting_lives": 20,
+    "paths": {
+        "default": [
+            [
+                0,
+                4
+            ],
+            [
+                1,
+                4
+            ],
+            [
+                2,
+                4
+            ],
+            [
+                3,
+                4
+            ],
+            [
+                4,
+                4
+            ],
+            [
+                4,
+                5
+            ],
+            [
+                4,
+                6
+            ],
+            [
+                4,
+                7
+            ],
+            [
+                4,
+                8
+            ],
+            [
+                5,
+                8
+            ],
+            [
+                6,
+                8
+            ],
+            [
+                7,
+                8
+            ],
+            [
+                8,
+                8
+            ],
+            [
+                9,
+                8
+            ],
+            [
+                10,
+                8
+            ],
+            [
+                10,
+                7
+            ],
+            [
+                10,
+                6
+            ],
+            [
+                10,
+                5
+            ],
+            [
+                10,
+                4
+            ],
+            [
+                10,
+                3
+            ],
+            [
+                11,
+                3
+            ],
+            [
+                12,
+                3
+            ],
+            [
+                13,
+                3
+            ],
+            [
+                14,
+                3
+            ],
+            [
+                15,
+                3
+            ],
+            [
+                16,
+                3
+            ],
+            [
+                16,
+                4
+            ],
+            [
+                16,
+                5
+            ],
+            [
+                16,
+                6
+            ],
+            [
+                16,
+                7
+            ],
+            [
+                17,
+                7
+            ],
+            [
+                18,
+                7
+            ],
+            [
+                19,
+                7
+            ]
+        ]
+    },
+    "spawn_cell": [
+        0,
+        4
+    ],
+    "base_cell": [
+        19,
+        7
+    ],
+    "buildable_cells": [
+        [
+            3,
+            3
+        ],
+        [
+            5,
+            3
+        ],
+        [
+            8,
+            3
+        ],
+        [
+            5,
+            5
+        ],
+        [
+            9,
+            7
+        ],
+        [
+            11,
+            4
+        ],
+        [
+            13,
+            2
+        ],
+        [
+            15,
+            2
+        ],
+        [
+            15,
+            6
+        ],
+        [
+            17,
+            8
+        ],
+        [
+            18,
+            6
+        ]
+    ],
+    "waves_path": "res://data/waves/waves_13.json"
 }

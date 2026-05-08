@@ -112,6 +112,17 @@ func _create_level_card(level_id: String) -> Control:
 	btn.pressed.connect(func(): _select_level("res://data/levels/%s.json" % level_id))
 	root.add_child(btn)
 	
+	# Progression Link (Connector line to previous level)
+	var l_num = int(level_id.split("_")[1])
+	if l_num % 5 != 1: # Not the first in a row
+		var link = ColorRect.new()
+		link.name = "PrevLink"
+		link.size = Vector2(24, 2)
+		link.position = Vector2(-24, 48)
+		link.color = Color(0.2, 0.4, 0.6, 0.4)
+		root.add_child(link)
+		root.move_child(link, 0) # Behind button
+	
 	# Selection Frame (Inset neon border)
 	var sel_frame = Panel.new()
 	sel_frame.name = "SelectionFrame"

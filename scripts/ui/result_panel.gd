@@ -55,7 +55,7 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 		rank_label.hide()
 		
 	# Record feedback
-	_setup_record_feedback(improvements)
+	_setup_record_feedback(improvements, summary)
 	
 	target_score = summary.get("score", 0)
 	current_display_score = 0
@@ -113,7 +113,7 @@ func _play_star_sound(_index: int) -> void:
 	# Placeholder for sound effect if available
 	pass
 
-func _setup_record_feedback(improvements: Dictionary) -> void:
+func _setup_record_feedback(improvements: Dictionary, summary: Dictionary = {}) -> void:
 	if not record_feedback: return
 	
 	var messages = []
@@ -124,6 +124,31 @@ func _setup_record_feedback(improvements: Dictionary) -> void:
 	
 	if improvements.get("new_best_score", false):
 		messages.append("NEW BEST SCORE!")
+		
+	if summary.has("gold_spent") and summary.has("gold_earned"):
+		var spent = summary.get("gold_spent", 0)
+		var earned = summary.get("gold_earned", 1)
+		if earned <= 0: earned = 1
+		var efficiency = float(spent) / float(earned) * 100.0
+		messages.append("GOLD EFFICIENCY: %d%%" % int(efficiency))
+		
+	var gm = get_tree().current_scene.get_node_or_null("GameManager")
+	if gm and gm.battle_telemetry and not gm.battle_telemetry.metrics.is_empty():
+		var metrics = gm.battle_telemetry.metrics
+		var best_tower = ""
+		var max_dmg = 0.0
+		for t_id in metrics.get("total_damage_by_tower_id", {}):
+			if metrics["total_damage_by_tower_id"][t_id] > max_dmg:
+				max_dmg = metrics["total_damage_by_tower_id"][t_id]
+				best_tower = t_id
+		if best_tower != "":
+			messages.append("MVP TOWER: " + best_tower.to_upper())
+			
+		var total_leaks = 0
+		for count in metrics.get("enemy_leaked_by_type", {}).values():
+			total_leaks += count
+		if total_leaks > 0:
+			messages.append(str(total_leaks) + " LEAKS (" + str(metrics.get("most_dangerous_enemy_type", "")).to_upper() + ")")
 		
 	if messages.size() > 0:
 		record_feedback.text = messages[0]

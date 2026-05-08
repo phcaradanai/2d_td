@@ -1,40 +1,296 @@
 {
-	"id": "level_18",
-	"name": "Bulwark Line",
-	"area_id": 4,
-	"area_name": "Mountain",
-	"difficulty": "Hard",
-	"description": "A long spiral path with restricted builds. Armored flyers hit the same time as ground convoys. Split your AA and AoE budget carefully.",
-	"hero_enabled": true,
-	"hero_deploy_cost": 100,
-	"hero_duration_seconds": 28,
-	"hero_cooldown_seconds": 35,
-	"enemy_intel": ["Armored Flyer", "Bulwark Convoy"],
-	"recommended_roles": ["Sniper", "Cannon", "Lightning"],
-	"grid_size": 64.0,
-	"grid_cols": 20.0,
-	"grid_rows": 12.0,
-	"grid_origin": { "x": 0.0, "y": 0.0 },
-	"starting_gold": 380,
-	"starting_lives": 20,
-	"paths": {
-		"default": [
-			[0, 6], [1, 6], [2, 6], [3, 6],
-			[3, 5], [3, 4], [3, 3], [3, 2],
-			[4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [9, 2], [10, 2], [11, 2], [12, 2], [13, 2], [14, 2], [15, 2], [16, 2],
-			[16, 3], [16, 4], [16, 5], [16, 6], [16, 7], [16, 8], [16, 9],
-			[15, 9], [14, 9], [13, 9], [12, 9], [11, 9], [10, 9], [9, 9], [8, 9], [7, 9], [6, 9],
-			[6, 8], [6, 7],
-			[7, 7], [8, 7], [9, 7], [10, 7], [11, 7], [12, 7], [13, 7], [14, 7], [15, 7], [16, 7], [17, 7], [18, 7], [19, 7]
-		]
-	},
-	"spawn_cell": [0, 6],
-	"base_cell": [19, 7],
-	"buildable_cells": [
-		[2, 4], [4, 1], [10, 1],
-		[15, 1], [17, 4], [17, 8],
-		[10, 8], [5, 7], [5, 10],
-		[15, 5]
-	],
-	"waves_path": "res://data/waves/waves_18.json"
+    "id": "level_18",
+    "name": "Bulwark Line",
+    "area_id": 4,
+    "area_name": "Mountain",
+    "difficulty": "Hard",
+    "description": "A long spiral path with restricted builds. Armored flyers hit the same time as ground convoys. Split your AA and AoE budget carefully.",
+    "hero_enabled": true,
+    "hero_deploy_cost": 100,
+    "hero_duration_seconds": 28,
+    "hero_cooldown_seconds": 35,
+    "enemy_intel": [
+        "Heavy Drone"
+    ],
+    "recommended_roles": [
+        "Sniper",
+        "Lightning",
+        "Slow"
+    ],
+    "grid_size": 64.0,
+    "grid_cols": 20.0,
+    "grid_rows": 12.0,
+    "grid_origin": {
+        "x": 0.0,
+        "y": 0.0
+    },
+    "starting_gold": 380,
+    "starting_lives": 20,
+    "paths": {
+        "default": [
+            [
+                0,
+                6
+            ],
+            [
+                1,
+                6
+            ],
+            [
+                2,
+                6
+            ],
+            [
+                3,
+                6
+            ],
+            [
+                3,
+                5
+            ],
+            [
+                3,
+                4
+            ],
+            [
+                3,
+                3
+            ],
+            [
+                3,
+                2
+            ],
+            [
+                4,
+                2
+            ],
+            [
+                5,
+                2
+            ],
+            [
+                6,
+                2
+            ],
+            [
+                7,
+                2
+            ],
+            [
+                8,
+                2
+            ],
+            [
+                9,
+                2
+            ],
+            [
+                10,
+                2
+            ],
+            [
+                11,
+                2
+            ],
+            [
+                12,
+                2
+            ],
+            [
+                13,
+                2
+            ],
+            [
+                14,
+                2
+            ],
+            [
+                15,
+                2
+            ],
+            [
+                16,
+                2
+            ],
+            [
+                16,
+                3
+            ],
+            [
+                16,
+                4
+            ],
+            [
+                16,
+                5
+            ],
+            [
+                16,
+                6
+            ],
+            [
+                16,
+                7
+            ],
+            [
+                16,
+                8
+            ],
+            [
+                16,
+                9
+            ],
+            [
+                15,
+                9
+            ],
+            [
+                14,
+                9
+            ],
+            [
+                13,
+                9
+            ],
+            [
+                12,
+                9
+            ],
+            [
+                11,
+                9
+            ],
+            [
+                10,
+                9
+            ],
+            [
+                9,
+                9
+            ],
+            [
+                8,
+                9
+            ],
+            [
+                7,
+                9
+            ],
+            [
+                6,
+                9
+            ],
+            [
+                6,
+                8
+            ],
+            [
+                6,
+                7
+            ],
+            [
+                7,
+                7
+            ],
+            [
+                8,
+                7
+            ],
+            [
+                9,
+                7
+            ],
+            [
+                10,
+                7
+            ],
+            [
+                11,
+                7
+            ],
+            [
+                12,
+                7
+            ],
+            [
+                13,
+                7
+            ],
+            [
+                14,
+                7
+            ],
+            [
+                15,
+                7
+            ],
+            [
+                16,
+                7
+            ],
+            [
+                17,
+                7
+            ],
+            [
+                18,
+                7
+            ],
+            [
+                19,
+                7
+            ]
+        ]
+    },
+    "spawn_cell": [
+        0,
+        6
+    ],
+    "base_cell": [
+        19,
+        7
+    ],
+    "buildable_cells": [
+        [
+            2,
+            4
+        ],
+        [
+            4,
+            1
+        ],
+        [
+            10,
+            1
+        ],
+        [
+            15,
+            1
+        ],
+        [
+            17,
+            4
+        ],
+        [
+            17,
+            8
+        ],
+        [
+            10,
+            8
+        ],
+        [
+            5,
+            7
+        ],
+        [
+            5,
+            10
+        ],
+        [
+            15,
+            5
+        ]
+    ],
+    "waves_path": "res://data/waves/waves_18.json"
 }

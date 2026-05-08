@@ -1,41 +1,244 @@
 {
-	"id": "level_03",
-	"name": "Iron Route",
-	"area_id": 1,
-	"area_name": "Grasslands",
-	"difficulty": "Normal",
-	"description": "A multi-bend path with light terrain restrictions. Tanky enemies absorb damage — concentrate fire at corners.",
-	"enemy_intel": ["Normal", "Heavy"],
-	"recommended_roles": ["Cannon"],
-	"grid_size": 64.0,
-	"grid_cols": 20.0,
-	"grid_rows": 12.0,
-	"grid_origin": { "x": 0.0, "y": 0.0 },
-	"starting_gold": 175,
-	"starting_lives": 15,
-	"spawn_cell": [0, 2],
-	"base_cell": [19, 5],
-	"path_cells": [
-		[0, 2], [1, 2], [2, 2],
-		[2, 3], [2, 4], [2, 5],
-		[3, 5], [4, 5], [5, 5], [6, 5],
-		[6, 4], [6, 3], [6, 2],
-		[7, 2], [8, 2], [9, 2], [10, 2],
-		[10, 3], [10, 4], [10, 5], [10, 6], [10, 7], [10, 8],
-		[11, 8], [12, 8], [13, 8], [14, 8],
-		[14, 7], [14, 6], [14, 5],
-		[15, 5], [16, 5], [17, 5], [18, 5], [19, 5]
-	],
-	"blocked_cells": [
-		[3, 4], [4, 4], [5, 4],
-		[11, 7], [12, 7], [13, 7]
-	],
-	"buildable_cells": [
-		[1, 4], [3, 3],
-		[5, 6], [7, 4],
-		[9, 3], [11, 4],
-		[13, 9], [15, 6],
-		[9, 9], [17, 6]
-	],
-	"waves_path": "res://data/waves/waves_03.json"
+    "id": "level_03",
+    "name": "Iron Route",
+    "area_id": 1,
+    "area_name": "Grasslands",
+    "difficulty": "Normal",
+    "description": "A multi-bend path with light terrain restrictions. Tanky enemies absorb damage \u2014 concentrate fire at corners.",
+    "enemy_intel": [
+        "Signal Runner"
+    ],
+    "recommended_roles": [
+        "Rapid",
+        "Basic",
+        "Slow"
+    ],
+    "grid_size": 64.0,
+    "grid_cols": 20.0,
+    "grid_rows": 12.0,
+    "grid_origin": {
+        "x": 0.0,
+        "y": 0.0
+    },
+    "starting_gold": 175,
+    "starting_lives": 15,
+    "spawn_cell": [
+        0,
+        2
+    ],
+    "base_cell": [
+        19,
+        5
+    ],
+    "path_cells": [
+        [
+            0,
+            2
+        ],
+        [
+            1,
+            2
+        ],
+        [
+            2,
+            2
+        ],
+        [
+            2,
+            3
+        ],
+        [
+            2,
+            4
+        ],
+        [
+            2,
+            5
+        ],
+        [
+            3,
+            5
+        ],
+        [
+            4,
+            5
+        ],
+        [
+            5,
+            5
+        ],
+        [
+            6,
+            5
+        ],
+        [
+            6,
+            4
+        ],
+        [
+            6,
+            3
+        ],
+        [
+            6,
+            2
+        ],
+        [
+            7,
+            2
+        ],
+        [
+            8,
+            2
+        ],
+        [
+            9,
+            2
+        ],
+        [
+            10,
+            2
+        ],
+        [
+            10,
+            3
+        ],
+        [
+            10,
+            4
+        ],
+        [
+            10,
+            5
+        ],
+        [
+            10,
+            6
+        ],
+        [
+            10,
+            7
+        ],
+        [
+            10,
+            8
+        ],
+        [
+            11,
+            8
+        ],
+        [
+            12,
+            8
+        ],
+        [
+            13,
+            8
+        ],
+        [
+            14,
+            8
+        ],
+        [
+            14,
+            7
+        ],
+        [
+            14,
+            6
+        ],
+        [
+            14,
+            5
+        ],
+        [
+            15,
+            5
+        ],
+        [
+            16,
+            5
+        ],
+        [
+            17,
+            5
+        ],
+        [
+            18,
+            5
+        ],
+        [
+            19,
+            5
+        ]
+    ],
+    "blocked_cells": [
+        [
+            3,
+            4
+        ],
+        [
+            4,
+            4
+        ],
+        [
+            5,
+            4
+        ],
+        [
+            11,
+            7
+        ],
+        [
+            12,
+            7
+        ],
+        [
+            13,
+            7
+        ]
+    ],
+    "buildable_cells": [
+        [
+            1,
+            4
+        ],
+        [
+            3,
+            3
+        ],
+        [
+            5,
+            6
+        ],
+        [
+            7,
+            4
+        ],
+        [
+            9,
+            3
+        ],
+        [
+            11,
+            4
+        ],
+        [
+            13,
+            9
+        ],
+        [
+            15,
+            6
+        ],
+        [
+            9,
+            9
+        ],
+        [
+            17,
+            6
+        ]
+    ],
+    "waves_path": "res://data/waves/waves_03.json"
 }

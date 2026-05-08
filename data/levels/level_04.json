@@ -1,32 +1,202 @@
 {
-	"id": "level_04",
-	"name": "Split Pressure",
-	"area_id": 1,
-	"area_name": "Grasslands",
-	"difficulty": "Normal",
-	"description": "The path bends sharply midfield. Swarms cluster at the corner — place AoE towers here to punish grouping.",
-	"enemy_intel": ["Fast", "Swarm"],
-	"recommended_roles": ["Rapid", "Cannon"],
-	"grid_size": 64.0,
-	"grid_cols": 20.0,
-	"grid_rows": 12.0,
-	"grid_origin": { "x": 0.0, "y": 0.0 },
-	"starting_gold": 160,
-	"starting_lives": 20,
-	"spawn_cell": [0, 2],
-	"base_cell": [19, 9],
-	"path_cells": [
-		[0, 2], [1, 2], [2, 2], [3, 2], [4, 2],
-		[5, 2], [6, 2], [7, 2], [8, 2], [9, 2],
-		[9, 3], [9, 4], [9, 5], [9, 6], [9, 7], [9, 8], [9, 9],
-		[10, 9], [11, 9], [12, 9], [13, 9],
-		[14, 9], [15, 9], [16, 9], [17, 9], [18, 9], [19, 9]
-	],
-	"buildable_cells": [
-		[5, 1], [8, 1], [11, 1],
-		[8, 3], [10, 3], [8, 5], [10, 5], [8, 7], [10, 7],
-		[12, 8], [14, 8], [16, 8],
-		[12, 10], [16, 10]
-	],
-	"waves_path": "res://data/waves/waves_04.json"
+    "id": "level_04",
+    "name": "Split Pressure",
+    "area_id": 1,
+    "area_name": "Grasslands",
+    "difficulty": "Normal",
+    "description": "The path bends sharply midfield. Swarms cluster at the corner \u2014 place AoE towers here to punish grouping.",
+    "enemy_intel": [
+        "Data Swarm"
+    ],
+    "recommended_roles": [
+        "Cannon",
+        "Rapid",
+        "Basic"
+    ],
+    "grid_size": 64.0,
+    "grid_cols": 20.0,
+    "grid_rows": 12.0,
+    "grid_origin": {
+        "x": 0.0,
+        "y": 0.0
+    },
+    "starting_gold": 160,
+    "starting_lives": 20,
+    "spawn_cell": [
+        0,
+        2
+    ],
+    "base_cell": [
+        19,
+        9
+    ],
+    "path_cells": [
+        [
+            0,
+            2
+        ],
+        [
+            1,
+            2
+        ],
+        [
+            2,
+            2
+        ],
+        [
+            3,
+            2
+        ],
+        [
+            4,
+            2
+        ],
+        [
+            5,
+            2
+        ],
+        [
+            6,
+            2
+        ],
+        [
+            7,
+            2
+        ],
+        [
+            8,
+            2
+        ],
+        [
+            9,
+            2
+        ],
+        [
+            9,
+            3
+        ],
+        [
+            9,
+            4
+        ],
+        [
+            9,
+            5
+        ],
+        [
+            9,
+            6
+        ],
+        [
+            9,
+            7
+        ],
+        [
+            9,
+            8
+        ],
+        [
+            9,
+            9
+        ],
+        [
+            10,
+            9
+        ],
+        [
+            11,
+            9
+        ],
+        [
+            12,
+            9
+        ],
+        [
+            13,
+            9
+        ],
+        [
+            14,
+            9
+        ],
+        [
+            15,
+            9
+        ],
+        [
+            16,
+            9
+        ],
+        [
+            17,
+            9
+        ],
+        [
+            18,
+            9
+        ],
+        [
+            19,
+            9
+        ]
+    ],
+    "buildable_cells": [
+        [
+            5,
+            1
+        ],
+        [
+            8,
+            1
+        ],
+        [
+            11,
+            1
+        ],
+        [
+            8,
+            3
+        ],
+        [
+            10,
+            3
+        ],
+        [
+            8,
+            5
+        ],
+        [
+            10,
+            5
+        ],
+        [
+            8,
+            7
+        ],
+        [
+            10,
+            7
+        ],
+        [
+            12,
+            8
+        ],
+        [
+            14,
+            8
+        ],
+        [
+            16,
+            8
+        ],
+        [
+            12,
+            10
+        ],
+        [
+            16,
+            10
+        ]
+    ],
+    "waves_path": "res://data/waves/waves_04.json"
 }

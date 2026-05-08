@@ -4,8 +4,8 @@ extends Node2D
 @export var radius: float = 24.0
 @export var thickness: float = 2.0
 @export var rotation_speed: float = 2.0
-@export var pulse_speed: float = 4.0
-@export var pulse_magnitude: float = 0.2
+@export var pulse_speed: float = 6.0
+@export var pulse_magnitude: float = 0.35
 
 var time: float = 0.0
 

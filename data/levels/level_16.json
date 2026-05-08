@@ -1,44 +1,284 @@
 {
-	"id": "level_16",
-	"name": "Twin Pressure",
-	"area_id": 4,
-	"area_name": "Mountain",
-	"difficulty": "Hard",
-	"description": "True two-lane engagement. Air enemies debut here — flyers bypass ground defenses. Split your AA coverage across both lanes.",
-	"hero_enabled": true,
-	"hero_deploy_cost": 100,
-	"hero_duration_seconds": 28,
-	"hero_cooldown_seconds": 35,
-	"enemy_intel": ["Flyer", "Ground Mixed"],
-	"recommended_roles": ["Rapid", "Sniper", "Lightning"],
-	"grid_size": 64.0,
-	"grid_cols": 20.0,
-	"grid_rows": 12.0,
-	"grid_origin": { "x": 0.0, "y": 0.0 },
-	"starting_gold": 360,
-	"starting_lives": 20,
-	"paths": {
-		"default": [
-			[0, 2], [1, 2], [2, 2], [3, 2], [4, 2], [5, 2], [6, 2], [7, 2], [8, 2], [9, 2],
-			[10, 2], [11, 2], [12, 2], [13, 2], [14, 2],
-			[14, 3], [14, 4], [14, 5],
-			[15, 5], [16, 5], [17, 5], [18, 5], [19, 5]
-		],
-		"lane_b": [
-			[0, 10], [1, 10], [2, 10], [3, 10], [4, 10], [5, 10], [6, 10], [7, 10], [8, 10], [9, 10],
-			[10, 10], [11, 10], [12, 10], [13, 10], [14, 10],
-			[14, 9], [14, 8], [14, 7],
-			[15, 7], [16, 7], [17, 7], [18, 7], [19, 7]
-		]
-	},
-	"spawn_cells": [[0, 2], [0, 10]],
-	"base_cell": [19, 5],
-	"buildable_cells": [
-		[4, 1], [8, 1], [12, 1],
-		[4, 11], [8, 11], [12, 11],
-		[14, 6], [17, 6],
-		[13, 4], [13, 8],
-		[16, 4], [16, 8]
-	],
-	"waves_path": "res://data/waves/waves_16.json"
+    "id": "level_16",
+    "name": "Twin Pressure",
+    "area_id": 4,
+    "area_name": "Mountain",
+    "difficulty": "Hard",
+    "description": "True two-lane engagement. Air enemies debut here \u2014 flyers bypass ground defenses. Split your AA coverage across both lanes.",
+    "hero_enabled": true,
+    "hero_deploy_cost": 100,
+    "hero_duration_seconds": 28,
+    "hero_cooldown_seconds": 35,
+    "enemy_intel": [
+        "Cyber Drone"
+    ],
+    "recommended_roles": [
+        "Sniper",
+        "Lightning",
+        "Rapid"
+    ],
+    "grid_size": 64.0,
+    "grid_cols": 20.0,
+    "grid_rows": 12.0,
+    "grid_origin": {
+        "x": 0.0,
+        "y": 0.0
+    },
+    "starting_gold": 360,
+    "starting_lives": 20,
+    "paths": {
+        "default": [
+            [
+                0,
+                2
+            ],
+            [
+                1,
+                2
+            ],
+            [
+                2,
+                2
+            ],
+            [
+                3,
+                2
+            ],
+            [
+                4,
+                2
+            ],
+            [
+                5,
+                2
+            ],
+            [
+                6,
+                2
+            ],
+            [
+                7,
+                2
+            ],
+            [
+                8,
+                2
+            ],
+            [
+                9,
+                2
+            ],
+            [
+                10,
+                2
+            ],
+            [
+                11,
+                2
+            ],
+            [
+                12,
+                2
+            ],
+            [
+                13,
+                2
+            ],
+            [
+                14,
+                2
+            ],
+            [
+                14,
+                3
+            ],
+            [
+                14,
+                4
+            ],
+            [
+                14,
+                5
+            ],
+            [
+                15,
+                5
+            ],
+            [
+                16,
+                5
+            ],
+            [
+                17,
+                5
+            ],
+            [
+                18,
+                5
+            ],
+            [
+                19,
+                5
+            ]
+        ],
+        "lane_b": [
+            [
+                0,
+                10
+            ],
+            [
+                1,
+                10
+            ],
+            [
+                2,
+                10
+            ],
+            [
+                3,
+                10
+            ],
+            [
+                4,
+                10
+            ],
+            [
+                5,
+                10
+            ],
+            [
+                6,
+                10
+            ],
+            [
+                7,
+                10
+            ],
+            [
+                8,
+                10
+            ],
+            [
+                9,
+                10
+            ],
+            [
+                10,
+                10
+            ],
+            [
+                11,
+                10
+            ],
+            [
+                12,
+                10
+            ],
+            [
+                13,
+                10
+            ],
+            [
+                14,
+                10
+            ],
+            [
+                14,
+                9
+            ],
+            [
+                14,
+                8
+            ],
+            [
+                14,
+                7
+            ],
+            [
+                15,
+                7
+            ],
+            [
+                16,
+                7
+            ],
+            [
+                17,
+                7
+            ],
+            [
+                18,
+                7
+            ],
+            [
+                19,
+                7
+            ]
+        ]
+    },
+    "spawn_cells": [
+        [
+            0,
+            2
+        ],
+        [
+            0,
+            10
+        ]
+    ],
+    "base_cell": [
+        19,
+        5
+    ],
+    "buildable_cells": [
+        [
+            4,
+            1
+        ],
+        [
+            8,
+            1
+        ],
+        [
+            12,
+            1
+        ],
+        [
+            4,
+            11
+        ],
+        [
+            8,
+            11
+        ],
+        [
+            12,
+            11
+        ],
+        [
+            14,
+            6
+        ],
+        [
+            17,
+            6
+        ],
+        [
+            13,
+            4
+        ],
+        [
+            13,
+            8
+        ],
+        [
+            16,
+            4
+        ],
+        [
+            16,
+            8
+        ]
+    ],
+    "waves_path": "res://data/waves/waves_16.json"
 }

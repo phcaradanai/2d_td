@@ -12,6 +12,7 @@ var enemies_config = {}
 var current_level_data = {}
 var current_level_id = ""
 var current_waves_data = []
+var current_level_curves = {}
 var last_candidate_count: int = 0
 var auto_clear_verbose_solver_logs: bool = false
 
@@ -76,6 +77,8 @@ func solve_level_with_gold_testing(level_id: String, minimum_gold: int = -1) -> 
 		current_waves_data = wave_json.get("waves", [])
 	else:
 		current_waves_data = []
+		
+	_build_level_curves()
 
 	var base_gold = current_level_data.get("starting_gold", 0)
 	var gold_candidates = [
@@ -162,6 +165,8 @@ func solve_from_state(state, level_id: String) -> Dictionary:
 		current_waves_data = wave_json.get("waves", [])
 	else:
 		current_waves_data = []
+		
+	_build_level_curves()
 
 	# Clear plan and logs of the starting state if we want a fresh verification
 	state.log.clear()
@@ -177,6 +182,21 @@ func get_wave_data_for_solver(wave_index: int) -> Dictionary:
 		push_warning("[AUTO_SOLVER] Invalid wave index %d (total waves: %d)" % [wave_index, current_waves_data.size()])
 		return {}
 	return current_waves_data[wave_index]
+
+func _build_level_curves():
+	current_level_curves.clear()
+	var paths = {}
+	if current_level_data.has("paths"):
+		paths = current_level_data["paths"]
+	else:
+		paths["default"] = current_level_data.get("path_cells", [])
+		
+	for p_id in paths:
+		var cells = paths[p_id]
+		var curve = Curve2D.new()
+		for c in cells:
+			curve.add_point(Vector2(c[0], c[1]) * 64.0 + Vector2(32, 32))
+		current_level_curves[p_id] = curve
 
 func create_state_manual(gold: int, lives: int, wave_idx: int, tower_data: Array) -> GameState:
 	var state = GameState.new()
@@ -637,7 +657,8 @@ func _best_upgrade_action(towers: Array, gold: int, upcoming_wave: Dictionary) -
 				"action": {
 					"type": "upgrade_tower",
 					"tower_ref": "%s@%d,%d" % [tower_type, cell.x, cell.y],
-					"cell": [cell.x, cell.y]
+					"cell": [cell.x, cell.y],
+					"reason": "Upgrade %s for high coverage and DPS gain" % tower_type
 				}
 			}
 	return best
@@ -673,7 +694,8 @@ func _best_build_action(towers: Array, gold: int, upcoming_wave: Dictionary) -> 
 						"id": _make_tower_action_id(tower_type, cell),
 						"type": "place_tower",
 						"tower_type": tower_type,
-						"cell": [cell.x, cell.y]
+						"cell": [cell.x, cell.y],
+						"reason": "Place %s for coverage %.1f against %s" % [tower_type, coverage, upcoming_wave.get("name", "wave")]
 					}
 				}
 	return best
@@ -890,8 +912,9 @@ func _apply_plan_action_to_state(state, action: Dictionary, occupied: Dictionary
 func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 	var sim = state.duplicate()
 	var enemies = []
+	var projectiles = []
 	var time = 0.0
-	var tick = 0.1
+	var tick = 0.05
 	var reward = wave_data.get("completion_reward", 0)
 
 	var groups = wave_data.get("groups", [])
@@ -902,31 +925,44 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 	for g in groups:
 		for i in range(g.get("count", 0)):
 			var e_type = g.get("enemy_type", g.get("type", "basic"))
-			queue.append({"type": e_type, "delay": g.get("spawn_delay", 1.0)})
+			queue.append({"type": e_type, "delay": g.get("spawn_delay", 1.0), "path": g.get("path", "default")})
 
 	var next_spawn = 0.0
 
 	while time < 600.0:
 		if not queue.is_empty() and time >= next_spawn:
 			var s = queue.pop_front()
-			var cfg = enemies_config.get(s["type"], {"max_hp": 30, "speed": 100})
-			var p_id = s.get("path", "default")
-			var p_cells = []
-			if current_level_data.has("paths"):
-				p_cells = current_level_data["paths"].get(p_id, current_level_data["paths"].get("default", []))
-			else:
-				p_cells = current_level_data.get("path_cells", [])
+			var cfg = enemies_config.get(s["type"], {})
+			var p_id = s["path"]
+			var curve = current_level_curves.get(p_id)
+			if curve == null and current_level_curves.has("default"):
+				curve = current_level_curves["default"]
 				
+			var path_len = curve.get_baked_length() if curve else 0.0
+			
 			enemies.append({
-				"hp": cfg["max_hp"],
-				"speed": cfg["speed"],
+				"id": randi(),
+				"hp": cfg.get("max_hp", 30),
+				"max_hp": cfg.get("max_hp", 30),
+				"speed": cfg.get("speed", 100),
 				"progress": 0.0,
-				"path_cells": p_cells,
-				"path_len": p_cells.size() * 64.0,
+				"path_id": p_id,
+				"curve": curve,
+				"path_len": path_len,
 				"reward": cfg.get("reward_gold", 5),
 				"type": s["type"],
 				"slow": 1.0,
-				"slow_rem": 0.0
+				"slow_rem": 0.0,
+				"tags": cfg.get("tags", []),
+				"is_cloaked": "stealth" in cfg.get("tags", []),
+				"is_air": cfg.get("category", "land") == "air" or "air" in cfg.get("tags", []),
+				"shield": 0,
+				"shield_reduction": 0.0,
+				"vulnerability": 1.0,
+				"vulnerability_rem": 0.0,
+				"skill": cfg.get("skill", ""),
+				"skill_params": cfg.get("skill_params", {}),
+				"heal_timer": 0.0
 			})
 			next_spawn = time + s["delay"]
 
@@ -934,6 +970,35 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 			if e["slow_rem"] > 0:
 				e["slow_rem"] -= tick
 				if e["slow_rem"] <= 0: e["slow"] = 1.0
+			if e["vulnerability_rem"] > 0:
+				e["vulnerability_rem"] -= tick
+				if e["vulnerability_rem"] <= 0: e["vulnerability"] = 1.0
+			
+			e["shield_reduction"] = 0.0 # reset every tick for aura
+			e["shield"] = 0
+				
+			if e["skill"] == "healer":
+				e["heal_timer"] -= tick
+				if e["heal_timer"] <= 0:
+					e["heal_timer"] = e["skill_params"].get("interval", 1.0)
+					var rad = e["skill_params"].get("radius", 120.0)
+					var amt = e["skill_params"].get("heal_amount", 5)
+					for other in enemies:
+						if other["hp"] > 0 and other["hp"] < other["max_hp"]:
+							if _get_pos(e).distance_to(_get_pos(other)) <= rad:
+								other["hp"] = min(other["max_hp"], other["hp"] + amt)
+								
+		# Second pass for shield auras
+		for e in enemies:
+			if e["skill"] == "shield_aura":
+				var rad = e["skill_params"].get("radius", 120.0)
+				var red = e["skill_params"].get("reduction", e["skill_params"].get("shield_reduction", 0.35))
+				for other in enemies:
+					if other != e and _get_pos(e).distance_to(_get_pos(other)) <= rad:
+						other["shield"] = 1
+						other["shield_reduction"] = max(other["shield_reduction"], red)
+
+		for e in enemies:
 			e["progress"] += e["speed"] * e["slow"] * tick
 			if e["progress"] >= e["path_len"]:
 				return {
@@ -948,94 +1013,213 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 		for t in sim.towers:
 			if not t.has("cooldown"): t["cooldown"] = 0.0
 			t["cooldown"] -= tick
+			
+			var rate_penalty = 0.0
+			var t_pos = Vector2(t["cell"].x, t["cell"].y) * 64.0 + Vector2(32,32)
+			for e in enemies:
+				if e["skill"] == "disrupt_aura":
+					if _get_pos(e).distance_to(t_pos) <= e["skill_params"].get("radius", 150.0):
+						rate_penalty = max(rate_penalty, e["skill_params"].get("fire_rate_penalty", 0.5))
+			
 			if t["cooldown"] <= 0:
 				var cfg = towers_config[t["type"]]
 				var stats = cfg["levels"][t["level"] - 1]
-				var target = _find_target(t, stats, enemies)
+				var target = _find_target(t, cfg, stats, enemies)
 				if target:
-					_apply_dmg(t, stats, target, enemies)
-					t["cooldown"] = stats.get("fire_rate", 1.0)
+					t["cooldown"] = stats.get("fire_rate", 1.0) * (1.0 + rate_penalty)
+					var p_speed = stats.get("projectile_speed", 0.0)
+					if p_speed > 0:
+						t_pos = Vector2(t["cell"].x, t["cell"].y) * 64.0 + Vector2(32,32)
+						var dist = t_pos.distance_to(_get_pos(target))
+						var impact_time = time + (dist / p_speed)
+						projectiles.append({
+							"t": t, "cfg": cfg, "stats": stats, "target_id": target["id"],
+							"impact_time": impact_time, "target": target
+						})
+					else:
+						_apply_dmg(t, cfg, stats, target, enemies)
 
-		var i = enemies.size() - 1
+		var i = projectiles.size() - 1
+		while i >= 0:
+			if time >= projectiles[i]["impact_time"]:
+				var p = projectiles[i]
+				_apply_dmg(p["t"], p["cfg"], p["stats"], p["target"], enemies)
+				projectiles.remove_at(i)
+			i -= 1
+
+		i = enemies.size() - 1
 		while i >= 0:
 			if enemies[i]["hp"] <= 0:
 				sim.gold += enemies[i]["reward"]
+				if enemies[i]["skill"] == "split_on_death":
+					var count = enemies[i]["skill_params"].get("count", 3)
+					var s_type = enemies[i]["skill_params"].get("type", "basic")
+					for j in range(count):
+						queue.insert(0, {"type": s_type, "delay": 0.2, "path": enemies[i]["path_id"]})
 				enemies.remove_at(i)
 			i -= 1
 
-		if queue.is_empty() and enemies.is_empty():
+		if queue.is_empty() and enemies.is_empty() and projectiles.is_empty():
 			sim.gold += reward
 			sim.wave_index += 1
-			# Ensure we add a start action if missing
 			var wave_key = str(sim.wave_index)
-			if not sim.plan.wave_actions.has(wave_key):
-				sim.plan.wave_actions[wave_key] = []
+			if not sim.plan.wave_actions.has(wave_key): sim.plan.wave_actions[wave_key] = []
+			
 			var has_start = false
-			if sim.plan.wave_actions[wave_key] is Dictionary:
-				for a in sim.plan.wave_actions[wave_key].get("before_wave", []):
+			var actions_list = sim.plan.wave_actions[wave_key]
+			if actions_list is Dictionary:
+				for a in actions_list.get("before_wave", []):
 					if a.get("type", "") == "start_wave":
-						has_start = true
-						break
+						has_start = true; break
 			else:
-				for a in sim.plan.wave_actions[wave_key]:
+				for a in actions_list:
 					if a.get("type", "") == "start_wave":
-						has_start = true
-						break
+						has_start = true; break
+						
 			if not has_start:
-				if sim.plan.wave_actions[wave_key] is Dictionary:
-					sim.plan.wave_actions[wave_key]["before_wave"].append({"type": "start_wave", "timing": "before_wave"})
+				if actions_list is Dictionary:
+					actions_list["before_wave"].append({"type": "start_wave", "timing": "before_wave"})
 				else:
-					sim.plan.wave_actions[wave_key].append({"type": "start_wave", "timing": "before_wave"})
+					actions_list.append({"type": "start_wave", "timing": "before_wave"})
 
-			return {
-				"perfect": true,
-				"state": sim,
-				"enemies_killed": total_enemies
-			}
+			return { "perfect": true, "state": sim, "enemies_killed": total_enemies }
+			
 		time += tick
 
 	return {"perfect": false, "state": sim}
 
-func _find_target(t, stats, enemies) -> Variant:
-	var t_pos = Vector2(t["cell"].x, t["cell"].y) * 64.0 + Vector2(32,32)
+func _find_target(t, cfg, stats, enemies) -> Variant:
+	var t_pos = Vector2(t["cell"].x, t["cell"].y) * 64.0 + Vector2(32, 32)
 	var r = stats.get("range", 160.0)
-	var best = null
-	var max_p = -1.0
+	var target_cats = cfg.get("target_categories", ["land", "air"])
+	var mode = t.get("target_mode", "first")
+
+	# Collect all valid in-range enemies, split by cloaked / visible
+	var visible: Array = []
+	var cloaked: Array = []
 	for e in enemies:
-		var e_pos = _get_pos(e["progress"], e["path_cells"])
-		if t_pos.distance_to(e_pos) <= r:
-			if e["progress"] > max_p:
-				max_p = e["progress"]
-				best = e
-	return best
+		if e["hp"] <= 0: continue
+		if e["is_air"] and not "air" in target_cats: continue
+		if not e["is_air"] and not "land" in target_cats: continue
+		if t_pos.distance_to(_get_pos(e)) > r: continue
+		if e["is_cloaked"]:
+			cloaked.append(e)
+		else:
+			visible.append(e)
 
-func _get_pos(prog: float, path: Array) -> Vector2:
-	var idx = int(prog / 64.0)
-	if idx >= path.size(): idx = path.size() - 1
-	if idx < 0: return Vector2.ZERO
-	var c = path[idx]
-	return Vector2(c[0], c[1]) * 64.0 + Vector2(32, 32)
+	var pool = visible if visible.size() > 0 else cloaked
+	if pool.is_empty(): return null
 
-func _apply_dmg(t, stats, target, enemies):
-	var dmg = stats.get("damage", 10.0)
-	var type = towers_config[t["type"]].get("attack_type", "single")
-	if type == "splash":
-		var rad = stats.get("splash_radius", 100.0)
-		var center = _get_pos(target["progress"], target["path_cells"])
+	# For priority-type modes, narrow to priority types first, fall back to full pool
+	var PRIORITY_TYPES = {
+		"air_first": ["flyer", "fast_flyer", "armored_flyer"],
+		"support_first": ["healer", "disruptor"],
+		"shield_first": ["shieldbearer", "bulwark"]
+	}
+	if PRIORITY_TYPES.has(mode):
+		var ptypes = PRIORITY_TYPES[mode]
+		var ppool: Array = []
+		for e in pool:
+			if e.get("type", "") in ptypes:
+				ppool.append(e)
+		if ppool.size() > 0:
+			pool = ppool
+
+	match mode:
+		"last":
+			var best = null; var min_p = INF
+			for e in pool:
+				if e["progress"] < min_p: min_p = e["progress"]; best = e
+			return best
+		"nearest":
+			var best = null; var min_d = INF
+			for e in pool:
+				var d = t_pos.distance_to(_get_pos(e))
+				if d < min_d: min_d = d; best = e
+			return best
+		"strongest":
+			var best = null; var max_hp = -1.0
+			for e in pool:
+				if e["hp"] > max_hp: max_hp = e["hp"]; best = e
+			return best
+		"weakest":
+			var best = null; var min_hp = INF
+			for e in pool:
+				if e["hp"] < min_hp: min_hp = e["hp"]; best = e
+			return best
+		"fastest":
+			var best = null; var max_spd = -1.0
+			for e in pool:
+				if e["speed"] > max_spd: max_spd = e["speed"]; best = e
+			return best
+		_: # first / air_first / support_first / shield_first -> furthest along path
+			var best = null; var max_p = -1.0
+			for e in pool:
+				if e["progress"] > max_p: max_p = e["progress"]; best = e
+			return best
+
+func _get_pos(e: Dictionary) -> Vector2:
+	if e.get("curve"):
+		return e["curve"].sample_baked(e["progress"])
+	return Vector2.ZERO
+
+func _apply_dmg(t, cfg, stats, target, enemies):
+	if target["hp"] <= 0: return
+	
+	var base_dmg = stats.get("damage", 10.0)
+	var atk_type = cfg.get("attack_type", "single")
+	var hit_enemies = [target]
+	
+	if atk_type == "splash" or atk_type == "slow":
+		var rad = stats.get("splash_radius", stats.get("slow_radius", 100.0))
+		var center = _get_pos(target)
+		hit_enemies.clear()
 		for e in enemies:
-			if center.distance_to(_get_pos(e["progress"], e["path_cells"])) <= rad: e["hp"] -= dmg
-	elif type == "slow":
-		var rad = stats.get("slow_radius", 65.0)
-		var center = _get_pos(target["progress"], target["path_cells"])
-		var s_pct = stats.get("slow_percent", 0.4)
-		var s_dur = stats.get("slow_duration", 2.0)
-		for e in enemies:
-			if center.distance_to(_get_pos(e["progress"], e["path_cells"])) <= rad:
-				e["hp"] -= dmg
-				e["slow"] = 1.0 - s_pct
-				e["slow_rem"] = s_dur
-	else:
-		target["hp"] -= dmg
+			if e["hp"] > 0 and center.distance_to(_get_pos(e)) <= rad:
+				hit_enemies.append(e)
+	elif atk_type == "chain":
+		var count = stats.get("chain_count", 3)
+		var bounce_range = stats.get("chain_bounce_range", 120.0)
+		var current = target
+		for i in range(count - 1):
+			var next = null
+			var closest = 99999.0
+			for e in enemies:
+				if e["hp"] > 0 and not e in hit_enemies:
+					var dist = _get_pos(current).distance_to(_get_pos(e))
+					if dist <= bounce_range and dist < closest:
+						closest = dist
+						next = e
+			if next:
+				hit_enemies.append(next)
+				current = next
+			else:
+				break
+				
+	var is_sawblade = t["type"] == "sawblade_tower"
+	var is_slow = atk_type == "slow"
+	var slow_pct = stats.get("slow_percent", 0.4)
+	var slow_dur = stats.get("slow_duration", 2.0)
+	var vuln_pct = stats.get("vulnerability_percent", 0.0)
+	var vuln_dur = stats.get("vulnerability_duration", 0.0)
+	
+	for e in hit_enemies:
+		var final_dmg = base_dmg
+		if e["shield"] > 0:
+			final_dmg *= max(0.0, 1.0 - e["shield_reduction"])
+		final_dmg *= e["vulnerability"]
+		e["hp"] -= final_dmg
+		
+		if is_slow:
+			if e["slow"] > 1.0 - slow_pct:
+				e["slow"] = 1.0 - slow_pct
+				e["slow_rem"] = slow_dur
+			elif e["slow"] == 1.0 - slow_pct and e["slow_rem"] < slow_dur:
+				e["slow_rem"] = slow_dur
+				
+		if is_sawblade and vuln_pct > 0:
+			e["vulnerability"] = 1.0 + vuln_pct
+			e["vulnerability_rem"] = vuln_dur
 
 # --- Reporting ---
 
@@ -1058,6 +1242,10 @@ func generate_consolidated_report(results: Array) -> String:
 		else:
 			r += "- **Bottleneck**: Wave %d\n" % res["wave"]
 			r += "- **Failure Reason**: %s\n" % res["reason"]
+			if res.has("best_fail"):
+				var best = res["best_fail"]
+				if best.has("leak_enemy"):
+					r += "- **Leak Details**: %s at approx %.1fs\n" % [best["leak_enemy"], float(best.get("leak_time", 0.0))]
 			r += "- **Suggestion**: Review difficulty or increase starting gold.\n"
 
 		r += "\n### Per-Wave Analysis\n"
@@ -1231,15 +1419,21 @@ func _format_wave_note(index: int, result: Dictionary, plan: Dictionary, perfect
 	return text
 
 func _action_to_text(action: Dictionary) -> String:
+	var base_text = ""
 	match str(action.get("type", "")):
 		"place_tower":
-			return "place %s at %s" % [str(action.get("tower_type", "")), str(action.get("cell", []))]
+			base_text = "place %s at %s" % [str(action.get("tower_type", "")), str(action.get("cell", []))]
 		"upgrade_tower":
-			return "upgrade tower at %s" % str(action.get("cell", []))
+			base_text = "upgrade tower at %s" % str(action.get("cell", []))
 		"start_wave":
-			return "start wave"
+			base_text = "start wave"
 		_:
-			return str(action)
+			base_text = str(action)
+			
+	var reason = action.get("reason", "")
+	if reason != "":
+		return base_text + " | Reason: " + reason
+	return base_text
 
 func _level_id_to_int(level_id: String) -> int:
 	var digits: String = ""

@@ -1,246 +1,64 @@
 [
 	{
 		"wave": 1,
-		"name": "Siege Opening",
+		"name": "Phase 1: Ground Formation",
 		"reward": 80,
 		"groups": [
-			{
-				"type": "bulwark",
-				"count": 3,
-				"interval": 0.7,
-				"path": "default"
-			},
-			{
-				"type": "shieldbearer",
-				"count": 4,
-				"interval": 1.2,
-				"path": "default"
-			},
-			{
-				"type": "healer",
-				"count": 5,
-				"interval": 1.2,
-				"path": "default"
-			},
-			{
-				"type": "tank",
-				"count": 6,
-				"interval": 1.2,
-				"path": "default"
-			},
-			{
-				"type": "flyer",
-				"count": 8,
-				"interval": 0.6,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 8,
-				"interval": 0.6,
-				"path": "lane_b"
-			}
+			{ "type": "tank", "count": 4, "interval": 1.5, "path": "default" },
+			{ "type": "basic", "count": 6, "interval": 1.0, "path": "default" },
+			{ "type": "swarm", "count": 10, "interval": 0.4, "path": "lane_b" },
+			{ "type": "runner", "count": 4, "interval": 0.8, "path": "lane_b" }
 		],
-		"intel": "Command Siege begins. Shielded ground convoy on lane A — Bulwark leads with support behind. Flyer pressure on lane B. You cannot cover everything with one tower type."
+		"intel": "Ground Formation. Heavy armor on lane A, fast swarms on lane B. Establish your baseline defenses."
 	},
 	{
 		"wave": 2,
-		"name": "Hunter Ground",
+		"name": "Phase 2: Air Breach",
 		"reward": 90,
 		"groups": [
-			{
-				"type": "hunter",
-				"count": 6,
-				"interval": 0.4,
-				"path": "default"
-			},
-			{
-				"type": "cloaked",
-				"count": 12,
-				"interval": 0.8,
-				"path": "default"
-			},
-			{
-				"type": "splitter",
-				"count": 9,
-				"interval": 1.7,
-				"path": "default"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 10,
-				"interval": 1.2,
-				"path": "lane_b"
-			},
-			{
-				"type": "disruptor",
-				"count": 6,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 16,
-				"interval": 0.55,
-				"path": "lane_b"
-			}
+			{ "type": "flyer", "count": 8, "interval": 1.0, "path": "default" },
+			{ "type": "fast_flyer", "count": 8, "interval": 0.6, "path": "lane_b" },
+			{ "type": "armored_flyer", "count": 6, "interval": 1.5, "path": "lane_b" }
 		],
-		"intel": "Hunters on A threaten Guardian. Disruptor on B slows AA. Kill Disruptor first or air becomes unstoppable."
+		"intel": "Air Breach. Ground defenses are useless here. You must transition to Anti-Air (Sniper/Lightning/Rapid) immediately."
 	},
 	{
 		"wave": 3,
-		"name": "Double Bulwark",
+		"name": "Phase 3: Support Core",
 		"reward": 105,
 		"groups": [
-			{
-				"type": "bulwark",
-				"count": 7,
-				"interval": 1.0,
-				"path": "default"
-			},
-			{
-				"type": "shieldbearer",
-				"count": 10,
-				"interval": 1.5,
-				"path": "default"
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.7,
-				"path": "default"
-			},
-			{
-				"type": "tank",
-				"count": 7,
-				"interval": 1.4,
-				"path": "default"
-			},
-			{
-				"type": "hunter",
-				"count": 7,
-				"interval": 0.4,
-				"path": "default"
-			},
-			{
-				"type": "bulwark",
-				"count": 6,
-				"interval": 1.0,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 9,
-				"interval": 1.2,
-				"path": "lane_b"
-			},
-			{
-				"type": "disruptor",
-				"count": 6,
-				"interval": 1.8,
-				"path": "lane_b"
-			}
+			{ "type": "bulwark", "count": 2, "interval": 2.5, "path": "default" },
+			{ "type": "shieldbearer", "count": 4, "interval": 1.2, "path": "default" },
+			{ "type": "healer", "count": 4, "interval": 1.0, "path": "default" },
+			{ "type": "disruptor", "count": 4, "interval": 1.5, "path": "lane_b" }
 		],
-		"intel": "One Bulwark per lane simultaneously. Ground lane now fully escorted — Shieldbearer and healers protect the convoy. Guardian must choose — recharge won't allow both."
+		"intel": "Support Core. Heavy shielding and healing on lane A. Disruptors slowing towers on lane B. Target priority is key."
 	},
 	{
 		"wave": 4,
-		"name": "Full Air Sweep",
+		"name": "Phase 4: Hunter Assault",
 		"reward": 120,
 		"groups": [
-			{
-				"type": "disruptor",
-				"count": 13,
-				"interval": 1.8,
-				"path": "default"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 18,
-				"interval": 1.1,
-				"path": "default"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 19,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "flyer",
-				"count": 19,
-				"interval": 0.7,
-				"path": "lane_b"
-			},
-			{
-				"type": "hunter",
-				"count": 12,
-				"interval": 0.4,
-				"path": "lane_b"
-			}
+			{ "type": "hunter", "count": 6, "interval": 0.8, "path": "default" },
+			{ "type": "cloaked", "count": 8, "interval": 1.0, "path": "default" },
+			{ "type": "splitter", "count": 6, "interval": 1.8, "path": "lane_b" },
+			{ "type": "hunter", "count": 4, "interval": 0.8, "path": "lane_b" }
 		],
-		"intel": "Pure air suppression + Hunter pressure. Guardian useless this wave — upgrade all AA towers if possible."
+		"intel": "Hunter Assault. Cloaked enemies evade targeting while Hunters pressure your Hero. Splitters will multiply if not controlled."
 	},
 	{
 		"wave": 5,
-		"name": "Command Siege Finale",
+		"name": "Phase 5: Command Siege Finale",
 		"reward": 160,
 		"groups": [
-			{
-				"type": "bulwark",
-				"count": 12,
-				"interval": 3.5,
-				"path": "default"
-			},
-			{
-				"type": "shieldbearer",
-				"count": 12,
-				"interval": 1.2,
-				"path": "default"
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.7,
-				"path": "default"
-			},
-			{
-				"type": "hunter",
-				"count": 9,
-				"interval": 0.4,
-				"path": "default"
-			},
-			{
-				"type": "splitter",
-				"count": 10,
-				"interval": 1.7,
-				"path": "default"
-			},
-			{
-				"type": "disruptor",
-				"count": 9,
-				"interval": 1.8,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 16,
-				"interval": 1.0,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 21,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "cloaked",
-				"count": 16,
-				"interval": 0.8,
-				"path": "lane_b"
-			}
+			{ "type": "bulwark", "count": 3, "interval": 3.0, "path": "default" },
+			{ "type": "healer", "count": 4, "interval": 1.2, "path": "default" },
+			{ "type": "armored_flyer", "count": 6, "interval": 1.5, "path": "default" },
+			{ "type": "hunter", "count": 5, "interval": 0.8, "path": "default" },
+			{ "type": "disruptor", "count": 5, "interval": 1.5, "path": "lane_b" },
+			{ "type": "fast_flyer", "count": 8, "interval": 0.5, "path": "lane_b" },
+			{ "type": "cloaked", "count": 6, "interval": 0.8, "path": "lane_b" }
 		],
-		"intel": "The final wave. All enemy types. Ground lane: two Bulwark convoys with full support. Air lane: three Disruptors plus every air type. No idle towers, no wasted gold, no second chances."
+		"intel": "The final stand. A carefully coordinated push combining all elite units. Utilize every tower type and your Hero's abilities to survive."
 	}
 ]

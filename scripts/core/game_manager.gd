@@ -34,6 +34,7 @@ var enemies_leaked: int = 0
 var gold_earned: int = 0
 var gold_spent: int = 0
 var waves_completed: int = 0
+var total_waves: int = 0
 
 var is_game_over: bool = false
 var is_victory: bool = false
@@ -42,7 +43,14 @@ var debug_god_mode: bool = false
 var session_start_time: int = 0
 var clear_time_seconds: int = 0
 
+var battle_telemetry = null
+
 func _ready() -> void:
+	battle_telemetry = Node.new()
+	battle_telemetry.set_script(load("res://scripts/core/battle_telemetry.gd"))
+	battle_telemetry.name = "BattleTelemetry"
+	add_child(battle_telemetry)
+	
 	reset_game()
 
 func reset_game() -> void:
@@ -54,11 +62,18 @@ func reset_runtime_state() -> void:
 	current_wave = 0
 	score = 0
 	
+	if battle_telemetry and main_scene_has_level_id():
+		battle_telemetry.start_level(get_current_level_id(), starting_lives, starting_gold)
+	lives = starting_lives
+	current_wave = 0
+	score = 0
+	
 	enemies_killed = 0
 	enemies_leaked = 0
 	gold_earned = starting_gold
 	gold_spent = 0
 	waves_completed = 0
+	total_waves = 0
 	
 	session_start_time = 0
 	clear_time_seconds = 0
@@ -89,28 +104,40 @@ func add_gold(amount: int) -> void:
 	if is_game_over: return
 	gold += amount
 	gold_earned += amount
+	if battle_telemetry:
+		battle_telemetry.log_gold_earned(amount)
 	gold_changed.emit(gold)
 
 func award_wave_completion(amount: int) -> void:
-	if amount <= 0: return
 	if is_game_over: return
 	
-	gold += amount
-	gold_earned += amount
 	waves_completed += 1
 	
-	# Score for wave completion
-	add_score(amount * 5)
+	if amount > 0:
+		gold += amount
+		gold_earned += amount
+		if battle_telemetry:
+			battle_telemetry.log_gold_earned(amount)
+		
+		# Score for wave completion
+		add_score(amount * 5)
+		wave_rewarded.emit(amount)
 	
 	gold_changed.emit(gold)
-	wave_rewarded.emit(amount)
-	if OS.is_debug_build(): print("[GameManager] Wave reward: +", amount, " Gold")
+	if OS.is_debug_build(): 
+		print("[GameManager] Wave completed: %d/%d (Reward: %d)" % [waves_completed, total_waves, amount])
+
+func set_total_waves(count: int) -> void:
+	total_waves = count
+	if OS.is_debug_build(): print("[GameManager] Total waves set to: ", total_waves)
 
 func spend_gold(amount: int) -> bool:
 	if gold >= amount:
 		if OS.is_debug_build(): print("[Economy] spend gold amount=%d gold_before=%d gold_after=%d" % [amount, gold, gold - amount])
 		gold -= amount
 		gold_spent += amount
+		if battle_telemetry:
+			battle_telemetry.log_gold_spent(amount)
 		gold_changed.emit(gold)
 		return true
 	if OS.is_debug_build(): print("[Economy] spend failed: not enough gold! (has %d, need %d)" % [gold, amount])
@@ -173,28 +200,40 @@ func calculate_final_score(total_waves: int = 0) -> int:
 	if final_score < 0: final_score = 0
 	return final_score
 
-func calculate_stars(total_waves: int = 0) -> int:
+func calculate_stars(p_total_waves: int = 0) -> int:
 	# 3 stars: level cleared and perfect clear (no lives lost)
 	# 2 stars: level cleared but lives were lost
 	# 1 star: level failed but player cleared at least 50% of waves
 	# 0 stars: level failed early
+	
+	var actual_total = p_total_waves if p_total_waves > 0 else total_waves
 	
 	if is_victory:
 		if lives >= starting_lives:
 			return 3
 		return 2
 	else:
-		if total_waves > 0 and float(waves_completed) / float(total_waves) >= 0.5:
+		if actual_total > 0 and float(waves_completed) / float(actual_total) >= 0.5:
 			return 1
 		return 0
 
-func get_run_summary(total_waves: int = 0) -> Dictionary:
-	var final_score = calculate_final_score(total_waves)
-	var stars = calculate_stars(total_waves)
+func get_run_summary(p_total_waves: int = 0) -> Dictionary:
+	var actual_total = p_total_waves if p_total_waves > 0 else total_waves
+	var final_score = calculate_final_score(actual_total)
+	var stars = calculate_stars(actual_total)
 	var is_perfect = is_victory and (lives >= starting_lives)
 	
 	if OS.is_debug_build():
+		print("[RESULT_STATS] completed_waves=%d total_waves=%d level_clear=%s" % [waves_completed, actual_total, str(is_victory)])
 		print("[ScoreSystem] stars=%d perfect_clear=%s" % [stars, str(is_perfect)])
+		
+		# Guard assertion: If victory, completed_waves should equal total_waves
+		if is_victory and waves_completed < actual_total:
+			push_warning("[GameManager] VICTORY detected but waves_completed (%d) is less than total_waves (%d)!" % [waves_completed, actual_total])
+	
+	if battle_telemetry:
+		var result_str = "victory" if is_victory else "game_over"
+		battle_telemetry.end_level(result_str, lives)
 		
 	return {
 		"result": "Victory" if is_victory else "Game Over",
@@ -210,7 +249,7 @@ func get_run_summary(total_waves: int = 0) -> Dictionary:
 		"gold_spent": gold_spent,
 		"gold_remaining": gold,
 		"waves_completed": waves_completed,
-		"total_waves": total_waves
+		"total_waves": actual_total
 	}
 
 func trigger_game_over() -> void:
@@ -249,3 +288,19 @@ func toggle_pause() -> void:
 		resume_game()
 	else:
 		pause_game()
+
+func main_scene_has_level_id() -> bool:
+	var main = get_tree().current_scene
+	if main and main.has_method("get_current_level_id"):
+		return true
+	if main and "current_level_id" in main:
+		return true
+	return false
+
+func get_current_level_id() -> String:
+	var main = get_tree().current_scene
+	if main and main.has_method("get_current_level_id"):
+		return main.get_current_level_id()
+	if main and "current_level_id" in main:
+		return str(main.current_level_id)
+	return "unknown_level"

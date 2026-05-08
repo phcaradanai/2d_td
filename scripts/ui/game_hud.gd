@@ -71,6 +71,11 @@ signal back_to_map_requested()
 
 # Feedback
 @onready var temp_message_label: Label = $Root/TemporaryMessageLabel
+enum HUDState { GAMEPLAY, PAUSED, RESULT }
+var current_ui_state: HUDState = HUDState.GAMEPLAY
+
+@onready var root: Control = $Root
+@onready var screen_layout: VBoxContainer = $Root/ScreenLayout
 @onready var dim_overlay: ColorRect = $Root/DimOverlay
 
 # Settings Panel
@@ -92,19 +97,57 @@ var wave_intel_panel: PanelContainer = null
 var wave_intel_current_label: Label = null
 var wave_intel_status_label: Label = null
 var wave_intel_section_label: Label = null
-var wave_intel_main_summary_label: Label = null
+var wave_intel_name_label: Label = null
+var wave_intel_reward_label: Label = null
+var wave_intel_main_summary_label: RichTextLabel = null
 var wave_intel_next_title_label: Label = null
-var wave_intel_next_summary_label: Label = null
+var wave_intel_next_summary_label: RichTextLabel = null
 var wave_intel_threats_title_label: Label = null
-var wave_intel_threats_label: Label = null
+var wave_intel_threats_label: RichTextLabel = null
 var wave_intel_suggested_title_label: Label = null
-var wave_intel_suggested_label: Label = null
+var wave_intel_suggested_label: RichTextLabel = null
 var wave_intel_warnings_label: Label = null
 var no_selection_panel: PanelContainer = null
 
+var enemy_role_tooltips = {
+	"Fast": "reaches base quickly",
+	"Heavy": "high health",
+	"Swarm": "many weak units",
+	"Shieldbearer": "protects or absorbs damage",
+	"Healer": "restores allies",
+	"Cloaked": "lower targeting priority while other visible targets are present",
+	"Air": "requires anti-air-capable towers",
+	"Armored Flyer": "needs high damage anti-air",
+	"Hunter": "pressures hero",
+	"Disruptor": "late-game special threat",
+	"Normal": "Standard enemy"
+}
+
 var updating_target_mode_ui := false
 var updating_audio_ui := false
-var target_modes = ["first", "last", "nearest", "strongest", "weakest"]
+var target_modes = ["first", "last", "nearest", "strongest", "weakest", "fastest", "air_first", "support_first", "shield_first"]
+var target_mode_labels = {
+	"first": "First",
+	"last": "Last",
+	"nearest": "Closest",
+	"strongest": "Strongest",
+	"weakest": "Weakest",
+	"fastest": "Fastest",
+	"air_first": "Air First",
+	"support_first": "Support First",
+	"shield_first": "Shield First"
+}
+
+var tower_descriptions = {
+	"basic_tower": "Reliable single-target kinetic damage.",
+	"rapid_tower": "High fire rate, effective against swarms and flyers.",
+	"cannon_tower": "Heavy explosive shells dealing splash damage.",
+	"slow_tower": "Frost field that reduces enemy movement speed.",
+	"sniper_tower": "Extreme range precision for high-priority targets.",
+	"lightning_tower": "Energy arcs that jump between multiple hostiles.",
+	"sawblade_tower": "Short-range aura that causes bleeding debuffs."
+}
+
 var tower_prices := {} # id: cost
 
 const RESULT_PANEL_SCENE = preload("res://scenes/ui/ResultPanel.tscn")
@@ -175,7 +218,7 @@ func _ready() -> void:
 	
 	target_mode_option_button.clear()
 	for mode in target_modes:
-		target_mode_option_button.add_item(mode.capitalize())
+		target_mode_option_button.add_item(target_mode_labels.get(mode, mode.capitalize()))
 	target_mode_option_button.item_selected.connect(_on_target_mode_selected)
 	
 	# Responsive
@@ -198,7 +241,9 @@ func _ready() -> void:
 	hide_tower_info()
 	hide_center_message()
 	set_panel_active(settings_panel, false)
-	if dim_overlay: dim_overlay.hide()
+	if dim_overlay: 
+		dim_overlay.hide()
+		dim_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	# STANDARD: Full-screen Root should ignore mouse except for children
 	# This prevents invisible containers from blocking map clicks.
@@ -306,24 +351,30 @@ func _update_tower_affordability(current_gold: int) -> void:
 		btn_info["btn"].text = "%s ($%d)" % [base_name, cost]
 		
 		# Enhanced Tooltip
-		var role = "Balanced"
+		var desc = tower_descriptions.get(btn_info["id"], "Defensive structure.")
 		var targets = "Land Only"
-		match btn_info["id"]:
-			"basic_tower": role = "Balanced / Single Target"
-			"rapid_tower": 
-				role = "High Fire Rate / Anti-Swarm"
-				targets = "Land & Air"
-			"cannon_tower": role = "Area Damage / Splash"
-			"slow_tower": role = "Support / Movement Reduction"
-			"sniper_tower": 
-				role = "Extreme Range / Heavy Armor Piercing"
-				targets = "Land & Air"
-			"lightning_tower": 
-				role = "Chain Lightning / Multi-Target"
-				targets = "Land & Air"
-			"sawblade_tower": role = "Close Range / Bleed Aura"
+		var attack = "Single"
 		
-		btn_info["btn"].tooltip_text = "Role: %s\nTargets: %s\nCost: $%d" % [role, targets, cost]
+		match btn_info["id"]:
+			"basic_tower": 
+				attack = "Single"
+			"rapid_tower": 
+				targets = "Land & Air"
+				attack = "Rapid Single"
+			"cannon_tower": 
+				attack = "Splash Area"
+			"slow_tower": 
+				attack = "Area Slow"
+			"sniper_tower": 
+				targets = "Land & Air"
+				attack = "Heavy Single"
+			"lightning_tower": 
+				targets = "Land & Air"
+				attack = "Chain Jump"
+			"sawblade_tower": 
+				attack = "Close Aura"
+		
+		btn_info["btn"].tooltip_text = "%s\n\nType: %s\nTargets: %s\nCost: %d Credits" % [desc, attack, targets, cost]
 
 func refresh_tower_shop(active_loadout: Array[String]) -> void:
 	# If empty, default to everything (safety)
@@ -450,21 +501,65 @@ func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_nam
 
 func set_paused(paused: bool) -> void:
 	if paused:
+		current_ui_state = HUDState.PAUSED
 		pause_button.text = "Resume"
 		set_status("Paused")
 		show_center_message("PAUSED", true)
+		if dim_overlay:
+			dim_overlay.show()
+			dim_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	else:
+		current_ui_state = HUDState.GAMEPLAY
 		pause_button.text = "Pause"
 		hide_center_message()
+		if dim_overlay:
+			dim_overlay.hide()
+			dim_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func show_run_summary(summary: Dictionary, improvements: Dictionary = {}, rank: int = -1) -> void:
-	enter_end_game_ui_state()
-	if dim_overlay: dim_overlay.show()
+	enter_result_mode(summary, improvements, rank)
+
+func enter_gameplay_mode() -> void:
+	current_ui_state = HUDState.GAMEPLAY
+	if OS.is_debug_build(): print("[UI_STATE] Enter GAMEPLAY")
 	
-	# Use new premium result panel
+	if screen_layout: screen_layout.show()
+	if dim_overlay: 
+		dim_overlay.hide()
+		dim_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	
+	hide_center_message()
+	if result_panel: result_panel.hide_result()
+	
+	pause_button.disabled = false
+	if start_wave_button: start_wave_button.disabled = false
+
+func enter_result_overlay() -> void:
+	current_ui_state = HUDState.RESULT
+	if OS.is_debug_build(): print("[UI_STATE] Enter RESULT")
+	
+	# Hide gameplay HUD
+	if OS.is_debug_build(): print("[UI_STATE] Hide gameplay HUD")
+	if screen_layout: screen_layout.hide()
+	
+	# Block input with dim overlay
+	if dim_overlay:
+		dim_overlay.show()
+		dim_overlay.color = Color(0, 0, 0, 0.7) # Reset to dark translucent, in case it was red
+		dim_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	
+	# Hide any loose hero panel if it exists as a direct child
+	for child in get_children():
+		if child.name.contains("HeroPanel"):
+			child.hide()
+
+func enter_result_mode(summary: Dictionary, improvements: Dictionary = {}, rank: int = -1) -> void:
+	enter_result_overlay()
+	
+	# Show result modal
 	if result_panel:
+		if OS.is_debug_build(): print("[UI_STATE] Show result modal")
 		result_panel.show_result(summary, improvements, rank)
-		if OS.is_debug_build(): print("[ResultPanel] shown for ", summary.get("result", "Unknown"))
 	else:
 		# Fallback to old panel if dynamic creation failed (shouldn't happen)
 		set_panel_active(center_message_panel, true, true)
@@ -513,25 +608,35 @@ func show_tower_info(info: Dictionary) -> void:
 		tower_target_label.text = target_str
 		tower_target_label.modulate = Color(0.6, 0.9, 1.0) if targets.has("air") else Color(0.8, 0.8, 0.8)
 	
-	if info.get("attack_type") == "splash":
-		tower_splash_label.show()
-		tower_splash_label.text = "Splash: " + str(info["splash_radius"])
-	else:
-		tower_splash_label.hide()
-		
-	if info.get("attack_type") == "slow":
-		tower_slow_label.show()
-		var slow_pct = int(info.get("slow_percent", 0) * 100)
-		var slow_dur = info.get("slow_duration", 0)
-		var slow_rad = info.get("slow_radius", 0)
-		tower_slow_label.text = "Slow: %d%% (%0.1fs) R:%d" % [slow_pct, slow_dur, slow_rad]
-	else:
-		tower_slow_label.hide()
-		
-	if info.get("attack_type") == "aura" and info.has("vulnerability_percent"):
-		tower_splash_label.show() # Re-use splash label for debuff info
-		var vuln = int(info.get("vulnerability_percent") * 100)
-		tower_splash_label.text = "Bleed: +%d%% Damage" % vuln
+	# Clear previous type specific labels
+	tower_splash_label.hide()
+	tower_slow_label.hide()
+	
+	var a_type = info.get("attack_type", "single")
+	match a_type:
+		"splash":
+			tower_splash_label.show()
+			tower_splash_label.text = "Type: SPLASH AREA (%d)" % info["splash_radius"]
+			tower_splash_label.modulate = Color(1.0, 0.6, 0.3)
+		"slow":
+			tower_slow_label.show()
+			var slow_pct = int(info.get("slow_percent", 0) * 100)
+			var slow_dur = info.get("slow_duration", 0)
+			tower_slow_label.text = "Type: AREA SLOW %d%% (%0.1fs)" % [slow_pct, slow_dur]
+			tower_slow_label.modulate = Color(0.5, 0.8, 1.0)
+		"chain":
+			tower_splash_label.show()
+			tower_splash_label.text = "Type: CHAIN ENERGY"
+			tower_splash_label.modulate = Color(0.6, 0.5, 1.0)
+		"aura":
+			tower_splash_label.show()
+			var vuln = int(info.get("vulnerability_percent", 0) * 100)
+			tower_splash_label.text = "Type: BLEED AURA (+%d%%)" % vuln
+			tower_splash_label.modulate = Color(1.0, 0.3, 0.3)
+		_:
+			tower_splash_label.show()
+			tower_splash_label.text = "Type: DIRECT KINETIC"
+			tower_splash_label.modulate = Color(0.7, 0.8, 0.9)
 	
 	updating_target_mode_ui = true
 	var current_mode = info.get("target_mode", "first")
@@ -800,8 +905,14 @@ func _setup_right_sidebar_layout() -> void:
 	wave_intel_current_label = _create_wave_intel_label("", 13, Color(0.9, 0.95, 1.0))
 	header.add_child(wave_intel_current_label)
 	
+	wave_intel_name_label = _create_wave_intel_label("", 12, Color(0.6, 0.8, 1.0))
+	header.add_child(wave_intel_name_label)
+	
 	wave_intel_status_label = _create_wave_intel_label("", 11, Color(0.9, 0.8, 0.4))
 	header.add_child(wave_intel_status_label)
+	
+	wave_intel_reward_label = _create_wave_intel_label("", 11, Color(1.0, 0.8, 0.2))
+	header.add_child(wave_intel_reward_label)
 	
 	vbox.add_child(_create_wave_intel_separator())
 	
@@ -821,13 +932,13 @@ func _setup_right_sidebar_layout() -> void:
 	wave_intel_section_label = _create_wave_intel_label("Upcoming", 11, Color(0.5, 0.7, 0.9))
 	body.add_child(wave_intel_section_label)
 	
-	wave_intel_main_summary_label = _create_wave_intel_label("---", 13, Color(1, 1, 1))
+	wave_intel_main_summary_label = _create_wave_intel_richtext(13, Color(1, 1, 1))
 	body.add_child(wave_intel_main_summary_label)
 	
 	wave_intel_next_title_label = _create_wave_intel_label("Next", 10, Color(0.5, 0.7, 0.9))
 	body.add_child(wave_intel_next_title_label)
 	
-	wave_intel_next_summary_label = _create_wave_intel_label("---", 12, Color(0.8, 0.8, 0.8))
+	wave_intel_next_summary_label = _create_wave_intel_richtext(12, Color(0.8, 0.8, 0.8))
 	body.add_child(wave_intel_next_summary_label)
 	
 	body.add_child(_create_wave_intel_separator())
@@ -835,13 +946,13 @@ func _setup_right_sidebar_layout() -> void:
 	var threats_title = _create_wave_intel_label("Threats", 10, Color(0.5, 0.7, 0.9))
 	body.add_child(threats_title)
 	
-	wave_intel_threats_label = _create_wave_intel_label("---", 12, Color(1, 0.6, 0.4))
+	wave_intel_threats_label = _create_wave_intel_richtext(12, Color(1, 0.6, 0.4))
 	body.add_child(wave_intel_threats_label)
 	
 	var suggested_title = _create_wave_intel_label("Recommended", 10, Color(0.5, 0.7, 0.9))
 	body.add_child(suggested_title)
 	
-	wave_intel_suggested_label = _create_wave_intel_label("---", 12, Color(0.5, 0.9, 1.0))
+	wave_intel_suggested_label = _create_wave_intel_richtext(12, Color(0.5, 0.9, 1.0))
 	body.add_child(wave_intel_suggested_label)
 	
 	wave_intel_warnings_label = _create_wave_intel_label("", 10, Color(1, 0.4, 0.4))
@@ -865,6 +976,17 @@ func _create_wave_intel_label(text: String, font_size: int, color: Color) -> Lab
 	label.add_theme_color_override("font_color", color)
 	return label
 
+func _create_wave_intel_richtext(font_size: int, color: Color) -> RichTextLabel:
+	var label = RichTextLabel.new()
+	label.bbcode_enabled = true
+	label.mouse_filter = Control.MOUSE_FILTER_PASS
+	label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	label.fit_content = true
+	label.scroll_active = false
+	label.add_theme_font_size_override("normal_font_size", font_size)
+	label.add_theme_color_override("default_color", color)
+	return label
+
 func _create_wave_intel_separator() -> ColorRect:
 	var separator = ColorRect.new()
 	separator.custom_minimum_size.y = 1
@@ -885,8 +1007,12 @@ func clear_wave_intel() -> void:
 	_refresh_right_info_column_visibility()
 	if wave_intel_current_label:
 		wave_intel_current_label.text = ""
+	if wave_intel_name_label:
+		wave_intel_name_label.text = ""
 	if wave_intel_status_label:
 		wave_intel_status_label.text = ""
+	if wave_intel_reward_label:
+		wave_intel_reward_label.text = ""
 	if wave_intel_section_label:
 		wave_intel_section_label.text = ""
 	if wave_intel_main_summary_label:
@@ -926,8 +1052,17 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	var status_text = "In Progress" if is_running else "Ready"
 	
 	wave_intel_current_label.text = "Wave %d / %d" % [display_wave_idx + 1, wave_total]
+	wave_intel_name_label.text = current_preview.get("name", "Unknown Wave")
 	wave_intel_status_label.text = "Status: " + status_text
 	wave_intel_status_label.add_theme_color_override("font_color", Color(0.38, 0.92, 0.62) if is_running else Color(0.95, 0.78, 0.36))
+	
+	var reward = current_preview.get("reward", 0)
+	if reward > 0:
+		wave_intel_reward_label.text = "Reward: %d Credits" % reward
+		wave_intel_reward_label.visible = true
+	else:
+		wave_intel_reward_label.visible = false
+		
 	wave_intel_section_label.text = "Current" if is_running else "Upcoming"
 	wave_intel_main_summary_label.text = _format_wave_preview_summary(current_preview)
 	wave_intel_threats_label.text = _format_wave_intel_list(current_preview.get("traits", []), "None")
@@ -996,10 +1131,18 @@ func _format_counts(counts: Dictionary) -> String:
 	var type_order = ["Normal", "Fast", "Heavy", "Swarm", "Air"]
 	for type_name in type_order:
 		if counts.has(type_name):
-			parts.append("%s x%d" % [type_name, int(counts[type_name])])
+			var tooltip = enemy_role_tooltips.get(type_name, "")
+			if tooltip != "":
+				parts.append("[hint=%s]%s[/hint] x%d" % [tooltip, type_name, int(counts[type_name])])
+			else:
+				parts.append("%s x%d" % [type_name, int(counts[type_name])])
 	for type_name in counts.keys():
 		if not type_order.has(str(type_name)):
-			parts.append("%s x%d" % [str(type_name), int(counts[type_name])])
+			var tooltip = enemy_role_tooltips.get(str(type_name), "")
+			if tooltip != "":
+				parts.append("[hint=%s]%s[/hint] x%d" % [tooltip, str(type_name), int(counts[type_name])])
+			else:
+				parts.append("%s x%d" % [str(type_name), int(counts[type_name])])
 	return ", ".join(parts)
 
 func _format_wave_intel_list(values: Array, fallback: String) -> String:
@@ -1007,8 +1150,13 @@ func _format_wave_intel_list(values: Array, fallback: String) -> String:
 		return fallback
 	var parts = []
 	for value in values:
-		parts.append(_get_trait_description(str(value)))
-	return "\n• ".join(parts) if parts.size() > 1 else parts[0]
+		var txt = str(value)
+		var tooltip = enemy_role_tooltips.get(txt, "")
+		if tooltip != "":
+			parts.append("[hint=%s]%s[/hint]" % [tooltip, txt])
+		else:
+			parts.append(txt)
+	return ", ".join(parts)
 
 func _get_trait_description(trait_name: String) -> String:
 	match trait_name.to_lower():

@@ -34,6 +34,8 @@ var bleed_particle_timer: float = 0.0
 # Special Archetypes
 var is_bulwark: bool = false
 var is_hunter: bool = false
+
+var last_damage_source: String = ""
 var tags: Array = []
 
 # Visual State
@@ -108,6 +110,13 @@ func normalize_enemy_category(raw_category) -> String:
 func get_enemy_category() -> String:
 	return enemy_category
 
+func is_cloaked() -> bool:
+	return enemy_type == "cloaked" or skill_id == "stealth" or tags.has("stealth")
+
+func get_hit_origin() -> Vector2:
+	# canonical point for projectiles and effects
+	return global_position
+
 func apply_visuals() -> void:
 	if not is_inside_tree(): return
 	if body: body.visible = false
@@ -160,7 +169,8 @@ func _draw() -> void:
 			_draw_cyber_disruptor(Color(0.6, 0.3, 1.0), size * 1.2)
 			
 	if is_flashing:
-		draw_circle(Vector2.ZERO, size * 2.0, Color(1, 1, 1, 0.7))
+		draw_circle(Vector2.ZERO, size * 1.5, Color(1, 1, 1, 0.4))
+		draw_arc(Vector2.ZERO, size * 1.6, 0, TAU, 32, Color(1, 1, 1, 0.6), 2.0)
 
 # --- High-Fidelity Procedural Visuals ---
 
@@ -531,8 +541,11 @@ func _process_pathing(delta: float) -> void:
 	if progress_ratio >= 1.0:
 		reach_base()
 
-func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO) -> void:
+func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "") -> void:
 	if is_dead_flag or reached_base_flag: return
+	
+	if source_id != "":
+		last_damage_source = source_id
 	
 	var final_damage = amount
 	if shield_remaining > 0 and not is_bulwark:
@@ -548,6 +561,10 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO) -> void:
 		
 	hp -= final_damage
 	if hp_bar: hp_bar.value = hp
+	
+	var gm = get_tree().current_scene.get_node_or_null("GameManager")
+	if gm and gm.battle_telemetry:
+		gm.battle_telemetry.log_damage(source_id, final_damage)
 		
 	flash_body()
 	var dn_color = Color.WHITE
@@ -598,6 +615,11 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag: return
 	is_dead_flag = true
 	is_active = false
+	
+	var gm = get_tree().current_scene.get_node_or_null("GameManager")
+	if gm and gm.battle_telemetry:
+		gm.battle_telemetry.log_kill(last_damage_source, enemy_type)
+		
 	var capture_pos = death_global if death_global != Vector2.ZERO else global_position
 	spawn_death_effect(capture_pos)
 	
@@ -627,6 +649,11 @@ func reach_base() -> void:
 	if reached_base_flag: return
 	reached_base_flag = true
 	is_active = false
+	
+	var gm = get_tree().current_scene.get_node_or_null("GameManager")
+	if gm and gm.battle_telemetry:
+		gm.battle_telemetry.log_enemy_leak(enemy_type, global_position)
+		
 	reached_base.emit(self, base_damage, global_position)
 	queue_free()
 
@@ -658,6 +685,12 @@ func get_path_progress() -> float:
 
 func get_current_hp() -> float:
 	return hp
+
+func get_enemy_type() -> String:
+	return enemy_type
+
+func get_movement_speed() -> float:
+	return base_speed
 
 func _spawn_bleed_particle() -> void:
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")

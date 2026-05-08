@@ -172,7 +172,7 @@
     "visual_type": "cloaked",
     "tags": ["stealth", "medium"],
     "skill": "stealth",
-    "description": "Invisibly glides through security until targeted directly.",
+    "description": "Effect: Towers prefer other enemies first. Can be targeted only when no other valid enemy is in range.",
     "counter_towers": ["rapid", "lightning"]
   },
   "flyer": {

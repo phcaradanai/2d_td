@@ -140,35 +140,51 @@ func _draw_foundation_tile(rect: Rect2) -> void:
 	var color = current_theme.color_buildable
 	var border = Color(color.r, color.g, color.b, 0.4)
 	
+	# Pulse logic for buildable tiles
+	var pulse = 0.5 + sin(preview_timer * 3.0) * 0.15
+	var build_glow = Color(0.2, 0.8, 1.0, 0.05 * pulse)
+	
 	# Clean Sci-Fi Plate
 	draw_rect(rect, color)
+	draw_rect(rect, build_glow) # Subtle fill pulse
 	draw_rect(rect.grow(-2), border, false, 1.0)
 	
+	# Technical Grid overlay
+	var g_color = Color(0.2, 0.9, 1.0, 0.04)
+	for i in range(1, 4):
+		var dx = rect.size.x / 4.0 * i
+		var dy = rect.size.y / 4.0 * i
+		draw_line(rect.position + Vector2(dx, 4), rect.position + Vector2(dx, rect.size.y - 4), g_color)
+		draw_line(rect.position + Vector2(4, dy), rect.position + Vector2(rect.size.x - 4, dy), g_color)
+
 	# Corner Accents (Small Cyan L-shapes)
-	var s = 6.0
-	var p = rect.position + Vector2(4, 4)
-	var e = rect.end - Vector2(4, 4)
-	var acc = Color.CYAN * 0.5
+	var s = 8.0
+	var p = rect.position + Vector2(2, 2)
+	var e = rect.end - Vector2(2, 2)
+	var acc = Color(0.2, 0.9, 1.0, 0.6 * pulse) # Pulsing accents
 	
-	draw_polyline([p + Vector2(s, 0), p, p + Vector2(0, s)], acc, 1.5)
-	draw_polyline([e - Vector2(s, 0), e, e - Vector2(0, s)], acc, 1.5)
+	draw_polyline([p + Vector2(s, 0), p, p + Vector2(0, s)], acc, 2.0)
+	draw_polyline([e - Vector2(s, 0), e, e - Vector2(0, s)], acc, 2.0)
 	
-	# Subtle Center Grid
-	var g_color = Color(1, 1, 1, 0.02)
-	draw_line(Vector2(rect.position.x + rect.size.x/2, rect.position.y + 4), Vector2(rect.position.x + rect.size.x/2, rect.end.y - 4), g_color)
-	draw_line(Vector2(rect.position.x + 4, rect.position.y + rect.size.y/2), Vector2(rect.end.x - 4, rect.position.y + rect.size.y/2), g_color)
+	# Center Detail
+	draw_circle(rect.get_center(), 2.0, Color(0.2, 0.9, 1.0, 0.2))
 
 func _draw_blocked_tile(rect: Rect2) -> void:
 	var color = current_theme.color_blocked
 	draw_rect(rect, color)
 	
-	# Pattern
-	var steps = 3
-	var p_color = Color(1, 1, 1, 0.05)
-	for i in range(steps + 1):
+	# Hazard / Industrial Pattern
+	var steps = 4
+	var p_color = Color(0.0, 0.0, 0.0, 0.4)
+	var accent = Color(1, 1, 1, 0.03)
+	
+	for i in range(steps * 2):
 		var offset = (rect.size.x / steps) * i
-		draw_line(rect.position + Vector2(offset, 0), rect.position + Vector2(0, offset), p_color)
-		draw_line(rect.position + Vector2(rect.size.x, offset), rect.position + Vector2(offset, rect.size.y), p_color)
+		draw_line(rect.position + Vector2(offset, 0), rect.position + Vector2(offset - rect.size.x, rect.size.y), p_color, 4.0)
+	
+	# Border to separate from ground
+	draw_rect(rect, Color(0, 0, 0, 0.2), false, 1.0)
+	draw_rect(rect.grow(-4), accent, false, 1.0)
 
 func _draw_all_paths_base() -> void:
 	var gs = level_manager.grid_size
@@ -304,40 +320,51 @@ func _draw_spawn_portal(pos: Vector2, radius: float, color: Color, active: bool 
 	var active_cyan = _with_alpha(PATH_EDGE_CYAN, 0.38 * active_boost)
 	
 	# Tech Ring Base
-	draw_arc(pos, radius * 1.1, 0, TAU, 32, Color(0.2, 0.2, 0.2), 4.0)
-	draw_arc(pos, radius * 1.1, 0, TAU, 32, ring_color, 1.5 + active_boost)
+	draw_arc(pos, radius * 1.1, 0, TAU, 32, Color(0.1, 0.1, 0.1, 0.8), 6.0)
+	draw_arc(pos, radius * 1.1, 0, TAU, 32, ring_color, 2.0 + active_boost)
+	
 	if active:
-		draw_arc(pos, radius * (1.25 + sin(time * 3.0) * 0.08), 0, TAU, 32, active_cyan, 3.0)
+		var s_pulse = (sin(time * 4.0) + 1.0) * 0.5
+		draw_arc(pos, radius * (1.1 + s_pulse * 0.2), 0, TAU, 32, _with_alpha(color, 0.3 * preview_alpha), 4.0)
+	
+	# Outer Frame (Square)
+	var s_size = radius * 1.3
+	draw_rect(Rect2(pos.x - s_size, pos.y - s_size, s_size * 2, s_size * 2), Color(0.2, 0.2, 0.2, 0.4), false, 2.0)
 	
 	# Rotating Emitters
 	for i in range(4):
 		var ang = time + (i * TAU / 4)
 		var e_pos = pos + Vector2(cos(ang), sin(ang)) * radius
-		draw_circle(e_pos, 4, Color.BLACK)
-		draw_circle(e_pos, 3, ring_color)
-		draw_circle(e_pos, 1.5, Color.WHITE)
+		draw_circle(e_pos, 5, Color.BLACK)
+		draw_circle(e_pos, 4, ring_color)
+		draw_circle(e_pos, 2, Color.WHITE)
 		
-		# Beam to center
-		draw_line(e_pos, pos, Color(color.r, color.g, color.b, 0.18 + active_boost * 0.18), 1.0)
+		# Energy Beam to center
+		draw_line(e_pos, pos, Color(color.r, color.g, color.b, 0.25 + active_boost * 0.3), 1.5)
 	
-	# Center Warp Effect (Geometric)
+	# Center Warp Effect (Octagon)
 	var pts = PackedVector2Array()
-	var sides = 6
-	var rot = -time * 0.5
+	var sides = 8
+	var rot = -time * 0.4
 	for i in range(sides):
 		var a = rot + (i * TAU / sides)
-		pts.append(pos + Vector2(cos(a), sin(a)) * radius * 0.6)
+		pts.append(pos + Vector2(cos(a), sin(a)) * radius * 0.7)
 	
-	draw_colored_polygon(pts, Color(0, 0, 0, 0.9))
-	draw_polyline(pts + PackedVector2Array([pts[0]]), ring_color, 2.0)
+	draw_colored_polygon(pts, Color(0.02, 0.02, 0.05, 0.95))
+	draw_polyline(pts + PackedVector2Array([pts[0]]), ring_color, 2.5)
 	
-	# Pulse
+	# Core Pulse
 	var pulse = (sin(time * 3.0) + 1.0) * 0.5
-	draw_circle(pos, radius * (0.3 + active_boost * 0.12) * pulse, Color(color.r, color.g, color.b, 0.45 + active_boost * 0.25))
+	draw_circle(pos, radius * (0.4 + active_boost * 0.15) * pulse, Color(color.r, color.g, color.b, 0.5 + active_boost * 0.3))
+	draw_circle(pos, 4.0, Color.WHITE)
 
 func _draw_energy_core(pos: Vector2, radius: float, color: Color, active: bool = false) -> void:
 	var time = preview_timer
 	var active_boost = preview_alpha if active else 0.0
+	
+	# Containment Field (Shield)
+	var shield_pulse = 1.0 + sin(time * 2.0) * 0.05
+	draw_arc(pos, radius * 1.4, 0, TAU, 48, _with_alpha(PATH_EDGE_CYAN, 0.15 + active_boost * 0.1), 1.5)
 	
 	# Hexagonal Containment
 	var base_pts = PackedVector2Array()
@@ -345,28 +372,35 @@ func _draw_energy_core(pos: Vector2, radius: float, color: Color, active: bool =
 		var a = (i * TAU / 6)
 		base_pts.append(pos + Vector2(cos(a), sin(a)) * radius)
 	
-	draw_colored_polygon(base_pts, Color(0.1, 0.1, 0.15, 0.8))
-	draw_polyline(base_pts + PackedVector2Array([base_pts[0]]), _with_alpha(PATH_EDGE_CYAN, 0.30 + active_boost * 0.25), 2.0)
+	draw_colored_polygon(base_pts, Color(0.05, 0.08, 0.12, 0.95))
+	draw_polyline(base_pts + PackedVector2Array([base_pts[0]]), _with_alpha(PATH_EDGE_CYAN, 0.4 + active_boost * 0.3), 3.0)
+	
+	# Technical details on hex corners
+	for p in base_pts:
+		draw_circle(p, 4, Color.BLACK)
+		draw_circle(p, 2.5, _with_alpha(PATH_EDGE_CYAN, 0.8))
 	
 	# Inner Spinning Core
 	var core_pts = PackedVector2Array()
-	var rot = time * 2.0
+	var rot = time * 2.5
 	for i in range(3):
 		var a = rot + (i * TAU / 3)
-		core_pts.append(pos + Vector2(cos(a), sin(a)) * radius * 0.7)
+		core_pts.append(pos + Vector2(cos(a), sin(a)) * radius * 0.75)
 	
 	draw_colored_polygon(core_pts, color)
-	draw_polyline(core_pts + PackedVector2Array([core_pts[0]]), Color.WHITE, 2.0)
+	draw_polyline(core_pts + PackedVector2Array([core_pts[0]]), Color.WHITE, 2.5)
 	
 	# Pulsing Glow
-	var pulse = (sin(time * 5.0) + 1.0) * 0.5
-	draw_circle(pos, radius * 0.3, Color.WHITE)
-	draw_arc(pos, radius * (0.4 + pulse * (0.2 + active_boost * 0.18)), 0, TAU, 24, Color(color.r, color.g, color.b, 0.4 + active_boost * 0.25), 1.5 + active_boost)
+	var pulse = (sin(time * 6.0) + 1.0) * 0.5
+	draw_circle(pos, radius * 0.35, Color.WHITE)
+	draw_arc(pos, radius * (0.45 + pulse * (0.25 + active_boost * 0.1)), 0, TAU, 32, Color(color.r, color.g, color.b, 0.5 + active_boost * 0.3), 2.0 + active_boost)
 	
 	# Orbiting Nodes
 	for i in range(3):
-		var ang = -time * 1.5 + (i * TAU / 3)
-		var n_pos = pos + Vector2(cos(ang), sin(ang)) * radius * 1.2
+		var ang = -time * 2.0 + (i * TAU / 3)
+		var n_pos = pos + Vector2(cos(ang), sin(ang)) * radius * 1.25
+		draw_line(pos, n_pos, _with_alpha(color, 0.2), 1.0)
+		draw_circle(n_pos, 4, Color.BLACK)
 		draw_circle(n_pos, 3, color)
 		draw_circle(n_pos, 1.5, Color.WHITE)
 

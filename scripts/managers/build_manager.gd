@@ -192,6 +192,9 @@ func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	occupied_cells[cell] = true
 	tower_placed.emit(tower, selected_tower_id, config.get("cost", 0))
 	
+	if game_manager and "battle_telemetry" in game_manager and game_manager.battle_telemetry:
+		game_manager.battle_telemetry.log_tower_built(selected_tower_id, config.get("cost", 0))
+	
 	# After placing, clear selection
 	clear_selected_tower()
 

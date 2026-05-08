@@ -332,6 +332,7 @@ func _setup_game_from_level() -> void:
 			print("[AUTO_CLEAR] Applied debug-only starting_gold override: ", gold_to_apply)
 		game_manager.apply_level_config(gold_to_apply, level_manager.starting_lives)
 		game_manager.reset_runtime_state()
+		game_manager.set_total_waves(wave_manager.get_total_waves())
 
 		if OS.is_debug_build():
 			print("START LEVEL ", level_manager.level_id, " money ", game_manager.gold, " hp ", game_manager.lives)
@@ -523,7 +524,9 @@ func _process(delta: float) -> void:
 			var validation = build_manager.validate_placement(cell)
 			if OS.is_debug_build() and Engine.get_frames_drawn() % 120 == 0:
 				print("[BuildFlow] preview pos=%s cell=%s can_place=%s reason=%s" % [local_mouse, cell, validation["is_valid"], validation["reason"]])
-			build_preview.update_preview(cell, validation["is_valid"], true, build_manager.get_selected_tower_range(), validation["reason"], build_manager.get_selected_tower_footprint())
+			var tower_config = build_manager.get_selected_tower_config()
+			var role_hint = tower_config.get("description", "")
+			build_preview.update_preview(cell, validation["is_valid"], true, build_manager.get_selected_tower_range(), validation["reason"], build_manager.get_selected_tower_footprint(), role_hint)
 	elif build_preview:
 		build_preview.update_preview(Vector2i(-1, -1), false, false)
 		
@@ -1006,7 +1009,8 @@ func _refresh_ui_for_phase() -> void:
 		"select": level_select,
 		"hud": game_hud,
 		"world": world_root,
-		"debug": debug_panel
+		"debug": debug_panel,
+		"hero": hero_panel
 	}
 
 	for key in panels:
@@ -1037,7 +1041,7 @@ func _refresh_ui_for_phase() -> void:
 			if game_hud:
 				game_hud.show()
 				game_hud.set_paused(false)
-				game_hud.hide_center_message()
+				game_hud.enter_gameplay_mode()
 				game_hud.show_build_panel()
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
@@ -1048,7 +1052,7 @@ func _refresh_ui_for_phase() -> void:
 			if game_hud:
 				game_hud.show()
 				game_hud.set_paused(false)
-				game_hud.hide_center_message()
+				game_hud.enter_gameplay_mode()
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
 			if world_root: world_root.show()
@@ -1064,17 +1068,13 @@ func _refresh_ui_for_phase() -> void:
 		GameState.GAME_OVER:
 			if game_hud:
 				game_hud.show()
-				game_hud.show_game_over()
-				game_hud.enter_end_game_ui_state()
-				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(false)
+				game_hud.enter_result_overlay()
 			if world_root: world_root.show()
 
 		GameState.VICTORY:
 			if game_hud:
 				game_hud.show()
-				game_hud.show_victory()
-				game_hud.enter_end_game_ui_state()
-				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(false)
+				game_hud.enter_result_overlay()
 			if world_root: world_root.show()
 
 func _on_game_paused() -> void:
@@ -1187,7 +1187,9 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 		if build_preview:
 			# Only update if build mode is actually active
 			if build_manager.has_selected_tower():
-				build_preview.update_preview(cell, is_valid, true, tower_range, reason, build_manager.get_selected_tower_footprint())
+				var tower_config = build_manager.get_selected_tower_config()
+				var role_hint = tower_config.get("description", "")
+				build_preview.update_preview(cell, is_valid, true, tower_range, reason, build_manager.get_selected_tower_footprint(), role_hint)
 		
 		if build_manager.has_selected_tower() and game_hud:
 			var status = "Ready to build" if is_valid else reason
@@ -1689,6 +1691,8 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	_validate_wave_design(wave_data, traits, total)
 
 	return {
+		"name": wave_data.get("name", "Unknown Wave"),
+		"reward": wave_data.get("reward", 0),
 		"enemy_counts": counts,
 		"total_count": total,
 		"traits": traits,

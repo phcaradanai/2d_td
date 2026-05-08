@@ -18,6 +18,8 @@ const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
 
 var waves: Array = []
 var enemies_config: Dictionary = {}
+
+var wave_start_time_msec: int = 0
 var current_wave_index: int = 0
 var is_wave_running: bool = false
 var active_enemy_count: int = 0
@@ -102,7 +104,9 @@ func start_next_wave() -> void:
 	
 	active_wave_number = int(wave_data.get("wave", current_wave_index + 1))
 	active_wave_name = str(wave_data.get("name", "Unknown Wave"))
-	active_wave_reward = int(wave_data.get("completion_reward", 0))
+	active_wave_reward = int(wave_data.get("reward", wave_data.get("completion_reward", 0)))
+	
+	wave_start_time_msec = Time.get_ticks_msec()
 	
 	current_wave_index += 1
 	
@@ -170,6 +174,9 @@ func spawn_enemy(group_data: Dictionary) -> void:
 	path_node.add_child(enemy)
 	active_enemy_count += 1
 	
+	if game_manager and game_manager.battle_telemetry:
+		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
+	
 	# VISUAL: Spawn effect at portal
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = get_tree().current_scene
@@ -199,6 +206,9 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	path_node.add_child(enemy)
 	enemy.progress = prog
 	active_enemy_count += 1
+	
+	if game_manager and game_manager.battle_telemetry:
+		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
 
 func resolve_enemy_category(spawn_data: Dictionary) -> String:
 	if spawn_data.has("category"):
@@ -233,6 +243,10 @@ func _check_wave_completion() -> void:
 	if is_wave_running and not is_spawning and active_enemy_count <= 0:
 		is_wave_running = false
 		
+		var duration_sec = (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0
+		if game_manager and game_manager.battle_telemetry:
+			game_manager.battle_telemetry.log_wave_cleared(active_wave_number, duration_sec)
+			
 		if OS.is_debug_build(): print("Wave ", active_wave_number, " completed!")
 		wave_completed.emit(active_wave_number, active_wave_name, active_wave_reward)
 		

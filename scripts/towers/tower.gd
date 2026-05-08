@@ -316,15 +316,30 @@ func _draw() -> void:
 	# 1. Selection / Range Highlight
 	if is_selected:
 		# STANDARD: Draw world-unit range circle by compensating for GLOBAL scale
-		# and centering on the canonical range origin
 		var visual_range = attack_range / global_scale.x
 		var local_origin = to_local(get_range_origin())
-		draw_circle(local_origin, visual_range, Color(0.1, 0.8, 1.0, 0.1))
-		draw_arc(local_origin, visual_range, 0, TAU, 64, Color(0.1, 0.8, 1.0, 0.4), 2.0)
+		
+		# Inner Fill
+		draw_circle(local_origin, visual_range, Color(0.2, 0.9, 1.0, 0.08))
+		
+		# Pulse Ring
+		var pulse = 0.5 + sin(Time.get_ticks_msec() * 0.005) * 0.1
+		draw_arc(local_origin, visual_range, 0, TAU, 64, Color(0.2, 0.9, 1.0, 0.3 * pulse), 3.0)
+		
+		# Solid Outer Edge
+		draw_arc(local_origin, visual_range, 0, TAU, 64, Color(0.2, 0.9, 1.0, 0.5), 1.5)
+		
+		# Tick marks for a technical feel
+		for i in range(8):
+			var a = i * PI/4 + (Time.get_ticks_msec() * 0.0002)
+			var p1 = local_origin + Vector2.RIGHT.rotated(a) * (visual_range - 8)
+			var p2 = local_origin + Vector2.RIGHT.rotated(a) * (visual_range + 4)
+			draw_line(p1, p2, Color(0.2, 0.9, 1.0, 0.7), 2.0)
+			
 	elif debug_draw_range:
 		var visual_range = attack_range / global_scale.x
 		var local_origin = to_local(get_range_origin())
-		draw_circle(local_origin, visual_range, Color(1, 1, 1, 0.05))
+		draw_arc(local_origin, visual_range, 0, TAU, 32, Color(1, 1, 1, 0.1), 1.0)
 
 	if not use_sprite:
 		# 2. Base Plate (Static)
@@ -684,6 +699,11 @@ func _update_aim_indicator(delta: float) -> void:
 		if aim_line:
 			aim_line.clear_points()
 			aim_line.add_point(local_muzzle)
+			# Add a midpoint for a more 'energy' feel
+			var mid = (local_muzzle + local_target) * 0.5
+			var perp = (local_target - local_muzzle).rotated(PI/2).normalized()
+			var wobble = perp * sin(Time.get_ticks_msec() * 0.02) * 2.0
+			aim_line.add_point(mid + wobble)
 			aim_line.add_point(local_target)
 			
 		# Update Marker
@@ -746,7 +766,7 @@ func shoot() -> void:
 			sfx_name = "tower_shoot_slow"
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
-		projectile.setup(current_target, int(damage), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories)
+		projectile.setup(current_target, int(damage), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories, tower_id)
 		
 		if attack_type == "chain":
 			if projectile.has_method("setup_chain"):
@@ -786,7 +806,7 @@ func _perform_aura_attack() -> void:
 	for enemy in enemies:
 		if is_instance_valid(enemy):
 			var enemy_pos = enemy.global_position
-			enemy.take_damage(damage, enemy_pos)
+			enemy.take_damage(damage, enemy_pos, tower_id)
 			
 			# Apply vulnerability if sawblade
 			if vulnerability_percent > 0 and enemy.has_method("apply_vulnerability"):
@@ -899,19 +919,46 @@ func find_target() -> Node2D:
 	var enemies = get_enemies_in_range()
 	if enemies.is_empty(): return null
 	
+	var visible_targets := []
+	var cloaked_targets := []
+
+	for enemy in enemies:
+		if is_instance_valid(enemy) and enemy.has_method("is_cloaked") and enemy.is_cloaked():
+			cloaked_targets.append(enemy)
+		else:
+			visible_targets.append(enemy)
+
+	var target_pool = enemies
+	if visible_targets.size() > 0:
+		target_pool = visible_targets
+		if OS.is_debug_build() and cloaked_targets.size() > 0:
+			print("[Targeting] Tower ", visual_type, " found ", visible_targets.size(), " visible targets and ", cloaked_targets.size(), " cloaked target. Targeting visible first.")
+	elif cloaked_targets.size() > 0:
+		target_pool = cloaked_targets
+		if OS.is_debug_build():
+			print("[Targeting] Tower ", visual_type, " has only cloaked targets. Cloaked target allowed.")
+
 	match target_mode:
 		"first":
-			return select_first_target(enemies)
+			return select_first_target(target_pool)
 		"last":
-			return select_last_target(enemies)
-		"nearest":
-			return select_nearest_target(enemies)
+			return select_last_target(target_pool)
+		"nearest", "closest":
+			return select_nearest_target(target_pool)
 		"strongest":
-			return select_strongest_target(enemies)
+			return select_strongest_target(target_pool)
 		"weakest":
-			return select_weakest_target(enemies)
+			return select_weakest_target(target_pool)
+		"fastest":
+			return select_fastest_target(target_pool)
+		"air_first":
+			return select_priority_type_target(target_pool, ["flyer", "fast_flyer", "armored_flyer"])
+		"support_first":
+			return select_priority_type_target(target_pool, ["healer", "disruptor"])
+		"shield_first":
+			return select_priority_type_target(target_pool, ["shieldbearer", "bulwark"])
 		_:
-			return select_first_target(enemies)
+			return select_first_target(target_pool)
 
 func get_enemies_in_range() -> Array:
 	var enemies_in_range = []
@@ -982,8 +1029,44 @@ func select_weakest_target(enemies: Array) -> Node2D:
 				best_target = enemy
 	return best_target
 
+func select_fastest_target(enemies: Array) -> Node2D:
+	var best_target = null
+	var max_speed = -1.0
+	for enemy in enemies:
+		if enemy.has_method("get_movement_speed"):
+			var spd = enemy.get_movement_speed()
+			if spd > max_speed:
+				max_speed = spd
+				best_target = enemy
+		elif enemy.has_method("get_speed"):
+			var spd = enemy.get_speed()
+			if spd > max_speed:
+				max_speed = spd
+				best_target = enemy
+	if best_target == null:
+		best_target = select_first_target(enemies)
+	return best_target
+
+## Prioritises enemies whose `enemy_type` appears in `priority_types`.
+## Within the priority group, picks the one furthest along the path.
+## Falls back to select_first_target if no priority match is in range.
+func select_priority_type_target(enemies: Array, priority_types: Array) -> Node2D:
+	var priority_pool: Array = []
+	for enemy in enemies:
+		var etype = ""
+		if enemy.has_method("get_enemy_type"):
+			etype = enemy.get_enemy_type()
+		elif "enemy_type" in enemy:
+			etype = str(enemy.enemy_type)
+		if etype in priority_types:
+			priority_pool.append(enemy)
+	if priority_pool.is_empty():
+		return select_first_target(enemies)
+	return select_first_target(priority_pool)
+
 func set_target_mode(mode: String) -> void:
-	var supported = ["first", "last", "nearest", "strongest", "weakest"]
+	var supported = ["first", "last", "nearest", "closest", "strongest", "weakest",
+					"fastest", "air_first", "support_first", "shield_first"]
 	if mode in supported:
 		target_mode = mode
 		current_target = null
