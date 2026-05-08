@@ -106,8 +106,14 @@ func _draw() -> void:
 	var rows = level_manager.grid_rows
 	var origin = level_manager.grid_origin
 	
-	# 1. Base Ground (BG)
-	draw_rect(Rect2(origin, Vector2(cols * gs, rows * gs)), current_theme.color_bg)
+	# 1. Base Ground (Expansive)
+	# Draw a huge rectangle to ensure we cover the entire possible view area
+	# even when the camera is zoomed or centered in a large viewport.
+	var huge_rect = Rect2(origin - Vector2(5000, 5000), Vector2(10000, 10000))
+	draw_rect(huge_rect, current_theme.color_bg)
+	
+	# Draw a slightly darker or textured border for the actual grid bounds if desired
+	# But for now, just let the huge rect handle the fill.
 	
 	# 2. Grid (Subtle)
 	if current_theme.color_grid.a > 0:

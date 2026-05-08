@@ -26,6 +26,7 @@ enum AutoClearState {
 	NO_PLAN_FOUND
 }
 
+@onready var camera: Camera2D = $Camera2D
 @onready var world_root: Node2D = $WorldRoot
 @onready var map_root: Node2D = %MapRoot
 @onready var background: ColorRect = $WorldRoot/Background
@@ -61,7 +62,7 @@ const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
 const TOP_BAR_HEIGHT = 60
 const LEFT_SIDEBAR_WIDTH = 200
 const RIGHT_SIDEBAR_WIDTH = 260
-const OUTER_MARGIN = 10
+const OUTER_MARGIN = 0 # Removed for maximal expansion
 
 var level_manager: Node = null
 var level_validator: Node = null
@@ -172,62 +173,113 @@ func _update_world_layout() -> void:
 	var view_size = get_viewport().get_visible_rect().size
 
 	# 1. Compute playfield rect
-	var playfield_x = LEFT_SIDEBAR_WIDTH + OUTER_MARGIN
-	var playfield_y = TOP_BAR_HEIGHT + OUTER_MARGIN
-	var playfield_w = view_size.x - LEFT_SIDEBAR_WIDTH - RIGHT_SIDEBAR_WIDTH - (OUTER_MARGIN * 2)
-	var playfield_h = view_size.y - TOP_BAR_HEIGHT - (OUTER_MARGIN * 2)
-
-	var playfield_rect = Rect2(playfield_x, playfield_y, playfield_w, playfield_h)
-
-	# Position WorldRoot at top-left of playfield
-	world_root.position = playfield_rect.position
-
-	if background:
-		background.size = playfield_rect.size
-		background.position = Vector2.ZERO
+	var playfield_rect = Rect2()
+	if game_hud and game_hud.has_method("get_playfield_rect"):
+		playfield_rect = game_hud.get_playfield_rect()
+		# No outer margin for maximal expansion
+	else:
+		# Fallback to old constants if HUD not ready
+		var playfield_x = LEFT_SIDEBAR_WIDTH + OUTER_MARGIN
+		var playfield_y = TOP_BAR_HEIGHT + OUTER_MARGIN
+		var playfield_w = view_size.x - LEFT_SIDEBAR_WIDTH - RIGHT_SIDEBAR_WIDTH - (OUTER_MARGIN * 2)
+		var playfield_h = view_size.y - TOP_BAR_HEIGHT - (OUTER_MARGIN * 2)
+		playfield_rect = Rect2(playfield_x, playfield_y, playfield_w, playfield_h)
 
 	# 2. Fit Map inside playfield
 	if level_manager and level_manager.level_id != "" and map_root:
 		_fit_map_to_playfield(playfield_rect)
+	
+	if background:
+		background.color = Color.BLACK
+		# Ensure background covers at least the playfield area in screen space
+		# Since we use camera, we'll just make it very large for now
+		background.size = Vector2(8000, 8000)
+		background.position = Vector2(-4000, -4000)
 
 func _fit_map_to_playfield(playfield_rect: Rect2) -> void:
-	if not level_manager or not map_root: return
+	if not level_manager or not map_root or not camera: return
 
-	# Calculate logical map size
-	var map_w = level_manager.grid_cols * level_manager.grid_size
-	var map_h = level_manager.grid_rows * level_manager.grid_size
-	var map_pixel_size = Vector2(map_w, map_h)
+	# 1. Calculate map content bounds in world space
+	var content_bounds = _get_map_content_bounds()
+	if content_bounds.size == Vector2.ZERO: return
+	
+	# Add padding
+	var padding = 40.0
+	content_bounds = content_bounds.grow(padding)
+	
+	# 2. Calculate scale to fit bounds into playfield
+	var scale_x = playfield_rect.size.x / content_bounds.size.x
+	var scale_y = playfield_rect.size.y / content_bounds.size.y
+	var fit_zoom = min(scale_x, scale_y)
+	
+	# Maximize scale (allow up to 5x for small maps on large screens)
+	fit_zoom = clamp(fit_zoom, 0.4, 5.0)
+	
+	# 3. Apply to camera
+	camera.zoom = Vector2.ONE * fit_zoom
+	
+	var content_center = content_bounds.get_center()
+	var camera_pos = content_center - (playfield_rect.get_center() / fit_zoom)
+	camera.position = camera_pos
+	
+	if OS.is_debug_build():
+		var window_size = get_viewport().get_visible_rect().size
+		var unused_x = playfield_rect.size.x - (content_bounds.size.x * fit_zoom)
+		var unused_y = playfield_rect.size.y - (content_bounds.size.y * fit_zoom)
+		print("[LAYOUT_DEBUG] window_size=", window_size)
+		print("[LAYOUT_DEBUG] center_frame_rect=", playfield_rect)
+		print("[LAYOUT_DEBUG] content_bounds=", content_bounds)
+		print("[LAYOUT_DEBUG] camera_zoom=", fit_zoom)
+		print("[LAYOUT_DEBUG] camera_position=", camera_pos)
+		print("[LAYOUT_DEBUG] unused_px_h=", unused_x, " unused_px_v=", unused_y)
 
-	# Calculate fit scale
-	var scale_x = playfield_rect.size.x / map_pixel_size.x
-	var scale_y = playfield_rect.size.y / map_pixel_size.y
-	var fit_scale = min(scale_x, scale_y)
+	# Reset map_root transform (we use camera now)
+	map_root.scale = Vector2.ONE
+	map_root.position = Vector2.ZERO
+	world_root.position = Vector2.ZERO
 
-	# Clamp scale to avoid tiny maps or huge maps
-	fit_scale = min(fit_scale, 1.0)
-	fit_scale = max(fit_scale, 0.4)
-
-	map_root.scale = Vector2.ONE * fit_scale
-
-	# Center map inside playfield (MapRoot local offset)
-	var scaled_map_size = map_pixel_size * fit_scale
-	var centering_offset = (playfield_rect.size - scaled_map_size) * 0.5
-
-	# Apply offset to MapRoot (relative to WorldRoot which is already at playfield.pos)
-	# Divide by fit_scale if we want it to be "unscaled local offset"
-	# but since MapRoot is child of WorldRoot, and we want it centered in playfield,
-	# and WorldRoot is at playfield.pos, we just need to set map_root.position = centering_offset
-	# Wait, if map_root is scaled, its position is in WorldRoot space (unscaled).
-	map_root.position = centering_offset
-
-func _center_map_in_playfield() -> void:
-	# Deprecated by _fit_map_to_playfield but kept for safety if called elsewhere
-	var view_size = get_viewport().get_visible_rect().size
-	var playfield_x = LEFT_SIDEBAR_WIDTH + OUTER_MARGIN
-	var playfield_y = TOP_BAR_HEIGHT + OUTER_MARGIN
-	var playfield_w = view_size.x - LEFT_SIDEBAR_WIDTH - RIGHT_SIDEBAR_WIDTH - (OUTER_MARGIN * 2)
-	var playfield_h = view_size.y - TOP_BAR_HEIGHT - (OUTER_MARGIN * 2)
-	_fit_map_to_playfield(Rect2(playfield_x, playfield_y, playfield_w, playfield_h))
+func _get_map_content_bounds() -> Rect2:
+	if not level_manager: return Rect2()
+	
+	var points: Array[Vector2] = []
+	var gs = level_manager.grid_size
+	
+	# Add grid corners
+	var map_w = level_manager.grid_cols * gs
+	var map_h = level_manager.grid_rows * gs
+	points.append(Vector2.ZERO)
+	points.append(Vector2(map_w, map_h))
+	
+	# Add specific points of interest to ensure they are inside
+	if level_manager.spawn_cell != Vector2i.ZERO:
+		points.append(Vector2(level_manager.spawn_cell) * gs + Vector2(gs, gs)*0.5)
+	if level_manager.base_cell != Vector2i.ZERO:
+		points.append(Vector2(level_manager.base_cell) * gs + Vector2(gs, gs)*0.5)
+	
+	for cell in level_manager.path_cells:
+		points.append(Vector2(cell) * gs + Vector2(gs, gs)*0.5)
+		
+	for cell in level_manager.buildable_cells:
+		points.append(Vector2(cell) * gs + Vector2(gs, gs)*0.5)
+		
+	if points.is_empty(): return Rect2(0, 0, map_w, map_h)
+	
+	var min_p = points[0]
+	var max_p = points[0]
+	for p in points:
+		min_p.x = min(min_p.x, p.x)
+		min_p.y = min(min_p.y, p.y)
+		max_p.x = max(max_p.x, p.x)
+		max_p.y = max(max_p.y, p.y)
+		
+	var bounds = Rect2(min_p, max_p - min_p)
+	# STANDARD: Add requested padding for professional spatial distribution
+	# Example: Left=64 (Spawn), Right=48 (Base), Top/Bottom=48
+	bounds = bounds.grow_side(SIDE_LEFT, 64)
+	bounds = bounds.grow_side(SIDE_RIGHT, 48)
+	bounds = bounds.grow_side(SIDE_TOP, 48)
+	bounds = bounds.grow_side(SIDE_BOTTOM, 48)
+	return bounds
 
 func _refresh_start_wave_ui() -> void:
 	if not game_hud or not wave_manager: return
@@ -308,7 +360,7 @@ func _setup_game_from_level() -> void:
 				map_root.add_child(visual)
 
 	# Center the map inside the playfield area
-	_center_map_in_playfield()
+	_update_world_layout()
 
 	if wave_manager:
 		wave_manager.setup(active_path_nodes)
@@ -523,7 +575,8 @@ func _process(delta: float) -> void:
 		if build_preview:
 			var validation = build_manager.validate_placement(cell)
 			if OS.is_debug_build() and Engine.get_frames_drawn() % 120 == 0:
-				print("[BuildFlow] preview pos=%s cell=%s can_place=%s reason=%s" % [local_mouse, cell, validation["is_valid"], validation["reason"]])
+				if debug_coordinates:
+					print("[BuildFlow] preview pos=%s cell=%s can_place=%s reason=%s" % [local_mouse, cell, validation["is_valid"], validation["reason"]])
 			var tower_config = build_manager.get_selected_tower_config()
 			var role_hint = tower_config.get("description", "")
 			build_preview.update_preview(cell, validation["is_valid"], true, build_manager.get_selected_tower_range(), validation["reason"], build_manager.get_selected_tower_footprint(), role_hint)
@@ -820,6 +873,8 @@ func _clear_gameplay_state() -> void:
 		build_preview.update_preview(Vector2i(-1, -1), false, false)
 	if game_hud:
 		game_hud.clear_wave_intel()
+		if game_hud.has_method("exit_end_game_ui_state"):
+			game_hud.exit_end_game_ui_state()
 	_clear_route_preview()
 
 	# Setup UI
@@ -863,6 +918,9 @@ func _on_hero_deploy_requested() -> void:
 	if game_manager.spend_gold(cost):
 		if OS.is_debug_build(): print("[BuildFlow] hero deployed cost=%d" % cost)
 		_spawn_hero_unit()
+		if game_manager.battle_telemetry:
+			# Get a reasonable world position (spawn_pos is set in _spawn_hero_unit, but we can log after)
+			game_manager.battle_telemetry.log_hero_deployed(current_hero.global_position if current_hero else Vector2.ZERO, cost)
 		update_hud() # Update gold display
 
 func _spawn_hero_unit() -> void:
@@ -872,7 +930,7 @@ func _spawn_hero_unit() -> void:
 	current_hero = hero_scene.instantiate()
 	
 	# Configuration and Bounds
-	var battlefield_bounds = Rect2(Vector2(0, 0), Vector2(1280, 768))
+	var battlefield_bounds = Rect2(Vector2(0, 0), Vector2(2560, 1440))
 	if level_manager:
 		battlefield_bounds = Rect2(Vector2(0, 0), Vector2(level_manager.grid_cols * level_manager.grid_size, level_manager.grid_rows * level_manager.grid_size))
 	
@@ -1045,6 +1103,10 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.show_build_panel()
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
+			if hero_panel:
+				var hero_enabled = level_manager.hero_config.get("enabled", false) if level_manager else false
+				hero_panel.visible = hero_enabled
+				if OS.is_debug_build(): print("[HERO_UI] visible=", hero_panel.visible, " reason=GameState.BUILD")
 			if world_root: world_root.show()
 			get_tree().paused = false
 
@@ -1055,6 +1117,10 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.enter_gameplay_mode()
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
+			if hero_panel:
+				var hero_enabled = level_manager.hero_config.get("enabled", false) if level_manager else false
+				hero_panel.visible = hero_enabled
+				if OS.is_debug_build(): print("[HERO_UI] visible=", hero_panel.visible, " reason=GameState.WAVE")
 			if world_root: world_root.show()
 			get_tree().paused = false
 
@@ -1136,7 +1202,10 @@ func _on_upgrade_tower_requested() -> void:
 	if selected_tower == null or not selected_tower.can_upgrade(): return
 	var cost = selected_tower.get_upgrade_cost()
 	if game_manager and game_manager.spend_gold(cost):
+		var prev_lvl = selected_tower.level_index + 1
 		selected_tower.upgrade()
+		if game_manager.battle_telemetry:
+			game_manager.battle_telemetry.log_tower_upgraded(selected_tower.tower_id, prev_lvl, selected_tower.level_index + 1, cost)
 		game_hud.show_tower_info(selected_tower.get_info())
 		game_hud.set_build_status("Tower Upgraded!")
 		if audio_manager:
@@ -1195,7 +1264,12 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			var status = "Ready to build" if is_valid else reason
 			if not is_valid and reason == "Restricted zone":
 				status = "Requires Foundation"
-			game_hud.set_build_status(status + " at " + str(cell))
+			
+			# Gate coordinate info behind debug_coordinates to keep production UI clean
+			var label_text = status
+			if debug_coordinates and OS.is_debug_build():
+				label_text += " at " + str(cell)
+			game_hud.set_build_status(label_text)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
 	_clear_route_preview()

@@ -63,7 +63,9 @@ func reset_runtime_state() -> void:
 	score = 0
 	
 	if battle_telemetry and main_scene_has_level_id():
-		battle_telemetry.start_level(get_current_level_id(), starting_lives, starting_gold)
+		var level_id = get_current_level_id()
+		var level_name = get_current_level_name()
+		battle_telemetry.start_level(level_id, level_name, starting_lives, starting_gold)
 	lives = starting_lives
 	current_wave = 0
 	score = 0
@@ -105,7 +107,7 @@ func add_gold(amount: int) -> void:
 	gold += amount
 	gold_earned += amount
 	if battle_telemetry:
-		battle_telemetry.log_gold_earned(amount)
+		battle_telemetry.log_gold_earned(amount, "kill")
 	gold_changed.emit(gold)
 
 func award_wave_completion(amount: int) -> void:
@@ -117,7 +119,7 @@ func award_wave_completion(amount: int) -> void:
 		gold += amount
 		gold_earned += amount
 		if battle_telemetry:
-			battle_telemetry.log_gold_earned(amount)
+			battle_telemetry.log_gold_earned(amount, "wave")
 		
 		# Score for wave completion
 		add_score(amount * 5)
@@ -232,8 +234,8 @@ func get_run_summary(p_total_waves: int = 0) -> Dictionary:
 			push_warning("[GameManager] VICTORY detected but waves_completed (%d) is less than total_waves (%d)!" % [waves_completed, actual_total])
 	
 	if battle_telemetry:
-		var result_str = "victory" if is_victory else "game_over"
-		battle_telemetry.end_level(result_str, lives)
+		var result_str = "victory" if is_victory else "defeat"
+		battle_telemetry.end_level(result_str, lives, gold, final_score, stars, actual_total)
 		
 	return {
 		"result": "Victory" if is_victory else "Game Over",
@@ -304,3 +306,9 @@ func get_current_level_id() -> String:
 	if main and "current_level_id" in main:
 		return str(main.current_level_id)
 	return "unknown_level"
+
+func get_current_level_name() -> String:
+	var lm = get_tree().current_scene.get_node_or_null("LevelManager")
+	if lm and "level_name" in lm:
+		return lm.level_name
+	return "Unknown Level"

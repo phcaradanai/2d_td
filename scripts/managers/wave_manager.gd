@@ -111,6 +111,9 @@ func start_next_wave() -> void:
 	current_wave_index += 1
 	
 	wave_started.emit(active_wave_number, active_wave_name)
+	if game_manager and game_manager.battle_telemetry:
+		game_manager.battle_telemetry.start_wave(active_wave_number, active_wave_name)
+	
 	if OS.is_debug_build(): print("Starting Wave ", active_wave_number, ": ", active_wave_name, ". Next index=", current_wave_index)
 	
 	var current_gen = spawn_generation
@@ -232,6 +235,12 @@ func _on_enemy_died(_enemy: Node, reward: int) -> void:
 	_on_enemy_removed()
 
 func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> void:
+	if game_manager and game_manager.battle_telemetry:
+		var hp_rem = _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
+		var prog = _enemy.get_path_progress() if _enemy.has_method("get_path_progress") else 0.0
+		var lives_after = game_manager.lives - damage
+		game_manager.battle_telemetry.log_enemy_leak(_enemy.enemy_type, hp_rem, global_pos, prog, lives_after)
+		
 	base_damaged.emit(damage, global_pos)
 	_on_enemy_removed()
 
@@ -245,7 +254,7 @@ func _check_wave_completion() -> void:
 		
 		var duration_sec = (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0
 		if game_manager and game_manager.battle_telemetry:
-			game_manager.battle_telemetry.log_wave_cleared(active_wave_number, duration_sec)
+			game_manager.battle_telemetry.log_wave_completed(active_wave_number, "cleared", active_wave_reward)
 			
 		if OS.is_debug_build(): print("Wave ", active_wave_number, " completed!")
 		wave_completed.emit(active_wave_number, active_wave_name, active_wave_reward)

@@ -21,3 +21,4 @@ res://scripts/core/game_manager.gd
 res://scripts/managers/build_manager.gd
 res://scripts/ui/build_preview.gd
 res://scripts/ui/target_marker.gd
+res://scripts/core/battle_telemetry.gd

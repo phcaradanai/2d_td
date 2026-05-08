@@ -39,6 +39,7 @@ signal back_to_map_requested()
 @onready var cancel_build_button: Button = $Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer/CancelBuildButton
 
 # Right Sidebar (Tower Info)
+@onready var right_sidebar_container: VBoxContainer = $Root/ScreenLayout/MainContent/RightSidebarContainer
 @onready var right_sidebar: PanelContainer = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar
 @onready var tower_name_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerNameLabel
 @onready var tower_level_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerLevelLabel
@@ -76,6 +77,7 @@ var current_ui_state: HUDState = HUDState.GAMEPLAY
 
 @onready var root: Control = $Root
 @onready var screen_layout: VBoxContainer = $Root/ScreenLayout
+@onready var playfield_area: Control = $Root/ScreenLayout/MainContent/PlayfieldArea
 @onready var dim_overlay: ColorRect = $Root/DimOverlay
 
 # Settings Panel
@@ -276,21 +278,40 @@ func set_panel_active(panel: Control, active: bool, block_mouse: bool = true) ->
 
 func update_layout_for_viewport() -> void:
 	if not is_inside_tree(): return
-	var size = get_viewport().get_visible_rect().size
-	var right_width = 240.0 if size.x < 1000 else 260.0
-	if size.x < 1000:
-		left_sidebar.custom_minimum_size.x = 180
-	else:
-		left_sidebar.custom_minimum_size.x = 210 # Slightly wider for cleaner labels
+	var view_size = get_viewport().get_visible_rect().size
 	
-	_layout_right_sidebar_container(right_width)
+	if left_sidebar:
+		if view_size.x < 1200:
+			left_sidebar.custom_minimum_size.x = 180
+		else:
+			left_sidebar.custom_minimum_size.x = 210
+			
+	if right_sidebar_container:
+		if view_size.x < 1200:
+			right_sidebar_container.custom_minimum_size.x = 220
+		else:
+			right_sidebar_container.custom_minimum_size.x = 240
+
+	if OS.is_debug_build():
+		print("[HUD_LAYOUT] screen_size=", view_size, " playfield=", get_playfield_rect())
+
+func get_playfield_rect() -> Rect2:
+	if playfield_area and playfield_area.is_inside_tree():
+		var rect = playfield_area.get_global_rect()
+		if rect.size.x > 100: # Sanity check that it's laid out
+			return rect
 	
-	# Update no_selection_panel if it exists
-	if no_selection_panel:
-		no_selection_panel.custom_minimum_size.x = right_width
-	
-	if result_panel:
-		result_panel.pivot_offset = result_panel.size / 2.0
+	# Fallback if HUD not ready or zero-sized
+	var view_size = get_viewport().get_visible_rect().size
+	var left_w = 180
+	if left_sidebar and left_sidebar.custom_minimum_size.x > 0:
+		left_w = left_sidebar.custom_minimum_size.x
+		
+	var right_w = 240
+	if right_sidebar_container and right_sidebar_container.custom_minimum_size.x > 0:
+		right_w = right_sidebar_container.custom_minimum_size.x
+		
+	return Rect2(left_w, 60, view_size.x - left_w - right_w, view_size.y - 60)
 
 func _on_restart_pressed() -> void:
 	restart_requested.emit()
@@ -524,8 +545,10 @@ func enter_gameplay_mode() -> void:
 	if OS.is_debug_build(): print("[UI_STATE] Enter GAMEPLAY")
 	
 	if screen_layout: screen_layout.show()
-	if dim_overlay: 
+	if dim_overlay:
 		dim_overlay.hide()
+		dim_overlay.color = Color(0, 0, 0, 0.4) # Neutral dark translucent
+		dim_overlay.modulate.a = 1.0
 		dim_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
 	hide_center_message()
@@ -755,8 +778,8 @@ func show_temporary_message(text: String, color: Color = Color.WHITE, duration: 
 func show_screen_flash(color: Color, duration: float = 0.2) -> void:
 	if dim_overlay == null: return
 	
-	var original_color = dim_overlay.color
-	var original_visible = dim_overlay.visible
+	# Fix: Use hard-coded reset to avoid feedback loops if multiple flashes occur
+	var reset_color = Color(0, 0, 0, 0.4)
 	
 	dim_overlay.color = color
 	dim_overlay.show()
@@ -765,8 +788,8 @@ func show_screen_flash(color: Color, duration: float = 0.2) -> void:
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	tween.tween_property(dim_overlay, "modulate:a", 0.0, duration).from(1.0)
 	tween.tween_callback(func():
-		dim_overlay.visible = original_visible
-		dim_overlay.color = original_color
+		dim_overlay.hide()
+		dim_overlay.color = reset_color
 		dim_overlay.modulate.a = 1.0
 	)
 
@@ -814,7 +837,7 @@ func shake_node(node: Control, strength: float = 10.0) -> void:
 	tween.tween_property(node, "position", original_pos, 0.04)
 
 func _setup_right_sidebar_layout() -> void:
-	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
+	var container = right_sidebar_container
 	if container == null: return
 	
 	# 1. Setup Tower Detail Panel (Existing RightSidebar)

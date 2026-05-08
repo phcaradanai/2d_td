@@ -66,7 +66,7 @@ func update_preview(cell: Vector2i, valid: bool, active: bool, range_val: float 
 	hover_role = role
 	
 	if reason_label:
-		if is_active and not is_hover_valid and reason != "":
+		if is_active and not is_hover_valid and reason != "" and OS.is_debug_build():
 			reason_label.text = reason
 			reason_label.show()
 			reason_label.position = Vector2(hover_cell.x * grid_size, hover_cell.y * grid_size - 25)
@@ -94,20 +94,10 @@ func _draw() -> void:
 			# Small corner accents for foundations
 			_draw_brackets(Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size), buildable_outline_color)
 	
-	# 2. Blocked Cells Tint (if buildable cells exist, otherwise path/blocked)
-	if not buildable_cells.is_empty():
-		# All non-buildable are effectively blocked
-		for x in range(grid_cols):
-			for y in range(grid_rows):
-				var cell = Vector2i(x, y)
-				if not cell in buildable_cells:
-					var rect = Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size)
-					draw_rect(rect, blocked_color)
-	else:
-		for cell in blocked_cells:
-			var rect = Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size)
-			draw_rect(rect, blocked_color)
-
+	# 2. Tactical Overlay (only when active)
+	# Removed global non-buildable tint to keep map readable and avoid "red map" bug.
+	# We only highlight the hovered cell's validity now.
+	
 	# 3. Subtle tactical grid
 	var grid_alpha_color = Color(grid_color.r, grid_color.g, grid_color.b, 0.03)
 	for x in range(grid_cols + 1):

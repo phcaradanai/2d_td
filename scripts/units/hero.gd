@@ -50,8 +50,7 @@ func _ready() -> void:
 	_generate_base_ring()
 	active_duration_current = active_duration_max
 	
-	if game_manager and game_manager.battle_telemetry:
-		game_manager.battle_telemetry.log_hero_deployed()
+	# Telemetry: Deployment logged in Main.gd instead for cost/pos accuracy
 	
 	if OS.is_debug_build(): 
 		print("[HeroConfig] %s ready at %s" % [hero_name, global_position])
@@ -80,7 +79,7 @@ func trigger_shockwave() -> void:
 				continue
 			if global_position.distance_to(enemy.global_position) <= shockwave_radius:
 				if enemy.has_method("take_damage"):
-					enemy.take_damage(int(shockwave_damage), enemy.global_position, "hero")
+					enemy.take_damage(int(shockwave_damage), enemy.global_position, "hero", "shockwave")
 					enemies_hit += 1
 					
 	if OS.is_debug_build():
@@ -98,6 +97,9 @@ func _process(delta: float) -> void:
 		if active_duration_current <= 0:
 			retreat()
 			return
+	
+	if game_manager and game_manager.battle_telemetry:
+		game_manager.battle_telemetry.log_hero_active_time(delta)
 			
 	_update_visuals(delta)
 	_update_ai(delta)
@@ -240,7 +242,7 @@ func attack() -> void:
 	if dist > attack_range: return
 	
 	if current_target.has_method("take_damage"):
-		current_target.take_damage(int(damage), current_target.global_position, "hero")
+		current_target.take_damage(int(damage), current_target.global_position, "hero", "single")
 		_play_attack_visual(current_target.global_position)
 
 func _play_attack_visual(target_pos: Vector2) -> void:
@@ -291,7 +293,7 @@ func cast_skill() -> void:
 				continue
 			if global_position.distance_to(enemy.global_position) <= skill_radius:
 				if enemy.has_method("take_damage"):
-					enemy.take_damage(int(skill_damage), enemy.global_position, "hero")
+					enemy.take_damage(int(skill_damage), enemy.global_position, "hero", "skill")
 					hit_count += 1
 	_play_skill_visual()
 	skill_cooldown_current = skill_cooldown_max

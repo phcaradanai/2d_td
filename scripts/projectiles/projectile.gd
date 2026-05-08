@@ -169,7 +169,7 @@ func hit_target() -> void:
 		apply_area_effect(hit_global)
 	else:
 		if target and target.has_method("take_damage"):
-			target.take_damage(damage, hit_global, source_id)
+			target.take_damage(damage, hit_global, source_id, attack_type)
 			# STANDARD: Use captured hit point and current pos for angle
 			var impact_angle = (hit_global - global_position).angle()
 			_spawn_impact_effect(hit_global, Color.WHITE, impact_angle)
@@ -284,10 +284,10 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 				if attack_type == "splash":
 					# Linear Falloff: 100% at center, 50% at edge
 					var falloff = 1.0 - (dist / effect_radius) * 0.5
-					enemy.take_damage(damage * falloff, enemy_pos, source_id)
+					enemy.take_damage(damage * falloff, enemy_pos, source_id, attack_type)
 				elif attack_type == "slow":
 					# Area slow deals its low base damage + applies debuff
-					enemy.take_damage(damage, enemy_pos, source_id)
+					enemy.take_damage(damage, enemy_pos, source_id, attack_type)
 					if enemy.has_method("apply_slow"):
 						enemy.apply_slow(slow_percent, slow_duration)
 

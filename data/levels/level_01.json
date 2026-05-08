@@ -6,11 +6,11 @@
 	"difficulty": "Easy",
 	"description": "A straight corridor. Learn the basics of tower placement. Build above and below the path.",
 	"enemy_intel": [
-        "Basic Nodes"
+		"Basic Nodes"
 	],
 	"recommended_roles": [
 		"Basic",
-        "Rapid"
+		"Rapid"
 	],
 	"grid_size": 64.0,
 	"grid_cols": 20.0,
@@ -114,51 +114,51 @@
 	"buildable_cells": [
 		[
 			2,
-			3
+			4
 		],
 		[
 			5,
-			3
+			4
 		],
 		[
 			8,
-			3
+			4
 		],
 		[
 			11,
-			3
+			4
 		],
 		[
 			14,
-			3
+			4
 		],
 		[
 			17,
-			3
+			4
 		],
 		[
 			2,
-			7
+			6
 		],
 		[
 			5,
-			7
+			6
 		],
 		[
 			8,
-			7
+			6
 		],
 		[
 			11,
-			7
+			6
 		],
 		[
 			14,
-			7
+			6
 		],
 		[
 			17,
-			7
+			6
 		]
 	],
 	"waves_path": "res://data/waves/waves_01.json"

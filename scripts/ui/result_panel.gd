@@ -24,6 +24,7 @@ var target_score: int = 0
 var current_display_score: int = 0
 var animation_tween: Tween
 var record_tween: Tween # New: Track feedback loop tween
+var current_report_data: Dictionary = {} # Store finalized telemetry for debug popup
 
 func _ready() -> void:
 	retry_button.pressed.connect(func(): retry_pressed.emit())
@@ -41,6 +42,17 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 		animation_tween.kill()
 	if record_tween:
 		record_tween.kill()
+	
+	current_report_data = summary.duplicate()
+	# Merge telemetry metrics if available (must do this BEFORE any cleanup/reset)
+	var gm = get_tree().current_scene.get_node_or_null("GameManager")
+	if gm and "battle_telemetry" in gm and gm.battle_telemetry:
+		var m = gm.battle_telemetry.get_summary()
+		if not m.is_empty():
+			for key in m:
+				current_report_data[key] = m[key]
+		if OS.is_debug_build():
+			print("[REPORT_UI] Stored report data. Keys count: %d" % current_report_data.size())
 	
 	# Setup data
 	var is_victory = summary.get("result", "") == "Victory"
@@ -132,23 +144,33 @@ func _setup_record_feedback(improvements: Dictionary, summary: Dictionary = {}) 
 		var efficiency = float(spent) / float(earned) * 100.0
 		messages.append("GOLD EFFICIENCY: %d%%" % int(efficiency))
 		
-	var gm = get_tree().current_scene.get_node_or_null("GameManager")
-	if gm and gm.battle_telemetry and not gm.battle_telemetry.metrics.is_empty():
-		var metrics = gm.battle_telemetry.metrics
+	if not current_report_data.is_empty():
+		var m = current_report_data
 		var best_tower = ""
 		var max_dmg = 0.0
-		for t_id in metrics.get("total_damage_by_tower_id", {}):
-			if metrics["total_damage_by_tower_id"][t_id] > max_dmg:
-				max_dmg = metrics["total_damage_by_tower_id"][t_id]
+		for t_id in m.get("damage_by_tower_type", {}):
+			if m["damage_by_tower_type"][t_id] > max_dmg:
+				max_dmg = m["damage_by_tower_type"][t_id]
 				best_tower = t_id
 		if best_tower != "":
-			messages.append("MVP TOWER: " + best_tower.to_upper())
+			messages.append("MVP TOWER: " + best_tower.to_upper().replace("_TOWER", ""))
 			
-		var total_leaks = 0
-		for count in metrics.get("enemy_leaked_by_type", {}).values():
-			total_leaks += count
+		var total_leaks = m.get("enemies_leaked_total", 0)
 		if total_leaks > 0:
-			messages.append(str(total_leaks) + " LEAKS (" + str(metrics.get("most_dangerous_enemy_type", "")).to_upper() + ")")
+			var top_leak = ""
+			var max_leaks = 0
+			for etype in m.get("enemies_leaked_by_type", {}):
+				if m["enemies_leaked_by_type"][etype] > max_leaks:
+					max_leaks = m["enemies_leaked_by_type"][etype]
+					top_leak = etype
+			messages.append(str(total_leaks) + " LEAKS (" + top_leak.to_upper() + ")")
+		
+		# Debug: Prepare the detailed summary report but keep it hidden by default
+		if OS.is_debug_build():
+			_prepare_debug_telemetry_report(current_report_data)
+		else:
+			var btn = get_node_or_null("MarginContainer/VBoxContainer/ButtonsVBox/DebugReportButton")
+			if btn: btn.hide()
 		
 	if messages.size() > 0:
 		record_feedback.text = messages[0]
@@ -174,11 +196,223 @@ func _format_time(seconds: int) -> String:
 	var secs = int(seconds % 60)
 	return "%02d:%02d" % [mins, secs]
 
+func _prepare_debug_telemetry_report(m: Dictionary) -> void:
+	# 1. Create/Find the Balance Report Button
+	var buttons_vbox = get_node_or_null("MarginContainer/VBoxContainer/ButtonsVBox")
+	if not buttons_vbox: return
+	
+	var debug_btn = buttons_vbox.get_node_or_null("DebugReportButton")
+	if not debug_btn:
+		debug_btn = Button.new()
+		debug_btn.name = "DebugReportButton"
+		debug_btn.text = "VIEW BALANCE REPORT"
+		debug_btn.custom_minimum_size.y = 40
+		debug_btn.add_theme_font_size_override("font_size", 14)
+		debug_btn.modulate = Color(0.6, 0.8, 1.0)
+		buttons_vbox.add_child(debug_btn)
+		debug_btn.pressed.connect(_toggle_debug_report_popup)
+	
+	debug_btn.show()
+	
+	# 2. Create/Find the Popup Panel
+	var popup = get_node_or_null("DebugReportPopup")
+	if not popup:
+		popup = PanelContainer.new()
+		popup.name = "DebugReportPopup"
+		# Styling for the popup
+		var style = StyleBoxFlat.new()
+		style.bg_color = Color(0.05, 0.08, 0.1, 0.95)
+		style.border_width_left = 2
+		style.border_width_top = 2
+		style.border_width_right = 2
+		style.border_width_bottom = 2
+		style.border_color = Color(0.2, 0.5, 0.8, 0.8)
+		style.set_corner_radius_all(8)
+		popup.add_theme_stylebox_override("panel", style)
+		
+		# Layout inside popup
+		var p_margin = MarginContainer.new()
+		p_margin.add_theme_constant_override("margin_left", 20)
+		p_margin.add_theme_constant_override("margin_top", 20)
+		p_margin.add_theme_constant_override("margin_right", 20)
+		p_margin.add_theme_constant_override("margin_bottom", 20)
+		popup.add_child(p_margin)
+		
+		var p_vbox = VBoxContainer.new()
+		p_vbox.add_theme_constant_override("separation", 15)
+		p_margin.add_child(p_vbox)
+		
+		var p_title = Label.new()
+		p_title.text = "BATTLE TELEMETRY / BALANCE REPORT"
+		p_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		p_title.add_theme_font_size_override("font_size", 18)
+		p_title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+		p_vbox.add_child(p_title)
+		
+		var p_scroll = ScrollContainer.new()
+		p_scroll.custom_minimum_size = Vector2(400, 300)
+		p_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		p_vbox.add_child(p_scroll)
+		
+		var p_label = RichTextLabel.new()
+		p_label.name = "ReportContent"
+		p_label.bbcode_enabled = true
+		p_label.fit_content = true
+		p_label.selection_enabled = true # Allow selecting text in debug
+		p_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		p_scroll.add_child(p_label)
+		
+		var p_close = Button.new()
+		p_close.text = "CLOSE REPORT"
+		p_close.custom_minimum_size.y = 40
+		p_vbox.add_child(p_close)
+		p_close.pressed.connect(func(): popup.hide())
+		
+		add_child(popup)
+		popup.hide()
+		
+		# VERY IMPORTANT: Independent from PanelContainer layout
+		popup.set_as_top_level(true)
+		
+		# Center the popup over the screen
+		popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+		popup.offset_left = -250
+		popup.offset_top = -280
+		popup.offset_right = 250
+		popup.offset_bottom = 280
+	
+	# 3. Populate Content immediately
+	_update_report_content(popup, m)
+
+	if OS.is_debug_build():
+		print("[REPORT_UI] debug_report_ready=true level=%s" % m.get("level_id", "unknown"))
+
+func _toggle_debug_report_popup() -> void:
+	var popup = get_node_or_null("DebugReportPopup")
+	if popup:
+		popup.visible = not popup.visible
+		if popup.visible:
+			popup.move_to_front()
+			_update_report_content(popup, current_report_data)
+			
+			if OS.is_debug_build():
+				var level_id = current_report_data.get("level_id", "unknown")
+				print("[REPORT_UI] opening balance report for level=%s" % level_id)
+
+func _update_report_content(popup_node: PanelContainer, data: Dictionary) -> void:
+	# Use a more reliable path finding
+	var p_label = popup_node.find_child("ReportContent", true, false)
+	if p_label:
+		if data.is_empty() or data.size() < 5: # Basic check for meaningful data
+			p_label.text = "[center][color=gray]No detailed telemetry data found.\nCheck console for [BATTLE_REPORT].[/color][/center]"
+			if OS.is_debug_build(): print("[REPORT_UI] Warning: Data dictionary too small or empty")
+		else:
+			p_label.text = _format_bbcode_report(data)
+			if OS.is_debug_build():
+				print("[REPORT_UI] Refreshed report content. Text length: %d" % p_label.text.length())
+	else:
+		if OS.is_debug_build(): print("[REPORT_UI] Error: Could not find ReportContent node")
+
+func _format_bbcode_report(m: Dictionary) -> String:
+	var t = "[center][b][color=#66ccff]SESSION SUMMARY[/color][/b][/center]\n\n"
+	t += "[color=#aaaaaa]Level:[/color] %s\n" % m.get("level_id", "unknown")
+	t += "[color=#aaaaaa]Result:[/color] %s\n" % m.get("result", "abandoned")
+	t += "[color=#aaaaaa]Perfect Clear:[/color] %s\n" % str(m.get("perfect_clear", false))
+	t += "[color=#aaaaaa]Time:[/color] %.1fs\n" % m.get("clear_time_sec", 0.0)
+	t += "\n"
+	
+	t += "[b][color=#66ccff]ECONOMY[/color][/b]\n"
+	t += "Start: %d\n" % m.get("gold_start", 0)
+	t += "Earned: [color=#ffcc33]%d[/color] (Kills: %d, Waves: %d)\n" % [
+		m.get("gold_earned_total", 0), m.get("gold_earned_from_kills", 0), m.get("gold_earned_from_waves", 0)
+	]
+	t += "Spent: [color=#ff6666]%d[/color] (Build: %d, Upgr: %d, Hero: %d)\n" % [
+		m.get("gold_spent_total", 0), m.get("gold_spent_on_towers", 0), m.get("gold_spent_on_upgrades", 0), m.get("gold_spent_on_hero", 0)
+	]
+	t += "Remaining: [color=#66ff66]%d[/color]\n" % m.get("gold_remaining", 0)
+	
+	# Invariant check in UI
+	var expected = m.get("gold_start", 0) + m.get("gold_earned_total", 0) - m.get("gold_spent_total", 0)
+	if expected != m.get("gold_remaining", 0):
+		t += "[color=#ff3333][b]MISMATCH: %d[/b][/color]\n" % (m.get("gold_remaining", 0) - expected)
+	
+	t += "\n"
+	
+	t += "[b][color=#66ccff]COMBAT STATS[/color][/b]\n"
+	t += "MVP Tower: [b]%s[/b]\n" % _get_top_key(m.get("damage_by_tower_type", {}))
+	t += "Total Kills: %d\n" % m.get("enemies_killed_total", 0)
+	t += "Total Leaks: [color=#ff6666]%d[/color] (%s)\n" % [
+		m.get("enemies_leaked_total", 0), _get_top_key(m.get("enemies_leaked_by_type", {}))
+	]
+	t += "\n"
+	
+	t += "[b][color=#66ccff]HERO IMPACT[/color][/b]\n"
+	t += "Damage: %d | Kills: %d | Active: %.1fs\n" % [
+		int(m.get("hero_damage", 0)), m.get("hero_kills", 0), m.get("hero_active_time_sec", 0.0)
+	]
+	
+	t += "\n"
+	
+	# Danger Wave
+	var danger_wave = 0
+	var max_wave_leaks = 0
+	for w_idx in m.get("wave_stats", {}):
+		var w = m["wave_stats"][w_idx]
+		var w_leaks = 0
+		for count in w.get("enemies_leaked_by_type", {}).values():
+			w_leaks += count
+		if w_leaks > max_wave_leaks:
+			max_wave_leaks = w_leaks
+			danger_wave = int(w_idx)
+	
+	if danger_wave > 0:
+		t += "[color=#ffaa66]Danger Wave:[/color] %d (%d leaks)\n" % [danger_wave, max_wave_leaks]
+	else:
+		t += "[color=#aaaaaa]Danger Wave:[/color] None\n"
+	
+	t += "\n"
+	
+	# Balance Analysis Section
+	var ba = m.get("balance_analysis", {})
+	if not ba.is_empty():
+		t += "[center][b][color=#ffcc33]DESIGNER'S BALANCE ANALYSIS[/color][/b][/center]\n\n"
+		
+		var rating_color = "#66ff66" # Green for Good
+		if ba.get("difficulty_rating") == "Too Easy": rating_color = "#66ccff" # Blue
+		elif ba.get("difficulty_rating") == "Too Hard": rating_color = "#ff6666" # Red
+		
+		t += "Rating: [b][color=%s]%s[/color][/b]\n" % [rating_color, ba.get("difficulty_rating", "Unknown")]
+		t += "Reason: %s\n" % ba.get("reason", "Balanced")
+		t += "\n"
+		
+		t += "[b]Recommendations:[/b]\n"
+		var actions = ba.get("recommended_actions", [])
+		if actions.is_empty():
+			t += "[color=#aaaaaa]- No changes needed.[/color]\n"
+		else:
+			for action in actions:
+				t += "- %s\n" % action
+	
+	return t
+
+func _get_top_key(dict: Dictionary) -> String:
+	if dict.is_empty(): return "None"
+	var top = "None"
+	var max_val = -1.0
+	for k in dict:
+		if dict[k] > max_val:
+			max_val = dict[k]
+			top = k
+	return top.replace("_tower", "").capitalize()
+
 func hide_result() -> void:
 	if animation_tween:
 		animation_tween.kill()
 	if record_tween:
 		record_tween.kill()
+	
+	var popup = get_node_or_null("DebugReportPopup")
+	if popup: popup.hide()
 	
 	animation_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
 	animation_tween.tween_property(self, "modulate:a", 0.0, 0.3)

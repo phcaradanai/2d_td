@@ -541,7 +541,7 @@ func _process_pathing(delta: float) -> void:
 	if progress_ratio >= 1.0:
 		reach_base()
 
-func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "") -> void:
+func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "", p_attack_type: String = "single") -> void:
 	if is_dead_flag or reached_base_flag: return
 	
 	if source_id != "":
@@ -564,7 +564,7 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	
 	var gm = get_tree().current_scene.get_node_or_null("GameManager")
 	if gm and gm.battle_telemetry:
-		gm.battle_telemetry.log_damage(source_id, final_damage)
+		gm.battle_telemetry.log_damage(source_id, final_damage, p_attack_type, enemy_type)
 		
 	flash_body()
 	var dn_color = Color.WHITE
@@ -618,7 +618,7 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	
 	var gm = get_tree().current_scene.get_node_or_null("GameManager")
 	if gm and gm.battle_telemetry:
-		gm.battle_telemetry.log_kill(last_damage_source, enemy_type)
+		gm.battle_telemetry.log_enemy_kill(last_damage_source, enemy_type)
 		
 	var capture_pos = death_global if death_global != Vector2.ZERO else global_position
 	spawn_death_effect(capture_pos)
@@ -650,10 +650,6 @@ func reach_base() -> void:
 	reached_base_flag = true
 	is_active = false
 	
-	var gm = get_tree().current_scene.get_node_or_null("GameManager")
-	if gm and gm.battle_telemetry:
-		gm.battle_telemetry.log_enemy_leak(enemy_type, global_position)
-		
 	reached_base.emit(self, base_damage, global_position)
 	queue_free()
 
