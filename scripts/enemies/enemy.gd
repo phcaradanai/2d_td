@@ -56,22 +56,25 @@ var tags: Array = []
 
 # Visual State
 var pulse_time: float = 0.0
+var swarm_core_flicker_time: float = 0.0
+var swarm_pack_density: float = 0.0
+var swarm_pack_check_timer: float = 0.0
 const COLOR_BODY = Color(0.08, 0.08, 0.12) # Dark Gunmetal
 const COLOR_NEON_BASIC = Color(0.2, 0.8, 1.0) # Electric Cyan
 const COLOR_NEON_FAST = Color(0.0, 1.0, 0.7) # Teal/Green
 const COLOR_NEON_TANK = Color(1.0, 0.45, 0.1) # Amber/Orange
 const COLOR_NEON_BULWARK = Color(0.1, 0.6, 1.0) # Blue
 const COLOR_NEON_HUNTER = Color(1.0, 0.1, 0.4) # Magenta/Red
-const SWARM_BODY_COLOR := Color(0.102, 0.122, 0.169, 1.0) # #1A1F2B
 const SWARM_PANEL_COLOR := Color(0.067, 0.094, 0.153, 1.0) # #111827
-const SWARM_CORE_COLOR := Color(0.0, 0.941, 1.0, 1.0) # #00F0FF
 const SWARM_CORE_HIGHLIGHT := Color(0.224, 1.0, 0.478, 1.0) # #39FF7A
 const SWARM_TRAIL_COLOR := Color(0.161, 0.475, 1.0, 1.0) # #2979FF
 const SWARM_GLOW_LIGHT := Color(0.718, 1.0, 0.961, 1.0) # #B7FFF5
-const SWARM_TRAIL_LENGTH := 2.7
-const SWARM_TRAIL_ALPHA := 0.16
-const SWARM_HOVER_STRENGTH := 0.13
-const SWARM_DEATH_PARTICLE_COUNT := 18
+@export var swarm_body_color: Color = Color(0.102, 0.122, 0.169, 1.0) # #1A1F2B
+@export var swarm_core_glow_color: Color = Color(0.08, 1.0, 1.0, 1.0) # ultra neon cyan
+@export var swarm_trail_length: float = 2.7
+@export var swarm_trail_alpha: float = 0.26
+@export var swarm_hover_glow_strength: float = 0.22
+@export var swarm_death_particle_count: int = 18
 
 # Bulwark Stats
 var shield_radius: float = 90.0
@@ -184,7 +187,7 @@ func get_vfx_controller() -> Node:
 
 func _draw() -> void:
 	var size = 16.0
-	if enemy_category == ENEMY_CATEGORY_AIR:
+	if enemy_category == ENEMY_CATEGORY_AIR and not (enemy_type == "swarm" or tags.has("swarm")):
 		var hover_offset := sin(pulse_time * 4.0) * 2.0
 		draw_circle(Vector2(0, 12), size * 0.75, Color(0.0, 0.0, 0.0, 0.16))
 		draw_arc(Vector2(0, hover_offset), size * 1.15, 0, TAU, 28, Color(0.45, 0.9, 1.0, 0.18), 1.2)
@@ -212,7 +215,7 @@ func _draw() -> void:
 		"hunter":
 			_draw_cyber_hunter(COLOR_NEON_HUNTER, size * 1.3)
 		"swarm":
-			_draw_cyber_swarm(COLOR_NEON_FAST, size * 0.5)
+			_draw_cyber_swarm(COLOR_NEON_FAST, size * 0.86)
 		"runner":
 			_draw_cyber_runner(COLOR_NEON_BASIC, size)
 		"shieldbearer":
@@ -431,85 +434,117 @@ func _draw_cyber_hunter(color: Color, size: float) -> void:
 
 func _draw_cyber_swarm(_color: Color, size: float) -> void:
 	var phase := float(get_instance_id() % 97) * 0.071
-	var pulse := 0.5 + sin(pulse_time * 5.5 + phase) * 0.5
+	var pulse := 0.5 + sin(pulse_time * 7.4 + phase) * 0.5
 	var bob := sin(pulse_time * 7.0 + phase) * size * 0.08
-	var flicker := 0.86 + sin(pulse_time * 15.0 + phase * 2.3) * 0.08
-	var core_color := SWARM_CORE_COLOR.lerp(SWARM_CORE_HIGHLIGHT, 0.22 + pulse * 0.18)
+	var flicker := clampf(0.92 + sin(pulse_time * 18.5 + phase * 2.3) * 0.16 + swarm_core_flicker_time * 0.8, 0.72, 1.45)
+	var core_color := swarm_core_glow_color.lerp(SWARM_CORE_HIGHLIGHT, 0.46 + pulse * 0.36)
 	var origin := Vector2(0.0, bob)
-	
-	var hover := PackedVector2Array()
-	for i in range(24):
-		var a := float(i) / 24.0 * TAU
-		hover.append(Vector2(cos(a) * size * (1.65 + pulse * 0.08), size * 1.2 + sin(a) * size * 0.28))
-	draw_polyline(hover + PackedVector2Array([hover[0]]), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, SWARM_HOVER_STRENGTH * (0.65 + pulse * 0.35)), 1.0)
-	
+	_draw_swarm_hover_fx(origin, size, pulse)
+	_draw_swarm_speed_streaks(origin, size, pulse)
+	_draw_swarm_body_layers(origin, size * 0.98, flicker)
+	_draw_swarm_core_layers(origin + Vector2(size * 0.08, -size * 0.02), size * 0.82, core_color, pulse, flicker)
+	var orbit_count: int = 3 + int(get_instance_id() % 2)
+	for i in range(orbit_count):
+		var ring_phase := phase + float(i) * TAU / float(orbit_count)
+		var orbit_a := pulse_time * (2.55 + float(i) * 0.22) + ring_phase
+		var orbit_r := size * (1.34 + float(i % 2) * 0.18) + sin(pulse_time * 5.8 + ring_phase * 1.7) * size * 0.07
+		var orbit_squash := Vector2(1.0, 0.72)
+		var orbit_pos := origin + Vector2(cos(orbit_a), sin(orbit_a)) * orbit_r * orbit_squash
+		var orb_flicker := clampf(flicker * (0.9 + pulse * 0.2 + float(i) * 0.04), 0.68, 1.5)
+		_draw_swarm_orbiter(orbit_pos, size * 0.42, orb_flicker)
+		draw_line(origin, orbit_pos, Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, 0.22 * orb_flicker), 1.0)
+
+func _draw_swarm_orbiter(origin: Vector2, size: float, flicker: float) -> void:
+	_draw_swarm_body_layers(origin, size, flicker)
+	var orb_core := swarm_core_glow_color.lerp(SWARM_GLOW_LIGHT, 0.42)
+	_draw_swarm_core_layers(origin + Vector2(size * 0.08, -size * 0.02), size * 0.52, orb_core, 0.55, flicker)
+
+func _draw_swarm_hover_fx(origin: Vector2, size: float, pulse: float) -> void:
+	var orbit_ring := PackedVector2Array()
+	for i in range(36):
+		var a := float(i) / 36.0 * TAU
+		orbit_ring.append(origin + Vector2(cos(a) * size * 1.78, sin(a) * size * 1.18))
+	var ring_alpha := swarm_hover_glow_strength * (0.82 + pulse * 0.56)
+	draw_polyline(orbit_ring + PackedVector2Array([orbit_ring[0]]), Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, ring_alpha), 1.25)
+	draw_arc(origin, size * (1.12 + pulse * 0.1), 0, TAU, 28, Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 0.16 + pulse * 0.08), 1.0)
+	if swarm_pack_density > 0.18:
+		draw_arc(origin, size * (2.0 + swarm_pack_density * 0.22), -0.28, 0.28, 7, Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, 0.16 * swarm_pack_density), 1.15)
+		draw_arc(origin, size * (2.0 + swarm_pack_density * 0.22), PI - 0.28, PI + 0.28, 7, Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, 0.16 * swarm_pack_density), 1.15)
+
+func _draw_swarm_speed_streaks(origin: Vector2, size: float, pulse: float) -> void:
 	for i in range(4):
-		var lane := -0.72 + float(i) * 0.48
-		var start := origin + Vector2(lane * size, size * (0.52 + abs(lane) * 0.2))
-		var end := start + Vector2(lane * size * 0.42, size * (SWARM_TRAIL_LENGTH + float(i % 2) * 0.38))
-		var a := SWARM_TRAIL_ALPHA * (1.0 - float(i) * 0.14) * (0.72 + pulse * 0.28)
-		var c := SWARM_CORE_COLOR if i < 2 else SWARM_TRAIL_COLOR
+		var lane := -0.58 + float(i) * 0.39
+		var start := origin + Vector2(-size * 0.15, lane * size * 0.95)
+		var end := start + Vector2(-size * (swarm_trail_length + float(i % 2) * 0.42), lane * size * 0.24)
+		var a := swarm_trail_alpha * (1.0 - float(i) * 0.14) * (0.86 + pulse * 0.26)
+		var c := swarm_core_glow_color if i < 2 else SWARM_TRAIL_COLOR
 		draw_line(start, end, Color(c.r, c.g, c.b, a), 1.0)
-	
+
+func _draw_swarm_body_layers(origin: Vector2, size: float, flicker: float) -> void:
+	# 3/4 top-down silhouette: slight vertical skew + asymmetric fins.
+	var skew_y := size * 0.16
 	var outer := PackedVector2Array([
-		origin + Vector2(0.0, -size * 1.36),
-		origin + Vector2(size * 1.08, size * 0.72),
-		origin + Vector2(size * 0.32, size * 0.52),
-		origin + Vector2(0.0, size * 1.0),
-		origin + Vector2(-size * 0.32, size * 0.52),
-		origin + Vector2(-size * 1.08, size * 0.72)
+		origin + Vector2(size * 1.42, -size * 0.06),
+		origin + Vector2(-size * 0.92, -size * 0.82 + skew_y),
+		origin + Vector2(-size * 0.42, -size * 0.24 + skew_y * 0.7),
+		origin + Vector2(-size * 0.88, size * 0.94 + skew_y),
+		origin + Vector2(-size * 0.34, size * 0.34 + skew_y * 0.75)
 	])
 	var inner := PackedVector2Array([
-		origin + Vector2(0.0, -size * 0.82),
-		origin + Vector2(size * 0.58, size * 0.32),
-		origin + Vector2(0.0, size * 0.62),
-		origin + Vector2(-size * 0.58, size * 0.32)
+		origin + Vector2(size * 0.82, -size * 0.02),
+		origin + Vector2(-size * 0.36, -size * 0.52 + skew_y * 0.78),
+		origin + Vector2(-size * 0.2, size * 0.02 + skew_y * 0.64),
+		origin + Vector2(-size * 0.3, size * 0.58 + skew_y * 0.86)
 	])
-	var nose := PackedVector2Array([
-		origin + Vector2(0.0, -size * 1.56),
-		origin + Vector2(size * 0.3, -size * 0.72),
-		origin + Vector2(0.0, -size * 0.92),
-		origin + Vector2(-size * 0.3, -size * 0.72)
+	var under_plate := PackedVector2Array([
+		origin + Vector2(size * 0.42, size * 0.14 + skew_y * 0.65),
+		origin + Vector2(-size * 0.24, size * 0.1 + skew_y * 0.78),
+		origin + Vector2(-size * 0.08, size * 0.48 + skew_y * 0.92),
+		origin + Vector2(size * 0.3, size * 0.42 + skew_y * 0.82)
 	])
 	var left_fin := PackedVector2Array([
-		origin + Vector2(-size * 1.18, size * 0.82),
-		origin + Vector2(-size * 0.38, size * 0.22),
-		origin + Vector2(-size * 0.23, size * 0.64)
+		origin + Vector2(-size * 0.66, -size * 0.78 + skew_y),
+		origin + Vector2(-size * 1.25, -size * 1.1 + skew_y * 0.8),
+		origin + Vector2(-size * 0.86, -size * 0.24 + skew_y * 0.9)
 	])
 	var right_fin := PackedVector2Array([
-		origin + Vector2(size * 1.18, size * 0.82),
-		origin + Vector2(size * 0.38, size * 0.22),
-		origin + Vector2(size * 0.23, size * 0.64)
+		origin + Vector2(-size * 0.6, size * 0.88 + skew_y),
+		origin + Vector2(-size * 1.18, size * 1.16 + skew_y),
+		origin + Vector2(-size * 0.78, size * 0.38 + skew_y * 0.85)
 	])
-	
+	var sensor := PackedVector2Array([
+		origin + Vector2(size * 1.02, -size * 0.02),
+		origin + Vector2(size * 0.83, -size * 0.16),
+		origin + Vector2(size * 0.83, size * 0.12)
+	])
 	draw_colored_polygon(left_fin, SWARM_PANEL_COLOR)
 	draw_colored_polygon(right_fin, SWARM_PANEL_COLOR)
-	draw_colored_polygon(nose, SWARM_BODY_COLOR)
-	draw_colored_polygon(outer, SWARM_BODY_COLOR)
+	draw_colored_polygon(outer, swarm_body_color)
 	draw_colored_polygon(inner, SWARM_PANEL_COLOR)
-	draw_polyline(outer + PackedVector2Array([outer[0]]), Color(0.0, 0.0, 0.0, 0.9), 3.0)
-	draw_polyline(outer + PackedVector2Array([outer[0]]), Color(SWARM_TRAIL_COLOR.r, SWARM_TRAIL_COLOR.g, SWARM_TRAIL_COLOR.b, 0.42), 1.0)
-	draw_polyline(nose + PackedVector2Array([nose[0]]), Color(0.0, 0.0, 0.0, 0.82), 2.0)
-	draw_polyline(left_fin + PackedVector2Array([left_fin[0]]), Color(0.0, 0.0, 0.0, 0.82), 2.0)
-	draw_polyline(right_fin + PackedVector2Array([right_fin[0]]), Color(0.0, 0.0, 0.0, 0.82), 2.0)
-	
-	draw_line(origin + Vector2(0.0, -size * 1.18), origin + Vector2(0.0, -size * 0.78), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, 0.62 * flicker), 1.0)
-	draw_line(origin + Vector2(-size * 0.74, size * 0.52), origin + Vector2(-size * 0.38, size * 0.3), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, 0.58 * flicker), 1.0)
-	draw_line(origin + Vector2(size * 0.74, size * 0.52), origin + Vector2(size * 0.38, size * 0.3), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, 0.58 * flicker), 1.0)
-	
+	draw_colored_polygon(under_plate, Color(SWARM_PANEL_COLOR.r, SWARM_PANEL_COLOR.g, SWARM_PANEL_COLOR.b, 0.8))
+	draw_colored_polygon(sensor, Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, 0.86 * flicker))
+	draw_polyline(outer + PackedVector2Array([outer[0]]), Color(SWARM_TRAIL_COLOR.r, SWARM_TRAIL_COLOR.g, SWARM_TRAIL_COLOR.b, 0.9), 1.35)
+	draw_line(origin + Vector2(-size * 0.92, -size * 0.72), origin + Vector2(-size * 0.72, -size * 0.38), Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, 0.98 * flicker), 1.25)
+	draw_line(origin + Vector2(-size * 0.92, size * 0.72), origin + Vector2(-size * 0.72, size * 0.38), Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, 0.98 * flicker), 1.25)
+	# Circuit trims to reinforce sci-fi neon paneling.
+	draw_line(origin + Vector2(size * 0.62, -size * 0.02), origin + Vector2(-size * 0.04, -size * 0.28 + skew_y * 0.7), Color(swarm_core_glow_color.r, swarm_core_glow_color.g, swarm_core_glow_color.b, 0.88 * flicker), 1.15)
+	draw_line(origin + Vector2(size * 0.56, size * 0.1), origin + Vector2(-size * 0.12, size * 0.24 + skew_y * 0.8), Color(SWARM_TRAIL_COLOR.r, SWARM_TRAIL_COLOR.g, SWARM_TRAIL_COLOR.b, 0.78 * flicker), 1.15)
+
+func _draw_swarm_core_layers(origin: Vector2, size: float, core_color: Color, pulse: float, flicker: float) -> void:
 	var glow_core := PackedVector2Array()
 	var core := PackedVector2Array()
 	var hot_core := PackedVector2Array()
+	var radius_glow := size * (0.68 + pulse * 0.12)
 	for i in range(6):
 		var a := PI / 6.0 + float(i) * TAU / 6.0
 		var dir := Vector2(cos(a), sin(a))
-		glow_core.append(origin + dir * size * (0.58 + pulse * 0.04))
-		core.append(origin + dir * size * 0.36)
-		hot_core.append(origin + dir * size * (0.18 + pulse * 0.03))
-	draw_colored_polygon(glow_core, Color(core_color.r, core_color.g, core_color.b, 0.12))
-	draw_colored_polygon(core, Color(core_color.r, core_color.g, core_color.b, 0.64))
-	draw_polyline(core + PackedVector2Array([core[0]]), Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 0.9), 1.1)
-	draw_colored_polygon(hot_core, Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 0.88))
+		glow_core.append(origin + dir * radius_glow)
+		core.append(origin + dir * size * 0.34)
+		hot_core.append(origin + dir * size * (0.17 + pulse * 0.03))
+	draw_colored_polygon(glow_core, Color(core_color.r, core_color.g, core_color.b, 0.34 * flicker))
+	draw_colored_polygon(core, Color(core_color.r, core_color.g, core_color.b, 0.98 * flicker))
+	draw_polyline(core + PackedVector2Array([core[0]]), Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 1.0 * flicker), 1.45)
+	draw_colored_polygon(hot_core, Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 1.0 * flicker))
 
 func _draw_cyber_healer(color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
@@ -611,6 +646,13 @@ func _process(delta: float) -> void:
 		return
 		
 	pulse_time += delta
+	if swarm_core_flicker_time > 0.0:
+		swarm_core_flicker_time = maxf(0.0, swarm_core_flicker_time - delta)
+	if enemy_type == "swarm" or tags.has("swarm"):
+		swarm_pack_check_timer -= delta
+		if swarm_pack_check_timer <= 0.0:
+			swarm_pack_check_timer = 0.2
+			_update_swarm_pack_density()
 	queue_redraw()
 	
 	# Update timers
@@ -855,6 +897,7 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	spawn_damage_number(int(final_damage), capture_pos, dn_color)
 	_play_hit_pulse()
 	if enemy_type == "swarm" or tags.has("swarm"):
+		_trigger_swarm_hit_reaction()
 		_spawn_swarm_hit_effect(capture_pos)
 	
 	if hp <= 0:
@@ -992,7 +1035,7 @@ func spawn_death_effect(death_global: Vector2) -> void:
 	if death_pop_scene:
 		var effect = death_pop_scene.instantiate()
 		if effect.has_method("setup") and (enemy_type == "swarm" or tags.has("swarm")):
-			effect.setup("swarm_death", SWARM_CORE_COLOR, 0.52, SWARM_DEATH_PARTICLE_COUNT)
+			effect.setup("swarm_death", swarm_core_glow_color, 0.52, swarm_death_particle_count)
 		get_tree().current_scene.add_child(effect)
 		effect.global_position = death_global
 
@@ -1022,6 +1065,9 @@ func _play_hit_pulse() -> void:
 	shake_tween.tween_property(self, "position", original_pos + shake_dir, 0.018 if is_swarm else 0.03)
 	shake_tween.tween_property(self, "position", original_pos, 0.018 if is_swarm else 0.03)
 
+func _trigger_swarm_hit_reaction() -> void:
+	swarm_core_flicker_time = 0.08
+
 func _spawn_swarm_hit_effect(hit_global: Vector2) -> void:
 	if death_pop_scene == null:
 		return
@@ -1029,9 +1075,28 @@ func _spawn_swarm_hit_effect(hit_global: Vector2) -> void:
 	if not container: container = get_tree().current_scene
 	var effect = death_pop_scene.instantiate()
 	if effect.has_method("setup"):
-		effect.setup("swarm_hit", SWARM_CORE_COLOR, 0.18, 6)
+		effect.setup("swarm_hit", swarm_core_glow_color, 0.18, 6)
 	container.add_child(effect)
 	effect.global_position = hit_global
+
+func _update_swarm_pack_density() -> void:
+	var nearby := 0
+	for node in get_tree().get_nodes_in_group("enemies"):
+		if node == self:
+			continue
+		if not is_instance_valid(node) or not (node is Node2D):
+			continue
+		if node.has_method("is_alive") and not node.is_alive():
+			continue
+		var node_tags: Array = node.get("tags")
+		if str(node.get("enemy_type")) != "swarm" and not node_tags.has("swarm"):
+			continue
+		var other := node as Node2D
+		if global_position.distance_to(other.global_position) <= 42.0:
+			nearby += 1
+			if nearby >= 6:
+				break
+	swarm_pack_density = clampf(float(nearby) / 6.0, 0.0, 1.0)
 
 func get_priority_score() -> float:
 	var score = 1.0

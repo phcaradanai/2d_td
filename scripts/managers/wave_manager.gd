@@ -252,9 +252,14 @@ func spawn_enemy(group_data: Dictionary) -> void:
 	effect.global_position = path_node.to_global(spawn_pos_vec)
 	if effect.has_method("setup"):
 		var spawn_color = Color(0.4, 0.7, 1.0, 0.6)
+		var spawn_mode = "portal"
+		var enemy_tags: Array = base_config.get("tags", [])
 		if base_config.get("category") == ENEMY_CATEGORY_AIR:
 			spawn_color = Color(1.0, 0.8, 0.4, 0.6) # Yellow for air
-		effect.setup(spawn_color, 20.0)
+		if enemy_type == "swarm" or enemy_tags.has("swarm"):
+			spawn_color = Color(0.0, 0.941, 1.0, 0.66)
+			spawn_mode = "swarm"
+		effect.setup(spawn_color, 20.0, spawn_mode)
 
 func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D) -> void:
 	if not path_node: return
