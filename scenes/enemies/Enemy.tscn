@@ -7,7 +7,6 @@ loop = false
 script = ExtResource("1_enemy_script")
 
 [node name="Body" type="ColorRect" parent="." unique_id=12204949]
-visible = false
 offset_left = -16.0
 offset_top = -16.0
 offset_right = 16.0

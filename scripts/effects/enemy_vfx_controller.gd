@@ -106,7 +106,7 @@ func play_runner_burst() -> void:
 	_spawn_impact("impact", Color(0.05, 1.0, 0.74), 0.34)
 
 func mark_cloaked_deferred(_preferred: Node) -> void:
-	_show_status("cloaked", Color(0.75, 0.75, 1.0), "masked")
+	_show_status("cloaked", Color(0.75, 0.75, 1.0), "")
 
 func mark_cloaked_targetable() -> void:
 	_show_status("cloaked", Color(0.9, 0.95, 1.0), "")

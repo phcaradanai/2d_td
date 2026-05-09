@@ -1,0 +1,21 @@
+[gd_scene format=3 uid="uid://dxcyknod5v454"]
+
+[ext_resource type="Script" uid="uid://bw1fnmcabo61a" path="res://scripts/enemies/enemy.gd" id="1_6h0xr"]
+
+[sub_resource type="Curve2D" id="Curve2D_w2fpf"]
+
+[node name="EnemyPreviewRoot" type="Node2D" unique_id=1891959685]
+
+[node name="Path2D" type="Path2D" parent="." unique_id=681120894]
+curve = SubResource("Curve2D_w2fpf")
+
+[node name="Enemy" type="PathFollow2D" parent="Path2D" unique_id=2068548314]
+script = ExtResource("1_6h0xr")
+
+[node name="Body" type="ColorRect" parent="Path2D/Enemy" unique_id=425916931]
+offset_right = 40.0
+offset_bottom = 40.0
+
+[node name="HpBar" type="ProgressBar" parent="Path2D/Enemy" unique_id=840493005]
+offset_right = 4.0
+offset_bottom = 27.0

@@ -1,18 +1,23 @@
 extends Node2D
 class_name EnemyBeamVFX
 
-var time: float = 0.0
+var time: float = 999.0
 var duration: float = 0.45
 var beam_color: Color = Color(0.9, 1.0, 0.95, 1.0)
-var mode: String = "heal_cast"
+var mode: String = "idle"
 var links: Array[Node] = []
 var source: Node2D = null
+
+func _ready() -> void:
+	visible = false
+	set_process(false)
 
 func play_heal_cast(p_duration: float = 0.45) -> void:
 	mode = "heal_cast"
 	duration = p_duration
 	time = 0.0
 	beam_color = Color(1.0, 0.92, 0.56, 1.0)
+	visible = true
 	set_process(true)
 	queue_redraw()
 
@@ -20,25 +25,41 @@ func show_links(p_source: Node2D, p_targets: Array, p_color: Color) -> void:
 	source = p_source
 	links = p_targets.duplicate()
 	beam_color = p_color
+
+	if links.is_empty():
+		clear_links()
+		return
+
 	mode = "links"
+	visible = true
 	set_process(true)
 	queue_redraw()
 
 func clear_links() -> void:
 	links.clear()
+	mode = "idle"
+	visible = false
+	set_process(false)
 	queue_redraw()
 
 func _process(delta: float) -> void:
 	if mode == "heal_cast":
 		time += delta
 		if time >= duration:
-			queue_redraw()
+			mode = "idle"
+			visible = false
 			set_process(false)
+			queue_redraw()
+			return
 	else:
 		time += delta
+
 	queue_redraw()
 
 func _draw() -> void:
+	if not visible:
+		return
+
 	if mode == "heal_cast":
 		_draw_heal_cast()
 	elif mode == "links":

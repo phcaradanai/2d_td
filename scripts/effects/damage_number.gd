@@ -4,7 +4,7 @@ extends Node2D
 @export var travel_distance: float = 40.0
 @export var fade_delay: float = 0.3
 
-@onready var label: Label = $Label
+@onready var label: Label = get_node_or_null("Label") as Label
 
 func setup(amount: int, color: Color = Color.WHITE) -> void:
 	if label:
@@ -12,6 +12,16 @@ func setup(amount: int, color: Color = Color.WHITE) -> void:
 		label.add_theme_color_override("font_color", color)
 
 func _ready() -> void:
+	if label == null:
+		label = Label.new()
+		label.name = "Label"
+		label.text = "-0"
+		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		label.position = Vector2(-40, -18)
+		label.size = Vector2(80, 36)
+		add_child(label)
+
 	var tween = create_tween()
 	tween.set_parallel(true)
 	
