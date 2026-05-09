@@ -1,0 +1,12 @@
+# Godot-specific ignores
+.godot/
+*.import
+
+# OS-specific ignores
+.DS_Store
+Thumbs.db
+*.log
+
+# Build artifacts
+builds/
+export/
