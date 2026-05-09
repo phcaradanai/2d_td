@@ -4,6 +4,10 @@ signal retry_pressed()
 signal next_level_pressed()
 signal level_select_pressed()
 
+const TELEMETRY_REPORT_LOADER_SCRIPT_PATH := "res://scripts/debug/telemetry_report_loader.gd"
+const BALANCE_PATCH_GENERATOR_SCRIPT_PATH := "res://scripts/debug/balance_patch_generator.gd"
+const DEBUG_ACCESS_SCRIPT := preload("res://scripts/debug/debug_access.gd")
+
 @onready var result_title: Label = %ResultTitle
 @onready var record_feedback: Label = %RecordFeedback
 @onready var score_label: Label = %ScoreValue
@@ -25,11 +29,18 @@ var current_display_score: int = 0
 var animation_tween: Tween
 var record_tween: Tween # New: Track feedback loop tween
 var current_report_data: Dictionary = {} # Store finalized telemetry for debug popup
+var telemetry_report_loader = null
+var balance_patch_generator = null
+var balance_tool_aggregate: Dictionary = {}
+var balance_tool_patch: Dictionary = {}
+var balance_tool_preview_text: String = ""
+var balance_tool_last_attempt: int = 0
 
 func _ready() -> void:
 	retry_button.pressed.connect(func(): retry_pressed.emit())
 	next_button.pressed.connect(func(): next_level_pressed.emit())
 	menu_button.pressed.connect(func(): level_select_pressed.emit())
+	_hide_balance_tool_nodes()
 	
 	# Initial state
 	modulate.a = 0
@@ -165,12 +176,7 @@ func _setup_record_feedback(improvements: Dictionary, summary: Dictionary = {}) 
 					top_leak = etype
 			messages.append(str(total_leaks) + " LEAKS (" + top_leak.to_upper() + ")")
 		
-		# Debug: Prepare the detailed summary report but keep it hidden by default
-		if OS.is_debug_build():
-			_prepare_debug_telemetry_report(current_report_data)
-		else:
-			var btn = get_node_or_null("MarginContainer/VBoxContainer/ButtonsVBox/DebugReportButton")
-			if btn: btn.hide()
+		_hide_balance_tool_nodes()
 		
 	if messages.size() > 0:
 		record_feedback.text = messages[0]
@@ -196,7 +202,30 @@ func _format_time(seconds: int) -> String:
 	var secs = int(seconds % 60)
 	return "%02d:%02d" % [mins, secs]
 
+func _hide_balance_tool_nodes() -> void:
+	var names := [
+		"DebugReportButton",
+		"DebugAnalyzeButton",
+		"DebugExportButton",
+		"BalanceToolButton",
+		"DebugReportPopup",
+		"BalanceToolPopup"
+	]
+	for node_name in names:
+		var node := find_child(node_name, true, false)
+		if node:
+			DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(node)
+			if node is CanvasItem:
+				node.hide()
+			if node is BaseButton:
+				node.disabled = true
+			if node is Control:
+				node.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 func _prepare_debug_telemetry_report(m: Dictionary) -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Result Panel Balance Report"):
+		_hide_balance_tool_nodes()
+		return
 	# 1. Create/Find the Balance Report Button
 	var buttons_vbox = get_node_or_null("MarginContainer/VBoxContainer/ButtonsVBox")
 	if not buttons_vbox: return
@@ -210,15 +239,69 @@ func _prepare_debug_telemetry_report(m: Dictionary) -> void:
 		debug_btn.add_theme_font_size_override("font_size", 14)
 		debug_btn.modulate = Color(0.6, 0.8, 1.0)
 		buttons_vbox.add_child(debug_btn)
+		DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(debug_btn)
 		debug_btn.pressed.connect(_toggle_debug_report_popup)
 	
 	debug_btn.show()
+	
+	# 1.5 Add Analyze & Export Buttons
+	var analyze_btn = buttons_vbox.get_node_or_null("DebugAnalyzeButton")
+	if not analyze_btn:
+		analyze_btn = Button.new()
+		analyze_btn.name = "DebugAnalyzeButton"
+		analyze_btn.text = "ANALYZE ALL RUNS"
+		analyze_btn.custom_minimum_size.y = 40
+		analyze_btn.add_theme_font_size_override("font_size", 14)
+		analyze_btn.modulate = Color(0.8, 1.0, 0.8)
+		buttons_vbox.add_child(analyze_btn)
+		DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(analyze_btn)
+		analyze_btn.pressed.connect(func():
+			if DEBUG_ACCESS_SCRIPT.block_balance_tool("Analyze Saved Reports"):
+				return
+			var gm = get_tree().current_scene.get_node_or_null("GameManager")
+			if gm and gm.battle_telemetry:
+				gm.battle_telemetry.analyze_saved_reports(m.get("level_id", "unknown"))
+		)
+	analyze_btn.show()
+	
+	var export_btn = buttons_vbox.get_node_or_null("DebugExportButton")
+	if not export_btn:
+		export_btn = Button.new()
+		export_btn.name = "DebugExportButton"
+		export_btn.text = "EXPORT CSV SUMMARY"
+		export_btn.custom_minimum_size.y = 40
+		export_btn.add_theme_font_size_override("font_size", 14)
+		export_btn.modulate = Color(1.0, 0.9, 0.6)
+		buttons_vbox.add_child(export_btn)
+		DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(export_btn)
+		export_btn.pressed.connect(func():
+			if DEBUG_ACCESS_SCRIPT.block_balance_tool("Export Telemetry Summary"):
+				return
+			var gm = get_tree().current_scene.get_node_or_null("GameManager")
+			if gm and gm.battle_telemetry:
+				gm.battle_telemetry.export_summary_csv(m.get("level_id", "unknown"))
+		)
+	export_btn.show()
+
+	var balance_btn = buttons_vbox.get_node_or_null("BalanceToolButton")
+	if not balance_btn:
+		balance_btn = Button.new()
+		balance_btn.name = "BalanceToolButton"
+		balance_btn.text = "BALANCE TUNING TOOL"
+		balance_btn.custom_minimum_size.y = 40
+		balance_btn.add_theme_font_size_override("font_size", 14)
+		balance_btn.modulate = Color(1.0, 0.72, 0.45)
+		buttons_vbox.add_child(balance_btn)
+		DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(balance_btn)
+		balance_btn.pressed.connect(_toggle_balance_tool_popup)
+	balance_btn.show()
 	
 	# 2. Create/Find the Popup Panel
 	var popup = get_node_or_null("DebugReportPopup")
 	if not popup:
 		popup = PanelContainer.new()
 		popup.name = "DebugReportPopup"
+		DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(popup)
 		# Styling for the popup
 		var style = StyleBoxFlat.new()
 		style.bg_color = Color(0.05, 0.08, 0.1, 0.95)
@@ -287,7 +370,12 @@ func _prepare_debug_telemetry_report(m: Dictionary) -> void:
 	if OS.is_debug_build():
 		print("[REPORT_UI] debug_report_ready=true level=%s" % m.get("level_id", "unknown"))
 
+	_prepare_balance_tool_popup()
+
 func _toggle_debug_report_popup() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Open Balance Report"):
+		_hide_balance_tool_nodes()
+		return
 	var popup = get_node_or_null("DebugReportPopup")
 	if popup:
 		popup.visible = not popup.visible
@@ -298,6 +386,312 @@ func _toggle_debug_report_popup() -> void:
 			if OS.is_debug_build():
 				var level_id = current_report_data.get("level_id", "unknown")
 				print("[REPORT_UI] opening balance report for level=%s" % level_id)
+
+func _toggle_balance_tool_popup() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Balance Tuning Tool"):
+		_hide_balance_tool_nodes()
+		return
+	_prepare_balance_tool_popup()
+	var popup = get_node_or_null("BalanceToolPopup")
+	if popup:
+		popup.visible = not popup.visible
+		if popup.visible:
+			popup.move_to_front()
+			_refresh_balance_tool_summary()
+
+func _prepare_balance_tool_popup() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Balance Tuning Tool"):
+		_hide_balance_tool_nodes()
+		return
+	var popup = get_node_or_null("BalanceToolPopup")
+	if popup:
+		return
+
+	popup = PanelContainer.new()
+	popup.name = "BalanceToolPopup"
+	DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(popup)
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.06, 0.055, 0.05, 0.96)
+	style.border_width_left = 2
+	style.border_width_top = 2
+	style.border_width_right = 2
+	style.border_width_bottom = 2
+	style.border_color = Color(1.0, 0.58, 0.28, 0.85)
+	style.set_corner_radius_all(8)
+	popup.add_theme_stylebox_override("panel", style)
+
+	var margin = MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 18)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_right", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	popup.add_child(margin)
+
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	margin.add_child(vbox)
+
+	var title = Label.new()
+	title.text = "BALANCE TUNING TOOL"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 18)
+	title.add_theme_color_override("font_color", Color(1.0, 0.72, 0.45))
+	vbox.add_child(title)
+
+	var summary = RichTextLabel.new()
+	summary.name = "BalanceSummary"
+	summary.bbcode_enabled = true
+	summary.fit_content = true
+	summary.custom_minimum_size = Vector2(520, 115)
+	vbox.add_child(summary)
+
+	var grid = GridContainer.new()
+	grid.columns = 2
+	grid.add_theme_constant_override("h_separation", 8)
+	grid.add_theme_constant_override("v_separation", 8)
+	vbox.add_child(grid)
+
+	_add_balance_tool_button(grid, "Analyze Saved Reports", _on_balance_analyze_pressed)
+	_add_balance_tool_button(grid, "Generate Balance Patch", _on_balance_generate_pressed)
+	_add_balance_tool_button(grid, "Preview Patch", _on_balance_preview_pressed)
+	_add_balance_tool_button(grid, "Apply Runtime Patch", _on_balance_apply_runtime_pressed)
+	_add_balance_tool_button(grid, "Find Acceptable Patch", _on_balance_find_acceptable_pressed)
+	_add_balance_tool_button(grid, "Apply File Patch", _on_balance_apply_file_pressed)
+	_add_balance_tool_button(grid, "Run Dominant Strategy Test", _on_balance_dominant_test_pressed)
+	_add_balance_tool_button(grid, "Run Mixed Defense Test", _on_balance_mixed_test_pressed)
+	_add_balance_tool_button(grid, "Rollback Last Patch", _on_balance_rollback_pressed)
+	_add_balance_tool_button(grid, "Export Patch JSON", _on_balance_export_pressed)
+
+	var output_scroll = ScrollContainer.new()
+	output_scroll.custom_minimum_size = Vector2(520, 260)
+	output_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	vbox.add_child(output_scroll)
+
+	var output = RichTextLabel.new()
+	output.name = "BalanceOutput"
+	output.bbcode_enabled = false
+	output.fit_content = true
+	output.selection_enabled = true
+	output_scroll.add_child(output)
+
+	var close = Button.new()
+	close.text = "CLOSE"
+	close.custom_minimum_size.y = 36
+	close.pressed.connect(func(): popup.hide())
+	vbox.add_child(close)
+
+	add_child(popup)
+	popup.set_as_top_level(true)
+	popup.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	popup.offset_left = -300
+	popup.offset_top = -330
+	popup.offset_right = 300
+	popup.offset_bottom = 330
+	popup.hide()
+
+func _add_balance_tool_button(parent: Control, text: String, callable: Callable) -> void:
+	var button = Button.new()
+	button.text = text
+	button.custom_minimum_size = Vector2(250, 34)
+	DEBUG_ACCESS_SCRIPT.register_balance_tool_ui(button)
+	button.pressed.connect(callable)
+	parent.add_child(button)
+
+func _refresh_balance_tool_summary() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Refresh Balance Tool Summary"):
+		return
+	var popup = get_node_or_null("BalanceToolPopup")
+	if not popup:
+		return
+	var summary := popup.find_child("BalanceSummary", true, false) as RichTextLabel
+	if not summary:
+		return
+	var level_id := _balance_level_id()
+	var reports_count := int(balance_tool_aggregate.get("source_reports_count", 0))
+	var latest_analysis: Dictionary = current_report_data.get("balance_analysis", {})
+	var difficulty := str(balance_tool_aggregate.get("difficulty_rating", latest_analysis.get("difficulty_rating", "Unknown")))
+	var risk := str(balance_tool_aggregate.get("dominant_strategy_risk", latest_analysis.get("dominant_strategy_risk", false)))
+	var top_tower := str(balance_tool_aggregate.get("tower_dominance", latest_analysis.get("tower_dominance", _get_top_key(current_report_data.get("damage_by_tower_type", {})))))
+	var hero_usage := float(balance_tool_aggregate.get("hero_used_rate", 1.0 if int(current_report_data.get("hero_deploy_count", 0)) > 0 else 0.0))
+	var gold_ratio := float(balance_tool_aggregate.get("gold_remaining_ratio", latest_analysis.get("gold_remaining_ratio", 0.0)))
+	var acceptance: Dictionary = {}
+	if balance_patch_generator:
+		acceptance = balance_patch_generator.last_patch_acceptance
+	var status := str(acceptance.get("status", "Rejected" if balance_tool_patch.is_empty() else "Pending")).capitalize().replace("_", " ")
+	summary.text = "[b]level_id:[/b] %s\n[b]reports:[/b] %d  [b]difficulty:[/b] %s  [b]risk:[/b] %s\n[b]top tower:[/b] %s  [b]hero usage:[/b] %d%%  [b]gold remaining:[/b] %.1f%%\n[b]Dominant Strategy:[/b] %s  [b]Mixed Defense:[/b] %s  [b]File Verify:[/b] %s\n[b]Patch Status:[/b] %s  [b]Last Attempt:[/b] %d" % [
+		level_id,
+		reports_count,
+		difficulty,
+		risk,
+		top_tower,
+		int(round(hero_usage * 100.0)),
+		gold_ratio * 100.0,
+		"PASS" if bool(acceptance.get("dominant_strategy_pass", false)) else "FAIL",
+		"PASS" if bool(acceptance.get("mixed_defense_pass", false)) else "FAIL",
+		"PASS" if bool(acceptance.get("file_verify_pass", false)) else "FAIL",
+		status,
+		balance_tool_last_attempt
+	]
+
+func _balance_set_output(text: String) -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Balance Tool Output"):
+		return
+	var popup = get_node_or_null("BalanceToolPopup")
+	if popup:
+		var output := popup.find_child("BalanceOutput", true, false) as RichTextLabel
+		if output:
+			output.text = text
+	print(text)
+
+func _balance_count_search_attempts(text: String) -> int:
+	var count := 0
+	for line in text.split("\n"):
+		if line.begins_with("attempt="):
+			count += 1
+	return count
+
+func _balance_level_id() -> String:
+	var level_id := str(current_report_data.get("level_id", ""))
+	if level_id == "":
+		var gm = get_tree().current_scene
+		if gm and "current_level_id" in gm:
+			level_id = str(gm.current_level_id)
+	if level_id == "":
+		level_id = "unknown"
+	return level_id
+
+func _on_balance_analyze_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Analyze Saved Reports"):
+		return
+	if not telemetry_report_loader:
+		return
+	var level_id := _balance_level_id()
+	balance_tool_aggregate = telemetry_report_loader.analyze_reports(level_id)
+	var latest: Dictionary = telemetry_report_loader.get_latest_report(level_id)
+	if not latest.is_empty():
+		current_report_data = latest
+	_refresh_balance_tool_summary()
+	_balance_set_output("[TELEMETRY_AGGREGATE]\nlevel=%s\nruns=%d\ndifficulty_rating=%s\navg_gold_remaining_ratio=%.1f%%\ntower_dominance=%s\ntower_dominance_ratio=%.1f%%\nhero_used_rate=%d%%\ndominant_strategy_risk=%s" % [
+		level_id,
+		int(balance_tool_aggregate.get("source_reports_count", 0)),
+		str(balance_tool_aggregate.get("difficulty_rating", "Unknown")),
+		float(balance_tool_aggregate.get("gold_remaining_ratio", 0.0)) * 100.0,
+		str(balance_tool_aggregate.get("tower_dominance", "None")),
+		float(balance_tool_aggregate.get("tower_dominance_ratio", 0.0)) * 100.0,
+		int(round(float(balance_tool_aggregate.get("hero_used_rate", 0.0)) * 100.0)),
+		str(balance_tool_aggregate.get("dominant_strategy_risk", false))
+	])
+
+func _on_balance_generate_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Generate Balance Patch"):
+		return
+	if not balance_patch_generator:
+		return
+	var level_id := _balance_level_id()
+	if balance_tool_aggregate.is_empty() and telemetry_report_loader:
+		balance_tool_aggregate = telemetry_report_loader.analyze_reports(level_id)
+	var latest: Dictionary = current_report_data
+	if telemetry_report_loader:
+		var loaded_latest: Dictionary = telemetry_report_loader.get_latest_report(level_id)
+		if not loaded_latest.is_empty():
+			latest = loaded_latest
+	balance_tool_patch = balance_patch_generator.generate_patch(level_id, balance_tool_aggregate, latest)
+	balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	_refresh_balance_tool_summary()
+	_balance_set_output(JSON.stringify(balance_tool_patch, "\t"))
+
+func _on_balance_preview_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Preview Balance Patch"):
+		return
+	if balance_tool_patch.is_empty():
+		_on_balance_generate_pressed()
+	balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	_balance_set_output(balance_tool_preview_text)
+
+func _on_balance_apply_runtime_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Apply Runtime Patch"):
+		return
+	if balance_tool_patch.is_empty():
+		_on_balance_generate_pressed()
+	var wm = get_tree().current_scene.get_node_or_null("WaveManager")
+	var ok: bool = balance_patch_generator.apply_runtime_patch(balance_tool_patch, wm)
+	if not ok and not balance_patch_generator.last_stage_2_patch.is_empty():
+		balance_tool_patch = balance_patch_generator.last_stage_2_patch
+		balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	if not ok and not balance_patch_generator.last_softened_patch.is_empty():
+		balance_tool_patch = balance_patch_generator.last_softened_patch
+		balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	_refresh_balance_tool_summary()
+	_balance_set_output(balance_patch_generator.last_operation_log)
+
+func _on_balance_find_acceptable_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Find Acceptable Patch"):
+		return
+	if balance_tool_patch.is_empty():
+		_on_balance_generate_pressed()
+	var wm = get_tree().current_scene.get_node_or_null("WaveManager")
+	var accepted: Dictionary = balance_patch_generator.find_acceptable_patch(balance_tool_patch, wm)
+	balance_tool_last_attempt = _balance_count_search_attempts(balance_patch_generator.last_operation_log)
+	if not accepted.is_empty():
+		balance_tool_patch = accepted
+		balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	elif not balance_patch_generator.last_softened_patch.is_empty():
+		balance_tool_patch = balance_patch_generator.last_softened_patch
+		balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	elif not balance_patch_generator.last_stage_2_patch.is_empty():
+		balance_tool_patch = balance_patch_generator.last_stage_2_patch
+		balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	_refresh_balance_tool_summary()
+	_balance_set_output(balance_patch_generator.last_operation_log)
+
+func _on_balance_apply_file_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Apply File Patch"):
+		return
+	if balance_tool_patch.is_empty():
+		_on_balance_generate_pressed()
+	var ok: bool = balance_patch_generator.apply_patch(balance_tool_patch)
+	if not ok and not balance_patch_generator.last_stage_2_patch.is_empty():
+		balance_tool_patch = balance_patch_generator.last_stage_2_patch
+		balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	if not ok and not balance_patch_generator.last_softened_patch.is_empty():
+		balance_tool_patch = balance_patch_generator.last_softened_patch
+		balance_tool_preview_text = balance_patch_generator.preview_patch(balance_tool_patch)
+	_refresh_balance_tool_summary()
+	_balance_set_output(balance_patch_generator.last_operation_log)
+
+func _on_balance_dominant_test_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Run Dominant Strategy Test"):
+		return
+	if balance_tool_patch.is_empty():
+		_on_balance_generate_pressed()
+	var wm = get_tree().current_scene.get_node_or_null("WaveManager")
+	var output: String = balance_patch_generator.run_dominant_strategy_test(_balance_level_id(), balance_tool_patch, wm)
+	if "verdict=FAIL" in output:
+		balance_tool_patch = balance_patch_generator.generate_stage_2_patch(balance_tool_patch)
+		output += "\n" + balance_patch_generator.preview_patch(balance_tool_patch)
+	_balance_set_output(output)
+
+func _on_balance_mixed_test_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Run Mixed Defense Test"):
+		return
+	if balance_tool_patch.is_empty():
+		_on_balance_generate_pressed()
+	var wm = get_tree().current_scene.get_node_or_null("WaveManager")
+	_balance_set_output(balance_patch_generator.run_mixed_defense_test(_balance_level_id(), balance_tool_patch, wm))
+
+func _on_balance_rollback_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Rollback Last Patch"):
+		return
+	var ok: bool = balance_patch_generator.rollback_last_patch(_balance_level_id())
+	_balance_set_output(balance_patch_generator.last_operation_log)
+
+func _on_balance_export_pressed() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Export Patch JSON"):
+		return
+	if balance_tool_patch.is_empty():
+		_on_balance_generate_pressed()
+	var path: String = balance_patch_generator.export_patch_json(balance_tool_patch)
+	_balance_set_output("[BALANCE_PATCH_EXPORT]\npath=%s\n%s" % [path, "error=" + balance_patch_generator.last_error if path == "" else "saved=true"])
 
 func _update_report_content(popup_node: PanelContainer, data: Dictionary) -> void:
 	# Use a more reliable path finding

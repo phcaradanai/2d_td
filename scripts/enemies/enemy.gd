@@ -2,6 +2,15 @@ extends PathFollow2D
 
 signal died(enemy, reward_gold)
 signal reached_base(enemy, damage, global_pos)
+signal healed(target, amount, source)
+signal healer_heal_tick(healer, targets, amount)
+signal enemy_healed(target, healer, amount, hp_before, hp_after)
+signal shield_applied(target, raw_damage, final_damage, source)
+signal disrupted_tower(tower, penalty, source)
+signal disruption_removed(tower, source)
+signal split_triggered(source, child_type, count)
+signal stealth_targeting_deferred(cloaked_enemy, preferred_target)
+signal enemy_modifier_changed(enemy, modifier_name, value)
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -11,6 +20,11 @@ var hp: float = 30.0
 var max_hp: float = 30.0
 var base_speed: float = 100.0
 var speed: float = 100.0
+var formation_speed_multiplier: float = 1.0
+var formation_target_multiplier: float = 1.0
+var formation_config_multiplier: float = 1.0
+var status_speed_multiplier: float = 1.0
+var formation_release_rate: float = 2.5
 var reward_gold: int = 5
 var base_damage: int = 1
 var enemy_type: String = "basic"
@@ -26,6 +40,8 @@ var is_dead_flag: bool = false
 var active_slow_percent: float = 0.0
 var slow_remaining: float = 0.0
 var shield_remaining: float = 0.0
+var active_shield_reduction: float = 0.0
+var active_shield_source: Node = null
 var is_flashing: bool = false
 var vulnerability_multiplier: float = 1.0
 var vulnerability_remaining: float = 0.0
@@ -46,6 +62,16 @@ const COLOR_NEON_FAST = Color(0.0, 1.0, 0.7) # Teal/Green
 const COLOR_NEON_TANK = Color(1.0, 0.45, 0.1) # Amber/Orange
 const COLOR_NEON_BULWARK = Color(0.1, 0.6, 1.0) # Blue
 const COLOR_NEON_HUNTER = Color(1.0, 0.1, 0.4) # Magenta/Red
+const SWARM_BODY_COLOR := Color(0.102, 0.122, 0.169, 1.0) # #1A1F2B
+const SWARM_PANEL_COLOR := Color(0.067, 0.094, 0.153, 1.0) # #111827
+const SWARM_CORE_COLOR := Color(0.0, 0.941, 1.0, 1.0) # #00F0FF
+const SWARM_CORE_HIGHLIGHT := Color(0.224, 1.0, 0.478, 1.0) # #39FF7A
+const SWARM_TRAIL_COLOR := Color(0.161, 0.475, 1.0, 1.0) # #2979FF
+const SWARM_GLOW_LIGHT := Color(0.718, 1.0, 0.961, 1.0) # #B7FFF5
+const SWARM_TRAIL_LENGTH := 2.7
+const SWARM_TRAIL_ALPHA := 0.16
+const SWARM_HOVER_STRENGTH := 0.13
+const SWARM_DEATH_PARTICLE_COUNT := 18
 
 # Bulwark Stats
 var shield_radius: float = 90.0
@@ -64,12 +90,19 @@ var skill_id: String = ""
 var skill_params: Dictionary = {}
 var skill_timer: float = 0.0
 var is_stealth: bool = false
+var formation_speed_limit: float = -1.0
+var formation_limit_duration: float = 0.0
+var disrupted_towers: Dictionary = {}
+var split_triggered_once: bool = false
 
 @onready var body: ColorRect = $Body
 @onready var hp_bar: ProgressBar = $HpBar
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
 @onready var death_pop_scene: PackedScene = preload("res://scenes/effects/DeathPopEffect.tscn")
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
+const ENEMY_VFX_CONTROLLER_SCRIPT := preload("res://scripts/effects/enemy_vfx_controller.gd")
+
+var vfx_controller: Node = null
 
 func setup(config: Dictionary) -> void:
 	enemy_type = config.get("id", config.get("enemy_type", "basic"))
@@ -94,11 +127,24 @@ func setup(config: Dictionary) -> void:
 	reward_gold = config.get("reward_gold", 5)
 	base_damage = config.get("base_damage", 1)
 	
+	formation_speed_limit = config.get("formation_speed_limit", -1.0)
+	formation_limit_duration = config.get("formation_limit_duration", 0.0)
+	formation_config_multiplier = float(config.get("formation_speed_multiplier", 1.0))
+	formation_release_rate = float(config.get("formation_release_rate", formation_release_rate))
+	_configure_formation_speed()
+	update_effective_speed()
+	
 	if hp_bar:
 		hp_bar.max_value = max_hp
 		hp_bar.value = hp
 	
 	apply_visuals()
+	_ensure_vfx_controller()
+	var l_offset = config.get("local_offset", Vector2.ZERO)
+	if l_offset is Vector2:
+		h_offset = l_offset.x
+		v_offset = l_offset.y
+	
 	is_active = true
 
 func normalize_enemy_category(raw_category) -> String:
@@ -122,8 +168,26 @@ func apply_visuals() -> void:
 	if body: body.visible = false
 	queue_redraw()
 
+func _ensure_vfx_controller() -> void:
+	if vfx_controller and is_instance_valid(vfx_controller):
+		vfx_controller.setup(self)
+		return
+	vfx_controller = get_node_or_null("EnemyVFXController")
+	if vfx_controller == null:
+		vfx_controller = ENEMY_VFX_CONTROLLER_SCRIPT.new()
+		add_child(vfx_controller)
+	vfx_controller.setup(self)
+
+func get_vfx_controller() -> Node:
+	_ensure_vfx_controller()
+	return vfx_controller
+
 func _draw() -> void:
 	var size = 16.0
+	if enemy_category == ENEMY_CATEGORY_AIR:
+		var hover_offset := sin(pulse_time * 4.0) * 2.0
+		draw_circle(Vector2(0, 12), size * 0.75, Color(0.0, 0.0, 0.0, 0.16))
+		draw_arc(Vector2(0, hover_offset), size * 1.15, 0, TAU, 28, Color(0.45, 0.9, 1.0, 0.18), 1.2)
 	
 	if shield_remaining > 0:
 		# Subtle hex-style or thin ring indicator for protected units
@@ -188,6 +252,25 @@ func _draw_circuit_line(p1: Vector2, p2: Vector2, color: Color, width: float = 1
 	var alpha = (sin(pulse_time * 12.0 + p1.x) * 0.5 + 0.5) * 0.4 + 0.1
 	draw_line(p1, p2, Color(color.r, color.g, color.b, alpha), width)
 
+func _draw_edge_nodes(points: PackedVector2Array, color: Color, radius: float = 1.8) -> void:
+	for p in points:
+		draw_circle(p, radius + 1.0, Color(0.0, 0.0, 0.0, 0.45))
+		draw_circle(p, radius, Color(color.r, color.g, color.b, 0.78))
+
+func _draw_orbiters(count: int, orbit_radius: float, node_radius: float, color: Color, speed: float = 1.0) -> void:
+	for i in range(count):
+		var a := float(i) / float(count) * TAU + pulse_time * speed
+		var p := Vector2.RIGHT.rotated(a) * orbit_radius
+		draw_circle(p, node_radius + 2.0, Color(color.r, color.g, color.b, 0.08))
+		draw_circle(p, node_radius, Color(color.r, color.g, color.b, 0.75))
+		draw_line(p * 0.82, p * 1.06, Color(color.r, color.g, color.b, 0.28), 1.0)
+
+func _draw_inner_plate(points: PackedVector2Array, color: Color, scale_factor: float = 0.66) -> void:
+	var inner := PackedVector2Array()
+	for p in points:
+		inner.append(p * scale_factor)
+	draw_polyline(inner + PackedVector2Array([inner[0]]), Color(color.r, color.g, color.b, 0.28), 1.0)
+
 func _draw_shield_dome(radius: float, color: Color) -> void:
 	var pulse = sin(pulse_time * 3.0) * 0.5 + 0.5
 	var r_anim = radius * (0.98 + pulse * 0.04)
@@ -213,13 +296,16 @@ func _draw_cyber_node(color: Color, size: float) -> void:
 	
 	# Layer 1: Base
 	draw_colored_polygon(pts, COLOR_BODY)
+	_draw_inner_plate(pts, color, 0.62)
 	
 	# Layer 2: Circuit Seams
 	for i in range(6):
 		_draw_circuit_line(Vector2.ZERO, pts[i], color)
 	
 	# Layer 3: Neon Border
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(0, 0, 0, 0.75), 3.5)
 	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.0)
+	_draw_edge_nodes(pts, color, 1.4)
 	
 	# Layer 4: Pulsing Core
 	_draw_glow_core(Vector2.ZERO, size * 0.35, color)
@@ -234,13 +320,25 @@ func _draw_cyber_runner(color: Color, size: float) -> void:
 	
 	# Layer 1: Base
 	draw_colored_polygon(pts, COLOR_BODY)
+	var fin_pts := PackedVector2Array([
+		Vector2(-size * 0.35, -size * 0.95),
+		Vector2(size * 0.2, -size * 0.42),
+		Vector2(-size * 0.58, -size * 0.28)
+	])
+	draw_colored_polygon(fin_pts, Color(color.r, color.g, color.b, 0.18))
+	for i in range(fin_pts.size()):
+		fin_pts[i].y *= -1.0
+	draw_colored_polygon(fin_pts, Color(color.r, color.g, color.b, 0.18))
 	
 	# Layer 2: Speed Trails
 	var trail_alpha = 0.3 + (sin(pulse_time * 20.0) * 0.2)
 	draw_line(Vector2(-size * 0.8, -size * 0.4), Vector2(-size * 2.5, -size * 0.4), Color(color.r, color.g, color.b, trail_alpha), 2.0)
 	draw_line(Vector2(-size * 0.8, size * 0.4), Vector2(-size * 2.5, size * 0.4), Color(color.r, color.g, color.b, trail_alpha), 2.0)
+	draw_polyline(PackedVector2Array([Vector2(-size * 0.2, 0), Vector2(-size * 1.4, -size * 0.9), Vector2(-size * 2.3, -size * 0.9)]), Color(color.r, color.g, color.b, trail_alpha * 0.45), 1.0)
+	draw_polyline(PackedVector2Array([Vector2(-size * 0.2, 0), Vector2(-size * 1.4, size * 0.9), Vector2(-size * 2.3, size * 0.9)]), Color(color.r, color.g, color.b, trail_alpha * 0.45), 1.0)
 	
 	# Layer 3: Neon Edges
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(0, 0, 0, 0.8), 4.0)
 	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.5)
 	
 	# Layer 4: Agile Core
@@ -259,7 +357,9 @@ func _draw_cyber_tank(color: Color, size: float) -> void:
 	for i in range(8):
 		var mid = (pts[i] + pts[(i+1)%8]) * 0.5
 		var inner_mid = mid * 0.7
-		draw_line(mid, inner_mid, Color.WHITE, 1.0)
+		draw_line(mid, inner_mid, Color(color.r, color.g, color.b, 0.32), 1.4)
+		if i % 2 == 0:
+			draw_circle(inner_mid, 2.2, Color(color.r, color.g, color.b, 0.45))
 		
 	# Layer 3: Thick Neon Border
 	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 4.0)
@@ -280,6 +380,10 @@ func _draw_cyber_bulwark(color: Color, size: float) -> void:
 	
 	# Layer 2: Plate Segments
 	draw_line(Vector2(0, -size * 0.8), Vector2(0, size * 0.8), color * 0.5)
+	draw_rect(Rect2(-size * 0.72, -size * 0.52, size * 0.46, size * 1.04), Color(color.r, color.g, color.b, 0.12))
+	draw_rect(Rect2(size * 0.26, -size * 0.52, size * 0.46, size * 1.04), Color(color.r, color.g, color.b, 0.12))
+	draw_line(Vector2(-size, -size * 0.8), Vector2(size, -size * 0.8), Color(0, 0, 0, 0.75), 2.5)
+	draw_line(Vector2(-size, size * 0.8), Vector2(size, size * 0.8), Color(0, 0, 0, 0.75), 2.5)
 	
 	# Layer 3: Shield Rails
 	draw_polyline(PackedVector2Array([
@@ -314,6 +418,8 @@ func _draw_cyber_hunter(color: Color, size: float) -> void:
 	# Layer 2: Circuit Ribs
 	_draw_circuit_line(Vector2.ZERO, Vector2(-size, -size), color)
 	_draw_circuit_line(Vector2.ZERO, Vector2(-size, size), color)
+	draw_line(Vector2(size * 0.2, -size * 0.45), Vector2(-size * 1.05, -size * 1.05), Color(1.0, 0.1, 0.18, 0.35), 1.2)
+	draw_line(Vector2(size * 0.2, size * 0.45), Vector2(-size * 1.05, size * 1.05), Color(1.0, 0.1, 0.18, 0.35), 1.2)
 	
 	# Layer 3: High-contrast Neon
 	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.0)
@@ -323,12 +429,87 @@ func _draw_cyber_hunter(color: Color, size: float) -> void:
 	_draw_glow_core(Vector2(size * 0.7, size * 0.3), 4, Color.RED)
 	_draw_glow_core(Vector2(size * 1.2, 0), 3, color)
 
-func _draw_cyber_swarm(color: Color, size: float) -> void:
-	var count = 3
-	for i in range(count):
-		var a = (pulse_time * 10.0) + (i * TAU / count)
-		var offset = Vector2(cos(a), sin(a)) * size * 1.2
-		_draw_glow_core(offset, size * 0.8, color)
+func _draw_cyber_swarm(_color: Color, size: float) -> void:
+	var phase := float(get_instance_id() % 97) * 0.071
+	var pulse := 0.5 + sin(pulse_time * 5.5 + phase) * 0.5
+	var bob := sin(pulse_time * 7.0 + phase) * size * 0.08
+	var flicker := 0.86 + sin(pulse_time * 15.0 + phase * 2.3) * 0.08
+	var core_color := SWARM_CORE_COLOR.lerp(SWARM_CORE_HIGHLIGHT, 0.22 + pulse * 0.18)
+	var origin := Vector2(0.0, bob)
+	
+	var hover := PackedVector2Array()
+	for i in range(24):
+		var a := float(i) / 24.0 * TAU
+		hover.append(Vector2(cos(a) * size * (1.65 + pulse * 0.08), size * 1.2 + sin(a) * size * 0.28))
+	draw_polyline(hover + PackedVector2Array([hover[0]]), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, SWARM_HOVER_STRENGTH * (0.65 + pulse * 0.35)), 1.0)
+	
+	for i in range(4):
+		var lane := -0.72 + float(i) * 0.48
+		var start := origin + Vector2(lane * size, size * (0.52 + abs(lane) * 0.2))
+		var end := start + Vector2(lane * size * 0.42, size * (SWARM_TRAIL_LENGTH + float(i % 2) * 0.38))
+		var a := SWARM_TRAIL_ALPHA * (1.0 - float(i) * 0.14) * (0.72 + pulse * 0.28)
+		var c := SWARM_CORE_COLOR if i < 2 else SWARM_TRAIL_COLOR
+		draw_line(start, end, Color(c.r, c.g, c.b, a), 1.0)
+	
+	var outer := PackedVector2Array([
+		origin + Vector2(0.0, -size * 1.36),
+		origin + Vector2(size * 1.08, size * 0.72),
+		origin + Vector2(size * 0.32, size * 0.52),
+		origin + Vector2(0.0, size * 1.0),
+		origin + Vector2(-size * 0.32, size * 0.52),
+		origin + Vector2(-size * 1.08, size * 0.72)
+	])
+	var inner := PackedVector2Array([
+		origin + Vector2(0.0, -size * 0.82),
+		origin + Vector2(size * 0.58, size * 0.32),
+		origin + Vector2(0.0, size * 0.62),
+		origin + Vector2(-size * 0.58, size * 0.32)
+	])
+	var nose := PackedVector2Array([
+		origin + Vector2(0.0, -size * 1.56),
+		origin + Vector2(size * 0.3, -size * 0.72),
+		origin + Vector2(0.0, -size * 0.92),
+		origin + Vector2(-size * 0.3, -size * 0.72)
+	])
+	var left_fin := PackedVector2Array([
+		origin + Vector2(-size * 1.18, size * 0.82),
+		origin + Vector2(-size * 0.38, size * 0.22),
+		origin + Vector2(-size * 0.23, size * 0.64)
+	])
+	var right_fin := PackedVector2Array([
+		origin + Vector2(size * 1.18, size * 0.82),
+		origin + Vector2(size * 0.38, size * 0.22),
+		origin + Vector2(size * 0.23, size * 0.64)
+	])
+	
+	draw_colored_polygon(left_fin, SWARM_PANEL_COLOR)
+	draw_colored_polygon(right_fin, SWARM_PANEL_COLOR)
+	draw_colored_polygon(nose, SWARM_BODY_COLOR)
+	draw_colored_polygon(outer, SWARM_BODY_COLOR)
+	draw_colored_polygon(inner, SWARM_PANEL_COLOR)
+	draw_polyline(outer + PackedVector2Array([outer[0]]), Color(0.0, 0.0, 0.0, 0.9), 3.0)
+	draw_polyline(outer + PackedVector2Array([outer[0]]), Color(SWARM_TRAIL_COLOR.r, SWARM_TRAIL_COLOR.g, SWARM_TRAIL_COLOR.b, 0.42), 1.0)
+	draw_polyline(nose + PackedVector2Array([nose[0]]), Color(0.0, 0.0, 0.0, 0.82), 2.0)
+	draw_polyline(left_fin + PackedVector2Array([left_fin[0]]), Color(0.0, 0.0, 0.0, 0.82), 2.0)
+	draw_polyline(right_fin + PackedVector2Array([right_fin[0]]), Color(0.0, 0.0, 0.0, 0.82), 2.0)
+	
+	draw_line(origin + Vector2(0.0, -size * 1.18), origin + Vector2(0.0, -size * 0.78), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, 0.62 * flicker), 1.0)
+	draw_line(origin + Vector2(-size * 0.74, size * 0.52), origin + Vector2(-size * 0.38, size * 0.3), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, 0.58 * flicker), 1.0)
+	draw_line(origin + Vector2(size * 0.74, size * 0.52), origin + Vector2(size * 0.38, size * 0.3), Color(SWARM_CORE_COLOR.r, SWARM_CORE_COLOR.g, SWARM_CORE_COLOR.b, 0.58 * flicker), 1.0)
+	
+	var glow_core := PackedVector2Array()
+	var core := PackedVector2Array()
+	var hot_core := PackedVector2Array()
+	for i in range(6):
+		var a := PI / 6.0 + float(i) * TAU / 6.0
+		var dir := Vector2(cos(a), sin(a))
+		glow_core.append(origin + dir * size * (0.58 + pulse * 0.04))
+		core.append(origin + dir * size * 0.36)
+		hot_core.append(origin + dir * size * (0.18 + pulse * 0.03))
+	draw_colored_polygon(glow_core, Color(core_color.r, core_color.g, core_color.b, 0.12))
+	draw_colored_polygon(core, Color(core_color.r, core_color.g, core_color.b, 0.64))
+	draw_polyline(core + PackedVector2Array([core[0]]), Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 0.9), 1.1)
+	draw_colored_polygon(hot_core, Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 0.88))
 
 func _draw_cyber_healer(color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
@@ -337,19 +518,32 @@ func _draw_cyber_healer(color: Color, size: float) -> void:
 		var r = size if i % 3 != 0 else size * 0.6
 		pts.append(Vector2(cos(a), sin(a)) * r)
 	
+	var heal_color := Color(0.62, 1.0, 0.86, 1.0)
+	var gold := Color(1.0, 0.88, 0.48, 1.0)
 	draw_colored_polygon(pts, COLOR_BODY)
-	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.0)
+	_draw_inner_plate(pts, heal_color, 0.58)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(0, 0, 0, 0.7), 3.0)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), heal_color, 2.0)
 	# Rotating healing ring
-	draw_arc(Vector2.ZERO, size * 0.8, pulse_time * 5.0, pulse_time * 5.0 + PI, 24, color, 2.0)
-	_draw_glow_core(Vector2.ZERO, size * 0.5, color)
+	draw_arc(Vector2.ZERO, size * 0.8, pulse_time * 2.6, pulse_time * 2.6 + PI, 24, gold, 2.0)
+	draw_arc(Vector2.ZERO, size * 1.2, -pulse_time * 1.4, -pulse_time * 1.4 + PI * 0.65, 20, Color(heal_color.r, heal_color.g, heal_color.b, 0.48), 1.4)
+	_draw_orbiters(4, size * 1.14, 2.2, gold, 1.1)
+	for i in range(4):
+		var a := i * PI * 0.5 + PI * 0.25
+		_draw_circuit_line(Vector2.RIGHT.rotated(a) * size * 0.25, Vector2.RIGHT.rotated(a) * size * 0.78, heal_color, 1.1)
+	_draw_glow_core(Vector2.ZERO, size * 0.5, heal_color)
 
 func _draw_cyber_splitter(color: Color, size: float) -> void:
 	_draw_cyber_node(color, size)
 	# Unstable Cracks
 	var noise = sin(pulse_time * 25.0) * 2.0
-	draw_line(Vector2.ZERO, Vector2(size + noise, size), Color.WHITE, 1.5)
-	draw_line(Vector2.ZERO, Vector2(-size - noise, size), Color.WHITE, 1.5)
-	draw_line(Vector2.ZERO, Vector2(0, -size - noise), Color.WHITE, 1.5)
+	var crack_color := Color(1.0, 0.78, 1.0, 0.86)
+	draw_line(Vector2.ZERO, Vector2(size + noise, size), crack_color, 1.5)
+	draw_line(Vector2.ZERO, Vector2(-size - noise, size), crack_color, 1.5)
+	draw_line(Vector2.ZERO, Vector2(0, -size - noise), crack_color, 1.5)
+	if hp / max(max_hp, 1.0) < 0.35:
+		var warn := 0.35 + sin(pulse_time * 18.0) * 0.22
+		draw_arc(Vector2.ZERO, size * 1.35, 0, TAU, 32, Color(1.0, 0.35, 0.9, warn), 2.0)
 
 func _draw_cyber_cloaked(color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
@@ -358,13 +552,21 @@ func _draw_cyber_cloaked(color: Color, size: float) -> void:
 		pts.append(Vector2(cos(a), sin(a)) * size)
 	# Distortion effect
 	var d = (sin(pulse_time * 15.0) * 0.5 + 0.5) * 0.2
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(color.r, color.g, color.b, 0.2 + d), 1.5)
+	for i in range(pts.size()):
+		var p1 := pts[i] + Vector2(sin(pulse_time * 18.0 + i) * 2.0, 0)
+		var p2 := pts[(i + 1) % pts.size()] + Vector2(sin(pulse_time * 17.0 + i) * -2.0, 0)
+		draw_line(p1, p2, Color(color.r, color.g, color.b, 0.22 + d), 1.5)
+	for i in range(4):
+		var y := -size * 0.65 + i * size * 0.42
+		draw_line(Vector2(-size * 0.55, y), Vector2(size * 0.55, y + sin(pulse_time * 12.0 + i) * 1.5), Color(color.r, color.g, color.b, 0.11 + d * 0.45), 1.0)
 	draw_circle(Vector2.ZERO, size * (0.2 + d), Color(color.r, color.g, color.b, 0.15))
 
 func _draw_cyber_drone(color: Color, size: float, is_fast: bool) -> void:
 	# Base
+	draw_circle(Vector2(0, size * 0.7), size * 0.36, Color(0.0, 0.0, 0.0, 0.14))
 	draw_circle(Vector2.ZERO, size * 0.6, COLOR_BODY)
 	draw_arc(Vector2.ZERO, size * 0.6, 0, TAU, 24, color, 2.0)
+	draw_arc(Vector2.ZERO, size * 0.88, pulse_time * 2.0, pulse_time * 2.0 + PI, 24, Color(color.r, color.g, color.b, 0.28), 1.0)
 	
 	# Rotor arms
 	for i in range(4):
@@ -375,11 +577,18 @@ func _draw_cyber_drone(color: Color, size: float, is_fast: bool) -> void:
 	if is_fast:
 		var trail = (sin(pulse_time * 30.0) * 0.5 + 0.5) * 10.0
 		draw_line(Vector2(-size, 0), Vector2(-size - trail, 0), color, 3.0)
+		draw_line(Vector2(-size * 0.45, -size * 0.35), Vector2(-size - trail * 0.7, -size * 0.6), Color(color.r, color.g, color.b, 0.35), 1.4)
+		draw_line(Vector2(-size * 0.45, size * 0.35), Vector2(-size - trail * 0.7, size * 0.6), Color(color.r, color.g, color.b, 0.35), 1.4)
 	
 	_draw_glow_core(Vector2.ZERO, size * 0.3, color)
 
 func _draw_cyber_disruptor(color: Color, size: float) -> void:
 	_draw_cyber_drone(color, size, false)
+	var cyan := Color(0.35, 1.0, 1.0, 1.0)
+	draw_line(Vector2(size * 0.25, -size * 0.55), Vector2(size * 1.2, -size * 1.0), cyan, 1.6)
+	draw_line(Vector2(size * 0.25, size * 0.55), Vector2(size * 1.2, size * 1.0), cyan, 1.6)
+	draw_line(Vector2(size * 1.0, -size * 0.82), Vector2(size * 1.28, -size * 1.08), Color(1.0, 0.2, 0.82, 0.8), 1.0)
+	draw_line(Vector2(size * 1.0, size * 0.82), Vector2(size * 1.28, size * 1.08), Color(1.0, 0.2, 0.82, 0.8), 1.0)
 	# EMP interference rings
 	var r_pulse = (sin(pulse_time * 10.0) * 0.5 + 0.5)
 	draw_arc(Vector2.ZERO, size * (1.2 + r_pulse * 0.3), 0, TAU, 32, Color(color.r, color.g, color.b, 0.4 - r_pulse * 0.3), 2.0)
@@ -392,6 +601,7 @@ func _ready() -> void:
 		hp_bar.max_value = max_hp
 		hp_bar.value = hp
 	apply_visuals()
+	_ensure_vfx_controller()
 
 func _process(delta: float) -> void:
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
@@ -412,9 +622,17 @@ func _process(delta: float) -> void:
 		if Engine.get_process_frames() % 10 == 0:
 			_spawn_impact_particle(Color(0.4, 0.8, 1.0, 0.6))
 	
+	_process_formation_speed(delta)
+	
 	if shield_remaining > 0:
 		shield_remaining -= delta
-		if shield_remaining <= 0: queue_redraw()
+		if shield_remaining <= 0:
+			active_shield_reduction = 0.0
+			active_shield_source = null
+			enemy_modifier_changed.emit(self, "shield_reduction", 0.0)
+			if vfx_controller:
+				vfx_controller.set_protected_icon(false)
+			queue_redraw()
 	
 	if vulnerability_remaining > 0:
 		vulnerability_remaining -= delta
@@ -450,41 +668,96 @@ func _process(delta: float) -> void:
 		_process_pathing(delta)
 
 func _process_shield_aura() -> void:
-	var radius = skill_params.get("radius", shield_radius)
-	var reduction = skill_params.get("reduction", shield_reduction)
+	var radius = float(skill_params.get("radius", shield_radius))
+	var reduction = _get_skill_reduction()
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if enemy != self and is_instance_valid(enemy) and enemy.has_method("apply_shield"):
+			if enemy.has_method("is_alive") and not enemy.is_alive():
+				continue
 			if global_position.distance_to(enemy.global_position) <= radius:
-				enemy.apply_shield(0.2) # Short duration, refreshed by aura
+				enemy.apply_shield(0.25, reduction, self) # Short duration, refreshed by aura
+
+func _get_skill_reduction() -> float:
+	var raw = skill_params.get("reduction", skill_params.get("shield_reduction", shield_reduction))
+	return clampf(float(raw), 0.0, 0.9)
 
 func _process_healer_aura() -> void:
-	var radius = skill_params.get("radius", 100.0)
-	var amount = skill_params.get("heal_amount", 5.0)
+	var radius = float(skill_params.get("radius", 100.0))
+	var amount = float(skill_params.get("heal_amount", 5.0))
 	var enemies = get_tree().get_nodes_in_group("enemies")
+	var healed_targets: Array = []
 	for enemy in enemies:
 		if enemy != self and is_instance_valid(enemy) and enemy.has_method("heal"):
+			if enemy.has_method("is_alive") and not enemy.is_alive():
+				continue
 			if global_position.distance_to(enemy.global_position) <= radius:
-				enemy.heal(amount)
+				var hp_before := float(enemy.get_current_hp()) if enemy.has_method("get_current_hp") else 0.0
+				var applied := float(enemy.heal(amount, self))
+				if applied > 0.0:
+					var hp_after := float(enemy.get_current_hp()) if enemy.has_method("get_current_hp") else hp_before + applied
+					healed_targets.append(enemy)
+					healed.emit(enemy, applied, self)
+					enemy_healed.emit(enemy, self, applied, hp_before, hp_after)
+					enemy_modifier_changed.emit(enemy, "healed", applied)
+					if OS.is_debug_build():
+						print("[EnemyFeature][Healer] source=%s target=%s amount=%.1f hp=%.1f/%.1f" % [
+							enemy_type,
+							enemy.get_enemy_type() if enemy.has_method("get_enemy_type") else str(enemy.name),
+							applied,
+							float(enemy.get_current_hp()) if enemy.has_method("get_current_hp") else 0.0,
+							float(enemy.max_hp) if "max_hp" in enemy else 0.0
+						])
+	if not healed_targets.is_empty():
+		healer_heal_tick.emit(self, healed_targets, amount)
 
 func _process_disrupt_aura() -> void:
-	var radius = skill_params.get("radius", 150.0)
-	var penalty = skill_params.get("fire_rate_penalty", 0.5)
+	var radius = float(skill_params.get("radius", 150.0))
+	var penalty = clampf(float(skill_params.get("fire_rate_penalty", 0.5)), 0.05, 1.0)
 	var towers = get_tree().get_nodes_in_group("towers")
-	# This requires tower support to apply a 'disrupted' state. 
-	# For now, we'll just log or stub it.
-	pass
+	var currently_affected: Array[Node] = []
+	for tower in towers:
+		if not is_instance_valid(tower) or not tower.has_method("apply_fire_rate_modifier"):
+			continue
+		if global_position.distance_to(tower.global_position) <= radius:
+			tower.apply_fire_rate_modifier(self, penalty)
+			currently_affected.append(tower)
+			disrupted_towers[tower.get_instance_id()] = tower
+			disrupted_tower.emit(tower, penalty, self)
+			if OS.is_debug_build():
+				var effective = tower.get_effective_fire_rate() if tower.has_method("get_effective_fire_rate") else 0.0
+				print("[EnemyFeature][Disruptor] source=%s tower=%s penalty=%.2f effective_interval=%.2f" % [enemy_type, str(tower.name), penalty, effective])
+	for key in disrupted_towers.keys():
+		var tower: Node = disrupted_towers[key]
+		if not is_instance_valid(tower) or not currently_affected.has(tower):
+			if is_instance_valid(tower) and tower.has_method("remove_fire_rate_modifier"):
+				tower.remove_fire_rate_modifier(self)
+				disruption_removed.emit(tower, self)
+			disrupted_towers.erase(key)
+	if vfx_controller:
+		vfx_controller.update_disrupted_towers(currently_affected)
 
-func heal(amount: float) -> void:
-	if hp < max_hp:
-		hp = min(hp + amount, max_hp)
-		if hp_bar: hp_bar.value = hp
+func heal(amount: float, source: Variant = null) -> float:
+	if is_dead_flag or reached_base_flag or hp >= max_hp:
+		return 0.0
+	var before := hp
+	hp = min(hp + amount, max_hp)
+	var applied := hp - before
+	if hp_bar: hp_bar.value = hp
+	if applied > 0.0:
 		_spawn_impact_particle(Color(0.4, 1.0, 0.4, 0.6)) # Green pulse
+		enemy_modifier_changed.emit(self, "hp", hp)
+	return applied
 
-func apply_shield(duration: float) -> void:
+func apply_shield(duration: float, reduction: float = shield_reduction, source: Variant = null) -> void:
 	if shield_remaining <= 0:
 		queue_redraw()
 	shield_remaining = max(shield_remaining, duration)
+	active_shield_reduction = clampf(reduction, 0.0, 0.9)
+	active_shield_source = source
+	enemy_modifier_changed.emit(self, "shield_reduction", active_shield_reduction)
+	if vfx_controller:
+		vfx_controller.set_protected_icon(active_shield_reduction > 0.0)
 
 func apply_vulnerability(multiplier: float, duration: float) -> void:
 	# Keep the highest multiplier
@@ -549,9 +822,17 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	
 	var final_damage = amount
 	if shield_remaining > 0 and not is_bulwark:
-		final_damage *= (1.0 - shield_reduction)
+		var shielded_damage: float = final_damage * (1.0 - active_shield_reduction)
+		shield_applied.emit(self, final_damage, shielded_damage, active_shield_source)
+		final_damage = shielded_damage
 		if OS.is_debug_build(): 
-			print("[Damage] shield_reduced original=%.1f final=%.1f" % [amount, final_damage])
+			print("[EnemyFeature][Shield] target=%s source=%s original=%.1f final=%.1f reduction=%.2f" % [
+				enemy_type,
+				active_shield_source.get_enemy_type() if active_shield_source and active_shield_source.has_method("get_enemy_type") else "unknown",
+				amount,
+				final_damage,
+				active_shield_reduction
+			])
 			
 	var capture_pos = hit_global if hit_global != Vector2.ZERO else global_position
 	
@@ -573,6 +854,8 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 		
 	spawn_damage_number(int(final_damage), capture_pos, dn_color)
 	_play_hit_pulse()
+	if enemy_type == "swarm" or tags.has("swarm"):
+		_spawn_swarm_hit_effect(capture_pos)
 	
 	if hp <= 0:
 		die(capture_pos)
@@ -580,6 +863,7 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 func apply_slow(percent: float, duration: float) -> void:
 	if percent >= active_slow_percent:
 		active_slow_percent = percent
+		status_speed_multiplier = max(1.0 - active_slow_percent, 0.25)
 		slow_remaining = duration
 		update_effective_speed()
 	elif duration > slow_remaining and percent == active_slow_percent:
@@ -588,10 +872,43 @@ func apply_slow(percent: float, duration: float) -> void:
 func clear_slow() -> void:
 	active_slow_percent = 0.0
 	slow_remaining = 0.0
+	status_speed_multiplier = 1.0
 	update_effective_speed()
 
+func _configure_formation_speed() -> void:
+	if formation_speed_limit > 0.0 and formation_limit_duration > 0.0 and base_speed > 0.0:
+		formation_target_multiplier = clampf(formation_speed_limit / base_speed, 0.25, 1.0)
+		formation_speed_multiplier = formation_target_multiplier
+	elif formation_limit_duration > 0.0 and formation_config_multiplier < 1.0:
+		formation_target_multiplier = clampf(formation_config_multiplier, 0.25, 1.0)
+		formation_speed_multiplier = formation_target_multiplier
+	else:
+		formation_target_multiplier = 1.0
+		formation_speed_multiplier = 1.0
+	if formation_speed_multiplier < 1.0:
+		enemy_modifier_changed.emit(self, "formation_speed_multiplier", formation_speed_multiplier)
+
+func _process_formation_speed(delta: float) -> void:
+	if formation_limit_duration > 0.0:
+		formation_limit_duration -= delta
+		if formation_limit_duration <= 0.0:
+			formation_limit_duration = 0.0
+			formation_target_multiplier = 1.0
+			enemy_modifier_changed.emit(self, "formation_speed_multiplier", formation_target_multiplier)
+			if vfx_controller and (tags.has("fast") or tags.has("runner") or enemy_type in ["fast", "runner", "hunter", "fast_flyer"]):
+				vfx_controller.play_runner_burst()
+			if OS.is_debug_build():
+				print("[SpawnFormation] release throttle enemy=%s base_speed=%.1f effective_speed=%.1f" % [enemy_type, base_speed, speed])
+	if formation_speed_multiplier != formation_target_multiplier:
+		if formation_speed_multiplier > formation_target_multiplier:
+			formation_speed_multiplier = formation_target_multiplier
+		else:
+			formation_speed_multiplier = move_toward(formation_speed_multiplier, formation_target_multiplier, formation_release_rate * delta)
+		update_effective_speed()
+
 func update_effective_speed() -> void:
-	speed = base_speed * max(1.0 - active_slow_percent, 0.25)
+	status_speed_multiplier = max(1.0 - active_slow_percent, 0.25)
+	speed = base_speed * formation_speed_multiplier * status_speed_multiplier
 
 func flash_body() -> void:
 	is_flashing = true
@@ -615,6 +932,9 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag: return
 	is_dead_flag = true
 	is_active = false
+	_clear_disrupted_towers()
+	if vfx_controller:
+		vfx_controller.fade_out()
 	
 	var gm = get_tree().current_scene.get_node_or_null("GameManager")
 	if gm and gm.battle_telemetry:
@@ -630,8 +950,16 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	queue_free()
 
 func _handle_split_on_death(death_pos: Vector2) -> void:
+	if split_triggered_once:
+		return
+	split_triggered_once = true
 	var count = skill_params.get("count", 2)
 	var type = skill_params.get("type", "basic")
+	split_triggered.emit(self, type, count)
+	if vfx_controller:
+		vfx_controller.play_split_burst(str(type), int(count))
+	if OS.is_debug_build():
+		print("[EnemyFeature][Splitter] source=%s child_type=%s count=%d progress=%.1f" % [enemy_type, type, count, progress])
 	var wave_manager = get_tree().current_scene.get_node_or_null("WaveManager")
 	if wave_manager and wave_manager.has_method("spawn_enemy_at_progress"):
 		for i in range(count):
@@ -639,9 +967,32 @@ func _handle_split_on_death(death_pos: Vector2) -> void:
 			var offset_prog = (i - (count-1)/2.0) * 20.0
 			wave_manager.spawn_enemy_at_progress(type, progress + offset_prog, get_parent())
 
+func notify_stealth_deferred(preferred_target: Node) -> void:
+	stealth_targeting_deferred.emit(self, preferred_target)
+	if vfx_controller:
+		vfx_controller.mark_cloaked_deferred(preferred_target)
+	if OS.is_debug_build():
+		print("[EnemyFeature][Cloaked] deferred=%s preferred=%s" % [enemy_type, preferred_target.get_enemy_type() if preferred_target and preferred_target.has_method("get_enemy_type") else str(preferred_target)])
+
+func notify_stealth_targetable() -> void:
+	if vfx_controller:
+		vfx_controller.mark_cloaked_targetable()
+
+func _clear_disrupted_towers() -> void:
+	for key in disrupted_towers.keys():
+		var tower: Node = disrupted_towers[key]
+		if is_instance_valid(tower) and tower.has_method("remove_fire_rate_modifier"):
+			tower.remove_fire_rate_modifier(self)
+			disruption_removed.emit(tower, self)
+	disrupted_towers.clear()
+	if vfx_controller:
+		vfx_controller.clear_all_disrupted_towers()
+
 func spawn_death_effect(death_global: Vector2) -> void:
 	if death_pop_scene:
 		var effect = death_pop_scene.instantiate()
+		if effect.has_method("setup") and (enemy_type == "swarm" or tags.has("swarm")):
+			effect.setup("swarm_death", SWARM_CORE_COLOR, 0.52, SWARM_DEATH_PARTICLE_COUNT)
 		get_tree().current_scene.add_child(effect)
 		effect.global_position = death_global
 
@@ -658,16 +1009,29 @@ func is_alive() -> bool:
 
 func _play_hit_pulse() -> void:
 	var tween = create_tween()
-	var s = randf_range(1.15, 1.25)
-	tween.tween_property(self, "scale", Vector2(s, 1.0/s), 0.04).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(self, "scale", Vector2.ONE, 0.08).set_trans(Tween.TRANS_BACK)
+	var is_swarm := enemy_type == "swarm" or tags.has("swarm")
+	var s = randf_range(1.08, 1.14) if is_swarm else randf_range(1.15, 1.25)
+	tween.tween_property(self, "scale", Vector2(s, 1.0/s), 0.025 if is_swarm else 0.04).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "scale", Vector2.ONE, 0.055 if is_swarm else 0.08).set_trans(Tween.TRANS_BACK)
 	
 	# Small hit shake
 	var original_pos = position
 	var shake_tween = create_tween()
-	var shake_dir = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized() * 3.0
-	shake_tween.tween_property(self, "position", original_pos + shake_dir, 0.03)
-	shake_tween.tween_property(self, "position", original_pos, 0.03)
+	var shake_strength := 1.4 if is_swarm else 3.0
+	var shake_dir = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized() * shake_strength
+	shake_tween.tween_property(self, "position", original_pos + shake_dir, 0.018 if is_swarm else 0.03)
+	shake_tween.tween_property(self, "position", original_pos, 0.018 if is_swarm else 0.03)
+
+func _spawn_swarm_hit_effect(hit_global: Vector2) -> void:
+	if death_pop_scene == null:
+		return
+	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if not container: container = get_tree().current_scene
+	var effect = death_pop_scene.instantiate()
+	if effect.has_method("setup"):
+		effect.setup("swarm_hit", SWARM_CORE_COLOR, 0.18, 6)
+	container.add_child(effect)
+	effect.global_position = hit_global
 
 func get_priority_score() -> float:
 	var score = 1.0

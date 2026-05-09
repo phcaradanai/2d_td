@@ -1,0 +1,53 @@
+extends Node2D
+class_name EnemyStatusIconVFX
+
+var icon_type: String = "shield"
+var color: Color = Color.WHITE
+var label_text: String = ""
+var time: float = 0.0
+
+func setup(p_icon_type: String, p_color: Color, p_label: String = "") -> void:
+	icon_type = p_icon_type
+	color = p_color
+	label_text = p_label
+	queue_redraw()
+
+func _process(delta: float) -> void:
+	time += delta
+	queue_redraw()
+
+func _draw() -> void:
+	var pulse := 0.65 + sin(time * 6.0) * 0.2
+	match icon_type:
+		"reload_slow":
+			_draw_reload_icon(pulse)
+		"shield":
+			_draw_shield_icon(pulse)
+		"cloaked":
+			_draw_cloak_icon(pulse)
+		"air":
+			_draw_air_icon(pulse)
+		_:
+			draw_circle(Vector2.ZERO, 7, Color(color.r, color.g, color.b, 0.35 * pulse))
+	if OS.is_debug_build() and label_text != "":
+		draw_string(ThemeDB.fallback_font, Vector2(9, 4), label_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(color.r, color.g, color.b, 0.9))
+
+func _draw_reload_icon(pulse: float) -> void:
+	draw_arc(Vector2.ZERO, 8.0, -PI * 0.25, PI * 1.35, 24, Color(color.r, color.g, color.b, 0.75 * pulse), 2.0)
+	draw_line(Vector2(0, 0), Vector2(0, -6), Color(1, 1, 1, 0.85 * pulse), 1.5)
+	draw_line(Vector2(0, 0), Vector2(5, 1), Color(1, 1, 1, 0.85 * pulse), 1.5)
+
+func _draw_shield_icon(pulse: float) -> void:
+	var pts := PackedVector2Array([Vector2(0, -9), Vector2(8, -4), Vector2(5, 8), Vector2(0, 11), Vector2(-5, 8), Vector2(-8, -4)])
+	draw_colored_polygon(pts, Color(color.r, color.g, color.b, 0.18 * pulse))
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(color.r, color.g, color.b, 0.8 * pulse), 1.5)
+
+func _draw_cloak_icon(pulse: float) -> void:
+	for i in range(4):
+		var y := -7.0 + float(i) * 4.5
+		draw_line(Vector2(-8 + sin(time * 9.0 + i) * 2.0, y), Vector2(8 + sin(time * 8.0 + i) * 2.0, y), Color(color.r, color.g, color.b, 0.55 * pulse), 1.25)
+
+func _draw_air_icon(pulse: float) -> void:
+	draw_arc(Vector2.ZERO, 9.0, 0, TAU, 24, Color(color.r, color.g, color.b, 0.55 * pulse), 1.25)
+	draw_line(Vector2(-10, 0), Vector2(10, 0), Color(color.r, color.g, color.b, 0.7 * pulse), 1.5)
+	draw_line(Vector2(0, -8), Vector2(0, 8), Color(color.r, color.g, color.b, 0.35 * pulse), 1.0)

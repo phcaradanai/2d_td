@@ -36,34 +36,31 @@ func validate_level(level_id: String, config: Dictionary, waves: Array) -> bool:
 
 	# 2. Build Zone Validation
 	var buildable = config.get("buildable_cells", [])
-	if buildable.is_empty():
-		warnings.append("No buildable cells defined (free-build mode)")
+	var total_cells = config.get("grid_cols", 20) * config.get("grid_rows", 12)
+	
+	var path_cells_all = []
+	if not paths.is_empty():
+		for p_id in paths:
+			path_cells_all.append_array(paths[p_id])
 	else:
-		if buildable.size() < 6:
-			errors.append("Fewer than 6 buildable cells defined (%d)" % buildable.size())
-			ok = false
-		
-		# Check overlaps with paths
-		var path_cells_all = []
-		if not paths.is_empty():
-			for p_id in paths:
-				path_cells_all.append_array(paths[p_id])
-		else:
-			path_cells_all.append_array(config.get("path_cells", []))
-			
+		path_cells_all.append_array(config.get("path_cells", []))
+	
+	var non_path_count = total_cells - path_cells_all.size()
+	if non_path_count < 20:
+		warnings.append("This map has very little non-path space for tower placement (%d cells)" % non_path_count)
+	
+	if not buildable.is_empty():
+		# If they DID provide manual cells, still validate them but don't require them.
 		for b in buildable:
 			var cell = Vector2i(b[0], b[1])
 			for p in path_cells_all:
 				if p[0] == cell.x and p[1] == cell.y:
-					errors.append("Build spot [%d, %d] overlaps with path" % [cell.x, cell.y])
+					errors.append("Manual build spot [%d, %d] overlaps with path" % [cell.x, cell.y])
 					ok = false
 			
 			if cell.x < 0 or cell.x >= config.get("grid_cols", 20) or cell.y < 0 or cell.y >= config.get("grid_rows", 12):
-				errors.append("Build spot [%d, %d] is outside battlefield bounds" % [cell.x, cell.y])
+				errors.append("Manual build spot [%d, %d] is outside battlefield bounds" % [cell.x, cell.y])
 				ok = false
-		
-		if buildable.size() < 8 and config.get("area_id", 1) >= 3:
-			warnings.append("Advanced area level has very few build spots (%d)" % buildable.size())
 
 	# 3. Wave & Special Enemy Isolation Check
 	for i in range(waves.size()):

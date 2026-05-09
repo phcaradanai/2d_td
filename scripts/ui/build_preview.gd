@@ -22,6 +22,7 @@ var is_hover_valid: bool = false
 var hover_range: float = 0.0
 var hover_footprint: float = 20.0
 var buildable_cells: Array = []
+var buildable_patch_preview_cells: Array = []
 var blocked_cells: Array = []
 var is_active: bool = false
 var invalid_reason: String = ""
@@ -29,6 +30,8 @@ var hover_role: String = ""
 
 @export var buildable_tile_color: Color = Color(0.2, 0.8, 1.0, 0.1)
 @export var buildable_outline_color: Color = Color(0.2, 0.8, 1.0, 0.3)
+@export var patch_preview_tile_color: Color = Color(0.25, 1.0, 0.75, 0.18)
+@export var patch_preview_outline_color: Color = Color(0.25, 1.0, 0.75, 0.55)
 
 @onready var reason_label: Label = get_node_or_null("ReasonLabel")
 var role_label: Label = null
@@ -54,6 +57,14 @@ func set_blocked_cells(cells: Array) -> void:
 
 func set_buildable_cells(cells: Array) -> void:
 	buildable_cells = cells
+	queue_redraw()
+
+func set_buildable_patch_preview_cells(cells: Array) -> void:
+	buildable_patch_preview_cells = cells
+	queue_redraw()
+
+func clear_buildable_patch_preview() -> void:
+	buildable_patch_preview_cells.clear()
 	queue_redraw()
 
 func update_preview(cell: Vector2i, valid: bool, active: bool, range_val: float = 0.0, reason: String = "", footprint: float = 20.0, role: String = "") -> void:
@@ -84,19 +95,34 @@ func update_preview(cell: Vector2i, valid: bool, active: bool, range_val: float 
 	queue_redraw()
 
 func _draw() -> void:
-	if not is_active: return
+	if not is_active and buildable_patch_preview_cells.is_empty(): return
 	
 	# 1. Buildable Foundations (Blueprint style)
-	if not buildable_cells.is_empty():
+	if is_active and not buildable_cells.is_empty():
+		var dense_alpha_scale := 0.35 if buildable_cells.size() > 80 else 1.0
 		for cell in buildable_cells:
 			var rect = Rect2(cell.x * grid_size + 2, cell.y * grid_size + 2, grid_size - 4, grid_size - 4)
-			draw_rect(rect, buildable_tile_color)
+			draw_rect(rect, Color(buildable_tile_color.r, buildable_tile_color.g, buildable_tile_color.b, buildable_tile_color.a * dense_alpha_scale))
 			# Small corner accents for foundations
-			_draw_brackets(Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size), buildable_outline_color)
+			_draw_brackets(Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size), Color(buildable_outline_color.r, buildable_outline_color.g, buildable_outline_color.b, buildable_outline_color.a * dense_alpha_scale))
+	
+	if not buildable_patch_preview_cells.is_empty():
+		for cell in buildable_patch_preview_cells:
+			var rect = Rect2(cell.x * grid_size + 2, cell.y * grid_size + 2, grid_size - 4, grid_size - 4)
+			draw_rect(rect, patch_preview_tile_color)
+			_draw_brackets(Rect2(cell.x * grid_size, cell.y * grid_size, grid_size, grid_size), patch_preview_outline_color)
+			var center = Vector2(cell.x * grid_size + grid_size / 2.0, cell.y * grid_size + grid_size / 2.0)
+			draw_circle(center, 4.0, patch_preview_outline_color)
 	
 	# 2. Tactical Overlay (only when active)
 	# Removed global non-buildable tint to keep map readable and avoid "red map" bug.
 	# We only highlight the hovered cell's validity now.
+	if is_active and OS.is_debug_build():
+		for cell in blocked_cells:
+			if cell.x < 0 or cell.x >= grid_cols or cell.y < 0 or cell.y >= grid_rows:
+				continue
+			var blocked_rect = Rect2(cell.x * grid_size + 8, cell.y * grid_size + 8, grid_size - 16, grid_size - 16)
+			draw_rect(blocked_rect, Color(blocked_color.r, blocked_color.g, blocked_color.b, blocked_color.a * 0.5), false, 1.0)
 	
 	# 3. Subtle tactical grid
 	var grid_alpha_color = Color(grid_color.r, grid_color.g, grid_color.b, 0.03)
@@ -106,7 +132,7 @@ func _draw() -> void:
 		draw_line(Vector2(0, y * grid_size), Vector2(grid_cols * grid_size, y * grid_size), grid_alpha_color)
 	
 	# 2. Hover preview
-	if hover_cell.x >= 0 and hover_cell.x < grid_cols and hover_cell.y >= 0 and hover_cell.y < grid_rows:
+	if is_active and hover_cell.x >= 0 and hover_cell.x < grid_cols and hover_cell.y >= 0 and hover_cell.y < grid_rows:
 		var center = Vector2(hover_cell.x * grid_size + grid_size / 2.0, hover_cell.y * grid_size + grid_size / 2.0)
 		var rect = Rect2(hover_cell.x * grid_size, hover_cell.y * grid_size, grid_size, grid_size)
 		var color = valid_color if is_hover_valid else invalid_color

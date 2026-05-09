@@ -16,7 +16,7 @@ var lifetime: float = 5.0
 var chain_jumps: int = 0
 var chain_range: float = 0.0
 var chain_falloff: float = 1.0
-var chained_enemies: Array[Node2D] = []
+var chained_enemies: Array = []
 var source_id: String = ""
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
@@ -27,7 +27,7 @@ var trail_points: Array[Vector2] = []
 @export var max_trail_points: int = 8
 @export var min_point_distance: float = 4.0
 
-func setup(p_target: Node2D, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_effect_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0, p_target_categories: Array = [], p_source_id: String = "") -> void:
+func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_effect_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0, p_target_categories: Array = [], p_source_id: String = "") -> void:
 	target = p_target
 	damage = p_damage
 	speed = p_speed
@@ -46,7 +46,7 @@ func setup(p_target: Node2D, p_damage: float, p_speed: float = 500.0, p_attack_t
 	else:
 		max_trail_points = 8
 
-func setup_chain(jumps: int, p_range: float, falloff: float, excluded: Array[Node2D] = []) -> void:
+func setup_chain(jumps: int, p_range: float, falloff: float, excluded: Array = []) -> void:
 	chain_jumps = jumps
 	chain_range = p_range
 	chain_falloff = falloff
@@ -291,7 +291,7 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 					if enemy.has_method("apply_slow"):
 						enemy.apply_slow(slow_percent, slow_duration)
 
-func can_affect_enemy(enemy: Node) -> bool:
+func can_affect_enemy(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy):
 		return false
 	if not enemy.has_method("get_enemy_category"):

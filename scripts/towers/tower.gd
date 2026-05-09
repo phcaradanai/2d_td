@@ -1,6 +1,10 @@
 extends Node2D
 
 signal clicked(tower: Node2D)
+signal shot_fired(tower, target, timestamp)
+signal fire_rate_modifier_changed(tower, source, value)
+signal target_selected(tower, target, reason)
+signal target_rejected(tower, target, reason)
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -67,6 +71,7 @@ var aim_alpha: float = 0.0 # For smooth fading
 
 # Shooting variables
 var shoot_cooldown: float = 0.0
+var fire_rate_modifiers: Dictionary = {}
 var projectile_scene: PackedScene = preload("res://scenes/projectiles/Projectile.tscn")
 var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/MuzzleFlash.tscn")
 var projectile_container: Node2D = null
@@ -659,7 +664,7 @@ func _process(delta: float) -> void:
 	
 	if is_valid_target(current_target) and shoot_cooldown <= 0:
 		shoot()
-		shoot_cooldown = fire_rate
+		shoot_cooldown = get_effective_fire_rate()
 	
 	# Redraw needed for selection highlight, range, OR procedural turret rotation
 	if is_selected or debug_draw_range or (not use_sprite and is_valid_target(current_target)):
@@ -780,6 +785,7 @@ func shoot() -> void:
 		
 		if audio_manager:
 			audio_manager.play_sfx(sfx_name)
+	shot_fired.emit(self, current_target, Time.get_ticks_msec() / 1000.0)
 
 func _perform_aura_attack() -> void:
 	var enemies = get_enemies_in_range()
@@ -877,12 +883,18 @@ func spawn_muzzle_flash(color: Color) -> void:
 			flash.setup(color, flash_scale)
 
 func update_target() -> void:
-	current_target = find_target()
+	var next_target := find_target()
+	if next_target != current_target:
+		current_target = next_target
+		if current_target:
+			target_selected.emit(self, current_target, "selected_%s" % target_mode)
 
-func is_valid_target(enemy: Node2D) -> bool:
+func is_valid_target(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy): return false
 	if not enemy.has_method("is_alive") or not enemy.is_alive(): return false
-	if not can_target_enemy(enemy): return false
+	if not can_target_enemy(enemy):
+		target_rejected.emit(self, enemy, "category_not_targetable")
+		return false
 	
 	# STANDARD: Use canonical range origin and global distance check
 	var target_pos = enemy.global_position
@@ -893,7 +905,7 @@ func is_valid_target(enemy: Node2D) -> bool:
 	var dist = get_range_origin().distance_to(target_pos)
 	return dist <= attack_range
 
-func can_target_enemy(enemy: Node) -> bool:
+func can_target_enemy(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy):
 		return false
 	if not enemy.has_method("get_enemy_category"):
@@ -933,8 +945,16 @@ func find_target() -> Node2D:
 		target_pool = visible_targets
 		if OS.is_debug_build() and cloaked_targets.size() > 0:
 			print("[Targeting] Tower ", visual_type, " found ", visible_targets.size(), " visible targets and ", cloaked_targets.size(), " cloaked target. Targeting visible first.")
+		var preferred = select_first_target(visible_targets)
+		for cloaked in cloaked_targets:
+			target_rejected.emit(self, cloaked, "cloaked_deferred_visible_target_exists")
+			if cloaked.has_method("notify_stealth_deferred"):
+				cloaked.notify_stealth_deferred(preferred)
 	elif cloaked_targets.size() > 0:
 		target_pool = cloaked_targets
+		for cloaked in cloaked_targets:
+			if cloaked.has_method("notify_stealth_targetable"):
+				cloaked.notify_stealth_targetable()
 		if OS.is_debug_build():
 			print("[Targeting] Tower ", visual_type, " has only cloaked targets. Cloaked target allowed.")
 
@@ -967,6 +987,41 @@ func get_enemies_in_range() -> Array:
 		if is_valid_target(enemy):
 			enemies_in_range.append(enemy)
 	return enemies_in_range
+
+func apply_fire_rate_modifier(source: Node, multiplier: float) -> void:
+	if source == null or not is_instance_valid(source):
+		return
+	var key := source.get_instance_id()
+	var value := clampf(multiplier, 0.05, 1.0)
+	if not fire_rate_modifiers.has(key) or abs(float(fire_rate_modifiers[key].get("value", 1.0)) - value) > 0.001:
+		fire_rate_modifiers[key] = {"source": source, "value": value}
+		fire_rate_modifier_changed.emit(self, source, value)
+		if OS.is_debug_build():
+			print("[EnemyFeature][TowerDisrupted] tower=%s source=%s multiplier=%.2f effective_interval=%.2f" % [tower_id, str(source.name), value, get_effective_fire_rate()])
+
+func remove_fire_rate_modifier(source: Node) -> void:
+	if source == null:
+		return
+	var key := source.get_instance_id()
+	if fire_rate_modifiers.has(key):
+		fire_rate_modifiers.erase(key)
+		fire_rate_modifier_changed.emit(self, source, 1.0)
+		if OS.is_debug_build():
+			print("[EnemyFeature][TowerDisruptionRemoved] tower=%s source=%s effective_interval=%.2f" % [tower_id, str(source.name), get_effective_fire_rate()])
+
+func get_effective_fire_rate() -> float:
+	var strongest_multiplier := 1.0
+	var stale_keys: Array = []
+	for key in fire_rate_modifiers.keys():
+		var entry: Dictionary = fire_rate_modifiers[key]
+		var source: Node = entry.get("source", null)
+		if not is_instance_valid(source):
+			stale_keys.append(key)
+			continue
+		strongest_multiplier = min(strongest_multiplier, clampf(float(entry.get("value", 1.0)), 0.05, 1.0))
+	for key in stale_keys:
+		fire_rate_modifiers.erase(key)
+	return fire_rate / strongest_multiplier
 
 func select_first_target(enemies: Array) -> Node2D:
 	var best_target = null

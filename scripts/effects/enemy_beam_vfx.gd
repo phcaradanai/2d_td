@@ -1,0 +1,74 @@
+extends Node2D
+class_name EnemyBeamVFX
+
+var time: float = 0.0
+var duration: float = 0.45
+var beam_color: Color = Color(0.9, 1.0, 0.95, 1.0)
+var mode: String = "heal_cast"
+var links: Array[Node] = []
+var source: Node2D = null
+
+func play_heal_cast(p_duration: float = 0.45) -> void:
+	mode = "heal_cast"
+	duration = p_duration
+	time = 0.0
+	beam_color = Color(1.0, 0.92, 0.56, 1.0)
+	set_process(true)
+	queue_redraw()
+
+func show_links(p_source: Node2D, p_targets: Array, p_color: Color) -> void:
+	source = p_source
+	links = p_targets.duplicate()
+	beam_color = p_color
+	mode = "links"
+	set_process(true)
+	queue_redraw()
+
+func clear_links() -> void:
+	links.clear()
+	queue_redraw()
+
+func _process(delta: float) -> void:
+	if mode == "heal_cast":
+		time += delta
+		if time >= duration:
+			queue_redraw()
+			set_process(false)
+	else:
+		time += delta
+	queue_redraw()
+
+func _draw() -> void:
+	if mode == "heal_cast":
+		_draw_heal_cast()
+	elif mode == "links":
+		_draw_links()
+
+func _draw_heal_cast() -> void:
+	if time >= duration:
+		return
+	var t := clampf(time / duration, 0.0, 1.0)
+	var alpha := sin(t * PI)
+	var height := 76.0
+	var half_width := 7.0 + alpha * 5.0
+	var pts := PackedVector2Array([
+		Vector2(-half_width, 2.0),
+		Vector2(half_width, 2.0),
+		Vector2(half_width * 0.35, -height),
+		Vector2(-half_width * 0.35, -height)
+	])
+	draw_colored_polygon(pts, Color(0.65, 1.0, 0.95, 0.13 * alpha))
+	draw_line(Vector2.ZERO, Vector2(0, -height), Color(1.0, 0.96, 0.72, 0.72 * alpha), 3.0)
+	draw_line(Vector2(-5, -6), Vector2(-1, -height * 0.75), Color(0.45, 1.0, 0.9, 0.38 * alpha), 1.5)
+	for i in range(6):
+		var p := Vector2(sin(time * 18.0 + i) * 9.0, -float(i) * 11.0 - t * 16.0)
+		draw_rect(Rect2(p - Vector2(1.5, 1.5), Vector2(3, 3)), Color(1.0, 0.9, 0.45, 0.55 * alpha))
+	draw_arc(Vector2.ZERO, 20.0 + alpha * 8.0, time * 7.0, time * 7.0 + PI * 1.25, 24, Color(0.45, 1.0, 0.9, 0.45 * alpha), 2.0)
+
+func _draw_links() -> void:
+	for target in links:
+		if not is_instance_valid(target) or not (target is Node2D):
+			continue
+		var local_target := to_local((target as Node2D).global_position)
+		var mid := local_target * 0.5 + Vector2(sin(time * 18.0 + local_target.x) * 4.0, 0)
+		draw_polyline(PackedVector2Array([Vector2.ZERO, mid, local_target]), Color(beam_color.r, beam_color.g, beam_color.b, 0.38), 1.5)

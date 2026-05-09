@@ -126,55 +126,30 @@ func validate_placement(cell: Vector2i) -> Dictionary:
 	var config = get_selected_tower_config()
 	var cost = config.get("cost", 0)
 	var footprint = config.get("footprint_radius", DEFAULT_FOOTPRINT_RADIUS)
-	var range_val = get_selected_tower_range()
 	
 	if not active_loadout.is_empty() and not active_loadout.has(selected_tower_id):
 		return {"is_valid": false, "reason": "Not in loadout", "cost": cost}
 	
 	if not is_in_bounds(cell):
-		return {"is_valid": false, "reason": "Out of bounds", "cost": cost}
+		return {"is_valid": false, "reason": "Cannot build outside map", "cost": cost}
 	
-	# 1. Tile-based blocked check (for restricted build zones/buildable_cells)
-	if cell in blocked_cells:
-		# If we have restricted build zones, this might be intentional blocking
-		if level_manager and not level_manager.buildable_cells.is_empty():
-			return {"is_valid": false, "reason": "Restricted zone", "cost": cost}
-		# If no restricted zones, this is the old path blocking - we'll re-evaluate with distance
-	
-	# 2. Precision Path Overlap Check
-	var center_pos = cell_to_local_center(cell)
-	if _is_overlapping_any_path(center_pos, footprint):
-		if OS.is_debug_build():
-			print("[BuildCheck] tower=%s pos=%s footprint=%.1f range=%.1f reason=blocked_by_path" % [selected_tower_id, center_pos, footprint, range_val])
-		return {"is_valid": false, "reason": "Blocked by path", "cost": cost}
-		
-	# 3. Occupancy Check
+	# Occupancy Check
 	if occupied_cells.has(cell):
-		return {"is_valid": false, "reason": "Already occupied", "cost": cost}
-	
-	if OS.is_debug_build():
-		print("[BuildCheck] tower=%s pos=%s footprint=%.1f range=%.1f reason=ok" % [selected_tower_id, center_pos, footprint, range_val])
+		return {"is_valid": false, "reason": "Cannot build on existing tower", "cost": cost}
+		
+	# Static Block Check (Cells)
+	var build_reason := get_build_block_reason(cell)
+	if build_reason != "":
+		return {"is_valid": false, "reason": _format_build_reason(build_reason), "cost": cost}
+		
+	# Precise Path Overlap Check
+	var center_pos = cell_to_local_center(cell)
+	if level_manager and level_manager.has_method("is_position_on_enemy_path"):
+		if level_manager.is_position_on_enemy_path(center_pos, footprint):
+			return {"is_valid": false, "reason": "Cannot build on enemy path", "cost": cost}
 	
 	return {"is_valid": true, "reason": "Valid", "cost": cost, "config": config}
 
-func _is_overlapping_any_path(pos: Vector2, footprint: float) -> bool:
-	if not level_manager: return false
-	
-	var threshold = (LANE_WIDTH / 2.0) + footprint + PLACEMENT_PADDING
-	
-	for p_id in level_manager.multi_paths:
-		var points = level_manager.get_path_points_for_id(p_id)
-		if points.size() < 2: continue
-		
-		for i in range(points.size() - 1):
-			var p1 = points[i]
-			var p2 = points[i+1]
-			var closest = Geometry2D.get_closest_point_to_segment(pos, p1, p2)
-			var dist = pos.distance_to(closest)
-			
-			if dist < threshold:
-				return true
-	return false
 
 func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	var tower = tower_scene.instantiate()
@@ -207,6 +182,37 @@ func cell_to_local_center(cell: Vector2i) -> Vector2:
 
 func is_in_bounds(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.x < grid_cols and cell.y >= 0 and cell.y < grid_rows
+
+func can_build_at_cell(cell: Vector2i) -> bool:
+	return get_build_block_reason(cell) == "" and not occupied_cells.has(cell)
+
+func get_build_block_reason(cell: Vector2i) -> String:
+	if not is_in_bounds(cell):
+		return "out_of_bounds"
+	if level_manager and level_manager.has_method("get_build_block_reason"):
+		var reason := str(level_manager.get_build_block_reason(cell))
+		if reason != "":
+			return reason
+	elif cell in blocked_cells:
+		return "blocked"
+	return ""
+
+func _format_build_reason(reason: String) -> String:
+	match reason:
+		"out_of_bounds":
+			return "Cannot build outside map"
+		"path":
+			return "Cannot build on enemy path"
+		"spawn":
+			return "Cannot build on spawn point"
+		"base":
+			return "Cannot build on base point"
+		"non_buildable":
+			return "Tile is not buildable"
+		"occupied":
+			return "Cannot build on existing tower"
+		_:
+			return reason
 
 func can_place_at(cell: Vector2i) -> bool:
 	return validate_placement(cell)["is_valid"]

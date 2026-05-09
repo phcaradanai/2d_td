@@ -74,9 +74,9 @@ func _generate_decorations() -> void:
 		for y in range(rows):
 			var cell = Vector2i(x, y)
 			
-			# Don't place on path or buildable foundations (to keep them clear)
+			# In full_non_path mode decorations are visual-only and do not block tower placement.
 			if level_manager.is_path_cell(cell): continue
-			if not level_manager.buildable_cells.is_empty() and cell in level_manager.buildable_cells: continue
+			if level_manager.buildable_mode != "full_non_path" and not level_manager.buildable_cells.is_empty() and cell in level_manager.buildable_cells: continue
 			
 			# Roll for prop
 			if rng.randf() < current_theme.prop_density:
@@ -131,7 +131,7 @@ func _draw() -> void:
 			var cell = Vector2i(x, y)
 			var rect = Rect2(origin + Vector2(x * gs, y * gs), Vector2(gs, gs))
 			
-			if not level_manager.buildable_cells.is_empty() and cell in level_manager.buildable_cells:
+			if level_manager.buildable_mode != "full_non_path" and not level_manager.buildable_cells.is_empty() and cell in level_manager.buildable_cells:
 				_draw_foundation_tile(rect)
 			elif cell in level_manager.blocked_cells or cell in level_manager.decorative_blocked_cells:
 				_draw_blocked_tile(rect)

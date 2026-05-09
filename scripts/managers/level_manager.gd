@@ -1,4 +1,5 @@
 extends Node
+class_name LevelManager
 
 var level_id: String
 var level_name: String
@@ -6,6 +7,10 @@ var grid_size: int = 64
 var grid_cols: int = 20
 var grid_rows: int = 12
 var grid_origin: Vector2 = Vector2.ZERO
+ 
+const LANE_WIDTH: float = 64.0
+const PLACEMENT_PADDING: float = 4.0
+const DEFAULT_TOWER_FOOTPRINT: float = 20.0
 
 var path_cells: Array[Vector2i] = []
 var multi_paths: Dictionary = {} # path_id -> Array[Vector2i]
@@ -18,6 +23,7 @@ var buildable_cells: Array[Vector2i] = []
 var starting_gold: int = 100
 var starting_lives: int = 20
 var waves_path: String = "res://data/waves.json"
+var buildable_mode: String = "full_non_path"
 var hero_config: Dictionary = {
 	"enabled": false,
 	"unlock_message": "",
@@ -25,6 +31,7 @@ var hero_config: Dictionary = {
 	"duration": 28,
 	"cooldown": 35
 }
+var level_data: Dictionary = {}
 
 var current_theme: Resource = null
 var theme_manager: Node = null
@@ -34,6 +41,7 @@ func reset_state() -> void:
 	level_name = "Unknown Level"
 	starting_gold = 100
 	starting_lives = 20
+	buildable_mode = "full_non_path"
 	path_cells.clear()
 	multi_paths.clear()
 	blocked_cells.clear()
@@ -49,6 +57,7 @@ func reset_state() -> void:
 		"cooldown": 35
 	}
 	current_theme = null
+	level_data.clear()
 
 func load_level(path: String) -> bool:
 	reset_state()
@@ -75,7 +84,8 @@ func load_level(path: String) -> bool:
 	if data == null:
 		push_error("JSON data is null in " + path)
 		return false
-		
+	
+	level_data = data
 	level_id = data.get("id", "unknown")
 	level_name = data.get("name", "Unknown Level")
 	grid_size = data.get("grid_size", 64)
@@ -91,6 +101,7 @@ func load_level(path: String) -> bool:
 	starting_gold = data.get("starting_gold", 100)
 	starting_lives = data.get("starting_lives", 20)
 	waves_path = data.get("waves_path", "res://data/waves.json")
+	buildable_mode = data.get("buildable_mode", "full_non_path")
 	
 	hero_config = {
 		"enabled": data.get("hero_enabled", false),
@@ -164,21 +175,13 @@ func load_level(path: String) -> bool:
 	return true
 
 func get_all_blocked_cells() -> Array[Vector2i]:
-	# If restricted build zones are defined, then EVERYTHING ELSE is blocked for building
-	if not buildable_cells.is_empty():
-		var all: Array[Vector2i] = []
-		for x in range(grid_cols):
-			for y in range(grid_rows):
-				var cell = Vector2i(x, y)
-				if not (cell in buildable_cells):
-					all.append(cell)
-		return all
-		
 	var all: Array[Vector2i] = []
-	for p_id in multi_paths:
-		all.append_array(multi_paths[p_id])
-	all.append_array(blocked_cells)
-	all.append_array(decorative_blocked_cells)
+	for x in range(grid_cols):
+		for y in range(grid_rows):
+			var cell = Vector2i(x, y)
+			var reason = get_build_block_reason(cell)
+			if reason != "":
+				all.append(cell)
 	return all
 
 func is_path_cell(cell: Vector2i) -> bool:
@@ -188,11 +191,42 @@ func is_path_cell(cell: Vector2i) -> bool:
 	return false
 
 func is_blocked_cell(cell: Vector2i) -> bool:
-	# If specific buildable spots are defined, anything NOT in that list is blocked
-	if not buildable_cells.is_empty():
-		return not (cell in buildable_cells)
+	return get_build_block_reason(cell) != ""
+
+func get_build_block_reason(cell: Vector2i) -> String:
+	if cell.x < 0 or cell.x >= grid_cols or cell.y < 0 or cell.y >= grid_rows:
+		return "out_of_bounds"
+	
+	if is_path_cell(cell):
+		return "path"
 		
-	return cell in blocked_cells or cell in decorative_blocked_cells or is_path_cell(cell)
+	if cell in blocked_cells:
+		return "blocked"
+	
+	# In "manual" mode, if a cell is NOT in buildable_cells, it's blocked.
+	# But by default (full_non_path), we ignore this.
+	if buildable_mode == "manual" and not buildable_cells.is_empty():
+		if not (cell in buildable_cells):
+			return "non_buildable"
+			
+	return ""
+
+func is_position_on_enemy_path(pos: Vector2, footprint: float = DEFAULT_TOWER_FOOTPRINT) -> bool:
+	var threshold = (LANE_WIDTH / 2.0) + footprint + PLACEMENT_PADDING
+	
+	for p_id in multi_paths:
+		var points = get_path_points_for_id(p_id)
+		if points.size() < 2: continue
+		
+		for i in range(points.size() - 1):
+			var p1 = points[i]
+			var p2 = points[i+1]
+			var closest = Geometry2D.get_closest_point_to_segment(pos, p1, p2)
+			var dist = pos.distance_to(closest)
+			
+			if dist < threshold:
+				return true
+	return false
 
 func cell_to_world_center(cell: Vector2i) -> Vector2:
 	return grid_origin + Vector2(cell.x * grid_size + grid_size / 2, cell.y * grid_size + grid_size / 2)

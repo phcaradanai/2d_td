@@ -13,6 +13,10 @@ var current_level_data = {}
 var current_level_id = ""
 var current_waves_data = []
 var current_level_curves = {}
+var formation_planner = null
+
+const FORMATION_PLANNER_SCRIPT = preload("res://scripts/managers/spawn_formation_planner.gd")
+const ENEMY_CATEGORY_AIR := "air"
 var last_candidate_count: int = 0
 var auto_clear_verbose_solver_logs: bool = false
 
@@ -48,6 +52,7 @@ func _ensure_output_dir():
 func load_configs():
 	towers_config = _load_json(TOWERS_CONFIG_PATH)
 	enemies_config = _load_json(ENEMIES_CONFIG_PATH)
+	formation_planner = FORMATION_PLANNER_SCRIPT.new(enemies_config)
 
 func _load_json(path: String) -> Variant:
 	if not FileAccess.file_exists(path): return {}
@@ -437,31 +442,38 @@ func _get_legal_cells() -> Array:
 	var cols = current_level_data.get("grid_cols", 20)
 	var rows = current_level_data.get("grid_rows", 12)
 	
-	var path_cells = []
-	if current_level_data.has("paths"):
-		for p_id in current_level_data["paths"]:
-			path_cells.append_array(current_level_data["paths"][p_id])
-	else:
-		path_cells = current_level_data.get("path_cells", [])
-		
-	var blocked = current_level_data.get("blocked_cells", [])
-
 	for x in range(cols):
 		for y in range(rows):
-			var is_blocked = false
-			for p in path_cells:
-				if p[0] == x and p[1] == y:
-					is_blocked = true
-					break
-			if is_blocked: continue
+			var cell = Vector2i(x, y)
 			
-			for b in blocked:
-				if b[0] == x and b[1] == y:
-					is_blocked = true
-					break
-			if is_blocked: continue
+			var is_blocked := false
+			if formation_planner and formation_planner.has_method("get_build_block_reason"):
+				is_blocked = formation_planner.get_build_block_reason(cell) != ""
+			elif BuildableGridGenerator.get_static_block_reason(cell, current_level_data) != "":
+				is_blocked = true
+			else:
+				# Fallback manual check
+				var path_cells = []
+				if current_level_data.has("paths"):
+					for p_id in current_level_data["paths"]:
+						path_cells.append_array(current_level_data["paths"][p_id])
+				else:
+					path_cells = current_level_data.get("path_cells", [])
+				
+				for p in path_cells:
+					if p[0] == x and p[1] == y:
+						is_blocked = true
+						break
+				
+				if not is_blocked:
+					var blocked = current_level_data.get("blocked_cells", [])
+					for b in blocked:
+						if b[0] == x and b[1] == y:
+							is_blocked = true
+							break
 			
-			cells.append(Vector2i(x, y))
+			if not is_blocked:
+				cells.append(cell)
 	return cells
 
 func _rank_cells_by_coverage(cells: Array) -> Array:
@@ -917,23 +929,23 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 	var tick = 0.05
 	var reward = wave_data.get("completion_reward", 0)
 
-	var groups = wave_data.get("groups", [])
-	var total_enemies = 0
-	for g in groups: total_enemies += g.get("count", 0)
-
-	var queue = []
-	for g in groups:
-		for i in range(g.get("count", 0)):
-			var e_type = g.get("enemy_type", g.get("type", "basic"))
-			queue.append({"type": e_type, "delay": g.get("spawn_delay", 1.0), "path": g.get("path", "default")})
-
-	var next_spawn = 0.0
-
+	# Use Formation Planner for deterministic event queue
+	if formation_planner == null:
+		formation_planner = FORMATION_PLANNER_SCRIPT.new(enemies_config)
+	
+	var plan = formation_planner.build_plan(wave_data, state.wave_index)
+	var events = plan.get("events", [])
+	var total_enemies = events.size()
+	var event_index = 0
+	var dynamic_spawns = []
+	
 	while time < 600.0:
-		if not queue.is_empty() and time >= next_spawn:
-			var s = queue.pop_front()
-			var cfg = enemies_config.get(s["type"], {})
-			var p_id = s["path"]
+		# Check for spawns from formation
+		while event_index < events.size() and time >= float(events[event_index].get("time", 0.0)):
+			var event = events[event_index]
+			var e_type = event.get("type", "basic")
+			var cfg = enemies_config.get(e_type, {})
+			var p_id = event.get("path", "default")
 			var curve = current_level_curves.get(p_id)
 			if curve == null and current_level_curves.has("default"):
 				curve = current_level_curves["default"]
@@ -950,7 +962,7 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 				"curve": curve,
 				"path_len": path_len,
 				"reward": cfg.get("reward_gold", 5),
-				"type": s["type"],
+				"type": e_type,
 				"slow": 1.0,
 				"slow_rem": 0.0,
 				"tags": cfg.get("tags", []),
@@ -962,9 +974,10 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 				"vulnerability_rem": 0.0,
 				"skill": cfg.get("skill", ""),
 				"skill_params": cfg.get("skill_params", {}),
-				"heal_timer": 0.0
+				"heal_timer": 0.0,
+				"formation_speed_multiplier": event.get("formation_speed_multiplier", 1.0)
 			})
-			next_spawn = time + s["delay"]
+			event_index += 1
 
 		for e in enemies:
 			if e["slow_rem"] > 0:
@@ -1007,7 +1020,7 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 					"reason": "Leak: %s reached base" % e["type"],
 					"leak_time": time,
 					"leak_enemy": e["type"],
-					"enemies_killed": total_enemies - queue.size() - enemies.size()
+					"enemies_killed": total_enemies - (events.size() - event_index) - enemies.size()
 				}
 
 		for t in sim.towers:
@@ -1055,11 +1068,55 @@ func simulate_wave(state, wave_data: Dictionary) -> Dictionary:
 					var count = enemies[i]["skill_params"].get("count", 3)
 					var s_type = enemies[i]["skill_params"].get("type", "basic")
 					for j in range(count):
-						queue.insert(0, {"type": s_type, "delay": 0.2, "path": enemies[i]["path_id"]})
+						dynamic_spawns.append({
+							"time": time + 0.2 * (j + 1),
+							"type": s_type,
+							"path": enemies[i]["path_id"]
+						})
+						total_enemies += 1
 				enemies.remove_at(i)
 			i -= 1
 
-		if queue.is_empty() and enemies.is_empty() and projectiles.is_empty():
+		# Check for dynamic spawns
+		var ds_idx = dynamic_spawns.size() - 1
+		while ds_idx >= 0:
+			if time >= dynamic_spawns[ds_idx]["time"]:
+				var ds = dynamic_spawns[ds_idx]
+				var e_type = ds["type"]
+				var cfg = enemies_config.get(e_type, {})
+				var p_id = ds["path"]
+				var curve = current_level_curves.get(p_id, current_level_curves.get("default"))
+				var path_len = curve.get_baked_length() if curve else 0.0
+				
+				enemies.append({
+					"id": randi(),
+					"hp": cfg.get("max_hp", 30),
+					"max_hp": cfg.get("max_hp", 30),
+					"speed": cfg.get("speed", 100),
+					"progress": 0.0,
+					"path_id": p_id,
+					"curve": curve,
+					"path_len": path_len,
+					"reward": 0, # splits usually give no gold
+					"type": e_type,
+					"slow": 1.0,
+					"slow_rem": 0.0,
+					"tags": cfg.get("tags", []),
+					"is_cloaked": "stealth" in cfg.get("tags", []),
+					"is_air": cfg.get("category", "land") == "air" or "air" in cfg.get("tags", []),
+					"shield": 0,
+					"shield_reduction": 0.0,
+					"vulnerability": 1.0,
+					"vulnerability_rem": 0.0,
+					"skill": cfg.get("skill", ""),
+					"skill_params": cfg.get("skill_params", {}),
+					"heal_timer": 0.0,
+					"formation_speed_multiplier": 1.0
+				})
+				dynamic_spawns.remove_at(ds_idx)
+			ds_idx -= 1
+
+		if event_index >= events.size() and dynamic_spawns.is_empty() and enemies.is_empty() and projectiles.is_empty():
 			sim.gold += reward
 			sim.wave_index += 1
 			var wave_key = str(sim.wave_index)

@@ -1131,6 +1131,7 @@ func _refresh_right_info_column_visibility() -> void:
 
 func _format_wave_preview_summary(preview: Dictionary) -> String:
 	var lane_info = preview.get("lane_info", {})
+	var formation_lines := _format_wave_formation_lines(preview)
 	
 	if lane_info.keys().size() > 1:
 		var lane_parts = []
@@ -1142,12 +1143,27 @@ func _format_wave_preview_summary(preview: Dictionary) -> String:
 			var counts = info.get("counts", {})
 			var lane_name = "Lane A" if str(p_id) == "default" else str(p_id).capitalize()
 			lane_parts.append("[%s]: %s" % [lane_name, _format_counts(counts)])
+		if formation_lines != "":
+			lane_parts.append(formation_lines)
 		return "\n".join(lane_parts)
 		
 	var counts = preview.get("enemy_counts", {})
 	if counts.is_empty():
 		return "Malformed Wave"
-	return _format_counts(counts)
+	var summary := _format_counts(counts)
+	if formation_lines != "":
+		summary += "\n" + formation_lines
+	return summary
+
+func _format_wave_formation_lines(preview: Dictionary) -> String:
+	var formations: Array = preview.get("formations", [])
+	var notes: Array = preview.get("formation_notes", [])
+	var lines := []
+	if not formations.is_empty():
+		lines.append("[color=#8fd3ff]Formation:[/color] " + " | ".join(formations))
+	if not notes.is_empty():
+		lines.append("[color=#ffd36e]Tactic:[/color] " + " | ".join(notes))
+	return "\n".join(lines)
 
 func _format_counts(counts: Dictionary) -> String:
 	var parts = []

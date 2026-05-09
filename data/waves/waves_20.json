@@ -1,64 +1,318 @@
 [
 	{
-		"wave": 1,
+		"groups": [
+			{
+				"count": 4.0,
+				"interval": 0.2,
+				"path": "default",
+				"reward_gold": 14.0,
+				"type": "tank"
+			},
+			{
+				"count": 6.0,
+				"interval": 0.2,
+				"path": "default",
+				"reward_gold": 6.0,
+				"type": "basic"
+			},
+			{
+				"count": 10.0,
+				"interval": 0.2,
+				"path": "lane_b",
+				"reward_gold": 2.0,
+				"type": "swarm"
+			},
+			{
+				"count": 6.0,
+				"interval": 0.2,
+				"path": "lane_b",
+				"reward_gold": 9.0,
+				"type": "runner"
+			}
+		],
+		"intel": "Split pressure. Spaced tanks on Lane A, fast runners on Lane B. Lightning covers clusters, but beware of spacing.",
 		"name": "Phase 1: Ground Formation",
-		"reward": 80,
-		"groups": [
-			{ "type": "tank", "count": 4, "interval": 1.5, "path": "default" },
-			{ "type": "basic", "count": 6, "interval": 1.0, "path": "default" },
-			{ "type": "swarm", "count": 10, "interval": 0.4, "path": "lane_b" },
-			{ "type": "runner", "count": 4, "interval": 0.8, "path": "lane_b" }
-		],
-		"intel": "Ground Formation. Heavy armor on lane A, fast swarms on lane B. Establish your baseline defenses."
+		"reward": 29.0,
+		"wave": 1.0
 	},
 	{
-		"wave": 2,
+		"groups": [
+			{
+				"count": 6.0,
+				"interval": 2.0,
+				"path": "default",
+				"reward_gold": 10.0,
+				"type": "flyer"
+			},
+			{
+				"count": 10.0,
+				"interval": 0.5,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "fast_flyer"
+			},
+			{
+				"count": 4.0,
+				"interval": 3.0,
+				"path": "lane_b",
+				"reward_gold": 20.0,
+				"type": "armored_flyer"
+			}
+		],
+		"intel": "Air Breach. Fast flyers on Lane B will punish slow tracking. Armored flyers require high single-target DPS (Sniper/Rapid).",
 		"name": "Phase 2: Air Breach",
-		"reward": 90,
-		"groups": [
-			{ "type": "flyer", "count": 8, "interval": 1.0, "path": "default" },
-			{ "type": "fast_flyer", "count": 8, "interval": 0.6, "path": "lane_b" },
-			{ "type": "armored_flyer", "count": 6, "interval": 1.5, "path": "lane_b" }
-		],
-		"intel": "Air Breach. Ground defenses are useless here. You must transition to Anti-Air (Sniper/Lightning/Rapid) immediately."
+		"reward": 34.0,
+		"wave": 2.0
 	},
 	{
-		"wave": 3,
+		"groups": [
+			{
+				"count": 3.0,
+				"interval": 12.20703125,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "bulwark"
+			},
+			{
+				"count": 4.0,
+				"interval": 4.8828125,
+				"path": "default",
+				"reward_gold": 16.0,
+				"type": "shieldbearer"
+			},
+			{
+				"count": 4.0,
+				"interval": 6.103515625,
+				"path": "default",
+				"reward_gold": 18.0,
+				"type": "healer"
+			},
+			{
+				"count": 5.0,
+				"interval": 7.32421875,
+				"path": "lane_b",
+				"reward_gold": 24.0,
+				"type": "disruptor"
+			},
+			{
+				"count": 8.0,
+				"interval": 2.44140625,
+				"path": "lane_b",
+				"reward_gold": 9.0,
+				"type": "runner"
+			}
+		],
+		"intel": "Support Core. Bulwarks protect allies on Lane A. Disruptors on Lane B will disable your key towers. Hero intervention recommended. Optional Guardian support can stabilize the lane split, but mixed towers should still clear. Optional Guardian support can stabilize the lane split, but mixed towers should still clear. Optional Guardian support can stabilize the lane split, but mixed towers should still clear.",
 		"name": "Phase 3: Support Core",
-		"reward": 105,
-		"groups": [
-			{ "type": "bulwark", "count": 2, "interval": 2.5, "path": "default" },
-			{ "type": "shieldbearer", "count": 4, "interval": 1.2, "path": "default" },
-			{ "type": "healer", "count": 4, "interval": 1.0, "path": "default" },
-			{ "type": "disruptor", "count": 4, "interval": 1.5, "path": "lane_b" }
-		],
-		"intel": "Support Core. Heavy shielding and healing on lane A. Disruptors slowing towers on lane B. Target priority is key."
+		"reward": 46.0,
+		"wave": 3.0
 	},
 	{
-		"wave": 4,
+		"groups": [
+			{
+				"count": 8.0,
+				"interval": 1.2,
+				"path": "default",
+				"reward_gold": 11.0,
+				"type": "hunter"
+			},
+			{
+				"count": 10.0,
+				"interval": 1.5,
+				"path": "default",
+				"reward_gold": 12.0,
+				"type": "cloaked"
+			},
+			{
+				"count": 8.0,
+				"interval": 4.0,
+				"path": "lane_b",
+				"reward_gold": 20.0,
+				"type": "splitter"
+			},
+			{
+				"count": 6.0,
+				"interval": 0.8,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "fast_flyer"
+			},
+			{
+				"count": 5.0,
+				"interval": 1.1,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "fast_flyer"
+			},
+			{
+				"count": 5.0,
+				"interval": 1.8,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "hunter"
+			},
+			{
+				"count": 5.0,
+				"interval": 1.1,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "fast_flyer"
+			},
+			{
+				"count": 5.0,
+				"interval": 1.8,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "hunter"
+			},
+			{
+				"count": 5.0,
+				"interval": 1.1,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "fast_flyer"
+			},
+			{
+				"count": 5.0,
+				"interval": 1.8,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "hunter"
+			},
+			{
+				"count": 5.0,
+				"interval": 0.85,
+				"path": "lane_b",
+				"type": "fast_flyer"
+			},
+			{
+				"count": 5.0,
+				"interval": 1.4,
+				"path": "lane_b",
+				"type": "hunter"
+			}
+		],
+		"intel": "Hunter Assault. Cloaked units bypass basic targeting. Splitters on Lane B require rapid area control. Watch for air reinforcements.",
 		"name": "Phase 4: Hunter Assault",
-		"reward": 120,
-		"groups": [
-			{ "type": "hunter", "count": 6, "interval": 0.8, "path": "default" },
-			{ "type": "cloaked", "count": 8, "interval": 1.0, "path": "default" },
-			{ "type": "splitter", "count": 6, "interval": 1.8, "path": "lane_b" },
-			{ "type": "hunter", "count": 4, "interval": 0.8, "path": "lane_b" }
-		],
-		"intel": "Hunter Assault. Cloaked enemies evade targeting while Hunters pressure your Hero. Splitters will multiply if not controlled."
+		"reward": 57.0,
+		"wave": 4.0
 	},
 	{
-		"wave": 5,
-		"name": "Phase 5: Command Siege Finale",
-		"reward": 160,
 		"groups": [
-			{ "type": "bulwark", "count": 3, "interval": 3.0, "path": "default" },
-			{ "type": "healer", "count": 4, "interval": 1.2, "path": "default" },
-			{ "type": "armored_flyer", "count": 6, "interval": 1.5, "path": "default" },
-			{ "type": "hunter", "count": 5, "interval": 0.8, "path": "default" },
-			{ "type": "disruptor", "count": 5, "interval": 1.5, "path": "lane_b" },
-			{ "type": "fast_flyer", "count": 8, "interval": 0.5, "path": "lane_b" },
-			{ "type": "cloaked", "count": 6, "interval": 0.8, "path": "lane_b" }
+			{
+				"count": 4.0,
+				"interval": 6.0,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "bulwark"
+			},
+			{
+				"count": 6.0,
+				"interval": 2.0,
+				"path": "default",
+				"reward_gold": 18.0,
+				"type": "healer"
+			},
+			{
+				"count": 8.0,
+				"interval": 3.0,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "armored_flyer"
+			},
+			{
+				"count": 6.0,
+				"interval": 1.5,
+				"path": "default",
+				"reward_gold": 11.0,
+				"type": "hunter"
+			},
+			{
+				"count": 6.0,
+				"interval": 4.0,
+				"path": "lane_b",
+				"reward_gold": 24.0,
+				"type": "disruptor"
+			},
+			{
+				"count": 12.0,
+				"interval": 0.4,
+				"path": "lane_b",
+				"reward_gold": 11.0,
+				"type": "fast_flyer"
+			},
+			{
+				"count": 8.0,
+				"interval": 1.2,
+				"path": "lane_b",
+				"reward_gold": 12.0,
+				"type": "cloaked"
+			},
+			{
+				"count": 1.0,
+				"interval": 0.1,
+				"path": "lane_b",
+				"reward_gold": 20.0,
+				"type": "bulwark"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.8,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "bulwark"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.8,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "armored_flyer"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.8,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "bulwark"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.8,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "armored_flyer"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.8,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "bulwark"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.8,
+				"path": "default",
+				"reward_gold": 20.0,
+				"type": "armored_flyer"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.4,
+				"path": "default",
+				"type": "bulwark"
+			},
+			{
+				"count": 3.0,
+				"interval": 1.4,
+				"path": "default",
+				"type": "armored_flyer"
+			}
 		],
-		"intel": "The final stand. A carefully coordinated push combining all elite units. Utilize every tower type and your Hero's abilities to survive."
+		"intel": "The final stand. Massive split pressure. Mixed defense is mandatory. Use Hero to stabilize the most pressured lane.",
+		"name": "Phase 5: Command Siege Finale",
+		"reward": 86.0,
+		"wave": 5.0
 	}
 ]

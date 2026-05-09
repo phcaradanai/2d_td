@@ -7,6 +7,7 @@ const UI_THEME_MANAGER_SCRIPT = preload("res://scripts/ui/ui_theme_manager.gd")
 const BALANCE_SOLVER_SCRIPT = "res://scripts/debug/balance_solver.gd"
 const AUTO_PLAY_VERIFIER_SCRIPT = preload("res://scripts/debug/auto_play_verifier.gd")
 const LEVEL_VALIDATOR_SCRIPT = preload("res://scripts/debug/level_validator.gd")
+const SPAWN_FORMATION_PLANNER_SCRIPT = preload("res://scripts/managers/spawn_formation_planner.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -64,7 +65,7 @@ const LEFT_SIDEBAR_WIDTH = 200
 const RIGHT_SIDEBAR_WIDTH = 260
 const OUTER_MARGIN = 0 # Removed for maximal expansion
 
-var level_manager: Node = null
+var level_manager: LevelManager = null
 var level_validator: Node = null
 var balance_solver: Node = null
 var auto_play_verifier: Node = null
@@ -364,7 +365,10 @@ func _setup_game_from_level() -> void:
 
 	if wave_manager:
 		wave_manager.setup(active_path_nodes)
-		wave_manager.load_waves_from_file(level_manager.waves_path)
+		if level_manager.level_data.has("waves") and level_manager.level_data["waves"] is Array and not level_manager.level_data["waves"].is_empty():
+			wave_manager.load_waves_from_data(level_manager.level_data["waves"])
+		else:
+			wave_manager.load_waves_from_file(level_manager.waves_path)
 		wave_manager.reset_waves()
 		_log_wave_intel_source()
 		
@@ -456,9 +460,8 @@ func _ensure_level_nodes_exist() -> void:
 	map_visual_layer = get_node_or_null("MapVisualLayer")
 
 	if level_manager == null:
-		level_manager = Node.new()
+		level_manager = LevelManager.new()
 		level_manager.name = "LevelManager"
-		level_manager.set_script(load(LEVEL_MANAGER_SCRIPT_PATH))
 		add_child(level_manager)
 
 	if map_visual_layer == null:
@@ -1239,7 +1242,7 @@ func _on_tower_selected(_tower_id: String) -> void:
 		var config = build_manager.get_selected_tower_config()
 		var tower_name = config.get("name", _tower_id.capitalize())
 		if game_hud:
-			var hint = " - Select foundation" if not level_manager.buildable_cells.is_empty() else ""
+			var hint = " - Select foundation" if level_manager.buildable_mode == "manual" else " - Select location"
 			game_hud.set_build_status("Selected: " + tower_name + hint)
 
 func _on_tower_selection_cleared() -> void:
@@ -1752,6 +1755,7 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	var traits = derive_wave_traits(counts, total, categories)
 	var rec_roles = recommend_roles_for_wave(traits)
 	var warnings = derive_wave_warnings(traits)
+	var formation_preview = _summarize_wave_formations_for_preview(wave_data)
 	
 	if wave_data.has("intel") and wave_data["intel"] != "":
 		warnings.append(wave_data["intel"])
@@ -1772,8 +1776,45 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 		"traits": traits,
 		"recommended_roles": rec_roles,
 		"warnings": warnings,
-		"lane_info": lane_info
+		"lane_info": lane_info,
+		"formations": formation_preview.get("formations", []),
+		"formation_notes": formation_preview.get("notes", [])
 	}
+
+func _summarize_wave_formations_for_preview(wave_data: Dictionary) -> Dictionary:
+	var plan := {}
+	if wave_manager and wave_manager.formation_planner:
+		plan = wave_manager.formation_planner.build_plan(wave_data)
+	else:
+		var planner = SPAWN_FORMATION_PLANNER_SCRIPT.new(_load_enemy_config_for_preview())
+		plan = planner.build_plan(wave_data)
+	var formations := []
+	var notes := []
+	for item in plan.get("formation_preview", []):
+		var path := str(item.get("path", "default"))
+		var formation := str(item.get("formation", ""))
+		var note := str(item.get("note", ""))
+		var lane_name := "Lane A" if path == "default" else path.capitalize()
+		if formation != "":
+			formations.append("%s: %s" % [lane_name, formation])
+		if note != "" and not notes.has(note):
+			notes.append(note)
+	return {"formations": formations, "notes": notes}
+
+func _load_enemy_config_for_preview() -> Dictionary:
+	if wave_manager and wave_manager.get("enemies_config") is Dictionary:
+		var live_config: Dictionary = wave_manager.get("enemies_config")
+		if not live_config.is_empty():
+			return live_config
+	var path = "res://data/enemies.json"
+	if not FileAccess.file_exists(path):
+		return {}
+	var file = FileAccess.open(path, FileAccess.READ)
+	var json_text = file.get_as_text()
+	file.close()
+	var json = JSON.new()
+	var error = json.parse(json_text)
+	return json.data if error == OK and json.data is Dictionary else {}
 
 func derive_wave_warnings(traits: Array[String]) -> Array[String]:
 	var warnings: Array[String] = []

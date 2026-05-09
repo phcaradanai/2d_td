@@ -4,6 +4,7 @@ extends Node
 # Decoupled metrics tracker for post-game analysis and balancing.
 
 const TELEMETRY_DIR = "user://telemetry/"
+const DEBUG_ACCESS_SCRIPT := preload("res://scripts/debug/debug_access.gd")
 
 var metrics: Dictionary = {}
 var current_wave_stats: Dictionary = {}
@@ -12,6 +13,9 @@ var is_active: bool = false
 func _ready() -> void:
 	if not DirAccess.dir_exists_absolute(TELEMETRY_DIR):
 		DirAccess.make_dir_recursive_absolute(TELEMETRY_DIR)
+		
+	if OS.is_debug_build():
+		_print_path_info()
 
 func start_level(level_id: String, level_name: String, starting_lives: int, starting_gold: int) -> void:
 	is_active = true
@@ -61,6 +65,7 @@ func start_level(level_id: String, level_name: String, starting_lives: int, star
 		"tower_upgrade_count_by_type": {},
 		"tower_sell_count_by_type": {},
 		"tower_total_spent_by_type": {},
+		"tower_max_level_by_type": {},
 		
 		"hero_deploy_count": 0,
 		"hero_damage": 0.0,
@@ -203,6 +208,9 @@ func log_tower_upgraded(tower_type: String, from_level: int, to_level: int, cost
 	})
 	
 	metrics["gold_spent_on_upgrades"] += cost
+	
+	if not metrics["tower_max_level_by_type"].has(tower_type) or to_level > metrics["tower_max_level_by_type"][tower_type]:
+		metrics["tower_max_level_by_type"][tower_type] = to_level
 
 func log_tower_sold(tower_type: String, refund: int) -> void:
 	if not is_active: return
@@ -429,6 +437,12 @@ func get_balance_analysis() -> Dictionary:
 			max_wave_leaks = w_leaks
 			danger_wave = int(w_idx)
 
+	# Calculate Variety Stats
+	var tower_variety = metrics.get("tower_build_count_by_type", {}).size()
+	var tower_count = 0
+	for count in metrics.get("tower_build_count_by_type", {}).values():
+		tower_count += count
+
 	# Determine Difficulty Rating
 	var rating = "Good"
 	var reasons = []
@@ -461,6 +475,35 @@ func get_balance_analysis() -> Dictionary:
 		reasons.append("Hero not utilized")
 		actions.append("Create situations where Hero utility is needed (e.g. mobile threats)")
 
+	# Dominant Strategy Warning (Refined)
+	var dominant_strategy_risk = false
+	var ds_type = ""
+	
+	# Condition 1: Low variety in a victory
+	if rating != "Too Hard" and metrics.get("result", "") == "victory":
+		if tower_variety <= 1:
+			dominant_strategy_risk = true
+			ds_type = "Low Variety (<=1 types)"
+		elif tower_count <= 2:
+			dominant_strategy_risk = true
+			ds_type = "Minimal Build (<=2 towers)"
+		elif top_tower_ratio >= 0.75:
+			dominant_strategy_risk = true
+			ds_type = "High Dominance (>=75%% damage)"
+			
+	if dominant_strategy_risk:
+		print("\n[DOMINANT_STRATEGY_WARNING]")
+		print("level=%s" % level_id)
+		print("strategy_risk=%s" % ds_type)
+		print("tower_variety_count=%d" % tower_variety)
+		print("total_towers_built=%d" % tower_count)
+		print("top_damage_tower=%s" % top_tower.replace("_tower", ""))
+		print("top_damage_ratio=%.1f%%" % (top_tower_ratio * 100.0))
+		print("================\n")
+		
+		reasons.append("Dominant Strategy detected (%s)" % ds_type)
+		actions.append("Increase enemy variety or split pressure to require more tower roles")
+
 	# Specific Final Level Logic
 	if is_final_level:
 		if rating == "Too Easy" or rating == "Slightly Easy":
@@ -474,6 +517,9 @@ func get_balance_analysis() -> Dictionary:
 		"gold_spent_ratio": gold_spent_ratio,
 		"tower_dominance": top_tower.replace("_tower", "") if top_tower != "None" else "None",
 		"tower_dominance_ratio": top_tower_ratio,
+		"tower_variety_count": tower_variety,
+		"tower_total_count": tower_count,
+		"dominant_strategy_risk": dominant_strategy_risk,
 		"hero_relevance": "Used" if hero_used else "Not Used",
 		"recommended_actions": actions
 	}
@@ -492,3 +538,155 @@ func _increment_dict(dict: Dictionary, key: String, amount: float = 1.0) -> void
 	if not dict.has(key):
 		dict[key] = 0.0
 	dict[key] += amount
+
+# --- Report Loading & Aggregate Analysis ---
+
+func _print_path_info() -> void:
+	print("[TELEMETRY_PATH] user_data_dir=%s" % OS.get_user_data_dir())
+	print("[TELEMETRY_PATH] telemetry_dir=%s" % ProjectSettings.globalize_path(TELEMETRY_DIR))
+	var reports = list_telemetry_reports()
+	print("[TELEMETRY_PATH] report_count=%d" % reports.size())
+
+func get_telemetry_dir() -> String:
+	return ProjectSettings.globalize_path(TELEMETRY_DIR)
+
+func list_telemetry_reports(level_id: String = "") -> Array[String]:
+	var reports: Array[String] = []
+	var dir = DirAccess.open(TELEMETRY_DIR)
+	if dir:
+		dir.list_dir_begin()
+		var file_name = dir.get_next()
+		while file_name != "":
+			if not dir.current_is_dir() and file_name.ends_with(".json"):
+				if level_id == "" or file_name.begins_with(level_id + "_"):
+					reports.append(TELEMETRY_DIR + file_name)
+			file_name = dir.get_next()
+	return reports
+
+func load_telemetry_report(path: String) -> Dictionary:
+	var file = FileAccess.open(path, FileAccess.READ)
+	if not file: return {}
+	var json_string = file.get_as_text()
+	var data = JSON.parse_string(json_string)
+	if typeof(data) == TYPE_DICTIONARY:
+		return data
+	return {}
+
+func load_reports_for_level(level_id: String) -> Array[Dictionary]:
+	var reports_data: Array[Dictionary] = []
+	var paths = list_telemetry_reports(level_id)
+	for path in paths:
+		var data = load_telemetry_report(path)
+		if not data.is_empty():
+			reports_data.append(data)
+	return reports_data
+
+func analyze_saved_reports(level_id: String) -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Analyze Saved Reports"):
+		return
+	var reports = load_reports_for_level(level_id)
+	if reports.is_empty():
+		print("[TELEMETRY_AGGREGATE] No reports found for level: %s" % level_id)
+		return
+		
+	var stats = {
+		"runs": reports.size(),
+		"victories": 0,
+		"perfects": 0,
+		"total_time": 0.0,
+		"total_gold_remaining_ratio": 0.0,
+		"total_gold_spent_ratio": 0.0,
+		"tower_counts": {},
+		"leak_counts": {},
+		"total_leaks": 0,
+		"hero_runs": 0,
+		"difficulty_counts": {}
+	}
+	
+	for r in reports:
+		if r.get("result", "") == "victory": stats.victories += 1
+		if r.get("perfect_clear", false): stats.perfects += 1
+		stats.total_time += r.get("clear_time_sec", 0.0)
+		stats.total_leaks += r.get("enemies_leaked_total", 0)
+		if r.get("hero_deploy_count", 0) > 0: stats.hero_runs += 1
+		
+		var ba = r.get("balance_analysis", {})
+		if not ba.is_empty():
+			stats.total_gold_remaining_ratio += ba.get("gold_remaining_ratio", 0.0)
+			stats.total_gold_spent_ratio += ba.get("gold_spent_ratio", 0.0)
+			_increment_dict(stats.tower_counts, ba.get("tower_dominance", "None"))
+			_increment_dict(stats.difficulty_counts, ba.get("difficulty_rating", "Unknown"))
+			
+	var avg_rem_ratio = stats.total_gold_remaining_ratio / stats.runs
+	var victory_rate = float(stats.victories) / stats.runs
+	
+	print("\n[TELEMETRY_AGGREGATE]")
+	print("level=%s" % level_id)
+	print("runs=%d" % stats.runs)
+	print("victory_rate=%d%%" % int(victory_rate * 100.0))
+	print("perfect_rate=%d%%" % int((float(stats.perfects) / stats.runs) * 100.0))
+	print("avg_time=%.1fs" % (stats.total_time / stats.runs))
+	print("avg_gold_remaining_ratio=%.1f%%" % (avg_rem_ratio * 100.0))
+	print("avg_gold_spent_ratio=%.1f%%" % (stats.total_gold_spent_ratio / stats.runs * 100.0))
+	
+	var common_tower = "None"
+	var max_t = -1
+	for t in stats.tower_counts:
+		if stats.tower_counts[t] > max_t:
+			max_t = stats.tower_counts[t]
+			common_tower = t
+	print("top_damage_tower_most_common=%s" % common_tower)
+	print("hero_used_rate=%d%%" % int((float(stats.hero_runs) / stats.runs) * 100.0))
+	print("avg_leaks=%.1f" % (float(stats.total_leaks) / stats.runs))
+	
+	var final_rating = "Unknown"
+	if avg_rem_ratio > 0.40: final_rating = "Too Easy"
+	elif avg_rem_ratio > 0.25: final_rating = "Slightly Easy"
+	elif victory_rate > 0.8: final_rating = "Good"
+	else: final_rating = "Challenging"
+	
+	print("difficulty_rating=%s" % final_rating)
+	print("================\n")
+
+func export_summary_csv(level_id: String) -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Export Telemetry Summary"):
+		return
+	var reports = load_reports_for_level(level_id)
+	if reports.is_empty(): return
+	
+	var path = TELEMETRY_DIR + "summary_" + level_id + ".csv"
+	var file = FileAccess.open(path, FileAccess.WRITE)
+	if not file: return
+	
+	# Header
+	var columns = [
+		"level_id", "result", "perfect", "time", "waves", 
+		"lives_lost", "gold_start", "gold_earned_total", "gold_spent_total", 
+		"gold_remaining", "gold_remaining_ratio", "top_damage_tower", 
+		"enemies_leaked", "hero_deploy_count", "difficulty_rating"
+	]
+	file.store_line(",".join(columns))
+	
+	for r in reports:
+		var ba = r.get("balance_analysis", {})
+		var row = [
+			r.get("level_id", "unknown"),
+			r.get("result", "abandoned"),
+			str(r.get("perfect_clear", false)),
+			"%.1f" % r.get("clear_time_sec", 0.0),
+			"%d/%d" % [r.get("waves_completed", 0), r.get("waves_total", 0)],
+			str(r.get("lives_lost", 0)),
+			str(r.get("gold_start", 0)),
+			str(r.get("gold_earned_total", 0)),
+			str(r.get("gold_spent_total", 0)),
+			str(r.get("gold_remaining", 0)),
+			"%.3f" % ba.get("gold_remaining_ratio", 0.0),
+			ba.get("tower_dominance", "None"),
+			str(r.get("enemies_leaked_total", 0)),
+			str(r.get("hero_deploy_count", 0)),
+			ba.get("difficulty_rating", "Unknown")
+		]
+		file.store_line(",".join(row))
+	
+	file.close()
+	print("[TELEMETRY] Exported summary to %s" % ProjectSettings.globalize_path(path))

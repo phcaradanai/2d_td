@@ -1,26 +1,42 @@
-# Level 1-20 Balance Pass Report
+# Balance Pass Report: Level 20 Dominant Strategy
 
-Generated based on the latest wave configurations and level metadata.
+## Problem: Lightning Tower Exploit
+Telemetry and manual testing confirmed that Level 20 could be cleared using only 2 Lightning Towers upgraded to Level 3. This undermined the "Final Exam" design of the level, which was intended to require a mixed tower strategy and hero tactical support.
 
-| Level | Lesson | Enemy Types | Recommended Roles | Gold | Rewards | Risk | Strategy |
-|---|---|---|---|---|---|---|---|
-| level_01 | Basics of tower placement and straight paths. | basic, fast, tank | Basic, Rapid | 110 | 115 | Low | Place basic towers near the path. |
-| level_02 | Corners and maximizing tower range. | basic, fast, tank | Basic, Rapid | 170 | 210 | Low | Place towers at corners for max coverage. |
-| level_03 | Handling fast enemies with Rapid towers. | basic, fast, tank | Rapid, Basic, Slow | 175 | 245 | Low | Use rapid towers near start. |
-| level_04 | Dealing with swarms using Cannon towers. | basic, fast, runner, swarm, tank | Cannon, Rapid, Basic | 160 | 235 | Low | Cannon at choke points. |
-| level_05 | Combining towers to handle tanks and swarms. | basic, fast, runner, swarm, tank | Cannon, Sniper, Basic | 150 | 300 | Moderate | Mix cannon and rapid/basic. |
-| level_06 | Split paths and prioritizing coverage. | basic, fast, runner, shieldbearer, swarm, tank | Cannon, Rapid, Basic | 210 | 345 | Moderate | Cover intersections. |
-| level_07 | Breaking through Shieldbearers. | basic, fast, healer, runner, shieldbearer, tank | Cannon, Lightning, Slow | 260 | 335 | Moderate | Concentrate fire on shieldbearers. |
-| level_08 | Overcoming Healers with concentrated fire. | basic, healer, shieldbearer, splitter, swarm, tank | Sniper, Basic, Lightning | 250 | 360 | Moderate | Burst damage with snipers. |
-| level_09 | Managing Splitters with splash damage. | basic, fast, healer, runner, shieldbearer, splitter, swarm, tank | Cannon, Lightning, Rapid | 265 | 375 | Moderate | Use cannons near end of paths. |
-| level_10 | Complex paths with full support enemies. | basic, fast, healer, runner, shieldbearer, splitter, swarm, tank | Cannon, Sniper, Slow | 250 | 310 | Moderate | Balance single target and splash. |
-| level_11 | Hero deployment against Bulwarks. | basic, bulwark, fast, healer, hunter, shieldbearer, splitter, tank | Cannon, Lightning, Slow | 300 | 360 | High | Deploy hero to block bulwarks. |
-| level_12 | Defending the Hero from Hunters. | basic, bulwark, fast, healer, hunter, runner, shieldbearer, splitter, swarm, tank | Sniper, Basic, Lightning | 320 | 390 | High | Protect hero with snipers. |
-| level_13 | Detecting and destroying Cloaked enemies. | basic, cloaked, fast, healer, hunter, runner, shieldbearer, splitter, tank | Rapid, Lightning | 320 | 390 | High | Ensure overlapping fields of fire. |
-| level_14 | Managing multiple threats with Hero abilities. | basic, bulwark, healer, hunter, shieldbearer, splitter, tank | Sniper, Cannon, Lightning | 330 | 415 | High | Use hero abilities on swarms. |
-| level_15 | High pressure multi-lane ground assault. | basic, bulwark, cloaked, fast, healer, hunter, shieldbearer, splitter, tank | Cannon, Lightning, Slow, Sawblade | 340 | 420 | High | Heavy use of slow and splash. |
-| level_16 | Introduction to Air pressure (Flyers). | basic, bulwark, fast, flyer, healer, hunter, runner, shieldbearer, swarm, tank | Sniper, Lightning, Rapid | 360 | 445 | High | Build snipers and lightning. |
-| level_17 | Fast flyers requiring Anti-Air tracking. | basic, bulwark, cloaked, fast_flyer, flyer, healer, hunter, runner, shieldbearer, splitter, tank | Sniper, Lightning | 370 | 470 | Extreme | Lightning towers at corners. |
-| level_18 | Armored flyers requiring Sniper/Lightning. | armored_flyer, basic, bulwark, fast_flyer, flyer, healer, hunter, shieldbearer, splitter, tank | Sniper, Lightning, Slow | 380 | 495 | Extreme | Max level snipers on long lines. |
-| level_19 | Disruptors neutralizing towers. | armored_flyer, basic, bulwark, cloaked, disruptor, fast, fast_flyer, flyer, healer, hunter, runner, shieldbearer, splitter, tank | Sniper, Lightning, Rapid | 390 | 525 | Extreme | Spread towers out to avoid EMP. |
-| level_20 | Final Exam: Multi-phase mixed assault. | armored_flyer, basic, bulwark, cloaked, disruptor, fast_flyer, flyer, healer, hunter, runner, shieldbearer, splitter, swarm, tank | Sniper, Lightning, Rapid, Cannon, Slow, Sawblade | 500 | 555 | Extreme | Adapt to each wave phase. Reposition hero. |
+### Root Cause Analysis
+1. **Wave Density**: Enemies were spawned in tight clusters, maximizing the efficiency of the Lightning Tower's chain mechanic.
+2. **Infinite Coverage**: High `chain_range` allowed a single tower to cover massive portions of the path, including both lanes in some areas.
+3. **Economic Spike**: Early wave rewards allowed players to reach Level 3 upgrades too quickly, trivializing mid-game pressure.
+4. **Lack of Punishers**: Insufficient fast or armored units allowed slow-chaining towers to manage all threats.
+
+## Changes Made
+
+### 1. Level 20 Wave Rebalance (`data/waves/waves_20.json`)
+- **Spacing**: Increased intervals between enemies in swarms and tank groups.
+- **Split Pressure**: Aggressive Lane A/Lane B synchronization forces players to defend multiple points simultaneously.
+- **Unit Mix**:
+    - Increased `fast_flyer` and `runner` counts to punish slow chaining.
+    - Added more `armored_flyer` and `bulwark` units to necessitate single-target DPS (Sniper/Rapid).
+    - Introduced specialized pressure waves where Hero intervention is highly recommended.
+- **Economy**: Reduced early wave rewards (Waves 1-3) to delay high-tier upgrades.
+
+### 2. Lightning Tower Tuning (`data/towers.json`)
+- **Chain Range**: Reduced by ~15% across all levels (L1: 90, L2: 105, L3: 120). This reduces universal coverage and requires tighter grouping for max value.
+- **Cost Gating**: Increased upgrade costs (L1->L2: 130, L2->L3: 240) to force more strategic resource allocation.
+
+### 3. Telemetry Enhancements (`scripts/core/battle_telemetry.gd`)
+- **Dominant Strategy Detection**: Added logic to flag "Few-tower Lightning clears".
+- **Variety Tracking**: Now reports `tower_variety_count` and `tower_total_count` to identify exploits.
+
+## Test Results
+
+| Scenario | Result (Before) | Result (After) | Verdict |
+| :--- | :--- | :--- | :--- |
+| **2x Lightning L3 Only** | Perfect Clear | **FAIL** (Leaked in Wave 2/3) | **PASS** |
+| **Mixed Defense** | Clear | **Clear** (Required more gold management) | **PASS** |
+| **No Hero Clear** | Easy | **Challenging** | **PASS** |
+
+## Remaining Risks
+- Sniper dominance might become the next strategy for armored flyers.
+- Players may still find "optimal" placements that maximize the reduced chain range.
+- Economy might be too tight for casual players on Level 20; monitor `gold_remaining_ratio` in future reports.

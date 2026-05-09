@@ -11,6 +11,7 @@ signal base_damaged(base_damage: int, global_pos: Vector2)
 @export var enemy_scene: PackedScene = preload("res://scenes/enemies/Enemy.tscn")
 @export var waves_data_path: String = "res://data/waves.json"
 @export var enemies_data_path: String = "res://data/enemies.json"
+@export var formation_planner_script: GDScript = preload("res://scripts/managers/spawn_formation_planner.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -23,6 +24,7 @@ var wave_start_time_msec: int = 0
 var current_wave_index: int = 0
 var is_wave_running: bool = false
 var active_enemy_count: int = 0
+var formation_planner = null
 
 var is_spawning: bool = false
 var path_nodes: Dictionary = {} # id -> Path2D
@@ -52,6 +54,10 @@ func load_enemies_config() -> void:
 	var error = json.parse(json_text)
 	if error == OK:
 		enemies_config = json.data
+		if formation_planner == null:
+			formation_planner = formation_planner_script.new(enemies_config)
+		else:
+			formation_planner.set_enemies_config(enemies_config)
 		if OS.is_debug_build(): print("Loaded ", enemies_config.size(), " enemy types.")
 
 func load_waves() -> void:
@@ -75,6 +81,10 @@ func load_waves() -> void:
 func load_waves_from_file(path: String) -> void:
 	waves_data_path = path
 	load_waves()
+
+func load_waves_from_data(data: Array) -> void:
+	waves = data
+	if OS.is_debug_build(): print("[WaveManager] Loaded ", waves.size(), " waves from data.")
 
 func setup(paths: Dictionary) -> void:
 	path_nodes = paths
@@ -117,7 +127,21 @@ func start_next_wave() -> void:
 	if OS.is_debug_build(): print("Starting Wave ", active_wave_number, ": ", active_wave_name, ". Next index=", current_wave_index)
 	
 	var current_gen = spawn_generation
-	await spawn_wave_groups(wave_data["groups"], current_gen)
+	
+	# BUILD FORMATION PLAN
+	if formation_planner == null:
+		formation_planner = formation_planner_script.new(enemies_config)
+	var plan = formation_planner.build_plan(wave_data, current_wave_index - 1)
+	
+	if OS.is_debug_build():
+		print("[FORMATION] wave=%d groups=%d events=%d duration=%.2fs" % [
+			active_wave_number, 
+			wave_data.get("groups", []).size(),
+			plan.get("events", []).size(),
+			plan.get("total_duration", 0.0)
+		])
+	
+	await spawn_wave_events(plan.get("events", []), current_gen)
 	
 	if current_gen != spawn_generation:
 		return
@@ -125,17 +149,50 @@ func start_next_wave() -> void:
 	is_spawning = false
 	_check_wave_completion()
 
-func spawn_wave_groups(groups: Array, gen: int) -> void:
-	for group in groups:
+func spawn_wave_events(events: Array, gen: int) -> void:
+	if events.is_empty():
+		return
+		
+	var start_time_sec = Time.get_ticks_msec() / 1000.0
+	var event_index = 0
+	
+	while event_index < events.size():
 		if gen != spawn_generation: return
 		
-		var count = group.get("count", 0)
-		var delay = group.get("spawn_delay", group.get("interval", 1.0))
+		var current_time_sec = Time.get_ticks_msec() / 1000.0
+		var elapsed = current_time_sec - start_time_sec
 		
-		for i in range(count):
-			if gen != spawn_generation: return
-			spawn_enemy(group)
-			await _wait_unpaused(delay, gen)
+		# Handle pause if game_manager exists
+		if game_manager != null and game_manager.is_paused:
+			await get_tree().process_frame
+			start_time_sec += get_process_delta_time()
+			continue
+			
+		var event = events[event_index]
+		var target_time = float(event.get("time", 0.0))
+		
+		if elapsed >= target_time:
+			spawn_enemy_from_event(event)
+			event_index += 1
+		else:
+			# Wait a bit before checking again
+			await get_tree().process_frame
+
+func spawn_enemy_from_event(event: Dictionary) -> void:
+	var group_data = event.get("group_data", {}).duplicate()
+	# Ensure event specific data is passed to spawn_enemy
+	group_data["type"] = event.get("type", "basic")
+	group_data["path"] = event.get("path", "default")
+	# Pass formation metadata for potential visual/behavior use
+	group_data["formation_id"] = event.get("formation_id", "")
+	group_data["tactical_position"] = event.get("tactical_position", "")
+	group_data["formation_speed_multiplier"] = event.get("formation_speed_multiplier", 1.0)
+	
+	spawn_enemy(group_data)
+
+func spawn_wave_groups(_groups: Array, _gen: int) -> void:
+	# Deprecated in favor of spawn_wave_events but kept for reference/safety
+	push_warning("spawn_wave_groups called but replaced by spawn_wave_events")
 
 func _wait_unpaused(seconds: float, gen: int) -> void:
 	var elapsed := 0.0
@@ -172,7 +229,11 @@ func spawn_enemy(group_data: Dictionary) -> void:
 	
 	if OS.is_debug_build():
 		var spawn_pos = path_node.curve.get_point_position(0)
-		print("[EnemySpawn] enemy=%s lane=%s spawn_pos=%s" % [enemy_type, path_id, spawn_pos])
+		var f_id = group_data.get("formation_id", "none")
+		var pos_type = group_data.get("tactical_position", "middle")
+		print("[FORMATION] spawn enemy=%s lane=%s t=%.2f position=%s formation=%s" % [
+			enemy_type, path_id, (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0, pos_type, f_id
+		])
 		
 	path_node.add_child(enemy)
 	active_enemy_count += 1

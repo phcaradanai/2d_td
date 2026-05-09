@@ -19,6 +19,7 @@ enum AutoPlayState {
 signal state_changed(new_state: AutoPlayState, message: String)
 
 const REPORT_DIR = "user://balance_reports/"
+const DEBUG_ACCESS_SCRIPT = preload("res://scripts/debug/debug_access.gd")
 
 var is_active: bool = false
 var state: AutoPlayState = AutoPlayState.IDLE
@@ -49,6 +50,8 @@ var auto_clear_current_test_gold: int = 0
 @onready var build_manager := main.get_node_or_null("BuildManager") if main else null
 
 func _ready() -> void:
+	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Initialize Auto Play Verifier"):
+		return
 	if not DirAccess.dir_exists_absolute(REPORT_DIR):
 		DirAccess.make_dir_recursive_absolute(REPORT_DIR)
 
@@ -63,7 +66,8 @@ func start_verification(plan: Dictionary) -> void:
 		
 	if main.has_method("is_debug_auto_play_allowed"):
 		if not main.is_debug_auto_play_allowed(): return
-	elif not OS.is_debug_build(): return
+	elif DEBUG_ACCESS_SCRIPT.block_balance_tool("Start Auto Play Verification"):
+		return
 	
 	is_active = true
 	current_plan = plan
@@ -782,8 +786,8 @@ func _get_tower_path_coverage(tower: Node) -> float:
 	var cell = _get_tower_cell(tower)
 	# We'd need level data path cells here. 
 	# For now, return a dummy value or use main.level_data
-	if main and "level_data" in main:
-		var path = main.level_data.get("path_cells", [])
+	if main and main.level_manager and "level_data" in main.level_manager:
+		var path = main.level_manager.level_data.get("path_cells", [])
 		var count = 0.0
 		for p in path:
 			var dist = Vector2(cell).distance_to(Vector2(p[0], p[1]))
