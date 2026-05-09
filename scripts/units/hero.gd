@@ -275,6 +275,12 @@ func retreat() -> void:
 		queue_free()
 	)
 
+func is_alive() -> bool:
+	return is_active and current_state != HeroState.RETREATING and current_hp > 0.0 and is_inside_tree()
+
+func get_current_hp() -> float:
+	return current_hp
+
 func _update_skill(delta: float) -> void:
 	if skill_cooldown_current > 0:
 		skill_cooldown_current -= delta
