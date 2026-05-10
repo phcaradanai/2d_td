@@ -279,11 +279,15 @@ func run_speed_role_check() -> Dictionary:
 	var hunter_speed := float(enemies_config.get("hunter", {}).get("speed", 0.0))
 	var basic_speed := float(enemies_config.get("basic", {}).get("speed", 0.0))
 	var tank_speed := float(enemies_config.get("tank", {}).get("speed", 0.0))
-	var passed: bool = fast_speed > basic_speed and runner_speed > fast_speed and hunter_speed > basic_speed and tank_speed < basic_speed
+	# Fast is the constant-speed pressure unit. Runner no longer needs to be faster than Fast;
+	# it is validated as a burst-role unit through dash/panic runtime behavior.
+	var runner_has_burst_role: bool = runner_speed >= basic_speed * 0.90
+	var passed: bool = fast_speed > basic_speed and runner_has_burst_role and hunter_speed > basic_speed and tank_speed < basic_speed
 	return _result("fast_runner_hunter", "speed_roles", passed, passed, false, true, [
 		"basic_speed=%.1f" % basic_speed,
 		"fast_speed=%.1f" % fast_speed,
 		"runner_speed=%.1f" % runner_speed,
+		"runner_role=dash_panic_burst",
 		"hunter_speed=%.1f" % hunter_speed,
 		"tank_speed=%.1f" % tank_speed,
 		"hunter_ai_runtime=implemented"

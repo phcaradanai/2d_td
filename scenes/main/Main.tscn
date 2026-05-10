@@ -1,83 +1,83 @@
-[gd_scene load_steps=13 format=3 uid="uid://b6p5v4q2r1x8"]
+[gd_scene format=3 uid="uid://b6p5v4q2r1x8"]
 
-[ext_resource type="Script" path="res://scripts/main/main.gd" id="1_main_script"]
-[ext_resource type="Script" path="res://scripts/managers/wave_manager.gd" id="2_wave_manager"]
-[ext_resource type="Script" path="res://scripts/core/game_manager.gd" id="3_game_manager"]
-[ext_resource type="Script" path="res://scripts/managers/build_manager.gd" id="5_build_manager"]
-[ext_resource type="Script" path="res://scripts/ui/build_preview.gd" id="6_build_preview"]
-[ext_resource type="PackedScene" path="res://scenes/ui/GameHUD.tscn" id="4_game_hud"]
+[ext_resource type="Script" uid="uid://c2jlds5our8pg" path="res://scripts/main/main.gd" id="1_main_script"]
+[ext_resource type="Script" uid="uid://bscr5wd8s31x6" path="res://scripts/managers/wave_manager.gd" id="2_wave_manager"]
+[ext_resource type="Script" uid="uid://bxf7jshc6unl7" path="res://scripts/core/game_manager.gd" id="3_game_manager"]
+[ext_resource type="PackedScene" uid="uid://d4k3j5l8n2m1" path="res://scenes/ui/GameHUD.tscn" id="4_game_hud"]
+[ext_resource type="Script" uid="uid://c43p6vujca57d" path="res://scripts/managers/build_manager.gd" id="5_build_manager"]
+[ext_resource type="Script" uid="uid://dl7jd3lqyec2f" path="res://scripts/ui/build_preview.gd" id="6_build_preview"]
 [ext_resource type="PackedScene" path="res://scenes/ui/MainMenu.tscn" id="7_main_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/LevelSelect.tscn" id="8_level_select"]
-[ext_resource type="Script" path="res://scripts/core/save_manager.gd" id="9_save_manager"]
-[ext_resource type="Script" path="res://scripts/managers/audio_manager.gd" id="10_audio_manager"]
-[ext_resource type="Script" path="res://scripts/ui/camera_shake.gd" id="11_camera_shake"]
+[ext_resource type="Script" uid="uid://bhg4qstpis2ks" path="res://scripts/core/save_manager.gd" id="9_save_manager"]
+[ext_resource type="Script" uid="uid://d2sb635lpjyq8" path="res://scripts/managers/audio_manager.gd" id="10_audio_manager"]
+[ext_resource type="Script" uid="uid://dv41ycbtr7u6x" path="res://scripts/ui/camera_shake.gd" id="11_camera_shake"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DebugPanel.tscn" id="12_debug_panel"]
 
-[node name="Main" type="Node2D"]
+[node name="Main" type="Node2D" unique_id=1149536152]
 script = ExtResource("1_main_script")
 
-[node name="Camera2D" type="Camera2D" parent="."]
+[node name="Camera2D" type="Camera2D" parent="." unique_id=834018606]
 anchor_mode = 0
 script = ExtResource("11_camera_shake")
 
-[node name="WorldRoot" type="Node2D" parent="."]
+[node name="WorldRoot" type="Node2D" parent="." unique_id=1424230306]
 
-[node name="Background" type="ColorRect" parent="WorldRoot"]
+[node name="Background" type="ColorRect" parent="WorldRoot" unique_id=595449033]
 z_index = -1
 offset_right = 1280.0
 offset_bottom = 720.0
 mouse_filter = 2
 color = Color(0.1, 0.1, 0.1, 1)
 
-[node name="MapRoot" type="Node2D" parent="WorldRoot"]
+[node name="MapRoot" type="Node2D" parent="WorldRoot" unique_id=676491711]
 unique_name_in_owner = true
 
-[node name="PathVisual" type="Line2D" parent="WorldRoot/MapRoot"]
+[node name="PathVisual" type="Line2D" parent="WorldRoot/MapRoot" unique_id=285648429]
 width = 4.0
 default_color = Color(0.4, 0.4, 0.4, 1)
 
-[node name="BuildPreviewLayer" type="Node2D" parent="WorldRoot/MapRoot"]
+[node name="BuildPreviewLayer" type="Node2D" parent="WorldRoot/MapRoot" unique_id=836740976]
 script = ExtResource("6_build_preview")
 
-[node name="TowerContainer" type="Node2D" parent="WorldRoot/MapRoot"]
+[node name="TowerContainer" type="Node2D" parent="WorldRoot/MapRoot" unique_id=1391966406]
 
-[node name="ProjectileContainer" type="Node2D" parent="WorldRoot/MapRoot"]
+[node name="ProjectileContainer" type="Node2D" parent="WorldRoot/MapRoot" unique_id=1618079345]
 
-[node name="EffectsContainer" type="Node2D" parent="WorldRoot/MapRoot"]
+[node name="EffectsContainer" type="Node2D" parent="WorldRoot/MapRoot" unique_id=1460844147]
 
-[node name="EnemyContainer" type="Node2D" parent="WorldRoot/MapRoot"]
+[node name="EnemyContainer" type="Node2D" parent="WorldRoot/MapRoot" unique_id=1498381315]
 
-[node name="EnemyPath" type="Path2D" parent="WorldRoot/MapRoot/EnemyContainer"]
+[node name="EnemyPath" type="Path2D" parent="WorldRoot/MapRoot/EnemyContainer" unique_id=372211470]
 
-[node name="GameManager" type="Node" parent="."]
+[node name="GameManager" type="Node" parent="." unique_id=793230173]
 script = ExtResource("3_game_manager")
 
-[node name="WaveManager" type="Node" parent="."]
+[node name="WaveManager" type="Node" parent="." unique_id=702883005]
 script = ExtResource("2_wave_manager")
 
-[node name="BuildManager" type="Node" parent="."]
+[node name="BuildManager" type="Node" parent="." unique_id=1943301077]
 script = ExtResource("5_build_manager")
 
-[node name="SaveManager" type="Node" parent="."]
+[node name="SaveManager" type="Node" parent="." unique_id=197385919]
 script = ExtResource("9_save_manager")
 
-[node name="AudioManager" type="Node" parent="."]
+[node name="AudioManager" type="Node" parent="." unique_id=967379996]
 script = ExtResource("10_audio_manager")
 
-[node name="GameHUD" parent="." instance=ExtResource("4_game_hud")]
+[node name="GameHUD" parent="." unique_id=989937480 instance=ExtResource("4_game_hud")]
 
-[node name="MainMenu" parent="." instance=ExtResource("7_main_menu")]
+[node name="MainMenu" parent="." unique_id=2048297733 instance=ExtResource("7_main_menu")]
 
-[node name="LevelSelect" parent="." instance=ExtResource("8_level_select")]
+[node name="LevelSelect" parent="." unique_id=213227717 instance=ExtResource("8_level_select")]
 visible = false
 
-[node name="DebugPanel" parent="." instance=ExtResource("12_debug_panel")]
+[node name="DebugPanel" parent="." unique_id=954145266 instance=ExtResource("12_debug_panel")]
 visible = false
 
-[node name="DebugLayer" type="CanvasLayer" parent="."]
+[node name="DebugLayer" type="CanvasLayer" parent="." unique_id=42576283]
 layer = 450
 
-[node name="DebugButton" type="Button" parent="DebugLayer"]
+[node name="DebugButton" type="Button" parent="DebugLayer" unique_id=1839401121]
 anchors_preset = 1
 anchor_left = 1.0
 anchor_right = 1.0
@@ -86,6 +86,5 @@ offset_top = 70.0
 offset_right = -10.0
 offset_bottom = 101.0
 grow_horizontal = 0
-mouse_filter = 0
 theme_override_colors/font_color = Color(1, 0, 0, 1)
 text = "DEBUG"

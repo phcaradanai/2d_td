@@ -54,6 +54,21 @@ var bleed_particle_timer: float = 0.0
 # Special Archetypes
 var is_bulwark: bool = false
 var is_hunter: bool = false
+var is_runner: bool = false
+
+# Runner role: no longer just “faster Fast”.
+# Runner moves at medium-high baseline speed, then creates danger windows with dash bursts
+# and a low-HP panic sprint. These values can be overridden from enemies.json skill_params.
+var runner_dash_cooldown: float = 3.2
+var runner_dash_timer: float = 0.8
+var runner_dash_duration: float = 0.34
+var runner_dash_remaining: float = 0.0
+var runner_dash_speed_multiplier: float = 1.95
+var runner_dash_damage_reduction: float = 0.35
+var runner_panic_threshold: float = 0.40
+var runner_panic_speed_multiplier: float = 1.45
+var runner_panic_active: bool = false
+var runner_base_speed_scale: float = 0.92
 
 var last_damage_source: String = ""
 var tags: Array = []
@@ -158,6 +173,9 @@ func setup(config: Dictionary) -> void:
 	
 	is_bulwark = (enemy_type == "bulwark" or tags.has("shield"))
 	is_hunter = (enemy_type == "hunter" or tags.has("anti_hero"))
+	is_runner = (enemy_type == "runner" or tags.has("runner"))
+	if is_runner:
+		_configure_runner_role(config)
 	if is_hunter:
 		aggro_range = float(config.get("aggro_range", skill_params.get("aggro_range", aggro_range)))
 		# Keep Hunter readable without covering too much map area. Existing configs can still tune it,
@@ -171,6 +189,10 @@ func setup(config: Dictionary) -> void:
 	max_hp = config.get("max_hp", config.get("hp", 30.0))
 	hp = max_hp
 	base_speed = config.get("speed", 100.0)
+	if is_runner:
+		# Keep Fast as the constant-speed enemy. Runner should be slightly calmer by default,
+		# then become threatening through dash/panic windows.
+		base_speed *= runner_base_speed_scale
 	speed = base_speed
 	reward_gold = config.get("reward_gold", 5)
 	base_damage = config.get("base_damage", 1)
@@ -273,7 +295,7 @@ func _draw() -> void:
 		"swarm":
 			_draw_cyber_swarm(COLOR_NEON_FAST, size * 0.86)
 		"runner":
-			_draw_cyber_runner(COLOR_NEON_BASIC, size)
+			_draw_cyber_runner(Color(1.0, 0.35, 0.05), size)
 		"shieldbearer":
 			_draw_cyber_bulwark(Color(0.3, 0.8, 1.0), size * 1.3)
 		"healer":
@@ -294,6 +316,9 @@ func _draw() -> void:
 	if is_flashing:
 		draw_circle(Vector2.ZERO, size * 1.5, Color(1, 1, 1, 0.4))
 		draw_arc(Vector2.ZERO, size * 1.6, 0, TAU, 32, Color(1, 1, 1, 0.6), 2.0)
+
+	if is_runner:
+		_draw_runner_role_telegraph(size)
 
 	if is_hunter:
 		_draw_hunter_role_telegraph(size)
@@ -350,27 +375,518 @@ func _draw_shield_dome(radius: float, color: Color) -> void:
 		var node_pos = Vector2(cos(a), sin(a)) * r_anim
 		draw_circle(node_pos, 2.0, Color(color.r, color.g, color.b, 0.4))
 
-func _draw_cyber_node(color: Color, size: float) -> void:
+
+func _ellipse_points(center: Vector2, radius_x: float, radius_y: float, count: int = 28, rotation: float = 0.0) -> PackedVector2Array:
 	var pts := PackedVector2Array()
-	for i in range(6):
-		var a: float = i * PI / 3
-		pts.append(Vector2(cos(a), sin(a)) * size)
+	for i in range(count):
+		var a: float = float(i) / float(count) * TAU
+		var p := Vector2(cos(a) * radius_x, sin(a) * radius_y).rotated(rotation)
+		pts.append(center + p)
+	return pts
+
+func _draw_sequential_outline(points: PackedVector2Array, phase: float, segment_ratio: float, color: Color, width: float = 1.0, closed: bool = true) -> void:
+	if points.size() < 2:
+		return
+
+	var segment_count: int = points.size() if closed else points.size() - 1
+	if segment_count <= 0:
+		return
+
+	var seg_lengths: Array = []
+	var total_length: float = 0.0
+	for i in range(segment_count):
+		var a: Vector2 = points[i]
+		var b: Vector2 = points[(i + 1) % points.size()]
+		var seg_len: float = a.distance_to(b)
+		seg_lengths.append(seg_len)
+		total_length += seg_len
+
+	if total_length <= 0.001:
+		return
+
+	var highlight_len: float = clampf(segment_ratio, 0.02, 1.0) * total_length
+	var start_d: float = fposmod(phase, 1.0) * total_length
+	var remaining: float = highlight_len
+	var cursor: float = start_d
+
+	while remaining > 0.0:
+		var range_start: float = cursor
+		var range_end: float = minf(total_length, cursor + remaining)
+		var sampled := PackedVector2Array()
+		var accum: float = 0.0
+
+		for i in range(segment_count):
+			var seg_start: float = accum
+			var seg_end: float = accum + float(seg_lengths[i])
+			if range_end > seg_start and range_start < seg_end and seg_end > seg_start:
+				var denom: float = seg_end - seg_start
+				var t1: float = clampf((maxf(range_start, seg_start) - seg_start) / denom, 0.0, 1.0)
+				var t2: float = clampf((minf(range_end, seg_end) - seg_start) / denom, 0.0, 1.0)
+				var p1: Vector2 = points[i].lerp(points[(i + 1) % points.size()], t1)
+				var p2: Vector2 = points[i].lerp(points[(i + 1) % points.size()], t2)
+				if sampled.is_empty() or sampled[sampled.size() - 1].distance_to(p1) > 0.01:
+					sampled.append(p1)
+				sampled.append(p2)
+			accum = seg_end
+
+		if sampled.size() >= 2:
+			var seg_total: int = sampled.size() - 1
+			for j in range(seg_total):
+				var p0: Vector2 = sampled[j]
+				var p1: Vector2 = sampled[j + 1]
+				var raw_t: float = float(j) / float(max(seg_total - 1, 1))
+				var t: float = raw_t * raw_t * (3.0 - 2.0 * raw_t)
+				var tail_color: Color = Color(color.r * 0.58, color.g * 0.58, color.b * 0.58, 1.0)
+				var head_color: Color = color.lerp(Color(0.92, 0.95, 1.0, 1.0), 0.18)
+				var ramp_color: Color = tail_color.lerp(head_color, t)
+				var halo_alpha: float = color.a * (0.02 + 0.14 * t)
+				var glow_alpha: float = color.a * (0.06 + 0.26 * t)
+				var core_alpha: float = color.a * (0.16 + 0.46 * t)
+				draw_line(p0, p1, Color(ramp_color.r, ramp_color.g, ramp_color.b, halo_alpha), width * (2.0 + 0.1 * t), true)
+				draw_line(p0, p1, Color(ramp_color.r, ramp_color.g, ramp_color.b, glow_alpha), width * (1.20 + 0.08 * t), true)
+				draw_line(p0, p1, Color(ramp_color.r, ramp_color.g, ramp_color.b, core_alpha), width * (0.62 + 0.06 * t), true)
+
+			var head_pos: Vector2 = sampled[sampled.size() - 1]
+			var head_glow: Color = color.lerp(Color(0.92, 0.95, 1.0, 1.0), 0.22)
+			draw_circle(head_pos, width * 1.10, Color(head_glow.r, head_glow.g, head_glow.b, color.a * 0.18))
+			draw_circle(head_pos, width * 0.60, Color(head_glow.r, head_glow.g, head_glow.b, color.a * 0.28))
+
+		remaining -= (range_end - range_start)
+		cursor = 0.0
+
+func _draw_basic_segmented_leg(
+	hip: Vector2,
+	knee: Vector2,
+	foot: Vector2,
+	base_color: Color,
+	glow_color: Color,
+	thickness: float,
+	claw_size: float = 3.6,
+	pulse_alpha: float = 1.0
+) -> void:
+	var leg_dir: Vector2 = (foot - knee).normalized()
+	var side: Vector2 = leg_dir.orthogonal().normalized()
+
+	# contact shadow
+	draw_circle(foot + Vector2(0.0, 1.8), claw_size * 1.45, Color(0.0, 0.0, 0.0, 0.22))
+
+	# black mechanical under-frame
+	draw_line(hip, knee, Color(0.0, 0.0, 0.0, 0.72), thickness + 3.4, true)
+	draw_line(knee, foot, Color(0.0, 0.0, 0.0, 0.72), thickness + 3.0, true)
+
+	# metal bone segments
+	draw_line(hip, knee, base_color, thickness, true)
+	draw_line(knee, foot, base_color.darkened(0.05), thickness * 0.92, true)
+
+	# cyan cable running through the leg
+	var cable_start: Vector2 = hip.lerp(knee, 0.22)
+	var cable_mid: Vector2 = knee.lerp(foot, 0.38)
+	draw_line(cable_start, cable_mid, Color(glow_color.r, glow_color.g, glow_color.b, 0.20 + 0.20 * pulse_alpha), 1.15, true)
+
+	# joint housings
+	draw_circle(hip, thickness * 0.58 + 1.6, Color(0.0, 0.0, 0.0, 0.68))
+	draw_circle(knee, thickness * 0.52 + 1.3, Color(0.0, 0.0, 0.0, 0.68))
+	draw_circle(hip, thickness * 0.58, Color(0.20, 0.22, 0.28, 1.0))
+	draw_circle(knee, thickness * 0.52, Color(0.16, 0.18, 0.23, 1.0))
+
+	# neon joint pulse
+	draw_circle(hip, 1.50 + pulse_alpha * 0.35, Color(glow_color.r, glow_color.g, glow_color.b, 0.72 + pulse_alpha * 0.22))
+	draw_circle(knee, 1.25 + pulse_alpha * 0.28, Color(glow_color.r, glow_color.g, glow_color.b, 0.62 + pulse_alpha * 0.18))
+
+	# armored plate on lower leg
+	var plate_center: Vector2 = knee.lerp(foot, 0.52)
+	var plate: PackedVector2Array = PackedVector2Array([
+		plate_center - leg_dir * claw_size * 0.85 + side * claw_size * 0.42,
+		plate_center + leg_dir * claw_size * 0.62 + side * claw_size * 0.32,
+		plate_center + leg_dir * claw_size * 0.82 - side * claw_size * 0.34,
+		plate_center - leg_dir * claw_size * 0.68 - side * claw_size * 0.44
+	])
+	draw_colored_polygon(plate, Color(0.27, 0.29, 0.34, 1.0))
+	draw_polyline(plate + PackedVector2Array([plate[0]]), Color(0.0, 0.0, 0.0, 0.62), 1.0)
+
+	# sharp claw / contact point
+	var claw: PackedVector2Array = PackedVector2Array([
+		foot + leg_dir * claw_size * 0.32,
+		foot - leg_dir * claw_size * 1.08 + side * claw_size * 0.48,
+		foot - leg_dir * claw_size * 1.08 - side * claw_size * 0.48
+	])
+	draw_colored_polygon(claw, Color(0.76, 0.80, 0.87, 1.0))
+	draw_polyline(claw + PackedVector2Array([claw[0]]), Color(0.0, 0.0, 0.0, 0.70), 1.0)
+	draw_line(foot, foot + leg_dir * claw_size * 0.52, Color(glow_color.r, glow_color.g, glow_color.b, 0.28 + pulse_alpha * 0.20), 1.0, true)
+
+func _draw_basic_motion_streak(start_pos: Vector2, end_pos: Vector2, color: Color, alpha: float, width: float = 1.0) -> void:
+	draw_line(start_pos, end_pos, Color(color.r, color.g, color.b, alpha), width, true)
+	draw_circle(end_pos, width * 0.70, Color(color.r, color.g, color.b, alpha * 0.82))
+
+func _draw_cyber_node(color: Color, size: float) -> void:
+	# BASIC / Circuit Grunt refine pass 8
+	# Added polish:
+	# - extra layered texture / panel detail
+	# - contrasting accent color (amber/orange) for more depth
+	# - neon frequency-like scan lines and segmented glow blink
+	# - preserves grounded top-down crawl from v7
+
+	# Slight upscale so the enemy reads better in gameplay and shows more detail.
+	var draw_scale: float = 1.48
+	size *= draw_scale
+
+	var phase_seed: float = float(get_instance_id() % 97) * 0.037
+	var pulse: float = 0.5 + sin(pulse_time * 4.0 + phase_seed) * 0.5
+	var blink: float = 0.5 + sin(pulse_time * 7.5 + phase_seed) * 0.5
+	var freq_a: float = 0.5 + sin(pulse_time * 11.0 + phase_seed) * 0.5
+	var freq_b: float = 0.5 + sin(pulse_time * 13.0 + phase_seed + 0.8) * 0.5
+	var freq_c: float = 0.5 + sin(pulse_time * 15.0 + phase_seed + 1.6) * 0.5
+
+	# Sequential light pulses for shell lines.
+	# The bright overlay sits directly on top of the existing neon cuts, making the sequence more obvious.
+	var seq_speed: float = 3.2
+	var seq_1: float = 0.22 + maxf(0.0, sin(pulse_time * seq_speed + phase_seed + 0.00)) * 0.78
+	var seq_2: float = 0.22 + maxf(0.0, sin(pulse_time * seq_speed + phase_seed - 0.70)) * 0.78
+	var seq_3: float = 0.22 + maxf(0.0, sin(pulse_time * seq_speed + phase_seed - 1.40)) * 0.78
+	var seq_4: float = 0.22 + maxf(0.0, sin(pulse_time * seq_speed + phase_seed - 2.10)) * 0.78
+	var seq_5: float = 0.22 + maxf(0.0, sin(pulse_time * seq_speed + phase_seed - 2.80)) * 0.78
+
+	var move_factor: float = clampf(abs(speed) / maxf(base_speed, 1.0), 0.0, 1.35)
+
+	var stride_pixels: float = maxf(size * 2.35, 1.0)
+	var gait_phase: float = progress / stride_pixels + phase_seed
+	if is_gallery_preview:
+		gait_phase = pulse_time * 1.15 + phase_seed
+		move_factor = 0.75
+
+	var t_a: float = fposmod(gait_phase, 1.0)
+	var t_b: float = fposmod(gait_phase + 0.5, 1.0)
+	var stride: float = size * 0.28
+	var stance_ratio: float = 0.72
+
+	var a_x: float = 0.0
+	var a_lift: float = 0.0
+	if t_a < stance_ratio:
+		var q_a_stance: float = t_a / stance_ratio
+		a_x = lerpf(stride * 0.48, -stride * 0.48, q_a_stance)
+		a_lift = 0.0
+	else:
+		var q_a_recover: float = (t_a - stance_ratio) / (1.0 - stance_ratio)
+		a_x = lerpf(-stride * 0.48, stride * 0.48, q_a_recover)
+		a_lift = sin(q_a_recover * PI) * size * 0.07
+
+	var b_x: float = 0.0
+	var b_lift: float = 0.0
+	if t_b < stance_ratio:
+		var q_b_stance: float = t_b / stance_ratio
+		b_x = lerpf(stride * 0.48, -stride * 0.48, q_b_stance)
+		b_lift = 0.0
+	else:
+		var q_b_recover: float = (t_b - stance_ratio) / (1.0 - stance_ratio)
+		b_x = lerpf(-stride * 0.48, stride * 0.48, q_b_recover)
+		b_lift = sin(q_b_recover * PI) * size * 0.07
+
+	a_x *= move_factor
+	b_x *= move_factor
+	a_lift *= move_factor
+	b_lift *= move_factor
+
+	var center: Vector2 = Vector2.ZERO
+
+	var shell_dark: Color = Color(0.070, 0.080, 0.108, 1.0)
+	var shell_body: Color = Color(0.145, 0.152, 0.168, 1.0)
+	var shell_mid: Color = Color(0.285, 0.300, 0.334, 1.0)
+	var shell_high: Color = Color(0.385, 0.398, 0.432, 1.0)
+	var shell_light: Color = Color(0.72, 0.78, 0.88, 0.96)
+	var black_line: Color = Color(0.0, 0.0, 0.0, 0.90)
+	var steel_shadow: Color = Color(0.050, 0.056, 0.070, 0.96)
+	var steel_rim: Color = Color(0.54, 0.58, 0.64, 0.78)
+	var steel_spec: Color = Color(0.82, 0.86, 0.92, 0.34)
+	var cyan_soft: Color = Color(color.r, color.g, color.b, 0.28 + pulse * 0.16)
+	var cyan_mid: Color = Color(color.r, color.g, color.b, 0.60 + pulse * 0.22)
+	var cyan_hot: Color = Color(color.r, color.g, color.b, 0.98 + pulse * 0.08)
+	var accent: Color = Color(1.0, 0.62, 0.18, 1.0)
+	var accent_soft: Color = Color(accent.r, accent.g, accent.b, 0.46 + blink * 0.16)
+	var accent_hot: Color = Color(accent.r, accent.g, accent.b, 1.0)
+
+	# --- Ground contact ---
+	var body_shadow: PackedVector2Array = _ellipse_points(Vector2(0.0, size * 0.28), size * 1.30, size * 0.78, 36, 0.0)
+	draw_colored_polygon(body_shadow, Color(0.0, 0.0, 0.0, 0.28))
+
+	# Outer floor rings removed to keep focus on the character silhouette itself.
+	var floor_ring_center: Vector2 = Vector2(0.0, size * 0.24)
+
+	# Local +X is treated as travel direction.
+	var rear_top_hip: Vector2 = center + Vector2(-size * 0.58, -size * 0.42)
+	var front_top_hip: Vector2 = center + Vector2(size * 0.58, -size * 0.42)
+	var rear_bottom_hip: Vector2 = center + Vector2(-size * 0.58, size * 0.42)
+	var front_bottom_hip: Vector2 = center + Vector2(size * 0.58, size * 0.42)
+
+	var rear_top_knee: Vector2 = Vector2(-size * 0.98 + b_x * 0.55, -size * 0.78 + b_lift)
+	var rear_top_foot: Vector2 = Vector2(-size * 1.22 + b_x, -size * 0.82 + b_lift * 0.45)
+	var front_top_knee: Vector2 = Vector2(size * 0.98 + a_x * 0.55, -size * 0.78 + a_lift)
+	var front_top_foot: Vector2 = Vector2(size * 1.22 + a_x, -size * 0.82 + a_lift * 0.45)
+	var rear_bottom_knee: Vector2 = Vector2(-size * 0.98 + a_x * 0.55, size * 0.78 - a_lift)
+	var rear_bottom_foot: Vector2 = Vector2(-size * 1.22 + a_x, size * 0.82 - a_lift * 0.45)
+	var front_bottom_knee: Vector2 = Vector2(size * 0.98 + b_x * 0.55, size * 0.78 - b_lift)
+	var front_bottom_foot: Vector2 = Vector2(size * 1.22 + b_x, size * 0.82 - b_lift * 0.45)
+
+	# Far/top legs first.
+	_draw_basic_segmented_leg(rear_top_hip, rear_top_knee, rear_top_foot, shell_mid.darkened(0.12), color, 2.85, 2.7, pulse)
+	_draw_basic_segmented_leg(front_top_hip, front_top_knee, front_top_foot, shell_mid.darkened(0.10), color, 2.85, 2.7, blink)
+
+	# --- Main shell ---
+	var body_rx: float = size * 1.04
+	var body_ry: float = size * 0.70
+	var body: PackedVector2Array = _ellipse_points(center, body_rx, body_ry, 42, -0.05)
+	draw_colored_polygon(body, shell_body)
+	var body_shadow_poly: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.98, -size * 0.04),
+		center + Vector2(-size * 0.30, -size * 0.46),
+		center + Vector2(size * 0.10, -size * 0.10),
+		center + Vector2(-size * 0.12, size * 0.46),
+		center + Vector2(-size * 0.86, size * 0.28)
+	])
+	draw_colored_polygon(body_shadow_poly, Color(0.03, 0.04, 0.05, 0.36))
+	var body_mid_band: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.56, -size * 0.18),
+		center + Vector2(size * 0.04, -size * 0.30),
+		center + Vector2(size * 0.56, -size * 0.04),
+		center + Vector2(size * 0.36, size * 0.18),
+		center + Vector2(-size * 0.28, size * 0.14)
+	])
+	draw_colored_polygon(body_mid_band, Color(0.42, 0.45, 0.50, 0.24))
+	var body_lower_shadow: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.44, size * 0.02),
+		center + Vector2(size * 0.34, size * 0.10),
+		center + Vector2(size * 0.22, size * 0.38),
+		center + Vector2(-size * 0.26, size * 0.34)
+	])
+	draw_colored_polygon(body_lower_shadow, Color(0.02, 0.03, 0.04, 0.20))
+	var body_upper_sheen: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.34, -size * 0.34),
+		center + Vector2(size * 0.10, -size * 0.42),
+		center + Vector2(size * 0.34, -size * 0.26),
+		center + Vector2(-size * 0.08, -size * 0.18)
+	])
+	draw_colored_polygon(body_upper_sheen, Color(0.84, 0.88, 0.96, 0.08))
+	var body_spec_poly: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.18, -size * 0.42),
+		center + Vector2(size * 0.44, -size * 0.28),
+		center + Vector2(size * 0.24, -size * 0.06),
+		center + Vector2(-size * 0.28, -size * 0.12)
+	])
+	draw_colored_polygon(body_spec_poly, Color(0.92, 0.95, 1.0, 0.08))
+	draw_polyline(body + PackedVector2Array([body[0]]), Color(steel_shadow.r, steel_shadow.g, steel_shadow.b, 0.82), 1.65, true)
+	draw_polyline(body + PackedVector2Array([body[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.28), 0.46, true)
 	
-	# Layer 1: Base
-	draw_colored_polygon(pts, COLOR_BODY)
-	_draw_inner_plate(pts, color, 0.62)
-	
-	# Layer 2: Circuit Seams
-	for i in range(6):
-		_draw_circuit_line(Vector2.ZERO, pts[i], color)
-	
-	# Layer 3: Neon Border
-	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(0, 0, 0, 0.75), 3.5)
-	draw_polyline(pts + PackedVector2Array([pts[0]]), color, 2.0)
-	_draw_edge_nodes(pts, color, 1.4)
-	
-	# Layer 4: Pulsing Core
-	_draw_glow_core(Vector2.ZERO, size * 0.35, color)
+
+	# Metallic material shading is now carried mostly by panel fills and shadows.
+
+	# No outer spinning/halo lines. Keep the glow on the character shape itself.
+
+	var top_panel: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.48, -size * 0.38),
+		center + Vector2(0.0, -size * 0.52),
+		center + Vector2(size * 0.48, -size * 0.38),
+		center + Vector2(size * 0.30, -size * 0.04),
+		center + Vector2(-size * 0.30, -size * 0.04)
+	])
+	draw_colored_polygon(top_panel, shell_mid)
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(-size * 0.34, -size * 0.34),
+		center + Vector2(0.0, -size * 0.42),
+		center + Vector2(size * 0.34, -size * 0.34),
+		center + Vector2(size * 0.18, -size * 0.16),
+		center + Vector2(-size * 0.18, -size * 0.16)
+	]), Color(0.86, 0.90, 0.98, 0.06))
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(-size * 0.24, -size * 0.06),
+		center + Vector2(size * 0.24, -size * 0.06),
+		center + Vector2(size * 0.16, size * 0.02),
+		center + Vector2(-size * 0.16, size * 0.02)
+	]), Color(0.02, 0.03, 0.05, 0.22))
+	draw_polyline(top_panel + PackedVector2Array([top_panel[0]]), steel_shadow, 0.96, true)
+	draw_polyline(top_panel + PackedVector2Array([top_panel[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.62), 0.46, true)
+	draw_polyline(top_panel + PackedVector2Array([top_panel[0]]), Color(color.r, color.g, color.b, 0.14 + seq_1 * 0.26), 0.62, true)
+	draw_polyline(top_panel + PackedVector2Array([top_panel[0]]), Color(color.r, color.g, color.b, 0.05 + seq_1 * 0.30), 0.24, true)
+	_draw_sequential_outline(top_panel, pulse_time * 0.42 + phase_seed * 0.11 + 0.05, 0.15, Color(color.r, color.g, color.b, 0.60), 0.34, true)
+
+	var left_panel: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.78, -size * 0.10),
+		center + Vector2(-size * 0.48, -size * 0.30),
+		center + Vector2(-size * 0.22, -size * 0.08),
+		center + Vector2(-size * 0.34, size * 0.22),
+		center + Vector2(-size * 0.70, size * 0.18)
+	])
+	draw_colored_polygon(left_panel, Color(0.100, 0.115, 0.148, 1.0))
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(-size * 0.68, -size * 0.08),
+		center + Vector2(-size * 0.46, -size * 0.24),
+		center + Vector2(-size * 0.30, -size * 0.08),
+		center + Vector2(-size * 0.46, size * 0.10)
+	]), Color(0.86, 0.90, 0.98, 0.05))
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(-size * 0.58, size * 0.02),
+		center + Vector2(-size * 0.40, size * 0.16),
+		center + Vector2(-size * 0.64, size * 0.16)
+	]), Color(0.02, 0.03, 0.05, 0.24))
+	draw_polyline(left_panel + PackedVector2Array([left_panel[0]]), steel_shadow, 0.92, true)
+	draw_polyline(left_panel + PackedVector2Array([left_panel[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.60), 0.44, true)
+	draw_polyline(left_panel + PackedVector2Array([left_panel[0]]), Color(color.r, color.g, color.b, 0.12 + seq_2 * 0.26), 0.56, true)
+	draw_polyline(left_panel + PackedVector2Array([left_panel[0]]), Color(color.r, color.g, color.b, 0.04 + seq_2 * 0.28), 0.22, true)
+	_draw_sequential_outline(left_panel, pulse_time * 0.42 + phase_seed * 0.11 + 0.24, 0.14, Color(color.r, color.g, color.b, 0.58), 0.32, true)
+
+	var right_panel: PackedVector2Array = PackedVector2Array([
+		center + Vector2(size * 0.22, -size * 0.08),
+		center + Vector2(size * 0.48, -size * 0.30),
+		center + Vector2(size * 0.78, -size * 0.10),
+		center + Vector2(size * 0.70, size * 0.18),
+		center + Vector2(size * 0.34, size * 0.22)
+	])
+	draw_colored_polygon(right_panel, Color(0.160, 0.176, 0.212, 1.0))
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(size * 0.30, -size * 0.08),
+		center + Vector2(size * 0.46, -size * 0.24),
+		center + Vector2(size * 0.68, -size * 0.08),
+		center + Vector2(size * 0.46, size * 0.10)
+	]), Color(0.90, 0.94, 1.0, 0.05))
+	draw_colored_polygon(PackedVector2Array([
+		center + Vector2(size * 0.40, size * 0.16),
+		center + Vector2(size * 0.58, size * 0.02),
+		center + Vector2(size * 0.64, size * 0.16)
+	]), Color(0.02, 0.03, 0.05, 0.24))
+	draw_polyline(right_panel + PackedVector2Array([right_panel[0]]), steel_shadow, 0.92, true)
+	draw_polyline(right_panel + PackedVector2Array([right_panel[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.58), 0.44, true)
+	draw_polyline(right_panel + PackedVector2Array([right_panel[0]]), Color(accent.r, accent.g, accent.b, 0.12 + seq_3 * 0.26), 0.56, true)
+	draw_polyline(right_panel + PackedVector2Array([right_panel[0]]), Color(accent.r, accent.g, accent.b, 0.04 + seq_3 * 0.28), 0.22, true)
+	_draw_sequential_outline(right_panel, pulse_time * 0.42 + phase_seed * 0.11 + 0.42, 0.14, Color(accent.r, accent.g, accent.b, 0.58), 0.32, true)
+
+	var rear_hatch: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.22, -size * 0.44),
+		center + Vector2(size * 0.22, -size * 0.44),
+		center + Vector2(size * 0.14, -size * 0.24),
+		center + Vector2(-size * 0.14, -size * 0.24)
+	])
+	draw_colored_polygon(rear_hatch, shell_high)
+	draw_polyline(rear_hatch + PackedVector2Array([rear_hatch[0]]), steel_shadow, 0.88, true)
+	draw_polyline(rear_hatch + PackedVector2Array([rear_hatch[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.54), 0.40, true)
+	draw_polyline(rear_hatch + PackedVector2Array([rear_hatch[0]]), Color(color.r, color.g, color.b, 0.10 + seq_4 * 0.22), 0.50, true)
+	draw_polyline(rear_hatch + PackedVector2Array([rear_hatch[0]]), Color(color.r, color.g, color.b, 0.03 + seq_4 * 0.22), 0.20, true)
+	_draw_sequential_outline(rear_hatch, pulse_time * 0.42 + phase_seed * 0.11 + 0.60, 0.12, Color(color.r, color.g, color.b, 0.52), 0.28, true)
+
+	var lower_lip: PackedVector2Array = PackedVector2Array([
+		center + Vector2(-size * 0.42, size * 0.38),
+		center + Vector2(size * 0.42, size * 0.38),
+		center + Vector2(size * 0.26, size * 0.50),
+		center + Vector2(-size * 0.26, size * 0.50)
+	])
+	draw_colored_polygon(lower_lip, shell_dark)
+	draw_polyline(lower_lip + PackedVector2Array([lower_lip[0]]), steel_shadow, 0.88, true)
+	draw_polyline(lower_lip + PackedVector2Array([lower_lip[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.50), 0.38, true)
+	draw_polyline(lower_lip + PackedVector2Array([lower_lip[0]]), Color(accent.r, accent.g, accent.b, 0.10 + seq_5 * 0.22), 0.52, true)
+	draw_polyline(lower_lip + PackedVector2Array([lower_lip[0]]), Color(accent.r, accent.g, accent.b, 0.03 + seq_5 * 0.22), 0.20, true)
+	_draw_sequential_outline(lower_lip, pulse_time * 0.42 + phase_seed * 0.11 + 0.78, 0.12, Color(accent.r, accent.g, accent.b, 0.52), 0.28, true)
+
+	# Micro panel seams / texture lines.
+	draw_line(center + Vector2(-size * 0.14, -size * 0.40), center + Vector2(-size * 0.28, -size * 0.10), Color(0.02, 0.03, 0.04, 0.34), 1.28, true)
+	draw_line(center + Vector2(-size * 0.14, -size * 0.40), center + Vector2(-size * 0.28, -size * 0.10), Color(color.r, color.g, color.b, 0.10 + seq_1 * 0.22), 0.56, true)
+	draw_line(center + Vector2(-size * 0.14, -size * 0.40), center + Vector2(-size * 0.28, -size * 0.10), Color(color.r, color.g, color.b, 0.03 + seq_1 * 0.18), 0.18, true)
+	draw_line(center + Vector2(size * 0.14, -size * 0.40), center + Vector2(size * 0.28, -size * 0.10), Color(0.02, 0.03, 0.04, 0.34), 1.28, true)
+	draw_line(center + Vector2(size * 0.14, -size * 0.40), center + Vector2(size * 0.28, -size * 0.10), Color(accent.r, accent.g, accent.b, 0.10 + seq_2 * 0.20), 0.56, true)
+	draw_line(center + Vector2(size * 0.14, -size * 0.40), center + Vector2(size * 0.28, -size * 0.10), Color(accent.r, accent.g, accent.b, 0.03 + seq_2 * 0.16), 0.18, true)
+	draw_line(center + Vector2(-size * 0.20, size * 0.10), center + Vector2(-size * 0.02, size * 0.20), Color(0.02, 0.03, 0.04, 0.26), 1.08, true)
+	draw_line(center + Vector2(-size * 0.20, size * 0.10), center + Vector2(-size * 0.02, size * 0.20), Color(color.r, color.g, color.b, 0.08 + seq_3 * 0.18), 0.48, true)
+	draw_line(center + Vector2(size * 0.02, size * 0.10), center + Vector2(size * 0.20, size * 0.20), Color(0.02, 0.03, 0.04, 0.26), 1.08, true)
+	draw_line(center + Vector2(size * 0.02, size * 0.10), center + Vector2(size * 0.20, size * 0.20), Color(accent.r, accent.g, accent.b, 0.08 + seq_3 * 0.16), 0.48, true)
+
+	# Body-mounted contour cuts instead of outer rails.
+	draw_line(center + Vector2(-size * 0.74, -size * 0.02), center + Vector2(-size * 0.44, -size * 0.20), Color(color.r, color.g, color.b, 0.10 + seq_1 * 0.20), 0.64, true)
+	draw_line(center + Vector2(-size * 0.74, -size * 0.02), center + Vector2(-size * 0.44, -size * 0.20), Color(color.r, color.g, color.b, 0.03 + seq_1 * 0.16), 0.20, true)
+	draw_line(center + Vector2(-size * 0.70, size * 0.18), center + Vector2(-size * 0.38, size * 0.00), Color(accent.r, accent.g, accent.b, 0.10 + seq_2 * 0.20), 0.60, true)
+	draw_line(center + Vector2(-size * 0.70, size * 0.18), center + Vector2(-size * 0.38, size * 0.00), Color(accent.r, accent.g, accent.b, 0.03 + seq_2 * 0.16), 0.20, true)
+	draw_line(center + Vector2(size * 0.44, -size * 0.20), center + Vector2(size * 0.74, -size * 0.02), Color(accent.r, accent.g, accent.b, 0.10 + seq_3 * 0.18), 0.60, true)
+	draw_line(center + Vector2(size * 0.44, -size * 0.20), center + Vector2(size * 0.74, -size * 0.02), Color(accent.r, accent.g, accent.b, 0.03 + seq_3 * 0.14), 0.20, true)
+	draw_line(center + Vector2(size * 0.30, size * 0.10), center + Vector2(size * 0.64, size * 0.28), Color(accent.r, accent.g, accent.b, 0.10 + seq_4 * 0.18), 0.58, true)
+	draw_line(center + Vector2(size * 0.30, size * 0.10), center + Vector2(size * 0.64, size * 0.28), Color(accent.r, accent.g, accent.b, 0.03 + seq_4 * 0.14), 0.20, true)
+
+	# Symmetrical shell light cuts.
+	var sym_top_y: float = -size * 0.18
+	var sym_mid_y: float = -size * 0.04
+	var sym_low_y: float = size * 0.12
+	draw_line(center + Vector2(-size * 0.52, sym_top_y), center + Vector2(-size * 0.12, sym_top_y), Color(color.r, color.g, color.b, 0.14 + seq_1 * 0.30), 0.92, true)
+	draw_line(center + Vector2(size * 0.12, sym_top_y), center + Vector2(size * 0.52, sym_top_y), Color(accent.r, accent.g, accent.b, 0.14 + seq_1 * 0.28), 0.92, true)
+	draw_line(center + Vector2(-size * 0.46, sym_mid_y), center + Vector2(-size * 0.08, sym_mid_y), Color(color.r, color.g, color.b, 0.12 + seq_2 * 0.26), 0.82, true)
+	draw_line(center + Vector2(size * 0.08, sym_mid_y), center + Vector2(size * 0.46, sym_mid_y), Color(accent.r, accent.g, accent.b, 0.12 + seq_2 * 0.24), 0.82, true)
+	draw_line(center + Vector2(-size * 0.36, sym_low_y), center + Vector2(-size * 0.02, sym_low_y), Color(color.r, color.g, color.b, 0.10 + seq_3 * 0.22), 0.72, true)
+	draw_line(center + Vector2(size * 0.02, sym_low_y), center + Vector2(size * 0.36, sym_low_y), Color(accent.r, accent.g, accent.b, 0.10 + seq_3 * 0.20), 0.72, true)
+
+	# Small contrast-color accent markers.
+	draw_circle(center + Vector2(size * 0.54, -size * 0.10), size * 0.065, accent_hot)
+	draw_circle(center + Vector2(size * 0.62, size * 0.10), size * 0.055, Color(accent.r, accent.g, accent.b, 0.52 + blink * 0.22))
+	draw_rect(Rect2(center.x + size * 0.22, center.y - size * 0.34, size * 0.18, size * 0.06), accent_soft)
+
+	# Roof-mounted core with segmented ring blink.
+	var core_pos: Vector2 = center + Vector2(-size * 0.18, -size * 0.06)
+	draw_circle(core_pos, size * (0.40 + pulse * 0.030), Color(color.r, color.g, color.b, 0.20 + pulse * 0.12))
+	draw_circle(core_pos, size * 0.245, Color(0.050, 0.068, 0.090, 1.0))
+	draw_arc(core_pos, size * 0.255, 0.10, 1.40, 8, Color(color.r, color.g, color.b, 0.76 + freq_a * 0.22), 1.70, true)
+	draw_arc(core_pos, size * 0.255, 1.85, 3.15, 8, Color(color.r, color.g, color.b, 0.58 + freq_b * 0.22), 1.60, true)
+	draw_arc(core_pos, size * 0.255, 3.55, 5.15, 9, Color(color.r, color.g, color.b, 0.82 + freq_c * 0.18), 1.70, true)
+	draw_arc(core_pos, size * 0.175, 0.0, TAU, 20, Color(color.r, color.g, color.b, 0.38 + blink * 0.22), 1.15, true)
+	draw_circle(core_pos, size * 0.108, Color(color.r, color.g, color.b, 0.96 + pulse * 0.04))
+	draw_circle(core_pos, size * 0.035, Color(0.86, 1.0, 1.0, 0.90))
+
+	# Secondary roof sensor.
+	var sensor_pos: Vector2 = center + Vector2(size * 0.42, -size * 0.04)
+
+	# Soft halos to read clearly in gameplay without overpowering the silhouette.
+	draw_circle(core_pos, size * 0.52, Color(color.r, color.g, color.b, 0.09 + pulse * 0.05))
+	draw_circle(core_pos, size * 0.72, Color(color.r, color.g, color.b, 0.04 + pulse * 0.03))
+	draw_circle(sensor_pos, size * 0.24, Color(color.r, color.g, color.b, 0.07 + blink * 0.05))
+	draw_circle(center + Vector2(size * 0.54, -size * 0.10), size * 0.18, Color(accent.r, accent.g, accent.b, 0.18 + blink * 0.10))
+	draw_circle(sensor_pos, size * 0.135, Color(0.045, 0.060, 0.082, 1.0))
+	draw_arc(sensor_pos, size * 0.145, 0.0, TAU, 16, Color(color.r, color.g, color.b, 0.58 + pulse * 0.18), 1.15, true)
+	draw_circle(sensor_pos, size * 0.055, Color(color.r, color.g, color.b, 0.88 + blink * 0.12))
+
+	# Extra on-body neon cuts kept symmetrical and subtle.
+	draw_line(center + Vector2(-size * 0.24, -size * 0.24), center + Vector2(-size * 0.02, -size * 0.10), Color(color.r, color.g, color.b, 0.10 + seq_4 * 0.20), 0.60, true)
+	draw_line(center + Vector2(size * 0.02, -size * 0.24), center + Vector2(size * 0.24, -size * 0.10), Color(accent.r, accent.g, accent.b, 0.10 + seq_4 * 0.18), 0.60, true)
+	draw_line(center + Vector2(-size * 0.18, size * 0.10), center + Vector2(-size * 0.02, size * 0.18), Color(color.r, color.g, color.b, 0.08 + seq_5 * 0.16), 0.54, true)
+	draw_line(center + Vector2(size * 0.02, size * 0.10), center + Vector2(size * 0.18, size * 0.18), Color(accent.r, accent.g, accent.b, 0.08 + seq_5 * 0.14), 0.54, true)
+
+	# Circuit traces connecting modules.
+	draw_line(center + Vector2(-size * 0.42, -size * 0.06), core_pos + Vector2(-size * 0.14, 0.0), Color(color.r, color.g, color.b, 0.10 + seq_1 * 0.22), 0.72, true)
+	draw_line(center + Vector2(size * 0.30, -size * 0.08), sensor_pos + Vector2(-size * 0.10, 0.0), Color(accent.r, accent.g, accent.b, 0.10 + seq_2 * 0.20), 0.72, true)
+	draw_line(center + Vector2(-size * 0.24, size * 0.18), center + Vector2(-size * 0.04, size * 0.22), Color(color.r, color.g, color.b, 0.08 + seq_3 * 0.16), 0.60, true)
+	draw_line(center + Vector2(size * 0.04, size * 0.18), center + Vector2(size * 0.24, size * 0.22), Color(accent.r, accent.g, accent.b, 0.08 + seq_3 * 0.14), 0.60, true)
+
+	# Tight silhouette cuts directly on the shell.
+	draw_line(center + Vector2(-size * 0.50, -size * 0.24), center + Vector2(-size * 0.24, -size * 0.12), Color(color.r, color.g, color.b, 0.10 + seq_2 * 0.20), 0.64, true)
+	draw_line(center + Vector2(size * 0.24, -size * 0.24), center + Vector2(size * 0.50, -size * 0.12), Color(accent.r, accent.g, accent.b, 0.10 + seq_2 * 0.18), 0.64, true)
+	draw_line(center + Vector2(-size * 0.46, size * 0.12), center + Vector2(-size * 0.18, size * 0.22), Color(color.r, color.g, color.b, 0.08 + seq_3 * 0.16), 0.58, true)
+	draw_line(center + Vector2(size * 0.18, size * 0.12), center + Vector2(size * 0.46, size * 0.22), Color(accent.r, accent.g, accent.b, 0.08 + seq_3 * 0.14), 0.58, true)
+
+	# Tiny edge texture / hatch marks for more surface breakup.
+	draw_line(center + Vector2(-size * 0.66, -size * 0.04), center + Vector2(-size * 0.60, -size * 0.08), Color(color.r, color.g, color.b, 0.06 + seq_1 * 0.10), 0.42, true)
+	draw_line(center + Vector2(size * 0.60, -size * 0.04), center + Vector2(size * 0.66, -size * 0.08), Color(accent.r, accent.g, accent.b, 0.06 + seq_1 * 0.08), 0.42, true)
+
+	# Near/bottom legs after body.
+	_draw_basic_segmented_leg(rear_bottom_hip, rear_bottom_knee, rear_bottom_foot, Color(0.260, 0.290, 0.345, 1.0), color, 3.8, 3.4, blink)
+	_draw_basic_segmented_leg(front_bottom_hip, front_bottom_knee, front_bottom_foot, Color(0.260, 0.290, 0.345, 1.0), color, 3.8, 3.4, pulse)
+
+	# Feet contact marks.
+	var contact_alpha: float = 0.08 + move_factor * 0.08
+	draw_circle(rear_top_foot, 1.25, Color(color.r, color.g, color.b, contact_alpha * 0.80))
+	draw_circle(front_top_foot, 1.25, Color(color.r, color.g, color.b, contact_alpha * 0.80))
+	draw_circle(rear_bottom_foot, 1.55, Color(color.r, color.g, color.b, contact_alpha))
+	draw_circle(front_bottom_foot, 1.55, Color(color.r, color.g, color.b, contact_alpha))
+
+	# Micro LEDs on legs for extra layered neon detail.
+	draw_circle(rear_bottom_knee, 1.90, Color(accent.r, accent.g, accent.b, 0.44 + blink * 0.18))
+	draw_circle(front_bottom_knee, 1.90, Color(accent.r, accent.g, accent.b, 0.44 + freq_b * 0.18))
+
+	var particle_alpha: float = 0.07 + pulse * 0.07
+	draw_rect(Rect2(-size * 1.18, -size * 0.74, 1.6, 1.6), Color(color.r, color.g, color.b, particle_alpha))
+	draw_rect(Rect2(size * 1.08, -size * 0.38, 1.5, 1.5), Color(color.r, color.g, color.b, particle_alpha * 0.82))
+	draw_rect(Rect2(size * 0.86, size * 0.44, 1.3, 1.3), Color(color.r, color.g, color.b, particle_alpha * 0.62))
+
+
 
 func _draw_cyber_runner(color: Color, size: float) -> void:
 	var pts := PackedVector2Array([
@@ -405,6 +921,27 @@ func _draw_cyber_runner(color: Color, size: float) -> void:
 	
 	# Layer 4: Agile Core
 	_draw_glow_core(Vector2(size * 0.4, 0), size * 0.25, color)
+
+func _draw_runner_role_telegraph(size: float) -> void:
+	var danger_color := Color(1.0, 0.35, 0.05, 1.0)
+	var pulse: float = 0.5 + sin(pulse_time * 12.0) * 0.5
+	var dash_charge: float = 1.0 - clampf(runner_dash_timer / maxf(runner_dash_cooldown, 0.01), 0.0, 1.0)
+	var ring_alpha: float = 0.05 + dash_charge * 0.16
+
+	# Small charge ring: tells the player Runner has a timed burst, without creating a huge range UI.
+	draw_arc(Vector2.ZERO, size * (1.35 + dash_charge * 0.28), -PI * 0.85, PI * 0.85, 36, Color(danger_color.r, danger_color.g, danger_color.b, ring_alpha), 1.1, true)
+
+	if runner_dash_remaining > 0.0:
+		var dash_alpha: float = 0.22 + pulse * 0.18
+		draw_circle(Vector2.ZERO, size * 1.55, Color(danger_color.r, danger_color.g, danger_color.b, 0.08 + pulse * 0.04))
+		draw_line(Vector2(-size * 0.9, 0), Vector2(-size * 3.2, 0), Color(danger_color.r, danger_color.g, danger_color.b, dash_alpha), 4.0, true)
+		draw_line(Vector2(-size * 0.5, -size * 0.45), Vector2(-size * 2.5, -size * 0.85), Color(1.0, 0.75, 0.2, dash_alpha * 0.7), 1.4, true)
+		draw_line(Vector2(-size * 0.5, size * 0.45), Vector2(-size * 2.5, size * 0.85), Color(1.0, 0.75, 0.2, dash_alpha * 0.7), 1.4, true)
+
+	if runner_panic_active:
+		# Panic mode should read as dangerous and unstable: orange/red breathing halo.
+		draw_arc(Vector2.ZERO, size * (1.75 + pulse * 0.22), 0.0, TAU, 40, Color(1.0, 0.12, 0.04, 0.22 + pulse * 0.08), 1.6, true)
+		draw_circle(Vector2(size * 0.58, 0), size * (0.18 + pulse * 0.06), Color(1.0, 0.9, 0.45, 0.75))
 
 func _draw_cyber_tank(color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
@@ -1233,10 +1770,71 @@ func _process(delta: float) -> void:
 	if is_bulwark and skill_id == "":
 		_process_shield_aura()
 		
+	if is_runner:
+		_process_runner_role(delta)
+
 	if is_hunter:
 		_process_hunter_ai(delta)
 	else:
 		_process_pathing(delta)
+
+func _configure_runner_role(config: Dictionary) -> void:
+	var params: Dictionary = config.get("skill_params", {})
+	runner_dash_cooldown = float(config.get("runner_dash_cooldown", params.get("dash_cooldown", runner_dash_cooldown)))
+	runner_dash_timer = float(config.get("runner_initial_dash_delay", params.get("initial_dash_delay", minf(runner_dash_timer, runner_dash_cooldown))))
+	runner_dash_duration = float(config.get("runner_dash_duration", params.get("dash_duration", runner_dash_duration)))
+	runner_dash_speed_multiplier = float(config.get("runner_dash_speed_multiplier", params.get("dash_speed_multiplier", runner_dash_speed_multiplier)))
+	runner_dash_damage_reduction = clampf(float(config.get("runner_dash_damage_reduction", params.get("dash_damage_reduction", runner_dash_damage_reduction))), 0.0, 0.85)
+	runner_panic_threshold = clampf(float(config.get("runner_panic_threshold", params.get("panic_threshold", runner_panic_threshold))), 0.05, 0.95)
+	runner_panic_speed_multiplier = float(config.get("runner_panic_speed_multiplier", params.get("panic_speed_multiplier", runner_panic_speed_multiplier)))
+	runner_base_speed_scale = clampf(float(config.get("runner_base_speed_scale", params.get("base_speed_scale", runner_base_speed_scale))), 0.55, 1.15)
+	# Make target-mode and formation rules recognize Runner as pressure even if old config has no tag.
+	if not tags.has("runner"):
+		tags.append("runner")
+
+func _process_runner_role(delta: float) -> void:
+	if not is_runner:
+		return
+
+	var hp_ratio: float = hp / maxf(max_hp, 1.0)
+	if not runner_panic_active and hp_ratio <= runner_panic_threshold:
+		runner_panic_active = true
+		if vfx_controller:
+			vfx_controller.play_runner_burst()
+		_spawn_impact_particle(Color(1.0, 0.24, 0.06, 0.72))
+		enemy_modifier_changed.emit(self , "runner_panic", runner_panic_speed_multiplier)
+		update_effective_speed()
+
+	if runner_dash_remaining > 0.0:
+		runner_dash_remaining = maxf(0.0, runner_dash_remaining - delta)
+		if runner_dash_remaining <= 0.0:
+			enemy_modifier_changed.emit(self , "runner_dash", 1.0)
+			update_effective_speed()
+	else:
+		runner_dash_timer -= delta
+		if runner_dash_timer <= 0.0:
+			_trigger_runner_dash("cooldown")
+
+func _trigger_runner_dash(reason: String = "burst") -> void:
+	if not is_runner or is_dead_flag or reached_base_flag:
+		return
+	runner_dash_remaining = runner_dash_duration
+	runner_dash_timer = runner_dash_cooldown
+	update_effective_speed()
+	if vfx_controller:
+		vfx_controller.play_runner_burst()
+	_spawn_impact_particle(Color(1.0, 0.46, 0.08, 0.56))
+	enemy_modifier_changed.emit(self , "runner_dash", runner_dash_speed_multiplier)
+	if OS.is_debug_build():
+		print("[RunnerRole] dash reason=%s speed=%.1f reduction=%.2f" % [reason, speed, runner_dash_damage_reduction])
+
+func _try_runner_hit_dash() -> void:
+	if not is_runner or runner_dash_remaining > 0.0:
+		return
+	# Being hit can force a burst, but only when the dash is mostly ready. This avoids
+	# endless hit-triggered dashing against rapid towers while still making Runner feel evasive.
+	if runner_dash_timer <= runner_dash_cooldown * 0.25:
+		_trigger_runner_dash("hit")
 
 func _process_shield_aura() -> void:
 	var radius = float(skill_params.get("radius", shield_radius))
@@ -1533,6 +2131,9 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 		last_damage_source = source_id
 	
 	var final_damage = amount
+	if is_runner and runner_dash_remaining > 0.0:
+		final_damage *= (1.0 - runner_dash_damage_reduction)
+		_spawn_impact_particle(Color(1.0, 0.48, 0.08, 0.35))
 	if shield_remaining > 0 and not is_bulwark:
 		var shielded_damage: float = final_damage * (1.0 - active_shield_reduction)
 		shield_applied.emit(self , final_damage, shielded_damage, active_shield_source)
@@ -1566,6 +2167,7 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 		
 	spawn_damage_number(int(final_damage), capture_pos, dn_color)
 	_play_hit_pulse()
+	_try_runner_hit_dash()
 	if enemy_type == "swarm" or tags.has("swarm"):
 		_trigger_swarm_hit_reaction()
 		_spawn_swarm_hit_effect(capture_pos)
@@ -1621,7 +2223,13 @@ func _process_formation_speed(delta: float) -> void:
 
 func update_effective_speed() -> void:
 	status_speed_multiplier = max(1.0 - active_slow_percent, 0.25)
-	speed = base_speed * formation_speed_multiplier * status_speed_multiplier
+	var runner_multiplier := 1.0
+	if is_runner:
+		if runner_panic_active:
+			runner_multiplier *= runner_panic_speed_multiplier
+		if runner_dash_remaining > 0.0:
+			runner_multiplier *= runner_dash_speed_multiplier
+	speed = base_speed * formation_speed_multiplier * status_speed_multiplier * runner_multiplier
 
 func flash_body() -> void:
 	is_flashing = true

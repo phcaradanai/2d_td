@@ -240,31 +240,73 @@ func _fit_map_to_playfield(playfield_rect: Rect2) -> void:
 	world_root.position = Vector2.ZERO
 
 func _get_map_content_bounds() -> Rect2:
-	if not level_manager: return Rect2()
-	
-	var points: Array[Vector2] = []
+	if not level_manager:
+		return Rect2()
+
 	var gs = level_manager.grid_size
-	
-	# Add grid corners
 	var map_w = level_manager.grid_cols * gs
 	var map_h = level_manager.grid_rows * gs
+	var fit_mode := str(level_manager.level_data.get("camera_fit_mode", ""))
+
+	# Optional road-focused framing for polished small maps.
+	if fit_mode == "road_focus":
+		var focus_cells: Array[Vector2i] = []
+		for p_id in level_manager.multi_paths:
+			for cell in level_manager.multi_paths[p_id]:
+				if cell is Vector2i and not focus_cells.has(cell):
+					focus_cells.append(cell)
+		for cell in _cells_from_level_arrays(level_manager.level_data.get("spawn_cells", [])):
+			if not focus_cells.has(cell):
+				focus_cells.append(cell)
+		for cell in _cells_from_level_arrays(level_manager.level_data.get("base_cells", [])):
+			if not focus_cells.has(cell):
+				focus_cells.append(cell)
+		if level_manager.spawn_cell != Vector2i.ZERO and not focus_cells.has(level_manager.spawn_cell):
+			focus_cells.append(level_manager.spawn_cell)
+		if level_manager.base_cell != Vector2i.ZERO and not focus_cells.has(level_manager.base_cell):
+			focus_cells.append(level_manager.base_cell)
+
+		if not focus_cells.is_empty():
+			var min_cell: Vector2i = focus_cells[0]
+			var max_cell: Vector2i = focus_cells[0]
+			for cell in focus_cells:
+				min_cell.x = min(min_cell.x, cell.x)
+				min_cell.y = min(min_cell.y, cell.y)
+				max_cell.x = max(max_cell.x, cell.x)
+				max_cell.y = max(max_cell.y, cell.y)
+
+			var bounds := Rect2(
+				Vector2(min_cell.x * gs, min_cell.y * gs),
+				Vector2((max_cell.x - min_cell.x + 1) * gs, (max_cell.y - min_cell.y + 1) * gs)
+			)
+			var margin_x := float(level_manager.level_data.get("camera_focus_margin_cells_x", 2.0)) * float(gs)
+			var margin_y := float(level_manager.level_data.get("camera_focus_margin_cells_y", 1.5)) * float(gs)
+			bounds = bounds.grow_side(SIDE_LEFT, margin_x)
+			bounds = bounds.grow_side(SIDE_RIGHT, margin_x)
+			bounds = bounds.grow_side(SIDE_TOP, margin_y)
+			bounds = bounds.grow_side(SIDE_BOTTOM, margin_y)
+			return bounds
+
+	var points: Array[Vector2] = []
+
+	# Default full-grid framing.
 	points.append(Vector2.ZERO)
 	points.append(Vector2(map_w, map_h))
-	
-	# Add specific points of interest to ensure they are inside
+
 	if level_manager.spawn_cell != Vector2i.ZERO:
-		points.append(Vector2(level_manager.spawn_cell) * gs + Vector2(gs, gs)*0.5)
+		points.append(Vector2(level_manager.spawn_cell) * gs + Vector2(gs, gs) * 0.5)
 	if level_manager.base_cell != Vector2i.ZERO:
-		points.append(Vector2(level_manager.base_cell) * gs + Vector2(gs, gs)*0.5)
-	
+		points.append(Vector2(level_manager.base_cell) * gs + Vector2(gs, gs) * 0.5)
+
 	for cell in level_manager.path_cells:
-		points.append(Vector2(cell) * gs + Vector2(gs, gs)*0.5)
-		
+		points.append(Vector2(cell) * gs + Vector2(gs, gs) * 0.5)
+
 	for cell in level_manager.buildable_cells:
-		points.append(Vector2(cell) * gs + Vector2(gs, gs)*0.5)
-		
-	if points.is_empty(): return Rect2(0, 0, map_w, map_h)
-	
+		points.append(Vector2(cell) * gs + Vector2(gs, gs) * 0.5)
+
+	if points.is_empty():
+		return Rect2(0, 0, map_w, map_h)
+
 	var min_p = points[0]
 	var max_p = points[0]
 	for p in points:
@@ -272,15 +314,22 @@ func _get_map_content_bounds() -> Rect2:
 		min_p.y = min(min_p.y, p.y)
 		max_p.x = max(max_p.x, p.x)
 		max_p.y = max(max_p.y, p.y)
-		
+
 	var bounds = Rect2(min_p, max_p - min_p)
-	# STANDARD: Add requested padding for professional spatial distribution
-	# Example: Left=64 (Spawn), Right=48 (Base), Top/Bottom=48
 	bounds = bounds.grow_side(SIDE_LEFT, 64)
 	bounds = bounds.grow_side(SIDE_RIGHT, 48)
 	bounds = bounds.grow_side(SIDE_TOP, 48)
 	bounds = bounds.grow_side(SIDE_BOTTOM, 48)
 	return bounds
+
+func _cells_from_level_arrays(raw: Variant) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if not (raw is Array):
+		return out
+	for item in raw:
+		if item is Array and item.size() >= 2:
+			out.append(Vector2i(int(item[0]), int(item[1])))
+	return out
 
 func _refresh_start_wave_ui() -> void:
 	if not game_hud or not wave_manager: return

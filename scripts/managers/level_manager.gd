@@ -190,6 +190,79 @@ func is_path_cell(cell: Vector2i) -> bool:
 			return true
 	return false
 
+func get_visual_road_width_cells() -> int:
+	return max(1, int(level_data.get("road_visual_width_cells", 1)))
+
+func is_visual_road_cell(cell: Vector2i) -> bool:
+	if not bool(level_data.get("road_visual_blocks_building", false)):
+		return false
+	var cells: Dictionary = _collect_visual_road_cells()
+	return cells.has(_road_cell_key(cell))
+
+func _collect_visual_road_cells() -> Dictionary:
+	var out: Dictionary = {}
+	var width: int = min(3, get_visual_road_width_cells())
+	for p_id in multi_paths:
+		var cells: Array = multi_paths[p_id]
+		for i in range(cells.size()):
+			var center_cell = cells[i]
+			if center_cell is Vector2i:
+				_add_visual_road_cell_segment_footprint(out, center_cell, cells, i, width)
+	var extra_cells = level_data.get("road_visual_extra_cells", [])
+	if extra_cells is Array:
+		for item in extra_cells:
+			if item is Array and item.size() >= 2:
+				var c := Vector2i(int(item[0]), int(item[1]))
+				_add_road_cell_if_inside(out, c)
+	return out
+
+func _add_visual_road_cell_footprint(out: Dictionary, center_cell: Vector2i, half_width: int) -> void:
+	# Backward-compatible helper. Width is clamped by callers; avoid accidental 5+ cell roads.
+	var width: int = min(3, half_width * 2 + 1)
+	_add_visual_road_cell_segment_footprint(out, center_cell, [center_cell], 0, width)
+
+func _add_visual_road_cell_segment_footprint(out: Dictionary, center_cell: Vector2i, cells: Array, index: int, width: int) -> void:
+	_add_road_cell_if_inside(out, center_cell)
+	if width <= 1:
+		return
+
+	var dirs: Array[Vector2i] = []
+	if index > 0 and cells[index - 1] is Vector2i:
+		var prev_cell: Vector2i = cells[index - 1]
+		var prev_dir: Vector2i = center_cell - prev_cell
+		if prev_dir != Vector2i.ZERO:
+			dirs.append(Vector2i(signi(prev_dir.x), signi(prev_dir.y)))
+	if index < cells.size() - 1 and cells[index + 1] is Vector2i:
+		var next_cell: Vector2i = cells[index + 1]
+		var next_dir: Vector2i = next_cell - center_cell
+		if next_dir != Vector2i.ZERO:
+			dirs.append(Vector2i(signi(next_dir.x), signi(next_dir.y)))
+	if dirs.is_empty():
+		dirs.append(Vector2i.RIGHT)
+
+	for dir in dirs:
+		var perp := Vector2i(-dir.y, dir.x)
+		if perp == Vector2i.ZERO:
+			continue
+		_add_road_cell_if_inside(out, center_cell + perp)
+		_add_road_cell_if_inside(out, center_cell - perp)
+
+func _add_road_cell_if_inside(out: Dictionary, road_cell: Vector2i) -> void:
+	if road_cell.x < 0 or road_cell.x >= grid_cols or road_cell.y < 0 or road_cell.y >= grid_rows:
+		return
+	out[_road_cell_key(road_cell)] = road_cell
+
+func signi(v: int) -> int:
+	if v > 0:
+		return 1
+	if v < 0:
+		return -1
+	return 0
+
+
+func _road_cell_key(cell: Vector2i) -> String:
+	return "%d,%d" % [cell.x, cell.y]
+
 func is_blocked_cell(cell: Vector2i) -> bool:
 	return get_build_block_reason(cell) != ""
 
@@ -198,6 +271,12 @@ func get_build_block_reason(cell: Vector2i) -> String:
 		return "out_of_bounds"
 	
 	if is_path_cell(cell):
+		return "path"
+
+	# Level 1 can render the road as a wider modular tile strip while enemies still
+	# follow the centerline. Treat the full visual road footprint as blocked so
+	# towers cannot be placed on the widened road shoulders.
+	if bool(level_data.get("road_visual_blocks_building", false)) and is_visual_road_cell(cell):
 		return "path"
 		
 	if cell in blocked_cells:

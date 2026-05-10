@@ -327,8 +327,10 @@ func _get_enemy_role_text(id: String) -> String:
 	match id:
 		"basic":
 			return "Standard balanced unit"
-		"fast", "runner":
-			return "Fast pressure unit"
+		"fast":
+			return "Constant-speed pressure unit"
+		"runner":
+			return "Dash escape / panic burst unit"
 		"tank":
 			return "High HP frontline unit"
 		"bulwark":
@@ -371,6 +373,10 @@ func _get_enemy_ability_text(id: String) -> String:
 			return "Ability:\nCan threaten hero units or priority targets."
 		"swarm":
 			return "Ability:\nMoves as a fast, flickering cyber swarm."
+		"runner":
+			return "Ability:\nMedium baseline speed, short dash bursts, reduced dash damage, and panic sprint under 40% HP."
+		"fast":
+			return "Ability:\nAlways fast and fragile. Tests the player's fire-rate coverage."
 		_:
 			return "Ability:\nNo special ability preview data."
 

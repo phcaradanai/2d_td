@@ -29,6 +29,7 @@ var formation_planner = null
 var is_spawning: bool = false
 var path_nodes: Dictionary = {} # id -> Path2D
 var spawn_generation: int = 0
+var spawn_lane_cursor: int = 0
 
 # Track active wave specifically to avoid index confusion during running wave
 var active_wave_number: int = 0
@@ -91,6 +92,7 @@ func setup(paths: Dictionary) -> void:
 
 func reset_waves() -> void:
 	spawn_generation += 1
+	spawn_lane_cursor = 0
 	is_wave_running = false
 	is_spawning = false
 	current_wave_index = 0
@@ -207,7 +209,8 @@ func _wait_unpaused(seconds: float, gen: int) -> void:
 		elapsed += get_process_delta_time()
 
 func spawn_enemy(group_data: Dictionary) -> void:
-	var path_id = group_data.get("path", "default")
+	var requested_path_id: String = str(group_data.get("path", "default"))
+	var path_id: String = _resolve_spawn_path_id(requested_path_id)
 	var path_node = path_nodes.get(path_id, path_nodes.get("default"))
 	if not path_node: return
 		
@@ -278,6 +281,28 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	
 	if game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
+
+func _resolve_spawn_path_id(requested_path_id: String) -> String:
+	# Level files can expose visual lane paths named road_lane_left/default/road_lane_right.
+	# Waves may still target "default" for compatibility; in that case spread spawns
+	# across available road lanes so enemies do not visually stack on one center line.
+	if requested_path_id != "default":
+		return requested_path_id
+
+	var lane_ids: Array[String] = []
+	if path_nodes.has("road_lane_left"):
+		lane_ids.append("road_lane_left")
+	if path_nodes.has("default"):
+		lane_ids.append("default")
+	if path_nodes.has("road_lane_right"):
+		lane_ids.append("road_lane_right")
+
+	if lane_ids.size() <= 1:
+		return requested_path_id
+
+	var selected: String = lane_ids[spawn_lane_cursor % lane_ids.size()]
+	spawn_lane_cursor += 1
+	return selected
 
 func resolve_enemy_category(spawn_data: Dictionary) -> String:
 	if spawn_data.has("category"):
