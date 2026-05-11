@@ -794,5 +794,16 @@
 	],
 	"enemy_pathing_mode": "fixed_path",
 	"show_dynamic_route_overlay": false,
-	"pathing_mode": "fixed_path"
+	"pathing_mode": "fixed_path",
+	"leak_respawn_enabled": true,
+	"leak_respawn_health_mode": "preserve",
+	"interest_enabled": true,
+	"interest_rate": 0.02,
+	"interest_interval_sec": 15.0,
+	"interest_cap": 0,
+	"economy_note": "Element TD clone economy: leaked creeps respawn at the start; interest is 2% every 15s only during active non-leaked waves, with no cap.",
+	"auto_next_wave_enabled": true,
+	"auto_next_wave_delay_sec": 15.0,
+	"element_td_auto_next_wave_enabled": true,
+	"element_td_auto_next_wave_delay_sec": 15.0
 }

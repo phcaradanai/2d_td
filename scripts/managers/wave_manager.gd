@@ -33,6 +33,8 @@ var is_spawning: bool = false
 var path_nodes: Dictionary = {} # id -> Path2D
 var pathfinding_manager: Node = null
 var use_dynamic_pathing_for_ground: bool = true
+var leak_respawn_enabled: bool = false
+var leak_respawn_health_mode: String = "preserve" # preserve | full
 var spawn_generation: int = 0
 var spawn_lane_cursor: int = 0
 
@@ -40,6 +42,9 @@ var spawn_lane_cursor: int = 0
 var active_wave_number: int = 0
 var active_wave_name: String = ""
 var active_wave_reward: int = 0
+# Element TD economy gate: after the first leak of a wave, interest stops
+# until the next wave. This prevents interest farming on respawned creeps.
+var current_wave_has_leak: bool = false
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 
@@ -109,8 +114,10 @@ func configure_from_level(level_manager: Node) -> void:
 	var mode := str(data.get("enemy_pathing_mode", data.get("pathing_mode", "dynamic_maze"))).strip_edges().to_lower()
 	if mode in ["fixed", "fixed_path", "fixed-path", "element_td", "elemental_td"]:
 		use_dynamic_pathing_for_ground = false
+	leak_respawn_enabled = bool(data.get("leak_respawn_enabled", false))
+	leak_respawn_health_mode = str(data.get("leak_respawn_health_mode", "preserve")).strip_edges().to_lower()
 	if OS.is_debug_build():
-		print("[WaveManager] pathing_mode=", mode, " dynamic_ground=", use_dynamic_pathing_for_ground)
+		print("[WaveManager] pathing_mode=", mode, " dynamic_ground=", use_dynamic_pathing_for_ground, " leak_respawn=", leak_respawn_enabled, " hp_mode=", leak_respawn_health_mode)
 
 func reset_waves() -> void:
 	spawn_generation += 1
@@ -122,6 +129,7 @@ func reset_waves() -> void:
 	active_wave_number = 0
 	active_wave_name = ""
 	active_wave_reward = 0
+	current_wave_has_leak = false
 	if OS.is_debug_build(): print("[WaveManager] reset_waves: current_wave_index=0")
 
 func start_next_wave() -> void:
@@ -139,6 +147,7 @@ func start_next_wave() -> void:
 	active_wave_number = int(wave_data.get("wave", current_wave_index + 1))
 	active_wave_name = str(wave_data.get("name", "Unknown Wave"))
 	active_wave_reward = int(wave_data.get("reward", wave_data.get("completion_reward", 0)))
+	current_wave_has_leak = false
 	
 	wave_start_time_msec = Time.get_ticks_msec()
 	
@@ -248,6 +257,7 @@ func spawn_enemy(group_data: Dictionary) -> void:
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
 		enemy.setup(base_config)
+	_apply_respawn_health_override(enemy, group_data)
 	
 	enemy.died.connect(_on_enemy_died)
 	enemy.reached_base.connect(_on_enemy_reached_base)
@@ -294,6 +304,21 @@ func spawn_enemy(group_data: Dictionary) -> void:
 				spawn_color = Color(0.0, 0.941, 1.0, 0.66)
 				spawn_mode = "swarm"
 			effect.setup(spawn_color, 20.0, spawn_mode)
+
+func _apply_respawn_health_override(enemy: Node, group_data: Dictionary) -> void:
+	if not group_data.has("_respawn_current_hp"):
+		return
+	var hp_value := float(group_data.get("_respawn_current_hp", -1.0))
+	if hp_value <= 0.0:
+		return
+	var max_hp_value := hp_value
+	var raw_max_hp = enemy.get("max_hp")
+	if raw_max_hp != null:
+		max_hp_value = float(raw_max_hp)
+	enemy.set("hp", clampf(hp_value, 1.0, max_hp_value))
+	var hp_bar = enemy.get("hp_bar")
+	if hp_bar != null:
+		hp_bar.value = float(enemy.get("hp"))
 
 func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D) -> void:
 	if not path_node: return
@@ -401,14 +426,42 @@ func _on_enemy_died(_enemy: Node, reward: int) -> void:
 	_on_enemy_removed()
 
 func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> void:
+	current_wave_has_leak = true
+	var hp_rem : float = _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
 	if game_manager and game_manager.battle_telemetry:
-		var hp_rem = _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
 		var prog = _enemy.get_path_progress() if _enemy.has_method("get_path_progress") else 0.0
 		var lives_after = game_manager.lives - damage
 		game_manager.battle_telemetry.log_enemy_leak(_enemy.enemy_type, hp_rem, global_pos, prog, lives_after)
 		
 	base_damaged.emit(damage, global_pos)
+	# base_damaged is handled synchronously by Main, so game_manager.lives is already updated here.
+	# Respawn only if the leak did not end the run.
+	if leak_respawn_enabled and (game_manager == null or game_manager.lives > 0):
+		_respawn_leaked_enemy(_enemy, hp_rem)
 	_on_enemy_removed()
+
+func _respawn_leaked_enemy(enemy: Node, hp_remaining: float) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	var path_id := _get_path_id_for_enemy(enemy)
+	var respawn_data := {
+		"type": str(enemy.get("enemy_type")),
+		"enemy_type": str(enemy.get("enemy_type")),
+		"path": path_id,
+		"category": str(enemy.get("enemy_category"))
+	}
+	if leak_respawn_health_mode != "full" and hp_remaining > 0.0:
+		respawn_data["_respawn_current_hp"] = hp_remaining
+	spawn_enemy(respawn_data)
+	if OS.is_debug_build():
+		print("[ElementTDLeak] respawn enemy=", respawn_data["enemy_type"], " path=", path_id, " hp=", hp_remaining)
+
+func _get_path_id_for_enemy(enemy: Node) -> String:
+	var parent := enemy.get_parent()
+	for key in path_nodes.keys():
+		if path_nodes[key] == parent:
+			return str(key)
+	return "default"
 
 func _on_enemy_removed() -> void:
 	active_enemy_count -= 1
@@ -444,6 +497,15 @@ func get_next_wave_name() -> String:
 
 func has_next_wave() -> bool:
 	return current_wave_index < waves.size()
+
+func has_active_enemies() -> bool:
+	return active_enemy_count > 0
+
+func has_current_wave_leak() -> bool:
+	return current_wave_has_leak
+
+func is_interest_eligible() -> bool:
+	return is_wave_running and active_enemy_count > 0 and not current_wave_has_leak
 
 func get_current_wave_data() -> Dictionary:
 	if current_wave_index < waves.size():
