@@ -120,6 +120,10 @@ var element_td_interest_cap: int = DEFAULT_ELEMENT_TD_INTEREST_CAP
 # Players may start early, but if they wait the next wave begins automatically.
 const DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_ENABLED: bool = true
 const DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_DELAY_SEC: float = 15.0
+# Keep the Start Wave control size stable across normal/countdown states.
+# Without this, multiline countdown text changes the TopBar container minimum size.
+const ELEMENT_TD_START_WAVE_BUTTON_MIN_SIZE := Vector2(192, 56)
+const ELEMENT_TD_START_WAVE_BUTTON_FONT_SIZE: int = 14
 var element_td_auto_next_wave_enabled: bool = DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_ENABLED
 var element_td_auto_next_wave_delay_sec: float = DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_DELAY_SEC
 var element_td_auto_next_wave_timer: Timer = null
@@ -396,6 +400,13 @@ func _refresh_start_wave_ui() -> void:
 		level_cleared,
 		locked_label
 	)
+	_stabilize_element_td_start_wave_button_layout()
+
+	# Keep the single Start Wave countdown button styled even if HUD refreshes
+	# during the planning countdown.
+	if element_td_auto_next_wave_timer != null and is_instance_valid(element_td_auto_next_wave_timer):
+		if not element_td_auto_next_wave_timer.is_stopped() and element_td_auto_next_wave_remaining_sec > 0:
+			_update_element_td_auto_next_wave_status()
 
 func _refresh_gameplay_hud_state() -> void:
 	_refresh_start_wave_ui()
@@ -727,80 +738,99 @@ func _get_hud_start_wave_button() -> Button:
 		return direct
 	return game_hud.get_node_or_null("Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/StartWaveButton") as Button
 
-func _ensure_element_td_auto_next_wave_badge() -> void:
-	if element_td_auto_next_wave_badge != null and is_instance_valid(element_td_auto_next_wave_badge):
-		return
+func _stabilize_element_td_start_wave_button_layout() -> void:
 	var start_button := _get_hud_start_wave_button()
 	if start_button == null:
 		return
-	var parent := start_button.get_parent()
-	if parent == null:
-		return
+	# Godot containers size children from their minimum size. Locking this keeps
+	# the TopBar from expanding when countdown text switches between one/two lines.
+	start_button.custom_minimum_size = ELEMENT_TD_START_WAVE_BUTTON_MIN_SIZE
+	start_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	start_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	start_button.pivot_offset = ELEMENT_TD_START_WAVE_BUTTON_MIN_SIZE * 0.5
+	start_button.add_theme_constant_override("align_to_largest_stylebox", 1)
 
-	element_td_auto_next_wave_badge = PanelContainer.new()
-	element_td_auto_next_wave_badge.name = "AutoNextWaveCountdownBadge"
-	element_td_auto_next_wave_badge.visible = false
-	element_td_auto_next_wave_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	element_td_auto_next_wave_badge.custom_minimum_size = Vector2(132, 36)
-	element_td_auto_next_wave_badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	parent.add_child(element_td_auto_next_wave_badge)
-	parent.move_child(element_td_auto_next_wave_badge, start_button.get_index())
-
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 10)
-	margin.add_theme_constant_override("margin_right", 10)
-	margin.add_theme_constant_override("margin_top", 5)
-	margin.add_theme_constant_override("margin_bottom", 5)
-	element_td_auto_next_wave_badge.add_child(margin)
-
-	element_td_auto_next_wave_badge_label = Label.new()
-	element_td_auto_next_wave_badge_label.name = "CountdownLabel"
-	element_td_auto_next_wave_badge_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	element_td_auto_next_wave_badge_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	element_td_auto_next_wave_badge_label.add_theme_font_size_override("font_size", 15)
-	element_td_auto_next_wave_badge_label.add_theme_color_override("font_color", Color(1.0, 0.95, 0.55))
-	margin.add_child(element_td_auto_next_wave_badge_label)
+func _ensure_element_td_auto_next_wave_badge() -> void:
+	# Stage 2E UX fix: the countdown is no longer a separate badge.
+	# The Start Wave button itself becomes the countdown control so players
+	# never confuse a visual badge for a second clickable target.
+	return
 
 func _style_element_td_auto_next_wave_badge(remaining_sec: int) -> void:
-	if element_td_auto_next_wave_badge == null:
+	var start_button := _get_hud_start_wave_button()
+	if start_button == null:
 		return
 	var urgent := remaining_sec <= 5
 	var warning := remaining_sec <= 10
-	var bg := Color(0.06, 0.12, 0.18, 0.92)
-	var border := Color(0.25, 0.85, 1.0, 0.95)
-	var font := Color(0.75, 0.95, 1.0, 1.0)
+	var bg := Color(0.04, 0.12, 0.18, 0.96)
+	var border := Color(0.25, 0.86, 1.0, 1.0)
+	var font := Color(0.78, 0.96, 1.0, 1.0)
 	if warning:
-		bg = Color(0.18, 0.12, 0.03, 0.94)
-		border = Color(1.0, 0.72, 0.18, 1.0)
-		font = Color(1.0, 0.88, 0.36, 1.0)
+		bg = Color(0.19, 0.12, 0.03, 0.97)
+		border = Color(1.0, 0.70, 0.14, 1.0)
+		font = Color(1.0, 0.88, 0.34, 1.0)
 	if urgent:
-		bg = Color(0.28, 0.04, 0.03, 0.96)
-		border = Color(1.0, 0.24, 0.14, 1.0)
-		font = Color(1.0, 0.58, 0.42, 1.0)
+		bg = Color(0.30, 0.04, 0.03, 0.98)
+		border = Color(1.0, 0.22, 0.12, 1.0)
+		font = Color(1.0, 0.62, 0.45, 1.0)
 
-	var box := StyleBoxFlat.new()
-	box.bg_color = bg
-	box.border_color = border
-	box.set_border_width_all(2 if not urgent else 3)
-	box.set_corner_radius_all(10)
-	element_td_auto_next_wave_badge.add_theme_stylebox_override("panel", box)
-	if element_td_auto_next_wave_badge_label:
-		element_td_auto_next_wave_badge_label.add_theme_color_override("font_color", font)
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = bg
+	normal.border_color = border
+	# Keep border and content margins identical for all urgency states so the
+	# button minimum size does not fluctuate inside the TopBar container.
+	normal.set_border_width_all(2)
+	normal.set_corner_radius_all(12)
+	normal.set_content_margin(SIDE_LEFT, 14)
+	normal.set_content_margin(SIDE_RIGHT, 14)
+	normal.set_content_margin(SIDE_TOP, 8)
+	normal.set_content_margin(SIDE_BOTTOM, 8)
 
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = bg.lightened(0.10)
+	hover.border_color = border.lightened(0.08)
+
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = bg.darkened(0.15)
+	pressed.border_color = border.darkened(0.05)
+
+	start_button.add_theme_stylebox_override("normal", normal)
+	start_button.add_theme_stylebox_override("hover", hover)
+	start_button.add_theme_stylebox_override("pressed", pressed)
+	start_button.add_theme_color_override("font_color", font)
+	start_button.add_theme_color_override("font_hover_color", font.lightened(0.08))
+	start_button.add_theme_color_override("font_pressed_color", font.darkened(0.08))
+	start_button.add_theme_font_size_override("font_size", ELEMENT_TD_START_WAVE_BUTTON_FONT_SIZE)
+	_stabilize_element_td_start_wave_button_layout()
+
+	# Pulse by color only. Scaling a Control inside a container can visually nudge
+	# surrounding UI and made the TopBar feel like it was expanding/shrinking.
 	if urgent:
-		element_td_auto_next_wave_badge.modulate = Color(1.0, 0.82 + (0.18 if remaining_sec % 2 == 0 else 0.0), 0.82, 1.0)
-		var tween := create_tween()
-		tween.tween_property(element_td_auto_next_wave_badge, "scale", Vector2(1.06, 1.06), 0.10)
-		tween.tween_property(element_td_auto_next_wave_badge, "scale", Vector2.ONE, 0.16)
+		start_button.modulate = Color(1.0, 0.84 + (0.16 if remaining_sec % 2 == 0 else 0.0), 0.84, 1.0)
 	else:
-		element_td_auto_next_wave_badge.modulate = Color.WHITE
-		element_td_auto_next_wave_badge.scale = Vector2.ONE
+		start_button.modulate = Color.WHITE
+	start_button.scale = Vector2.ONE
 
 func _hide_element_td_auto_next_wave_badge() -> void:
+	# Reset the Start Wave button after countdown ends. GameHUD.refresh_start_wave_button()
+	# will restore the normal text/enabled state immediately after this.
+	var start_button := _get_hud_start_wave_button()
+	if start_button != null:
+		start_button.remove_theme_stylebox_override("normal")
+		start_button.remove_theme_stylebox_override("hover")
+		start_button.remove_theme_stylebox_override("pressed")
+		start_button.remove_theme_color_override("font_color")
+		start_button.remove_theme_color_override("font_hover_color")
+		start_button.remove_theme_color_override("font_pressed_color")
+		start_button.remove_theme_font_size_override("font_size")
+		start_button.modulate = Color.WHITE
+		start_button.scale = Vector2.ONE
+		start_button.tooltip_text = ""
+		_stabilize_element_td_start_wave_button_layout()
 	if element_td_auto_next_wave_badge != null and is_instance_valid(element_td_auto_next_wave_badge):
-		element_td_auto_next_wave_badge.hide()
-		element_td_auto_next_wave_badge.modulate = Color.WHITE
-		element_td_auto_next_wave_badge.scale = Vector2.ONE
+		element_td_auto_next_wave_badge.queue_free()
+	element_td_auto_next_wave_badge = null
+	element_td_auto_next_wave_badge_label = null
 
 func _update_element_td_auto_next_wave_status() -> void:
 	if not game_hud or wave_manager == null:
@@ -813,17 +843,11 @@ func _update_element_td_auto_next_wave_status() -> void:
 	if next_wave_name != "":
 		label += ": %s" % next_wave_name
 
-	_ensure_element_td_auto_next_wave_badge()
-	if element_td_auto_next_wave_badge != null and is_instance_valid(element_td_auto_next_wave_badge):
-		element_td_auto_next_wave_badge.show()
-		if element_td_auto_next_wave_badge_label:
-			element_td_auto_next_wave_badge_label.text = "NEXT IN  %ds" % element_td_auto_next_wave_remaining_sec
-		_style_element_td_auto_next_wave_badge(element_td_auto_next_wave_remaining_sec)
-
 	var start_button := _get_hud_start_wave_button()
 	if start_button != null and next_wave_number > 0:
-		start_button.text = "Start %d  (%ds)" % [next_wave_number, element_td_auto_next_wave_remaining_sec]
-		start_button.tooltip_text = "%s will auto-start in %d seconds. Click to start now." % [label, element_td_auto_next_wave_remaining_sec]
+		start_button.text = "START WAVE %d\nAUTO IN %ds" % [next_wave_number, element_td_auto_next_wave_remaining_sec]
+		start_button.tooltip_text = "%s will auto-start in %d seconds. Click this button to start now." % [label, element_td_auto_next_wave_remaining_sec]
+		_style_element_td_auto_next_wave_badge(element_td_auto_next_wave_remaining_sec)
 
 	game_hud.set_build_status("Planning Phase — %s auto-starts in %ds" % [label, element_td_auto_next_wave_remaining_sec])
 

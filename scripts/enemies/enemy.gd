@@ -2448,8 +2448,7 @@ func _handle_split_on_death(death_pos: Vector2) -> void:
 	split_triggered.emit(self , type, count)
 	if vfx_controller:
 		vfx_controller.play_split_burst(str(type), int(count))
-	if OS.is_debug_build():
-		print("[EnemyFeature][Splitter] source=%s child_type=%s count=%d progress=%.1f" % [enemy_type, type, get_path_progress()])
+
 	var wave_manager = get_tree().current_scene.get_node_or_null("WaveManager")
 	if wave_manager and wave_manager.has_method("spawn_enemy_at_progress"):
 		for i in range(count):
