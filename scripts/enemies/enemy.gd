@@ -39,6 +39,13 @@ var display_name: String = "Enemy"
 var is_active: bool = false
 var reached_base_flag: bool = false
 var is_dead_flag: bool = false
+var use_dynamic_pathing: bool = false
+var pathfinding_manager: Node = null
+var dynamic_path: PackedVector2Array = PackedVector2Array()
+var dynamic_path_index: int = 0
+var last_path_grid_version: int = -1
+var dynamic_target_reached_distance: float = 8.0
+var dynamic_travel_distance: float = 0.0
 
 # Effects status
 var active_slow_percent: float = 0.0
@@ -75,9 +82,13 @@ var tags: Array = []
 
 # Visual State
 var pulse_time: float = 0.0
+var _draw_timer: float = 0.0
 var swarm_core_flicker_time: float = 0.0
 var swarm_pack_density: float = 0.0
 var swarm_pack_check_timer: float = 0.0
+const PERFORMANCE_VISUAL_MODE := true   # Simplified silhouette rendering for 60 FPS
+const ENEMY_VISUAL_REDRAW_INTERVAL := 0.125  # 8 FPS visual update (was 1/30 = 30 FPS)
+
 const COLOR_BODY = Color(0.08, 0.08, 0.12) # Dark Gunmetal
 const COLOR_NEON_BASIC = Color(0.2, 0.8, 1.0) # Electric Cyan
 const COLOR_NEON_FAST = Color(0.0, 1.0, 0.7) # Teal/Green
@@ -170,6 +181,11 @@ func setup(config: Dictionary) -> void:
 	is_stealth = (skill_id == "stealth" or tags.has("stealth"))
 	if is_stealth:
 		modulate.a = 0.4 # Visual feedback for stealth
+
+	if enemy_category == ENEMY_CATEGORY_LAND:
+		add_to_group("ground_enemies")
+	else:
+		remove_from_group("ground_enemies")
 	
 	is_bulwark = (enemy_type == "bulwark" or tags.has("shield"))
 	is_hunter = (enemy_type == "hunter" or tags.has("anti_hero"))
@@ -265,22 +281,33 @@ func get_vfx_controller() -> Node:
 
 func _draw() -> void:
 	var size = 16.0
+
+	if PERFORMANCE_VISUAL_MODE:
+		_draw_simple_silhouette(size)
+		if shield_remaining > 0:
+			draw_arc(Vector2.ZERO, size * 1.4, 0, TAU, 12, Color(0.4, 0.8, 1.0, 0.5), 1.5)
+		if active_slow_percent > 0:
+			draw_circle(Vector2.ZERO, size * 1.2, Color(0.6, 0.9, 1.0, 0.2))
+		if is_flashing:
+			draw_circle(Vector2.ZERO, size * 1.5, Color(1, 1, 1, 0.4))
+		return
+
 	if enemy_category == ENEMY_CATEGORY_AIR and not (enemy_type == "swarm" or tags.has("swarm")):
 		var hover_offset := sin(pulse_time * 4.0) * 2.0
 		draw_circle(Vector2(0, 12), size * 0.75, Color(0.0, 0.0, 0.0, 0.16))
 		draw_arc(Vector2(0, hover_offset), size * 1.15, 0, TAU, 28, Color(0.45, 0.9, 1.0, 0.18), 1.2)
-	
+
 	if shield_remaining > 0:
 		# Subtle hex-style or thin ring indicator for protected units
 		var p_pulse = sin(pulse_time * 5.0) * 0.1 + 0.9
 		draw_arc(Vector2.ZERO, size * 1.4 * p_pulse, 0, TAU, 16, Color(0.4, 0.8, 1.0, 0.4), 1.5)
 		draw_circle(Vector2.ZERO, size * 1.4, Color(0.4, 0.8, 1.0, 0.08))
-	
+
 	if active_slow_percent > 0:
 		# Frost/Slow glow
 		draw_circle(Vector2.ZERO, size * 1.2, Color(0.6, 0.9, 1.0, 0.25))
 		draw_arc(Vector2.ZERO, size * 1.1, 0, TAU, 24, Color(0.6, 0.9, 1.0, 0.4), 2.0)
-	
+
 	match visual_type:
 		"basic":
 			_draw_cyber_node(COLOR_NEON_BASIC, size)
@@ -323,9 +350,71 @@ func _draw() -> void:
 	if is_hunter:
 		_draw_hunter_role_telegraph(size)
 
+# --- Performance Silhouette Mode ---
+
+func _draw_simple_silhouette(size: float) -> void:
+	var color: Color
+	var body_pts: PackedVector2Array
+	match visual_type:
+		"basic":
+			color = COLOR_NEON_BASIC
+			body_pts = PackedVector2Array([Vector2(0, -size), Vector2(size * 0.7, size * 0.5), Vector2(-size * 0.7, size * 0.5)])
+		"fast", "runner":
+			color = COLOR_NEON_FAST if visual_type == "fast" else Color(1.0, 0.35, 0.05)
+			body_pts = PackedVector2Array([Vector2(0, -size * 1.1), Vector2(size * 0.5, size * 0.4), Vector2(0, size * 0.2), Vector2(-size * 0.5, size * 0.4)])
+		"tank":
+			color = COLOR_NEON_TANK
+			draw_rect(Rect2(Vector2(-size * 0.9, -size * 0.7), Vector2(size * 1.8, size * 1.4)), Color(color.r, color.g, color.b, 0.9))
+			draw_circle(Vector2.ZERO, size * 0.35, Color.WHITE)
+			return
+		"bulwark", "shieldbearer":
+			color = COLOR_NEON_BULWARK if visual_type == "bulwark" else Color(0.3, 0.8, 1.0)
+			body_pts = PackedVector2Array()
+			for j in 6:
+				var a := j * TAU / 6.0 - PI / 6.0
+				body_pts.append(Vector2(cos(a), sin(a)) * size * 1.2)
+		"hunter":
+			color = COLOR_NEON_HUNTER
+			body_pts = PackedVector2Array([Vector2(0, -size * 1.2), Vector2(size * 0.6, size * 0.6), Vector2(0, size * 0.2), Vector2(-size * 0.6, size * 0.6)])
+		"swarm":
+			color = COLOR_NEON_FAST
+			draw_circle(Vector2(-size * 0.5, -size * 0.3), size * 0.4, Color(color.r, color.g, color.b, 0.8))
+			draw_circle(Vector2(size * 0.5, -size * 0.3), size * 0.4, Color(color.r, color.g, color.b, 0.8))
+			draw_circle(Vector2(0, size * 0.4), size * 0.4, Color(color.r, color.g, color.b, 0.8))
+			return
+		"healer":
+			color = Color(0.4, 1.0, 0.4)
+			body_pts = PackedVector2Array([Vector2(0, -size), Vector2(size * 0.7, size * 0.5), Vector2(-size * 0.7, size * 0.5)])
+		"splitter":
+			color = Color(0.8, 0.4, 1.0)
+			body_pts = PackedVector2Array([Vector2(0, -size * 1.1), Vector2(size * 0.8, size * 0.5), Vector2(0, 0), Vector2(-size * 0.8, size * 0.5)])
+		"cloaked":
+			color = Color(0.7, 0.7, 1.0, 0.6)
+			body_pts = PackedVector2Array([Vector2(0, -size), Vector2(size * 0.7, size * 0.5), Vector2(-size * 0.7, size * 0.5)])
+		"flyer", "fast_flyer", "armored_flyer":
+			if visual_type == "flyer":
+				color = COLOR_NEON_BULWARK
+			elif visual_type == "fast_flyer":
+				color = COLOR_NEON_FAST
+			else:
+				color = COLOR_NEON_TANK
+			body_pts = PackedVector2Array([Vector2(0, -size * 0.9), Vector2(size * 0.9, 0), Vector2(0, size * 0.9), Vector2(-size * 0.9, 0)])
+		"disruptor":
+			color = Color(0.6, 0.3, 1.0)
+			body_pts = PackedVector2Array([Vector2(0, -size * 1.1), Vector2(size * 0.7, size * 0.5), Vector2(0, size * 0.2), Vector2(-size * 0.7, size * 0.5)])
+		_:
+			color = Color(0.8, 0.8, 0.8)
+			body_pts = PackedVector2Array([Vector2(0, -size), Vector2(size * 0.7, size * 0.5), Vector2(-size * 0.7, size * 0.5)])
+	if body_pts.size() > 0:
+		draw_colored_polygon(body_pts, Color(color.r, color.g, color.b, 0.85))
+	draw_circle(Vector2.ZERO, size * 0.3, Color.WHITE)
+
 # --- High-Fidelity Procedural Visuals ---
 
 func _draw_glow_core(pos: Vector2, radius: float, color: Color) -> void:
+	if PERFORMANCE_VISUAL_MODE:
+		draw_circle(pos, radius * 0.4, Color.WHITE)
+		return
 	var p = (sin(pulse_time * 8.0) * 0.5 + 0.5) * 0.2
 	var r = radius * (1.0 + p)
 	# Outer glow
@@ -345,6 +434,7 @@ func _draw_edge_nodes(points: PackedVector2Array, color: Color, radius: float = 
 		draw_circle(p, radius, Color(color.r, color.g, color.b, 0.78))
 
 func _draw_orbiters(count: int, orbit_radius: float, node_radius: float, color: Color, speed: float = 1.0) -> void:
+	if PERFORMANCE_VISUAL_MODE: return
 	for i in range(count):
 		var a := float(i) / float(count) * TAU + pulse_time * speed
 		var p := Vector2.RIGHT.rotated(a) * orbit_radius
@@ -359,15 +449,15 @@ func _draw_inner_plate(points: PackedVector2Array, color: Color, scale_factor: f
 	draw_polyline(inner + PackedVector2Array([inner[0]]), Color(color.r, color.g, color.b, 0.28), 1.0)
 
 func _draw_shield_dome(radius: float, color: Color) -> void:
+	if PERFORMANCE_VISUAL_MODE:
+		draw_arc(Vector2.ZERO, radius, 0, TAU, 12, Color(color.r, color.g, color.b, 0.5), 1.5)
+		return
 	var pulse = sin(pulse_time * 3.0) * 0.5 + 0.5
 	var r_anim = radius * (0.98 + pulse * 0.04)
-	
 	# Layer 1: Faint Fill
 	draw_circle(Vector2.ZERO, radius, Color(color.r, color.g, color.b, 0.04 + pulse * 0.02))
-	
 	# Layer 2: Main Ring
 	draw_arc(Vector2.ZERO, r_anim, 0, TAU, 64, Color(color.r, color.g, color.b, 0.2 + pulse * 0.1), 1.5)
-	
 	# Layer 3: Shimmer Nodes
 	var node_count = 6
 	for i in range(node_count):
@@ -549,7 +639,7 @@ func _draw_cyber_node(color: Color, size: float) -> void:
 	var move_factor: float = clampf(abs(speed) / maxf(base_speed, 1.0), 0.0, 1.35)
 
 	var stride_pixels: float = maxf(size * 2.35, 1.0)
-	var gait_phase: float = progress / stride_pixels + phase_seed
+	var gait_phase: float = get_path_progress() / stride_pixels + phase_seed
 	if is_gallery_preview:
 		gait_phase = pulse_time * 1.15 + phase_seed
 		move_factor = 0.75
@@ -1707,11 +1797,14 @@ func _process(delta: float) -> void:
 		return
 
 	pulse_time += delta
-	queue_redraw()
+	_draw_timer += delta
+	if _draw_timer >= ENEMY_VISUAL_REDRAW_INTERVAL:
+		_draw_timer -= ENEMY_VISUAL_REDRAW_INTERVAL
+		queue_redraw()
 
 	if not is_active or is_dead_flag or reached_base_flag:
 		return
-		
+
 	if swarm_core_flicker_time > 0.0:
 		swarm_core_flicker_time = maxf(0.0, swarm_core_flicker_time - delta)
 	if enemy_type == "swarm" or tags.has("swarm"):
@@ -1719,7 +1812,6 @@ func _process(delta: float) -> void:
 		if swarm_pack_check_timer <= 0.0:
 			swarm_pack_check_timer = 0.2
 			_update_swarm_pack_density()
-	queue_redraw()
 	
 	# Update timers
 	if slow_remaining > 0:
@@ -1727,7 +1819,7 @@ func _process(delta: float) -> void:
 		if slow_remaining <= 0: clear_slow()
 		
 		# VISUAL: Slow particles (blue sparks)
-		if Engine.get_process_frames() % 10 == 0:
+		if not PERFORMANCE_VISUAL_MODE and Engine.get_process_frames() % 10 == 0:
 			_spawn_impact_particle(Color(0.4, 0.8, 1.0, 0.6))
 	
 	_process_formation_speed(delta)
@@ -2120,9 +2212,86 @@ func _draw_hunter_compass_needle(pos: Vector2, dir: Vector2, color: Color, size:
 	draw_circle(center_hot, maxf(1.5, needle_width * 0.38), Color(1.0, 1.0, 1.0, color.a * 0.85))
 
 func _process_pathing(delta: float) -> void:
+	if use_dynamic_pathing:
+		_process_dynamic_pathing(delta)
+		return
 	progress += speed * delta
 	if progress_ratio >= 1.0:
 		reach_base()
+
+func set_dynamic_pathing(manager: Node, spawn_cell: Vector2i) -> void:
+	pathfinding_manager = manager
+	use_dynamic_pathing = pathfinding_manager != null and enemy_category == ENEMY_CATEGORY_LAND
+	if not use_dynamic_pathing:
+		return
+
+	var start_cell: Vector2i = pathfinding_manager.nearest_walkable_cell(spawn_cell)
+	global_position = pathfinding_manager.cell_to_world(start_cell)
+	last_path_grid_version = -1
+	_recalculate_dynamic_path()
+
+func set_pathfinding_manager(manager: Node) -> void:
+	pathfinding_manager = manager
+	use_dynamic_pathing = pathfinding_manager != null and enemy_category == ENEMY_CATEGORY_LAND
+	if use_dynamic_pathing:
+		add_to_group("ground_enemies")
+
+func request_path_to_core() -> void:
+	_recalculate_dynamic_path()
+
+func on_navigation_grid_changed(version: int) -> void:
+	if enemy_category == ENEMY_CATEGORY_AIR or not use_dynamic_pathing:
+		return
+	if version == last_path_grid_version:
+		return
+	_recalculate_dynamic_path()
+
+func _process_dynamic_pathing(delta: float) -> void:
+	if pathfinding_manager == null or not is_instance_valid(pathfinding_manager):
+		return
+
+	if last_path_grid_version != int(pathfinding_manager.grid_version):
+		_recalculate_dynamic_path()
+
+	if dynamic_path.is_empty():
+		_recalculate_dynamic_path()
+		if dynamic_path.is_empty():
+			return
+
+	if dynamic_path_index >= dynamic_path.size():
+		reach_base()
+		return
+
+	var target := dynamic_path[dynamic_path_index]
+	var to_target := target - global_position
+	var step := speed * delta
+	if to_target.length() <= maxf(step, dynamic_target_reached_distance):
+		global_position = target
+		dynamic_path_index += 1
+		if dynamic_path_index >= dynamic_path.size():
+			reach_base()
+		return
+
+	var dir := to_target.normalized()
+	global_position += dir * step
+	rotation = lerp_angle(rotation, dir.angle(), 10.0 * delta)
+	dynamic_travel_distance += step
+
+func _recalculate_dynamic_path() -> void:
+	if pathfinding_manager == null or not is_instance_valid(pathfinding_manager):
+		dynamic_path = PackedVector2Array()
+		return
+
+	var current_cell: Vector2i = pathfinding_manager.world_to_cell(global_position)
+	if not pathfinding_manager.is_cell_walkable(current_cell):
+		current_cell = pathfinding_manager.nearest_walkable_cell(current_cell)
+		global_position = pathfinding_manager.cell_to_world(current_cell)
+
+	dynamic_path = pathfinding_manager.get_path_world_points(global_position)
+	last_path_grid_version = int(pathfinding_manager.grid_version)
+	dynamic_path_index = 0
+	if dynamic_path.size() > 1 and global_position.distance_to(dynamic_path[0]) <= dynamic_target_reached_distance:
+		dynamic_path_index = 1
 
 func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "", p_attack_type: String = "single") -> void:
 	if is_dead_flag or reached_base_flag: return
@@ -2280,13 +2449,16 @@ func _handle_split_on_death(death_pos: Vector2) -> void:
 	if vfx_controller:
 		vfx_controller.play_split_burst(str(type), int(count))
 	if OS.is_debug_build():
-		print("[EnemyFeature][Splitter] source=%s child_type=%s count=%d progress=%.1f" % [enemy_type, type, count, progress])
+		print("[EnemyFeature][Splitter] source=%s child_type=%s count=%d progress=%.1f" % [enemy_type, type, get_path_progress()])
 	var wave_manager = get_tree().current_scene.get_node_or_null("WaveManager")
 	if wave_manager and wave_manager.has_method("spawn_enemy_at_progress"):
 		for i in range(count):
-			# Spawn slightly behind or ahead
-			var offset_prog = (i - (count - 1) / 2.0) * 20.0
-			wave_manager.spawn_enemy_at_progress(type, progress + offset_prog, get_parent())
+			var offset := Vector2((i - (count - 1) / 2.0) * 12.0, 0.0)
+			if use_dynamic_pathing and wave_manager.has_method("spawn_enemy_at_world_position"):
+				wave_manager.spawn_enemy_at_world_position(type, global_position + offset)
+			else:
+				var offset_prog = (i - (count - 1) / 2.0) * 20.0
+				wave_manager.spawn_enemy_at_progress(type, progress + offset_prog, get_parent())
 
 func notify_stealth_deferred(preferred_target: Node) -> void:
 	stealth_targeting_deferred.emit(self , preferred_target)
@@ -2384,6 +2556,8 @@ func get_priority_score() -> float:
 	return score
 
 func get_path_progress() -> float:
+	if use_dynamic_pathing:
+		return dynamic_travel_distance
 	return progress
 
 func get_current_hp() -> float:

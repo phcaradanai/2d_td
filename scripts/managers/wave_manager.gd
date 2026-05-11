@@ -12,6 +12,9 @@ signal base_damaged(base_damage: int, global_pos: Vector2)
 @export var waves_data_path: String = "res://data/waves.json"
 @export var enemies_data_path: String = "res://data/enemies.json"
 @export var formation_planner_script: GDScript = preload("res://scripts/managers/spawn_formation_planner.gd")
+const SPAWN_EFFECT_SCRIPT: GDScript = preload("res://scripts/effects/spawn_effect.gd")
+
+const PERFORMANCE_MODE := true  # Disables spawn VFX for stable 60 FPS
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -28,6 +31,8 @@ var formation_planner = null
 
 var is_spawning: bool = false
 var path_nodes: Dictionary = {} # id -> Path2D
+var pathfinding_manager: Node = null
+var use_dynamic_pathing_for_ground: bool = true
 var spawn_generation: int = 0
 var spawn_lane_cursor: int = 0
 
@@ -89,6 +94,23 @@ func load_waves_from_data(data: Array) -> void:
 
 func setup(paths: Dictionary) -> void:
 	path_nodes = paths
+
+func set_pathfinding_manager(p_pathfinding_manager: Node) -> void:
+	pathfinding_manager = p_pathfinding_manager
+
+func configure_from_level(level_manager: Node) -> void:
+	use_dynamic_pathing_for_ground = true
+	if level_manager == null:
+		return
+	var data: Dictionary = {}
+	var raw_data = level_manager.get("level_data")
+	if raw_data is Dictionary:
+		data = raw_data
+	var mode := str(data.get("enemy_pathing_mode", data.get("pathing_mode", "dynamic_maze"))).strip_edges().to_lower()
+	if mode in ["fixed", "fixed_path", "fixed-path", "element_td", "elemental_td"]:
+		use_dynamic_pathing_for_ground = false
+	if OS.is_debug_build():
+		print("[WaveManager] pathing_mode=", mode, " dynamic_ground=", use_dynamic_pathing_for_ground)
 
 func reset_waves() -> void:
 	spawn_generation += 1
@@ -238,35 +260,45 @@ func spawn_enemy(group_data: Dictionary) -> void:
 			enemy_type, path_id, (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0, pos_type, f_id
 		])
 		
-	path_node.add_child(enemy)
+	var spawn_pos: Vector2 = path_node.curve.get_point_position(0) if path_node.curve and path_node.curve.point_count > 0 else Vector2.ZERO
+	var spawn_world: Vector2 = path_node.to_global(spawn_pos)
+	if use_dynamic_pathing_for_ground and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null and enemy.has_method("set_dynamic_pathing"):
+		var enemy_parent := _get_enemy_container()
+		enemy_parent.add_child(enemy)
+		enemy.global_position = spawn_world
+		var spawn_cell: Vector2i = pathfinding_manager.world_to_cell(spawn_world)
+		enemy.set_dynamic_pathing(pathfinding_manager, spawn_cell)
+	else:
+		path_node.add_child(enemy)
 	active_enemy_count += 1
 	
 	if game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
 	
 	# VISUAL: Spawn effect at portal
-	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-	if not container: container = get_tree().current_scene
-	
-	var spawn_pos_vec = path_node.curve.get_point_position(0)
-	var effect = Node2D.new()
-	effect.set_script(load("res://scripts/effects/spawn_effect.gd"))
-	container.add_child(effect)
-	effect.global_position = path_node.to_global(spawn_pos_vec)
-	if effect.has_method("setup"):
-		var spawn_color = Color(0.4, 0.7, 1.0, 0.6)
-		var spawn_mode = "portal"
-		var enemy_tags: Array = base_config.get("tags", [])
-		if base_config.get("category") == ENEMY_CATEGORY_AIR:
-			spawn_color = Color(1.0, 0.8, 0.4, 0.6) # Yellow for air
-		if enemy_type == "swarm" or enemy_tags.has("swarm"):
-			spawn_color = Color(0.0, 0.941, 1.0, 0.66)
-			spawn_mode = "swarm"
-		effect.setup(spawn_color, 20.0, spawn_mode)
+	if not PERFORMANCE_MODE:
+		var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+		if not container: container = get_tree().current_scene
+		var spawn_pos_vec = path_node.curve.get_point_position(0)
+		var effect = Node2D.new()
+		effect.set_script(SPAWN_EFFECT_SCRIPT)
+		container.add_child(effect)
+		effect.global_position = path_node.to_global(spawn_pos_vec)
+		if effect.has_method("setup"):
+			var spawn_color = Color(0.4, 0.7, 1.0, 0.6)
+			var spawn_mode = "portal"
+			var enemy_tags: Array = base_config.get("tags", [])
+			if base_config.get("category") == ENEMY_CATEGORY_AIR:
+				spawn_color = Color(1.0, 0.8, 0.4, 0.6) # Yellow for air
+			if enemy_type == "swarm" or enemy_tags.has("swarm"):
+				spawn_color = Color(0.0, 0.941, 1.0, 0.66)
+				spawn_mode = "swarm"
+			effect.setup(spawn_color, 20.0, spawn_mode)
 
 func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D) -> void:
 	if not path_node: return
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
+	base_config["category"] = normalize_enemy_category(base_config.get("category", ENEMY_CATEGORY_LAND))
 	
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
@@ -275,10 +307,53 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	enemy.died.connect(_on_enemy_died)
 	enemy.reached_base.connect(_on_enemy_reached_base)
 	
-	path_node.add_child(enemy)
-	enemy.progress = prog
+	if use_dynamic_pathing_for_ground and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null and enemy.has_method("set_dynamic_pathing"):
+		var enemy_parent := _get_enemy_container()
+		enemy_parent.add_child(enemy)
+		var source_cell := Vector2i.ZERO
+		var source_world := Vector2.ZERO
+		if path_node is Path2D and path_node.curve and path_node.curve.point_count > 0:
+			var offset := clampf(prog, 0.0, path_node.curve.get_baked_length())
+			source_world = path_node.to_global(path_node.curve.sample_baked(offset))
+			source_cell = pathfinding_manager.world_to_cell(source_world)
+		enemy.global_position = source_world
+		enemy.set_dynamic_pathing(pathfinding_manager, source_cell)
+	else:
+		path_node.add_child(enemy)
+		enemy.progress = prog
 	active_enemy_count += 1
 	
+	if game_manager and game_manager.battle_telemetry:
+		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
+
+func _get_enemy_container() -> Node:
+	if not is_inside_tree():
+		return self
+	var scene := get_tree().current_scene
+	if scene == null:
+		return self
+	var container := scene.get_node_or_null("WorldRoot/MapRoot/EnemyContainer")
+	if container:
+		return container
+	return scene
+
+func spawn_enemy_at_world_position(enemy_type: String, world_pos: Vector2) -> void:
+	var base_config = enemies_config.get(enemy_type, {}).duplicate()
+	base_config["category"] = normalize_enemy_category(base_config.get("category", ENEMY_CATEGORY_LAND))
+	var enemy = enemy_scene.instantiate()
+	if enemy.has_method("setup"):
+		enemy.setup(base_config)
+
+	enemy.died.connect(_on_enemy_died)
+	enemy.reached_base.connect(_on_enemy_reached_base)
+
+	var parent := _get_enemy_container()
+	parent.add_child(enemy)
+	enemy.global_position = world_pos
+	if use_dynamic_pathing_for_ground and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null and enemy.has_method("set_dynamic_pathing"):
+		enemy.set_dynamic_pathing(pathfinding_manager, pathfinding_manager.world_to_cell(world_pos))
+	active_enemy_count += 1
+
 	if game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
 

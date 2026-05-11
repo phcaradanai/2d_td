@@ -4,8 +4,16 @@
 		"name": "Scout Screen",
 		"reward": 50,
 		"groups": [
-			{ "type": "basic", "count": 8, "interval": 0.9 },
-			{ "type": "fast",  "count": 5, "interval": 0.5 }
+			{
+				"type": "basic",
+				"count": 35,
+				"interval": 0.15
+			},
+			{
+				"type": "fast",
+				"count": 25,
+				"interval": 0.17
+			}
 		],
 		"intel": "Light pressure. Deploy Guardian here to learn its movement and attack timing."
 	},
@@ -13,48 +21,266 @@
 		"wave": 2,
 		"name": "Bulwark Arrival",
 		"reward": 60,
-		"intel": "Bulwark: a massive convoy leader with a 35% damage-reduction dome. Deploy Guardian to deal direct damage to it.",
 		"groups": [
-			{ "type": "bulwark", "count": 1, "interval": 1.0 },
-			{ "type": "tank",    "count": 3, "interval": 1.8 },
-			{ "type": "basic",   "count": 6, "interval": 1.5 }
-		]
+			{
+				"type": "bulwark",
+				"count": 4,
+				"interval": 0.6
+			},
+			{
+				"type": "tank",
+				"count": 16,
+				"interval": 0.65
+			},
+			{
+				"type": "basic",
+				"count": 28,
+				"interval": 0.16
+			}
+		],
+		"intel": "Bulwark: a massive convoy leader with a 35% damage-reduction dome. Guardian deals direct damage to it."
 	},
 	{
 		"wave": 3,
 		"name": "Hunter Ambush",
 		"reward": 70,
-		"intel": "Viral Predator: hunts your Guardian directly. If Guardian is deployed, Hunters will chase it — Sniper can protect.",
 		"groups": [
-			{ "type": "hunter", "count": 1, "interval": 0.3 },
-			{ "type": "fast",   "count": 6, "interval": 0.5 },
-			{ "type": "tank",   "count": 3, "interval": 1.7 },
-			{ "type": "hunter", "count": 1, "interval": 0.5 }
-		]
+			{
+				"type": "hunter",
+				"count": 5,
+				"interval": 0.2
+			},
+			{
+				"type": "fast",
+				"count": 28,
+				"interval": 0.15
+			},
+			{
+				"type": "tank",
+				"count": 16,
+				"interval": 0.65
+			},
+			{
+				"type": "hunter",
+				"count": 5,
+				"interval": 0.22
+			}
+		],
+		"intel": "Viral Predator: hunts your Guardian directly. Sniper can protect Guardian while it engages."
 	},
 	{
 		"wave": 4,
 		"name": "Shielded Push",
-		"reward": 80,
+		"reward": 78,
 		"groups": [
-			{ "type": "bulwark",      "count": 1, "interval": 1.0 },
-			{ "type": "shieldbearer", "count": 1, "interval": 0.6 },
-			{ "type": "tank",         "count": 4, "interval": 1.6 },
-			{ "type": "healer",       "count": 1, "interval": 0.8 },
-			{ "type": "basic",        "count": 6, "interval": 1.2 }
+			{
+				"type": "bulwark",
+				"count": 4,
+				"interval": 0.6
+			},
+			{
+				"type": "shieldbearer",
+				"count": 5,
+				"interval": 0.5
+			},
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.65
+			},
+			{
+				"type": "healer",
+				"count": 5,
+				"interval": 0.38
+			},
+			{
+				"type": "basic",
+				"count": 28,
+				"interval": 0.16
+			}
 		],
 		"intel": "Bulwark + Shieldbearer + Healer convoy. Guardian neutralises Bulwark — towers handle the rest."
 	},
 	{
 		"wave": 5,
-		"name": "Command Convoy",
-		"reward": 100,
+		"name": "Hunter Screen",
+		"reward": 76,
 		"groups": [
-			{ "type": "bulwark",  "count": 1, "interval": 1.0 },
-			{ "type": "splitter", "count": 2, "interval": 1.8 },
-			{ "type": "tank",     "count": 3, "interval": 1.6 },
-			{ "type": "hunter",   "count": 2, "interval": 0.4 },
-			{ "type": "basic",    "count": 8, "interval": 1.2 }
+			{
+				"type": "hunter",
+				"count": 8,
+				"interval": 0.2
+			},
+			{
+				"type": "fast",
+				"count": 30,
+				"interval": 0.14
+			},
+			{
+				"type": "swarm",
+				"count": 65,
+				"interval": 0.08
+			},
+			{
+				"type": "basic",
+				"count": 28,
+				"interval": 0.16
+			}
+		],
+		"intel": "Hunters flank while swarms screen. Keep Guardian safe — hunters target it on sight."
+	},
+	{
+		"wave": 6,
+		"name": "Bulwark Column",
+		"reward": 82,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 6,
+				"interval": 0.7
+			},
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.62
+			},
+			{
+				"type": "healer",
+				"count": 7,
+				"interval": 0.36
+			},
+			{
+				"type": "basic",
+				"count": 28,
+				"interval": 0.16
+			}
+		],
+		"intel": "Double Bulwark convoy. Guardian handles first — must recharge before second arrives."
+	},
+	{
+		"wave": 7,
+		"name": "Hunter Surge",
+		"reward": 86,
+		"groups": [
+			{
+				"type": "hunter",
+				"count": 10,
+				"interval": 0.2
+			},
+			{
+				"type": "splitter",
+				"count": 14,
+				"interval": 0.8
+			},
+			{
+				"type": "tank",
+				"count": 16,
+				"interval": 0.65
+			},
+			{
+				"type": "basic",
+				"count": 28,
+				"interval": 0.16
+			}
+		],
+		"intel": "Hunters flank the convoy to target Guardian. Deploy late or with Sniper cover."
+	},
+	{
+		"wave": 8,
+		"name": "Full Convoy",
+		"reward": 90,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 6,
+				"interval": 0.68
+			},
+			{
+				"type": "shieldbearer",
+				"count": 7,
+				"interval": 0.5
+			},
+			{
+				"type": "healer",
+				"count": 7,
+				"interval": 0.36
+			},
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.62
+			},
+			{
+				"type": "hunter",
+				"count": 8,
+				"interval": 0.2
+			}
+		],
+		"intel": "All convoy types active. Guardian + Slow creates a clear path for kill towers."
+	},
+	{
+		"wave": 9,
+		"name": "Command Rush",
+		"reward": 96,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 6,
+				"interval": 0.68
+			},
+			{
+				"type": "hunter",
+				"count": 10,
+				"interval": 0.2
+			},
+			{
+				"type": "splitter",
+				"count": 16,
+				"interval": 0.78
+			},
+			{
+				"type": "tank",
+				"count": 18,
+				"interval": 0.62
+			},
+			{
+				"type": "basic",
+				"count": 30,
+				"interval": 0.15
+			}
+		],
+		"intel": "Hunters flank the convoy. Deploy Guardian only after Hunters are neutralised by towers."
+	},
+	{
+		"wave": 10,
+		"name": "Command Convoy",
+		"reward": 115,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 8,
+				"interval": 0.65
+			},
+			{
+				"type": "splitter",
+				"count": 16,
+				"interval": 0.78
+			},
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.6
+			},
+			{
+				"type": "hunter",
+				"count": 14,
+				"interval": 0.2
+			},
+			{
+				"type": "basic",
+				"count": 30,
+				"interval": 0.15
+			}
 		],
 		"intel": "Hunters flank the convoy to target Guardian. Deploy late or with Sniper cover. Guardian + Slow = clear path."
 	}

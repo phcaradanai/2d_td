@@ -3,21 +3,48 @@
 		"wave": 1,
 		"name": "Speed Strike",
 		"reward": 70,
-		"intel": "Interceptor: a fast-moving airborne unit. Rapid Tower barely tracks it — Sniper is far more reliable.",
 		"groups": [
-			{ "type": "fast_flyer", "count": 5, "interval": 0.7, "path": "default" },
-			{ "type": "basic",      "count": 8, "interval": 0.9, "path": "lane_b"  }
-		]
+			{
+				"type": "fast_flyer",
+				"count": 20,
+				"interval": 0.32
+			},
+			{
+				"type": "basic",
+				"count": 30,
+				"interval": 0.16,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Interceptor: a fast-moving airborne unit. Rapid Tower barely tracks it — Sniper is far more reliable."
 	},
 	{
 		"wave": 2,
-		"name": "Air + Ground Pressure",
+		"name": "Air Pressure",
 		"reward": 80,
 		"groups": [
-			{ "type": "fast_flyer", "count": 6, "interval": 0.65,"path": "default" },
-			{ "type": "flyer",      "count": 4, "interval": 0.9,  "path": "default" },
-			{ "type": "tank",       "count": 4, "interval": 1.6,  "path": "lane_b"  },
-			{ "type": "runner",     "count": 5, "interval": 0.45, "path": "lane_b"  }
+			{
+				"type": "fast_flyer",
+				"count": 22,
+				"interval": 0.3
+			},
+			{
+				"type": "flyer",
+				"count": 18,
+				"interval": 0.4
+			},
+			{
+				"type": "tank",
+				"count": 16,
+				"interval": 0.65,
+				"path": "lane_b"
+			},
+			{
+				"type": "runner",
+				"count": 22,
+				"interval": 0.16,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Fast and standard flyers together. Sniper handles both — Lightning chains if they group at the funnel."
 	},
@@ -26,37 +53,334 @@
 		"name": "Flanking Air",
 		"reward": 90,
 		"groups": [
-			{ "type": "fast_flyer",   "count": 8,  "interval": 0.6, "path": "default" },
-			{ "type": "bulwark",      "count": 1,  "interval": 1.0, "path": "lane_b"  },
-			{ "type": "healer",       "count": 2,  "interval": 0.8, "path": "lane_b"  },
-			{ "type": "tank",         "count": 4,  "interval": 1.6, "path": "lane_b"  }
+			{
+				"type": "fast_flyer",
+				"count": 28,
+				"interval": 0.28
+			},
+			{
+				"type": "bulwark",
+				"count": 4,
+				"interval": 0.7,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 8,
+				"interval": 0.34,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 18,
+				"interval": 0.65,
+				"path": "lane_b"
+			}
 		],
-		"intel": "Air rush creates distraction while Bulwark convoy presses the bottom lane. Do not neglect either."
+		"intel": "Air rush creates distraction while Bulwark convoy presses the bottom lane."
 	},
 	{
 		"wave": 4,
-		"name": "Hunter Air Cover",
+		"name": "Hunter Air",
 		"reward": 100,
 		"groups": [
-			{ "type": "fast_flyer", "count": 8, "interval": 0.55, "path": "default" },
-			{ "type": "hunter",     "count": 2, "interval": 0.4,  "path": "default" },
-			{ "type": "cloaked",    "count": 5, "interval": 0.9,  "path": "lane_b"  },
-			{ "type": "splitter",   "count": 4, "interval": 1.7,  "path": "lane_b"  }
+			{
+				"type": "fast_flyer",
+				"count": 28,
+				"interval": 0.28
+			},
+			{
+				"type": "hunter",
+				"count": 8,
+				"interval": 0.2
+			},
+			{
+				"type": "cloaked",
+				"count": 22,
+				"interval": 0.4,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 18,
+				"interval": 0.78,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Hunters on top lane threaten Guardian while fast flyers provide air cover. Sniper is most valuable tower here."
 	},
 	{
 		"wave": 5,
-		"name": "Core Split Finale",
-		"reward": 130,
+		"name": "Air Flood",
+		"reward": 96,
 		"groups": [
-			{ "type": "fast_flyer",   "count": 10, "interval": 0.55,"path": "default" },
-			{ "type": "flyer",        "count": 6,  "interval": 0.85,"path": "default" },
-			{ "type": "bulwark",      "count": 1,  "interval": 1.0, "path": "lane_b"  },
-			{ "type": "shieldbearer", "count": 2,  "interval": 1.2, "path": "lane_b"  },
-			{ "type": "healer",       "count": 2,  "interval": 0.8, "path": "lane_b"  },
-			{ "type": "hunter",       "count": 3,  "interval": 0.4, "path": "lane_b"  },
-			{ "type": "tank",         "count": 4,  "interval": 1.6, "path": "lane_b"  }
+			{
+				"type": "fast_flyer",
+				"count": 32,
+				"interval": 0.26
+			},
+			{
+				"type": "flyer",
+				"count": 22,
+				"interval": 0.38
+			},
+			{
+				"type": "armored_flyer",
+				"count": 10,
+				"interval": 0.7,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 18,
+				"interval": 0.65,
+				"path": "lane_b"
+			}
+		],
+		"intel": "All three air types. Sniper handles all — Lightning chains if they stack."
+	},
+	{
+		"wave": 6,
+		"name": "Ground Storm",
+		"reward": 102,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 7,
+				"interval": 0.68
+			},
+			{
+				"type": "shieldbearer",
+				"count": 10,
+				"interval": 0.56
+			},
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.32
+			},
+			{
+				"type": "fast_flyer",
+				"count": 28,
+				"interval": 0.28,
+				"path": "lane_b"
+			},
+			{
+				"type": "hunter",
+				"count": 10,
+				"interval": 0.2,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Bulwark convoy on A, fast flyer + Hunter on B. Guardian on A, Sniper on B."
+	},
+	{
+		"wave": 7,
+		"name": "Elite Air",
+		"reward": 108,
+		"groups": [
+			{
+				"type": "fast_flyer",
+				"count": 32,
+				"interval": 0.26
+			},
+			{
+				"type": "armored_flyer",
+				"count": 14,
+				"interval": 0.68
+			},
+			{
+				"type": "bulwark",
+				"count": 7,
+				"interval": 0.68,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.32,
+				"path": "lane_b"
+			},
+			{
+				"type": "shieldbearer",
+				"count": 10,
+				"interval": 0.56,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Heavy air on A, full support convoy on B. No idle towers."
+	},
+	{
+		"wave": 8,
+		"name": "Hunter Cover",
+		"reward": 114,
+		"groups": [
+			{
+				"type": "fast_flyer",
+				"count": 32,
+				"interval": 0.26
+			},
+			{
+				"type": "hunter",
+				"count": 12,
+				"interval": 0.2
+			},
+			{
+				"type": "cloaked",
+				"count": 25,
+				"interval": 0.4,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 20,
+				"interval": 0.76,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.32,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Fast flyer + Hunter pressure on A, stealth mechanics on B."
+	},
+	{
+		"wave": 9,
+		"name": "Air Siege",
+		"reward": 120,
+		"groups": [
+			{
+				"type": "fast_flyer",
+				"count": 35,
+				"interval": 0.24
+			},
+			{
+				"type": "flyer",
+				"count": 25,
+				"interval": 0.36
+			},
+			{
+				"type": "armored_flyer",
+				"count": 16,
+				"interval": 0.66,
+				"path": "lane_b"
+			},
+			{
+				"type": "bulwark",
+				"count": 8,
+				"interval": 0.68,
+				"path": "lane_b"
+			},
+			{
+				"type": "hunter",
+				"count": 12,
+				"interval": 0.2,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.62,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Maximum air density plus elite ground. Every AA tower fires constantly."
+	},
+	{
+		"wave": 10,
+		"name": "Split Finale Prep",
+		"reward": 126,
+		"groups": [
+			{
+				"type": "fast_flyer",
+				"count": 35,
+				"interval": 0.24
+			},
+			{
+				"type": "flyer",
+				"count": 25,
+				"interval": 0.36
+			},
+			{
+				"type": "bulwark",
+				"count": 8,
+				"interval": 0.68,
+				"path": "lane_b"
+			},
+			{
+				"type": "shieldbearer",
+				"count": 12,
+				"interval": 0.54,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 12,
+				"interval": 0.3,
+				"path": "lane_b"
+			},
+			{
+				"type": "hunter",
+				"count": 14,
+				"interval": 0.2,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 22,
+				"interval": 0.6,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Penultimate. Upgrade AA to maximum — the finale is heavier."
+	},
+	{
+		"wave": 11,
+		"name": "Core Split Finale",
+		"reward": 145,
+		"groups": [
+			{
+				"type": "fast_flyer",
+				"count": 38,
+				"interval": 0.24
+			},
+			{
+				"type": "flyer",
+				"count": 22,
+				"interval": 0.36
+			},
+			{
+				"type": "bulwark",
+				"count": 6,
+				"interval": 0.72,
+				"path": "lane_b"
+			},
+			{
+				"type": "shieldbearer",
+				"count": 8,
+				"interval": 0.56,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 8,
+				"interval": 0.32,
+				"path": "lane_b"
+			},
+			{
+				"type": "hunter",
+				"count": 14,
+				"interval": 0.2,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.62,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Massive air surge plus a Bulwark + Hunter ground column. Guardian on ground, AA on air, Sniper covers both."
 	}

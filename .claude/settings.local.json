@@ -1,0 +1,16 @@
+{
+  "env": {
+    "ANTHROPIC_AUTH_TOKEN": "sk-b7d8178ba4c445d69991deadb01afab8",
+    "ANTHROPIC_BASE_URL": "https://api.deepseek.com/anthropic",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL": "deepseek-v4-pro",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL": "deepseek-v4-pro",
+    "ANTHROPIC_DEFAULT_SONNET_MODEL": "deepseek-v4-pro"
+  },
+  "permissions": {
+    "allow": [
+      "Bash(sed -i '' '/var current_level = level_index + 1/d' scripts/towers/tower.gd)",
+      "Bash(sed -i '' 's/level_badge.text = \"Lv\" + str\\(current_level\\)/level_badge.text = \"T\" + str\\(tree_tier\\)/' scripts/towers/tower.gd)",
+      "Bash(python3 -c \"import json; data = json.load\\(open\\('data/towers_tree.json'\\)\\); print\\('Valid JSON. Entries:', len\\(data\\)\\); print\\('Keys:', list\\(data.keys\\(\\)\\)\\)\")"
+    ]
+  }
+}

@@ -16,6 +16,8 @@ var path_cells: Array[Vector2i] = []
 var multi_paths: Dictionary = {} # path_id -> Array[Vector2i]
 var spawn_cell: Vector2i
 var base_cell: Vector2i
+var spawn_cells: Array[Vector2i] = []
+var base_cells: Array[Vector2i] = []
 var blocked_cells: Array[Vector2i] = []
 var decorative_blocked_cells: Array[Vector2i] = []
 var buildable_cells: Array[Vector2i] = []
@@ -44,6 +46,8 @@ func reset_state() -> void:
 	buildable_mode = "full_non_path"
 	path_cells.clear()
 	multi_paths.clear()
+	spawn_cells.clear()
+	base_cells.clear()
 	blocked_cells.clear()
 	decorative_blocked_cells.clear()
 	buildable_cells.clear()
@@ -152,9 +156,15 @@ func load_level(path: String) -> bool:
 		
 	var s = data.get("spawn_cell", [0, 0])
 	spawn_cell = Vector2i(s[0], s[1])
+	spawn_cells = _cells_from_arrays(data.get("spawn_cells", []))
+	if spawn_cells.is_empty():
+		spawn_cells.append(spawn_cell)
 	
 	var b = data.get("base_cell", [0, 0])
 	base_cell = Vector2i(b[0], b[1])
+	base_cells = _cells_from_arrays(data.get("base_cells", []))
+	if base_cells.is_empty():
+		base_cells.append(base_cell)
 	
 	blocked_cells.clear()
 	for p in data.get("blocked_cells", []):
@@ -270,25 +280,25 @@ func get_build_block_reason(cell: Vector2i) -> String:
 	if cell.x < 0 or cell.x >= grid_cols or cell.y < 0 or cell.y >= grid_rows:
 		return "out_of_bounds"
 	
-	if is_path_cell(cell):
-		return "path"
+	if cell in spawn_cells:
+		return "spawn"
 
-	# Level 1 can render the road as a wider modular tile strip while enemies still
-	# follow the centerline. Treat the full visual road footprint as blocked so
-	# towers cannot be placed on the widened road shoulders.
-	if bool(level_data.get("road_visual_blocks_building", false)) and is_visual_road_cell(cell):
-		return "path"
+	if cell in base_cells:
+		return "base"
 		
 	if cell in blocked_cells:
 		return "blocked"
 	
-	# In "manual" mode, if a cell is NOT in buildable_cells, it's blocked.
-	# But by default (full_non_path), we ignore this.
-	if buildable_mode == "manual" and not buildable_cells.is_empty():
-		if not (cell in buildable_cells):
-			return "non_buildable"
-			
 	return ""
+
+func _cells_from_arrays(raw: Variant) -> Array[Vector2i]:
+	var out: Array[Vector2i] = []
+	if not (raw is Array):
+		return out
+	for item in raw:
+		if item is Array and item.size() >= 2:
+			out.append(Vector2i(int(item[0]), int(item[1])))
+	return out
 
 func is_position_on_enemy_path(pos: Vector2, footprint: float = DEFAULT_TOWER_FOOTPRINT) -> bool:
 	var threshold = (LANE_WIDTH / 2.0) + footprint + PLACEMENT_PADDING
@@ -333,6 +343,8 @@ func get_config_as_dict() -> Dictionary:
 		"grid_rows": grid_rows,
 		"paths": multi_paths,
 		"path_cells": path_cells,
+		"spawn_cells": spawn_cells,
+		"base_cells": base_cells,
 		"buildable_cells": buildable_cells,
 		"starting_gold": starting_gold,
 		"starting_lives": starting_lives,

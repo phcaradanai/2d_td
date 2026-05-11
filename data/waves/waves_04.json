@@ -3,52 +3,202 @@
 		"wave": 1,
 		"name": "Fragment Storm",
 		"reward": 30,
-		"intel": "Data Swarm: many fragile enemies at once. Single-target towers cannot keep up — you need AoE.",
 		"groups": [
-			{ "type": "swarm", "count": 12, "interval": 0.3 }
-		]
+			{
+				"type": "swarm",
+				"count": 55,
+				"interval": 0.08
+			}
+		],
+		"intel": "Data Swarm: many fragile enemies at once. AoE is mandatory from this level onward."
 	},
 	{
 		"wave": 2,
 		"name": "Runners Ahead",
 		"reward": 35,
-		"intel": "Cyber Runner: the fastest ground unit. Slow Tower halts it — then finish with damage.",
 		"groups": [
-			{ "type": "runner", "count": 5,  "interval": 0.5 },
-			{ "type": "basic",  "count": 6,  "interval": 0.9 }
-		]
+			{
+				"type": "runner",
+				"count": 18,
+				"interval": 0.18
+			},
+			{
+				"type": "basic",
+				"count": 22,
+				"interval": 0.2
+			}
+		],
+		"intel": "Cyber Runner: fastest ground unit. Slow Tower halts it — then finish with damage."
 	},
 	{
 		"wave": 3,
 		"name": "Swarm and Sprint",
-		"reward": 45,
+		"reward": 42,
 		"groups": [
-			{ "type": "swarm",  "count": 15, "interval": 0.25 },
-			{ "type": "runner", "count": 4,  "interval": 0.55 }
+			{
+				"type": "swarm",
+				"count": 60,
+				"interval": 0.08
+			},
+			{
+				"type": "runner",
+				"count": 16,
+				"interval": 0.18
+			}
 		],
-		"intel": "Swarms and Runners together. Place Cannon at the chokepoint corner, Rapid beyond it."
+		"intel": "Swarms and Runners together. Cannon at the chokepoint corner, Rapid beyond it."
 	},
 	{
 		"wave": 4,
 		"name": "Corner Crunch",
-		"reward": 55,
+		"reward": 48,
 		"groups": [
-			{ "type": "fast",   "count": 8,  "interval": 0.4 },
-			{ "type": "swarm",  "count": 12, "interval": 0.25 },
-			{ "type": "runner", "count": 3,  "interval": 0.55 }
+			{
+				"type": "fast",
+				"count": 32,
+				"interval": 0.15
+			},
+			{
+				"type": "swarm",
+				"count": 55,
+				"interval": 0.08
+			},
+			{
+				"type": "runner",
+				"count": 12,
+				"interval": 0.18
+			}
 		],
-		"intel": "Fast units plus swarms. All cluster at the sharp corner — perfect Cannon placement pays off."
+		"intel": "Fast units plus swarms. All cluster at the sharp corner — Cannon placement pays off."
 	},
 	{
 		"wave": 5,
-		"name": "Speed Choke",
-		"reward": 70,
+		"name": "Tank Screen",
+		"reward": 52,
 		"groups": [
-			{ "type": "runner", "count": 6,  "interval": 0.45 },
-			{ "type": "swarm",  "count": 18, "interval": 0.2  },
-			{ "type": "tank",   "count": 2,  "interval": 2.0  },
-			{ "type": "basic",  "count": 6,  "interval": 0.8  }
+			{
+				"type": "tank",
+				"count": 14,
+				"interval": 0.68
+			},
+			{
+				"type": "swarm",
+				"count": 60,
+				"interval": 0.08
+			},
+			{
+				"type": "basic",
+				"count": 25,
+				"interval": 0.16
+			}
 		],
-		"intel": "Final mix. Slow the runners, AoE the swarms, burst the tanks. No single tower handles all."
+		"intel": "Tanks walk through swarm clouds. AoE hits both. Focus tank fire on the heavies."
+	},
+	{
+		"wave": 6,
+		"name": "Speed Choke",
+		"reward": 55,
+		"groups": [
+			{
+				"type": "runner",
+				"count": 22,
+				"interval": 0.16
+			},
+			{
+				"type": "swarm",
+				"count": 65,
+				"interval": 0.08
+			},
+			{
+				"type": "fast",
+				"count": 25,
+				"interval": 0.15
+			}
+		],
+		"intel": "All speed types. Slow at the corner, AoE the swarms, rapid-fire the runners."
+	},
+	{
+		"wave": 7,
+		"name": "Armored Swarm",
+		"reward": 58,
+		"groups": [
+			{
+				"type": "tank",
+				"count": 18,
+				"interval": 0.65
+			},
+			{
+				"type": "swarm",
+				"count": 70,
+				"interval": 0.07
+			},
+			{
+				"type": "runner",
+				"count": 16,
+				"interval": 0.18
+			}
+		],
+		"intel": "Heavy column behind a swarm screen. Kill the screen first or tanks walk through unchallenged."
+	},
+	{
+		"wave": 8,
+		"name": "Rush Surge",
+		"reward": 62,
+		"groups": [
+			{
+				"type": "runner",
+				"count": 28,
+				"interval": 0.15
+			},
+			{
+				"type": "fast",
+				"count": 30,
+				"interval": 0.14
+			},
+			{
+				"type": "swarm",
+				"count": 55,
+				"interval": 0.08
+			},
+			{
+				"type": "tank",
+				"count": 12,
+				"interval": 0.68
+			}
+		],
+		"intel": "High-speed wave with tank follow-up. Every corner is a kill zone — use them."
+	},
+	{
+		"wave": 9,
+		"name": "Speed Choke Finale",
+		"reward": 72,
+		"groups": [
+			{
+				"type": "runner",
+				"count": 25,
+				"interval": 0.15
+			},
+			{
+				"type": "swarm",
+				"count": 75,
+				"interval": 0.07
+			},
+			{
+				"type": "tank",
+				"count": 16,
+				"interval": 0.65
+			},
+			{
+				"type": "basic",
+				"count": 30,
+				"interval": 0.16
+			},
+			{
+				"type": "fast",
+				"count": 25,
+				"interval": 0.14
+			}
+		],
+		"intel": "Area 1 corner finale. No single tower handles all. Slow the runners, AoE the swarms, burst the tanks."
 	}
 ]

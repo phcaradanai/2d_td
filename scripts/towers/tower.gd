@@ -35,11 +35,21 @@ var target_categories: Array[String] = DEFAULT_TARGET_CATEGORIES.duplicate()
 var grid_cell: Vector2i
 
 # Level tracking
+var upgrade_id: String = ""
 var level_index: int = 0
 var levels: Array = []
 var config: Dictionary = {}
 var is_selected: bool = false
 var use_sprite: bool = false
+var total_invested_gold: int = 0
+var next_upgrade_ids: Array[String] = []
+var tree_tier: int = 1
+var branch_id: String = ""
+var combo_type: String = "neutral"
+var elements: Array[String] = []
+var required_element_level: int = 0
+
+const TOWER_SELL_REFUND_RATE := 0.7
 
 @export var use_external_sprite: bool = false
 
@@ -60,6 +70,13 @@ const TURRET_VISUAL_SIZE := 44.0
 var current_target: Node2D = null
 var target_mode: String = "first"
 var debug_draw_range: bool = false
+var _target_scan_timer: float = 0.0
+const TARGET_SCAN_INTERVAL: float = 0.1
+# Pre-allocated targeting arrays — cleared and reused each scan to avoid per-frame GC pressure
+var _visible_targets: Array = []
+var _cloaked_targets: Array = []
+var _enemies_in_range_cache: Array = []
+var _stale_fire_rate_keys: Array = []
 var debug_draw_target_line: bool = false
 
 # Aim Visuals
@@ -95,11 +112,19 @@ var projectile_container: Node2D = null
 func setup(p_config: Dictionary, cell: Vector2i) -> void:
 	config = p_config
 	tower_id = config.get("id", "")
-	display_name = config.get("name", "Unknown Tower")
+	upgrade_id = tower_id
+	display_name = config.get("name", config.get("display_name", "Unknown Tower"))
 	visual_type = config.get("visual_type", "basic")
 	attack_type = config.get("attack_type", "single")
 	description = config.get("description", "")
 	cost = config.get("cost", 0)
+	total_invested_gold = cost
+	next_upgrade_ids = _extract_string_array(config.get("next_upgrade_ids", []))
+	tree_tier = config.get("tier", 1)
+	branch_id = config.get("branch_id", "")
+	combo_type = str(config.get("combo_type", "neutral"))
+	elements = _extract_string_array(config.get("elements", []))
+	required_element_level = int(config.get("required_element_level", 0))
 	projectile_speed = config.get("projectile_speed", 500.0)
 	target_categories = _normalize_target_categories(config.get("target_categories", DEFAULT_TARGET_CATEGORIES))
 	grid_cell = cell
@@ -183,9 +208,8 @@ func apply_level_visuals() -> void:
 	_ensure_sprite_node()
 	if not is_inside_tree(): return
 	
-	var current_level = level_index + 1
 	if level_badge:
-		level_badge.text = "Lv" + str(current_level)
+		level_badge.text = "T" + str(tree_tier)
 	
 	# Hide legacy ColorRect nodes
 	if body: body.visible = false
@@ -306,7 +330,21 @@ func _ensure_aim_visual() -> void:
 	
 	aim_visual.visible = true
 
+func _get_element_color(element_id: String) -> Color:
+	match element_id:
+		"light": return Color(1.0, 0.9, 0.35)
+		"darkness": return Color(0.55, 0.25, 1.0)
+		"water": return Color(0.35, 0.85, 1.0)
+		"fire": return Color(1.0, 0.32, 0.12)
+		"nature": return Color(0.25, 1.0, 0.45)
+		"earth": return Color(0.95, 0.65, 0.28)
+		_: return Color.WHITE
+
 func _get_tower_color() -> Color:
+	if not elements.is_empty():
+		if combo_type == "periodic":
+			return Color(0.9, 0.95, 1.0)
+		return _get_element_color(elements[0])
 	match visual_type:
 		"basic": return Color(0.2, 0.8, 1.0) # Cyan
 		"rapid": return Color(0.0, 1.0, 0.8) # Teal
@@ -356,9 +394,12 @@ func _draw() -> void:
 			_draw_turret_top()
 
 func _draw_base_plate() -> void:
-	var lvl = level_index + 1
+	var lvl = tree_tier
 	var base_color = Color(0.08, 0.12, 0.18, 1.0)
 	var accent_color = Color(0.2, 0.6, 1.0, 0.4)
+	if not elements.is_empty():
+		var ec := _get_tower_color()
+		accent_color = Color(ec.r, ec.g, ec.b, 0.48)
 	
 	match visual_type:
 		"cannon":
@@ -370,6 +411,9 @@ func _draw_base_plate() -> void:
 		"rapid":
 			base_color = Color(0.05, 0.12, 0.1, 1.0)
 			accent_color = Color(0.0, 1.0, 0.7, 0.4)
+	if not elements.is_empty():
+		var element_accent := _get_tower_color()
+		accent_color = Color(element_accent.r, element_accent.g, element_accent.b, 0.5)
 
 	# Main Base Rect
 	draw_rect(Rect2(-24, -24, 48, 48), base_color)
@@ -390,9 +434,12 @@ func _draw_base_plate() -> void:
 		draw_arc(Vector2.ZERO, 20, 0, TAU, 32, accent_color, 1.5)
 
 func _draw_turret_top() -> void:
-	var lvl = level_index + 1
+	var lvl = tree_tier
 	var main_color = Color(0.3, 0.8, 1.0, 1.0)
 	var core_color = Color(0.6, 0.9, 1.0, 1.0)
+	if not elements.is_empty():
+		main_color = _get_tower_color()
+		core_color = main_color.lightened(0.45)
 	var size = 20.0
 	
 	match visual_type:
@@ -406,8 +453,9 @@ func _draw_turret_top() -> void:
 			draw_circle(Vector2.ZERO, 6, core_color)
 			
 		"rapid":
-			main_color = Color(0.3, 1.0, 0.6, 1.0)
-			core_color = Color(0.7, 1.0, 0.8, 1.0)
+			if elements.is_empty():
+				main_color = Color(0.3, 1.0, 0.6, 1.0)
+				core_color = Color(0.7, 1.0, 0.8, 1.0)
 			# Twin Barrels
 			draw_rect(Rect2(4, -10, 20 + lvl * 2, 6), main_color)
 			draw_rect(Rect2(4, 4, 20 + lvl * 2, 6), main_color)
@@ -418,8 +466,9 @@ func _draw_turret_top() -> void:
 			draw_circle(Vector2(-2, 0), 4, core_color)
 			
 		"cannon":
-			main_color = Color(1.0, 0.5, 0.2, 1.0)
-			core_color = Color(1.0, 0.8, 0.6, 1.0)
+			if elements.is_empty():
+				main_color = Color(1.0, 0.5, 0.2, 1.0)
+				core_color = Color(1.0, 0.8, 0.6, 1.0)
 			# Heavy Barrel
 			draw_rect(Rect2(-6, -14, 32 + lvl * 4, 28), main_color)
 			draw_rect(Rect2(-2, -10, 26 + lvl * 4, 20), Color.BLACK)
@@ -428,8 +477,9 @@ func _draw_turret_top() -> void:
 			draw_rect(Rect2(-10, -12, 6, 24), core_color)
 			
 		"slow":
-			main_color = Color(0.6, 0.9, 1.0, 1.0)
-			core_color = Color(0.9, 1.0, 1.0, 1.0)
+			if elements.is_empty():
+				main_color = Color(0.6, 0.9, 1.0, 1.0)
+				core_color = Color(0.9, 1.0, 1.0, 1.0)
 			# Shard
 			var pts = PackedVector2Array([Vector2(0, -20 - lvl*2), Vector2(16, 0), Vector2(0, 20 + lvl*2), Vector2(-16, 0)])
 			draw_colored_polygon(pts, main_color)
@@ -440,8 +490,9 @@ func _draw_turret_top() -> void:
 			draw_arc(Vector2.ZERO, 22, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2), 2.0)
 			
 		"sniper":
-			main_color = Color(0.1, 0.6, 1.0, 1.0)
-			core_color = Color(0.6, 0.9, 1.0, 1.0)
+			if elements.is_empty():
+				main_color = Color(0.1, 0.6, 1.0, 1.0)
+				core_color = Color(0.6, 0.9, 1.0, 1.0)
 			# Long thin barrel
 			draw_rect(Rect2(0, -4, 40 + lvl * 6, 8), main_color)
 			draw_rect(Rect2(36 + lvl * 6, -5, 6, 10), Color.BLACK)
@@ -452,8 +503,9 @@ func _draw_turret_top() -> void:
 			draw_circle(Vector2(-4, 0), 5, core_color)
 			
 		"lightning":
-			main_color = Color(0.5, 0.4, 1.0, 1.0)
-			core_color = Color(0.8, 0.7, 1.0, 1.0)
+			if elements.is_empty():
+				main_color = Color(0.5, 0.4, 1.0, 1.0)
+				core_color = Color(0.8, 0.7, 1.0, 1.0)
 			# Tesla Coil look
 			draw_circle(Vector2.ZERO, 16, main_color)
 			draw_arc(Vector2.ZERO, 16, 0, TAU, 32, Color.WHITE, 1.5)
@@ -505,21 +557,161 @@ func get_next_level_data() -> Dictionary:
 	if level_index + 1 < levels.size():
 		return levels[level_index + 1]
 	return {}
-
 func can_upgrade() -> bool:
-	return level_index + 1 < levels.size()
+	return not next_upgrade_ids.is_empty()
 
+
+func is_branch_point() -> bool:
+	return next_upgrade_ids.size() > 1
+
+
+## Returns the upgrade cost to advance to the single next upgrade.
+## For branch points (multiple next_upgrade_ids), returns -1 — each branch
+## target config carries its own upgrade_cost.
 func get_upgrade_cost() -> int:
-	var data = get_current_level_data()
-	return data.get("upgrade_cost", 0)
+	if next_upgrade_ids.is_empty():
+		return -1
+	if next_upgrade_ids.size() > 1:
+		return -1
+	var next_id: String = next_upgrade_ids[0]
+	var bm := _get_build_manager()
+	if bm == null:
+		return -1
+	var next_config: Dictionary = bm.towers_config.get(next_id, {})
+	return _get_config_upgrade_cost(next_config)
 
+
+## Reads upgrade_cost from a config dict. This is the cost to upgrade INTO
+## the tower represented by the config.
+func _get_config_upgrade_cost(p_config: Dictionary) -> int:
+	if p_config.is_empty():
+		return -1
+	if p_config.has("levels") and p_config["levels"].size() > 0:
+		var cost_val = p_config["levels"][0].get("upgrade_cost", -1)
+		if cost_val > 0:
+			return cost_val
+	return p_config.get("upgrade_cost", -1)
+
+
+func get_sell_refund() -> int:
+	var rate: float = 0.70
+	match tree_tier:
+		1: rate = 0.75
+		2: rate = 0.70
+		3: rate = 0.65
+		4: rate = 0.60
+		5: rate = 0.55
+	return floori(float(total_invested_gold) * rate)
+
+
+## Upgrade to the next tier. Looks up the next config from the tower tree and
+## replaces all tower properties.
 func upgrade() -> bool:
-	if can_upgrade():
-		level_index += 1
-		apply_level_stats()
-		play_upgrade_effect()
-		return true
-	return false
+	if not can_upgrade():
+		if OS.is_debug_build():
+			print("[UPGRADE] cannot upgrade tower=%s — no next upgrades" % upgrade_id)
+		return false
+	if next_upgrade_ids.is_empty():
+		return false
+
+	var next_id: String = next_upgrade_ids[0]
+	var bm := _get_build_manager()
+	if bm == null:
+		push_error("[UPGRADE] BuildManager not found for tower=%s" % upgrade_id)
+		return false
+
+	var next_config: Dictionary = bm.towers_config.get(next_id, {})
+	if next_config.is_empty():
+		push_error("[UPGRADE] Config not found for next_id=%s (current=%s)" % [next_id, upgrade_id])
+		return false
+
+	if OS.is_debug_build():
+		print("[UPGRADE] current=%s target=%s cost=%d gold_available=%d" % [upgrade_id, next_id, _get_config_upgrade_cost(next_config), _get_current_gold()])
+
+	return upgrade_to(next_id, next_config)
+
+
+## Upgrade to a specific tower ID (branch selection or linear tree upgrade).
+## Reads upgrade cost from the target config — each entry's upgrade_cost is the
+## cost to upgrade INTO it.
+func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
+	var upgrade_cost := _get_config_upgrade_cost(new_config)
+	if upgrade_cost <= 0:
+		push_error("[UPGRADE] Invalid upgrade_cost=%d for tower=%s target=%s" % [upgrade_cost, upgrade_id, target_tower_id])
+		return false
+
+	# Apply new config
+	config = new_config
+	tower_id = target_tower_id
+	upgrade_id = target_tower_id
+	display_name = new_config.get("name", new_config.get("display_name", "Tower"))
+	visual_type = new_config.get("visual_type", "basic")
+	attack_type = new_config.get("attack_type", "single")
+	description = new_config.get("description", "")
+	cost = new_config.get("cost", 0)
+	projectile_speed = new_config.get("projectile_speed", 500.0)
+	target_categories = _normalize_target_categories(new_config.get("target_categories", DEFAULT_TARGET_CATEGORIES))
+
+	if new_config.has("levels"):
+		levels = new_config["levels"]
+		level_index = 0
+	else:
+		levels = []
+		level_index = 0
+		damage = new_config.get("damage", 10.0)
+		attack_range = new_config.get("range", 160.0)
+		fire_rate = new_config.get("fire_rate", 1.0)
+		splash_radius = new_config.get("splash_radius", 0.0)
+		slow_percent = new_config.get("slow_percent", 0.0)
+		slow_duration = new_config.get("slow_duration", 0.0)
+		slow_radius = new_config.get("slow_radius", 0.0)
+		vulnerability_percent = new_config.get("vulnerability_percent", 0.0)
+		vulnerability_duration = new_config.get("vulnerability_duration", 0.0)
+		chain_jumps = new_config.get("chain_jumps", 0)
+		chain_range = new_config.get("chain_range", 0.0)
+		chain_falloff = new_config.get("chain_falloff", 1.0)
+
+	next_upgrade_ids = _extract_string_array(new_config.get("next_upgrade_ids", []))
+	tree_tier = new_config.get("tier", tree_tier + 1)
+	branch_id = new_config.get("branch_id", branch_id)
+	combo_type = str(new_config.get("combo_type", combo_type))
+	elements = _extract_string_array(new_config.get("elements", elements))
+	required_element_level = int(new_config.get("required_element_level", required_element_level))
+
+	total_invested_gold += upgrade_cost
+	apply_level_stats()
+	play_upgrade_effect()
+
+	if level_badge:
+		level_badge.text = "T%d" % tree_tier
+
+	# Clear current target so tower re-evaluates with new stats/type
+	current_target = null
+
+	if OS.is_debug_build():
+		print("[UPGRADE] applied id=%s tier=%d branch=%s invested=%d next=%s" % [upgrade_id, tree_tier, branch_id, total_invested_gold, str(next_upgrade_ids)])
+
+	return true
+
+
+func _get_build_manager() -> Node:
+	return get_tree().current_scene.get_node_or_null("BuildManager")
+
+
+func _get_current_gold() -> int:
+	var gm := get_tree().current_scene.get_node_or_null("GameManager")
+	if gm and "gold" in gm:
+		return gm.gold
+	return -1
+
+
+func _extract_string_array(raw: Variant) -> Array[String]:
+	var out: Array[String] = []
+	if not (raw is Array):
+		return out
+	for item in raw as Array:
+		out.append(str(item))
+	return out
 
 func play_upgrade_effect() -> void:
 	var tween = create_tween()
@@ -552,24 +744,41 @@ func set_selected(value: bool) -> void:
 	queue_redraw()
 
 func get_info() -> Dictionary:
+	var can_up := can_upgrade()
+	var up_cost := -1
+	if can_up:
+		up_cost = get_upgrade_cost()
 	return {
 		"id": tower_id,
+		"upgrade_id": upgrade_id,
 		"name": display_name,
-		"level": level_index + 1,
-		"max_level": levels.size(),
+		"tier": tree_tier,
+		"branch_id": branch_id,
+		"combo_type": combo_type,
+		"elements": elements.duplicate(),
+		"required_element_level": required_element_level,
+		"is_max_tier": next_upgrade_ids.is_empty(),
+		"is_branch_point": is_branch_point(),
+		"next_upgrade_ids": next_upgrade_ids.duplicate(),
 		"damage": damage,
 		"range": attack_range,
 		"fire_rate": fire_rate,
-			"upgrade_cost": get_upgrade_cost(),
-			"can_upgrade": can_upgrade(),
-			"attack_type": attack_type,
-			"splash_radius": splash_radius,
-			"slow_percent": slow_percent,
-			"slow_duration": slow_duration,
-			"slow_radius": slow_radius,
-			"target_categories": target_categories.duplicate(),
-			"target_mode": target_mode
-		}
+		"upgrade_cost": up_cost,
+		"can_upgrade": can_up,
+		"total_invested_gold": total_invested_gold,
+		"sell_refund": get_sell_refund(),
+		"attack_type": attack_type,
+		"splash_radius": splash_radius,
+		"slow_percent": slow_percent,
+		"slow_duration": slow_duration,
+		"slow_radius": slow_radius,
+		"vulnerability_percent": vulnerability_percent,
+		"vulnerability_duration": vulnerability_duration,
+		"chain_jumps": chain_jumps,
+		"chain_range": chain_range,
+		"target_categories": target_categories.duplicate(),
+		"target_mode": target_mode
+	}
 
 func get_tower_id() -> String:
 	return tower_id
@@ -628,11 +837,16 @@ func _process(delta: float) -> void:
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
 		return
 		
-	update_target()
+	_target_scan_timer -= delta
+	if not is_valid_target(current_target):
+		current_target = null
+	if current_target == null or _target_scan_timer <= 0.0:
+		_target_scan_timer = TARGET_SCAN_INTERVAL
+		update_target()
 	_update_aim_indicator(delta)
 	
 	idle_rotation += delta * 15.0 # Constant spin for visual flair
-	if visual_type == "sawblade" or visual_type == "lightning":
+	if (visual_type == "sawblade" or visual_type == "lightning") and Engine.get_process_frames() % 2 == 0:
 		queue_redraw()
 	
 	# Smooth visual rotation
@@ -676,8 +890,7 @@ func _update_aim_indicator(delta: float) -> void:
 		
 	var target_active = is_valid_target(current_target)
 	
-	if target_active and aim_alpha < 0.1 and OS.is_debug_build():
-		print("[Tower] Aim indicator activating for target: ", current_target.name)
+	pass # aim indicator active
 	
 	# Smooth Fading
 	var target_alpha = 1.0 if target_active else 0.0
@@ -736,13 +949,7 @@ func shoot() -> void:
 		var spawn_pos = get_fire_origin()
 		projectile.global_position = spawn_pos
 		
-		# Debug Log for shooting
-		if OS.is_debug_build():
-			var target_p = current_target.global_position
-			if current_target.has_method("get_aim_point"):
-				target_p = current_target.get_aim_point()
-			var dir = (target_p - spawn_pos).normalized()
-			print("[Tower] SHOOT at target=", target_p, " from muzzle=", spawn_pos, " dir=", dir)
+		pass # shoot debug removed for performance
 		
 		# Configure projectile based on tower type
 		var proj_scale = 1.0
@@ -931,28 +1138,28 @@ func find_target() -> Node2D:
 	var enemies = get_enemies_in_range()
 	if enemies.is_empty(): return null
 	
-	var visible_targets := []
-	var cloaked_targets := []
+	_visible_targets.clear()
+	_cloaked_targets.clear()
 
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_cloaked") and enemy.is_cloaked():
-			cloaked_targets.append(enemy)
+			_cloaked_targets.append(enemy)
 		else:
-			visible_targets.append(enemy)
+			_visible_targets.append(enemy)
 
 	var target_pool = enemies
-	if visible_targets.size() > 0:
-		target_pool = visible_targets
-		if OS.is_debug_build() and cloaked_targets.size() > 0:
-			print("[Targeting] Tower ", visual_type, " found ", visible_targets.size(), " visible targets and ", cloaked_targets.size(), " cloaked target. Targeting visible first.")
-		var preferred = select_first_target(visible_targets)
-		for cloaked in cloaked_targets:
+	if _visible_targets.size() > 0:
+		target_pool = _visible_targets
+		if OS.is_debug_build() and _cloaked_targets.size() > 0:
+			print("[Targeting] Tower ", visual_type, " found ", _visible_targets.size(), " visible targets and ", _cloaked_targets.size(), " cloaked target. Targeting visible first.")
+		var preferred = select_first_target(_visible_targets)
+		for cloaked in _cloaked_targets:
 			target_rejected.emit(self, cloaked, "cloaked_deferred_visible_target_exists")
 			if cloaked.has_method("notify_stealth_deferred"):
 				cloaked.notify_stealth_deferred(preferred)
-	elif cloaked_targets.size() > 0:
-		target_pool = cloaked_targets
-		for cloaked in cloaked_targets:
+	elif _cloaked_targets.size() > 0:
+		target_pool = _cloaked_targets
+		for cloaked in _cloaked_targets:
 			if cloaked.has_method("notify_stealth_targetable"):
 				cloaked.notify_stealth_targetable()
 		if OS.is_debug_build():
@@ -981,12 +1188,12 @@ func find_target() -> Node2D:
 			return select_first_target(target_pool)
 
 func get_enemies_in_range() -> Array:
-	var enemies_in_range = []
+	_enemies_in_range_cache.clear()
 	var all_enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in all_enemies:
 		if is_valid_target(enemy):
-			enemies_in_range.append(enemy)
-	return enemies_in_range
+			_enemies_in_range_cache.append(enemy)
+	return _enemies_in_range_cache
 
 func apply_fire_rate_modifier(source: Node, multiplier: float) -> void:
 	if source == null or not is_instance_valid(source):
@@ -1011,15 +1218,15 @@ func remove_fire_rate_modifier(source: Node) -> void:
 
 func get_effective_fire_rate() -> float:
 	var strongest_multiplier := 1.0
-	var stale_keys: Array = []
+	_stale_fire_rate_keys.clear()
 	for key in fire_rate_modifiers.keys():
 		var entry: Dictionary = fire_rate_modifiers[key]
 		var source: Node = entry.get("source", null)
 		if not is_instance_valid(source):
-			stale_keys.append(key)
+			_stale_fire_rate_keys.append(key)
 			continue
 		strongest_multiplier = min(strongest_multiplier, clampf(float(entry.get("value", 1.0)), 0.05, 1.0))
-	for key in stale_keys:
+	for key in _stale_fire_rate_keys:
 		fire_rate_modifiers.erase(key)
 	return fire_rate / strongest_multiplier
 

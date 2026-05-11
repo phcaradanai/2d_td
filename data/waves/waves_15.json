@@ -4,9 +4,22 @@
 		"name": "Fork Split",
 		"reward": 60,
 		"groups": [
-			{ "type": "hunter", "count": 1, "interval": 0.4, "path": "default" },
-			{ "type": "fast",   "count": 8, "interval": 0.4, "path": "default" },
-			{ "type": "basic",  "count": 6, "interval": 0.9, "path": "lane_b"  }
+			{
+				"type": "hunter",
+				"count": 4,
+				"interval": 0.2
+			},
+			{
+				"type": "fast",
+				"count": 35,
+				"interval": 0.15
+			},
+			{
+				"type": "basic",
+				"count": 30,
+				"interval": 0.16,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Hunter enters the top lane. If Guardian is deployed, it becomes the immediate target."
 	},
@@ -15,10 +28,28 @@
 		"name": "Cloaked Fork",
 		"reward": 70,
 		"groups": [
-			{ "type": "cloaked",  "count": 4, "interval": 0.9, "path": "default" },
-			{ "type": "healer",   "count": 1, "interval": 0.8, "path": "default" },
-			{ "type": "splitter", "count": 3, "interval": 1.8, "path": "lane_b"  },
-			{ "type": "tank",     "count": 3, "interval": 1.7, "path": "lane_b"  }
+			{
+				"type": "cloaked",
+				"count": 20,
+				"interval": 0.42
+			},
+			{
+				"type": "healer",
+				"count": 5,
+				"interval": 0.36
+			},
+			{
+				"type": "splitter",
+				"count": 16,
+				"interval": 0.8,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 18,
+				"interval": 0.65,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Top lane: cloaked + healer. Bottom lane: splitter + tank. AoE on bottom, Lightning/Rapid on top."
 	},
@@ -27,10 +58,29 @@
 		"name": "Hunter Net",
 		"reward": 80,
 		"groups": [
-			{ "type": "hunter",       "count": 2, "interval": 0.4, "path": "default" },
-			{ "type": "bulwark",      "count": 1, "interval": 1.0, "path": "lane_b"  },
-			{ "type": "shieldbearer", "count": 1, "interval": 0.6, "path": "lane_b"  },
-			{ "type": "tank",         "count": 3, "interval": 1.7, "path": "lane_b"  }
+			{
+				"type": "hunter",
+				"count": 10,
+				"interval": 0.2
+			},
+			{
+				"type": "bulwark",
+				"count": 4,
+				"interval": 0.65,
+				"path": "lane_b"
+			},
+			{
+				"type": "shieldbearer",
+				"count": 6,
+				"interval": 0.5,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 18,
+				"interval": 0.65,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Hunters on top, Bulwark convoy below. Both require Guardian attention but cooldown only allows one."
 	},
@@ -39,26 +89,393 @@
 		"name": "Dual Special",
 		"reward": 90,
 		"groups": [
-			{ "type": "cloaked",  "count": 5, "interval": 0.8, "path": "default" },
-			{ "type": "hunter",   "count": 2, "interval": 0.4, "path": "default" },
-			{ "type": "bulwark",  "count": 1, "interval": 1.0, "path": "lane_b"  },
-			{ "type": "splitter", "count": 4, "interval": 1.7, "path": "lane_b"  },
-			{ "type": "healer",   "count": 2, "interval": 0.8, "path": "lane_b"  }
+			{
+				"type": "cloaked",
+				"count": 25,
+				"interval": 0.4
+			},
+			{
+				"type": "hunter",
+				"count": 10,
+				"interval": 0.2
+			},
+			{
+				"type": "bulwark",
+				"count": 4,
+				"interval": 0.65,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 20,
+				"interval": 0.76,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.32,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Every special ground type across both lanes. Lightning at the merge covers both paths on exit."
 	},
 	{
 		"wave": 5,
-		"name": "Hunter's Fork Finale",
-		"reward": 120,
+		"name": "Heavy Fork",
+		"reward": 88,
 		"groups": [
-			{ "type": "hunter",       "count": 3, "interval": 0.4, "path": "default" },
-			{ "type": "cloaked",      "count": 5, "interval": 0.8, "path": "default" },
-			{ "type": "shieldbearer", "count": 1, "interval": 0.6, "path": "default" },
-			{ "type": "bulwark",      "count": 1, "interval": 1.0, "path": "lane_b"  },
-			{ "type": "healer",       "count": 3, "interval": 0.7, "path": "lane_b"  },
-			{ "type": "splitter",     "count": 4, "interval": 1.7, "path": "lane_b"  },
-			{ "type": "tank",         "count": 4, "interval": 1.6, "path": "lane_b"  }
+			{
+				"type": "bulwark",
+				"count": 6,
+				"interval": 0.65
+			},
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.32
+			},
+			{
+				"type": "tank",
+				"count": 22,
+				"interval": 0.6
+			},
+			{
+				"type": "hunter",
+				"count": 10,
+				"interval": 0.2,
+				"path": "lane_b"
+			},
+			{
+				"type": "cloaked",
+				"count": 25,
+				"interval": 0.4,
+				"path": "lane_b"
+			},
+			{
+				"type": "swarm",
+				"count": 65,
+				"interval": 0.08,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Bulwark convoy on A, Hunter + cloaked rush on B. Split attention or one lane breaks."
+	},
+	{
+		"wave": 6,
+		"name": "Shadow Fork",
+		"reward": 95,
+		"groups": [
+			{
+				"type": "cloaked",
+				"count": 30,
+				"interval": 0.38
+			},
+			{
+				"type": "hunter",
+				"count": 12,
+				"interval": 0.2
+			},
+			{
+				"type": "shieldbearer",
+				"count": 8,
+				"interval": 0.5,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 22,
+				"interval": 0.74,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.32,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Dense cloaked + Hunter on A, shielded Fragmenters on B. No tower is idle."
+	},
+	{
+		"wave": 7,
+		"name": "Convoy Fork",
+		"reward": 100,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 7,
+				"interval": 0.68
+			},
+			{
+				"type": "shieldbearer",
+				"count": 10,
+				"interval": 0.58
+			},
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.32
+			},
+			{
+				"type": "tank",
+				"count": 22,
+				"interval": 0.6
+			},
+			{
+				"type": "hunter",
+				"count": 14,
+				"interval": 0.2,
+				"path": "lane_b"
+			},
+			{
+				"type": "cloaked",
+				"count": 25,
+				"interval": 0.4,
+				"path": "lane_b"
+			},
+			{
+				"type": "fast",
+				"count": 30,
+				"interval": 0.14,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Full convoy on A, chaos on B. Guardian on A, Sniper protects from B."
+	},
+	{
+		"wave": 8,
+		"name": "Elite Split",
+		"reward": 106,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 8,
+				"interval": 0.68
+			},
+			{
+				"type": "healer",
+				"count": 12,
+				"interval": 0.3
+			},
+			{
+				"type": "tank",
+				"count": 24,
+				"interval": 0.6
+			},
+			{
+				"type": "shieldbearer",
+				"count": 10,
+				"interval": 0.56,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 22,
+				"interval": 0.74,
+				"path": "lane_b"
+			},
+			{
+				"type": "runner",
+				"count": 28,
+				"interval": 0.15,
+				"path": "lane_b"
+			},
+			{
+				"type": "hunter",
+				"count": 12,
+				"interval": 0.2,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Maximum pressure. No tower is wasted."
+	},
+	{
+		"wave": 9,
+		"name": "Hunter Storm",
+		"reward": 112,
+		"groups": [
+			{
+				"type": "hunter",
+				"count": 18,
+				"interval": 0.2
+			},
+			{
+				"type": "cloaked",
+				"count": 30,
+				"interval": 0.38
+			},
+			{
+				"type": "shieldbearer",
+				"count": 8,
+				"interval": 0.5
+			},
+			{
+				"type": "bulwark",
+				"count": 7,
+				"interval": 0.68,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 12,
+				"interval": 0.3,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 22,
+				"interval": 0.74,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 22,
+				"interval": 0.6,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Hunters demand Guardian attention, Bulwark demands it too. Sniper covers Guardian."
+	},
+	{
+		"wave": 10,
+		"name": "Chaos Fork",
+		"reward": 118,
+		"groups": [
+			{
+				"type": "hunter",
+				"count": 18,
+				"interval": 0.2
+			},
+			{
+				"type": "cloaked",
+				"count": 32,
+				"interval": 0.38
+			},
+			{
+				"type": "bulwark",
+				"count": 8,
+				"interval": 0.66,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 14,
+				"interval": 0.28,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 24,
+				"interval": 0.72,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 24,
+				"interval": 0.58,
+				"path": "lane_b"
+			},
+			{
+				"type": "shieldbearer",
+				"count": 10,
+				"interval": 0.56,
+				"path": "lane_b"
+			}
+		],
+		"intel": "Penultimate. Every special type at max density. This is the test."
+	},
+	{
+		"wave": 11,
+		"name": "Grand Finale Prep",
+		"reward": 125,
+		"groups": [
+			{
+				"type": "bulwark",
+				"count": 10,
+				"interval": 0.72
+			},
+			{
+				"type": "shieldbearer",
+				"count": 12,
+				"interval": 0.56
+			},
+			{
+				"type": "healer",
+				"count": 14,
+				"interval": 0.28
+			},
+			{
+				"type": "hunter",
+				"count": 18,
+				"interval": 0.2,
+				"path": "lane_b"
+			},
+			{
+				"type": "cloaked",
+				"count": 32,
+				"interval": 0.38,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 24,
+				"interval": 0.72,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 24,
+				"interval": 0.58,
+				"path": "lane_b"
+			}
+		],
+		"intel": "One wave before the finale. Upgrade everything you can."
+	},
+	{
+		"wave": 12,
+		"name": "Hunter's Fork Finale",
+		"reward": 145,
+		"groups": [
+			{
+				"type": "hunter",
+				"count": 20,
+				"interval": 0.2
+			},
+			{
+				"type": "cloaked",
+				"count": 35,
+				"interval": 0.36
+			},
+			{
+				"type": "shieldbearer",
+				"count": 8,
+				"interval": 0.5
+			},
+			{
+				"type": "bulwark",
+				"count": 6,
+				"interval": 0.7,
+				"path": "lane_b"
+			},
+			{
+				"type": "healer",
+				"count": 18,
+				"interval": 0.28,
+				"path": "lane_b"
+			},
+			{
+				"type": "splitter",
+				"count": 24,
+				"interval": 0.72,
+				"path": "lane_b"
+			},
+			{
+				"type": "tank",
+				"count": 24,
+				"interval": 0.58,
+				"path": "lane_b"
+			}
 		],
 		"intel": "Area 3 finale. Hunters demand Guardian attention, Bulwark demands it too. Sniper covers Guardian, Guardian takes Bulwark. No idle towers."
 	}

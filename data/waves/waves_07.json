@@ -4,8 +4,16 @@
 		"name": "Warm Up",
 		"reward": 45,
 		"groups": [
-			{ "type": "basic", "count": 8,  "interval": 0.9 },
-			{ "type": "fast",  "count": 5,  "interval": 0.5 }
+			{
+				"type": "basic",
+				"count": 32,
+				"interval": 0.16
+			},
+			{
+				"type": "fast",
+				"count": 22,
+				"interval": 0.18
+			}
 		],
 		"intel": "Standard approach. The mid-zone has restricted build space — plan your coverage first."
 	},
@@ -13,46 +21,218 @@
 		"wave": 2,
 		"name": "Repair Drones",
 		"reward": 55,
-		"intel": "Repair Drone: heals nearby allies over time. Kill it before it restores tank HP.",
 		"groups": [
-			{ "type": "healer", "count": 1,  "interval": 0.5 },
-			{ "type": "tank",   "count": 3,  "interval": 1.7 },
-			{ "type": "basic",  "count": 6,  "interval": 0.9 }
-		]
+			{
+				"type": "healer",
+				"count": 5,
+				"interval": 0.4
+			},
+			{
+				"type": "tank",
+				"count": 14,
+				"interval": 0.7
+			},
+			{
+				"type": "basic",
+				"count": 28,
+				"interval": 0.16
+			}
+		],
+		"intel": "Repair Drone: heals nearby allies over time. Kill it before it restores tank HP."
 	},
 	{
 		"wave": 3,
 		"name": "Healing Column",
-		"reward": 65,
+		"reward": 62,
 		"groups": [
-			{ "type": "tank",   "count": 4, "interval": 1.6 },
-			{ "type": "healer", "count": 2, "interval": 0.6 },
-			{ "type": "basic",  "count": 8, "interval": 0.85}
+			{
+				"type": "tank",
+				"count": 16,
+				"interval": 0.68
+			},
+			{
+				"type": "healer",
+				"count": 6,
+				"interval": 0.38
+			},
+			{
+				"type": "basic",
+				"count": 30,
+				"interval": 0.16
+			}
 		],
-		"intel": "Two Healers embedded in the column. Sniper can pick them off over the mid-funnel zone."
+		"intel": "Healers embedded in the column. Sniper picks them off over the mid-funnel zone."
 	},
 	{
 		"wave": 4,
 		"name": "Speed Heal",
-		"reward": 75,
+		"reward": 68,
 		"groups": [
-			{ "type": "runner", "count": 6,  "interval": 0.45 },
-			{ "type": "healer", "count": 2,  "interval": 0.8  },
-			{ "type": "fast",   "count": 8,  "interval": 0.4  },
-			{ "type": "basic",  "count": 6,  "interval": 0.9  }
+			{
+				"type": "runner",
+				"count": 25,
+				"interval": 0.16
+			},
+			{
+				"type": "healer",
+				"count": 7,
+				"interval": 0.38
+			},
+			{
+				"type": "fast",
+				"count": 30,
+				"interval": 0.15
+			},
+			{
+				"type": "basic",
+				"count": 25,
+				"interval": 0.16
+			}
 		],
 		"intel": "Runners open the wave. Healers follow protected by speed — Sniper priority on healers."
 	},
 	{
 		"wave": 5,
+		"name": "Swarm Heal",
+		"reward": 65,
+		"groups": [
+			{
+				"type": "swarm",
+				"count": 70,
+				"interval": 0.08
+			},
+			{
+				"type": "healer",
+				"count": 6,
+				"interval": 0.38
+			},
+			{
+				"type": "tank",
+				"count": 12,
+				"interval": 0.7
+			}
+		],
+		"intel": "Swarm screen hides the healers. AoE first, then isolate and kill supports."
+	},
+	{
+		"wave": 6,
+		"name": "Heavy Mend",
+		"reward": 72,
+		"groups": [
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.65
+			},
+			{
+				"type": "healer",
+				"count": 8,
+				"interval": 0.36
+			},
+			{
+				"type": "shieldbearer",
+				"count": 5,
+				"interval": 0.5
+			},
+			{
+				"type": "basic",
+				"count": 28,
+				"interval": 0.16
+			}
+		],
+		"intel": "Healer + Shieldbearer combination. Remove Healer first — Shieldbearer second."
+	},
+	{
+		"wave": 7,
+		"name": "Speed Mend",
+		"reward": 76,
+		"groups": [
+			{
+				"type": "runner",
+				"count": 28,
+				"interval": 0.15
+			},
+			{
+				"type": "healer",
+				"count": 8,
+				"interval": 0.36
+			},
+			{
+				"type": "fast",
+				"count": 32,
+				"interval": 0.14
+			},
+			{
+				"type": "swarm",
+				"count": 55,
+				"interval": 0.08
+			}
+		],
+		"intel": "All speed types with healer support. Sniper priority, then Rapid for the runners."
+	},
+	{
+		"wave": 8,
+		"name": "Full Support",
+		"reward": 80,
+		"groups": [
+			{
+				"type": "healer",
+				"count": 8,
+				"interval": 0.36
+			},
+			{
+				"type": "tank",
+				"count": 18,
+				"interval": 0.65
+			},
+			{
+				"type": "runner",
+				"count": 22,
+				"interval": 0.16
+			},
+			{
+				"type": "fast",
+				"count": 28,
+				"interval": 0.14
+			},
+			{
+				"type": "shieldbearer",
+				"count": 5,
+				"interval": 0.5
+			}
+		],
+		"intel": "Every support type active. Prioritise supports first, tanks second."
+	},
+	{
+		"wave": 9,
 		"name": "Fast Lane Finale",
 		"reward": 95,
 		"groups": [
-			{ "type": "healer",      "count": 2,  "interval": 0.8  },
-			{ "type": "tank",        "count": 4,  "interval": 1.5  },
-			{ "type": "runner",      "count": 6,  "interval": 0.4  },
-			{ "type": "fast",        "count": 10, "interval": 0.35 },
-			{ "type": "shieldbearer","count": 1,  "interval": 0.6  }
+			{
+				"type": "healer",
+				"count": 10,
+				"interval": 0.34
+			},
+			{
+				"type": "tank",
+				"count": 20,
+				"interval": 0.62
+			},
+			{
+				"type": "runner",
+				"count": 25,
+				"interval": 0.15
+			},
+			{
+				"type": "fast",
+				"count": 32,
+				"interval": 0.14
+			},
+			{
+				"type": "shieldbearer",
+				"count": 6,
+				"interval": 0.48
+			}
 		],
 		"intel": "Healers, tanks, Shieldbearer, runners all at once. Kill supports first, then burst tanks."
 	}

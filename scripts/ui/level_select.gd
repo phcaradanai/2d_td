@@ -16,11 +16,10 @@ var intel_panel: Control = null
 var main_hbox: BoxContainer = null
 var left_vbox: VBoxContainer = null
 var right_vbox: VBoxContainer = null
-var loadout_container: Control = null
 var mission_info_labels: Dictionary = {}
+# loadout_container removed — loadout system eliminated, replaced by starter tower info
 var notification_label: Label = null
 var leaderboard_button: Button = null
-var loadout_title_label: Label = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -590,86 +589,34 @@ func _setup_intel_panel(container: Control) -> void:
 	spacer3.custom_minimum_size.y = 12
 	intel_panel.add_child(spacer3)
 	
-	loadout_title_label = Label.new()
-	loadout_title_label.text = "TOWER LOADOUT (MAX 8)"
-	loadout_title_label.add_theme_font_size_override("font_size", 18) # Increased
-	loadout_title_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
-	intel_panel.add_child(loadout_title_label)
-	
-	loadout_container = VBoxContainer.new()
-	loadout_container.add_theme_constant_override("separation", 5)
-	intel_panel.add_child(loadout_container)
-	
-	var loadout_msg = Label.new()
-	loadout_msg.name = "LoadoutMessage"
-	loadout_msg.add_theme_font_size_override("font_size", 12)
-	loadout_msg.add_theme_color_override("font_color", Color(1, 0.4, 0.4))
-	loadout_msg.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	intel_panel.add_child(loadout_msg)
-	mission_info_labels["loadout_message"] = loadout_msg
-	
-	_create_loadout_ui()
+	# Starter Tower info (replaces old EQUIPPED TOWERS loadout section)
+	var starter_container = VBoxContainer.new()
+	starter_container.add_theme_constant_override("separation", 3)
+	intel_panel.add_child(starter_container)
 
-func _create_loadout_ui() -> void:
-	if loadout_container == null: return
-	for child in loadout_container.get_children(): child.queue_free()
-	
-	var main = get_tree().current_scene
-	if not main: return
-	
-	var available = main.get("available_tower_types")
-	var selected = main.get("selected_loadout")
-	if available == null or selected == null: return
-	
-	if loadout_title_label:
-		if available.size() <= main.MAX_TOWER_LOADOUT_SIZE:
-			loadout_title_label.text = "EQUIPPED TOWERS"
-		else:
-			loadout_title_label.text = "TOWER LOADOUT (MAX %d)" % main.MAX_TOWER_LOADOUT_SIZE
-	
-	var roles = {
-		"basic_tower": "Balanced",
-		"rapid_tower": "Fast",
-		"cannon_tower": "AoE",
-		"slow_tower": "Slow",
-		"sniper_tower": "Long Range",
-		"lightning_tower": "Chain",
-		"sawblade_tower": "Close Range"
-	}
-	
-	for tower_id in available:
-		var hbox = HBoxContainer.new()
-		loadout_container.add_child(hbox)
-		
-		var check = CheckBox.new()
-		var base_name = tower_id.replace("_tower", "").capitalize()
-		var role = roles.get(tower_id, "Special")
-		check.text = "%s - %s" % [base_name, role]
-		check.button_pressed = selected.has(tower_id)
-		check.toggled.connect(func(v): _on_tower_toggled(tower_id, v))
-		hbox.add_child(check)
+	var starter_title = Label.new()
+	starter_title.text = "STARTER TOWER:"
+	starter_title.add_theme_font_size_override("font_size", 14)
+	starter_title.add_theme_color_override("font_color", Color(0.7, 0.9, 1.0))
+	starter_container.add_child(starter_title)
 
-func _on_tower_toggled(tower_id: String, active: bool) -> void:
-	var main = get_tree().current_scene
-	if not main: return
+	var starter_name = Label.new()
+	starter_name.text = "  Basic Tower"
+	starter_name.add_theme_font_size_override("font_size", 13)
+	starter_name.add_theme_color_override("font_color", Color(0.9, 0.9, 1.0))
+	starter_container.add_child(starter_name)
+
+	var starter_hint = Label.new()
+	starter_hint.text = "Build Basic Towers and upgrade them\ninto specialized branches during the match."
+	starter_hint.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	starter_hint.add_theme_font_size_override("font_size", 11)
+	starter_hint.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+	starter_container.add_child(starter_hint)
 	
-	var selected = main.selected_loadout
-	if active:
-		if not selected.has(tower_id):
-			if selected.size() >= main.MAX_TOWER_LOADOUT_SIZE:
-				_update_play_button_state() # Force refresh to show warning if I add one
-				_create_loadout_ui() # Reset UI state
-				return
-			selected.append(tower_id)
-	else:
-		if selected.has(tower_id):
-			if selected.size() <= main.MIN_TOWER_LOADOUT_SIZE:
-				_create_loadout_ui() # Reset UI state
-				return
-			selected.erase(tower_id)
-	
-	_play_ui_click_sound()
-	_update_play_button_state()
+
+
+# Loadout toggle system removed — no tower checkboxes needed.
+# All levels start with Basic Tower T1 only; advanced towers are upgrade branches.
 
 func _update_intel_panel(config: Dictionary) -> void:
 	mission_info_labels["mission_name"].text = config.get("name", "---")
@@ -717,7 +664,6 @@ func _update_intel_panel(config: Dictionary) -> void:
 		
 		mission_info_labels["briefing"].text = briefing_text
 	
-	_create_loadout_ui()
 
 func select_level(path: String) -> void:
 	_select_level(path)
@@ -754,32 +700,16 @@ func _update_play_button_state() -> void:
 		
 		play_button.disabled = not unlocked
 		if leaderboard_button: leaderboard_button.disabled = false
-		
-		# Loadout validation
-		var main = get_tree().current_scene
-		var valid_loadout = true
-		if main and main.has_method("is_valid_loadout"):
-			valid_loadout = main.is_valid_loadout(main.selected_loadout)
-		
-		if not valid_loadout:
-			play_button.disabled = true
-			play_button.text = "INVALID LOADOUT"
-			play_button.modulate = Color(1, 0.5, 0.5)
-			if mission_info_labels.has("loadout_message"):
-				mission_info_labels["loadout_message"].text = "Select 1-8 towers"
+
+		if not unlocked:
+			play_button.text = "MISSION LOCKED"
+			play_button.modulate = Color(1, 0.4, 0.4)
+		elif completed:
+			play_button.text = "RE-DEPLOY"
+			play_button.modulate = Color(0.7, 1.0, 0.7)
 		else:
-			if mission_info_labels.has("loadout_message"):
-				mission_info_labels["loadout_message"].text = ""
-				
-			if not unlocked:
-				play_button.text = "MISSION LOCKED"
-				play_button.modulate = Color(1, 0.4, 0.4)
-			elif completed:
-				play_button.text = "RE-DEPLOY"
-				play_button.modulate = Color(0.7, 1.0, 0.7)
-			else:
-				play_button.text = "START MISSION"
-				play_button.modulate = Color(0.8, 1.0, 0.8)
+			play_button.text = "START MISSION"
+			play_button.modulate = Color(0.8, 1.0, 0.8)
 
 func _unlock_audio() -> void:
 	var audio_manager = get_tree().current_scene.get_node_or_null("AudioManager")

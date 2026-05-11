@@ -1,70 +1,1443 @@
 [
   {
 	"wave": 1,
-	"name": "First Contact",
-	"completion_reward": 25,
+	"name": "Neutral Calibration",
+	"reward": 25,
 	"groups": [
 	  {
-		"enemy_type": "basic",
-		"count": 6,
-		"spawn_delay": 0.75
+		"type": "basic",
+		"count": 8,
+		"interval": 0.65,
+		"max_hp": 24,
+		"reward_gold": 5
 	  }
-	]
+	],
+	"intel": "Build 3-5 Neutral Arrow/Cannon towers near long path coverage."
   },
   {
 	"wave": 2,
-	"name": "Fast Runners",
-	"completion_reward": 35,
+	"name": "First Stream",
+	"reward": 30,
 	"groups": [
 	  {
-		"enemy_type": "basic",
-		"count": 6,
-		"spawn_delay": 0.65
-	  },
-	  {
-		"enemy_type": "fast",
-		"count": 4,
-		"spawn_delay": 0.45
+		"type": "basic",
+		"count": 10,
+		"interval": 0.6,
+		"max_hp": 30,
+		"reward_gold": 6
 	  }
-	]
+	],
+	"intel": "Early clone test wave. No element yet."
   },
   {
 	"wave": 3,
-	"name": "Heavy Armor",
-	"completion_reward": 45,
+	"name": "Small Packets",
+	"reward": 35,
 	"groups": [
 	  {
-		"enemy_type": "fast",
-		"count": 8,
-		"spawn_delay": 0.4
-	  },
-	  {
-		"enemy_type": "tank",
-		"count": 3,
-		"spawn_delay": 1.0
+		"type": "swarm",
+		"count": 14,
+		"interval": 0.38,
+		"max_hp": 12,
+		"reward_gold": 3
 	  }
-	]
+	],
+	"intel": "Use at least one Neutral Cannon for groups if needed."
   },
   {
 	"wave": 4,
-	"name": "Final Mix",
-	"completion_reward": 60,
+	"name": "Mixed Signal",
+	"reward": 40,
 	"groups": [
 	  {
-		"enemy_type": "basic",
-		"count": 8,
-		"spawn_delay": 0.55
-	  },
-	  {
-		"enemy_type": "tank",
-		"count": 5,
-		"spawn_delay": 0.9
-	  },
-	  {
-		"enemy_type": "fast",
+		"type": "basic",
 		"count": 10,
-		"spawn_delay": 0.35
+		"interval": 0.55,
+		"max_hp": 38,
+		"reward_gold": 7
+	  },
+	  {
+		"type": "fast",
+		"count": 4,
+		"interval": 0.75,
+		"max_hp": 22,
+		"reward_gold": 8
 	  }
-	]
+	],
+	"intel": "This is the final neutral-only setup wave before the first Guardian trial."
+  },
+  {
+	"wave": 5,
+	"name": "Elemental Guardian I",
+	"reward": 60,
+	"groups": [
+	  {
+		"type": "basic",
+		"count": 8,
+		"interval": 0.55,
+		"max_hp": 42,
+		"reward_gold": 8
+	  },
+	  {
+		"type": "tank",
+		"count": 1,
+		"interval": 1.2,
+		"max_hp": 120,
+		"reward_gold": 35,
+		"base_damage": 1
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 6,
+	"name": "First Element Test",
+	"reward": 45,
+	"groups": [
+	  {
+		"type": "basic",
+		"count": 12,
+		"interval": 0.48,
+		"max_hp": 48,
+		"reward_gold": 8
+	  }
+	],
+	"intel": "After choosing an element, build your first Single Element tower."
+  },
+  {
+	"wave": 7,
+	"name": "Runner Probe",
+	"reward": 50,
+	"groups": [
+	  {
+		"type": "basic",
+		"count": 10,
+		"interval": 0.5,
+		"max_hp": 52,
+		"reward_gold": 8
+	  },
+	  {
+		"type": "fast",
+		"count": 6,
+		"interval": 0.58,
+		"max_hp": 30,
+		"reward_gold": 9
+	  }
+	],
+	"intel": "Fast creeps test whether your first element covers speed."
+  },
+  {
+	"wave": 8,
+	"name": "Swarm Probe",
+	"reward": 55,
+	"groups": [
+	  {
+		"type": "swarm",
+		"count": 20,
+		"interval": 0.28,
+		"max_hp": 18,
+		"reward_gold": 4
+	  }
+	],
+	"intel": "Splash/chain/fast fire starts to matter."
+  },
+  {
+	"wave": 9,
+	"name": "Armor Probe",
+	"reward": 60,
+	"groups": [
+	  {
+		"type": "tank",
+		"count": 4,
+		"interval": 0.95,
+		"max_hp": 150,
+		"reward_gold": 18
+	  }
+	],
+	"intel": "Single-target damage or focused placement helps."
+  },
+  {
+	"wave": 10,
+	"name": "Elemental Guardian II",
+	"reward": 75,
+	"groups": [
+	  {
+		"type": "basic",
+		"count": 12,
+		"interval": 0.45,
+		"max_hp": 62,
+		"reward_gold": 9
+	  },
+	  {
+		"type": "tank",
+		"count": 2,
+		"interval": 1.05,
+		"max_hp": 190,
+		"reward_gold": 30,
+		"base_damage": 1
+	  }
+	],
+	"intel": "Second element pick is earned after this wave. Dual towers should unlock."
+  },
+  {
+	"wave": 11,
+	"name": "Swarm Raid",
+	"reward": 64,
+	"groups": [
+	  {
+		"type": "swarm",
+		"count": 30,
+		"interval": 0.1,
+		"max_hp": 35,
+		"reward_gold": 6
+	  },
+	  {
+		"type": "runner",
+		"count": 9,
+		"interval": 0.24,
+		"max_hp": 68,
+		"reward_gold": 12
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 12,
+	"name": "Armor Column",
+	"reward": 68,
+	"groups": [
+	  {
+		"type": "tank",
+		"count": 6,
+		"interval": 0.55,
+		"max_hp": 302,
+		"reward_gold": 22
+	  },
+	  {
+		"type": "fast",
+		"count": 14,
+		"interval": 0.22,
+		"max_hp": 60,
+		"reward_gold": 11
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 13,
+	"name": "Fast Air",
+	"reward": 72,
+	"groups": [
+	  {
+		"type": "flyer",
+		"count": 16,
+		"interval": 0.28,
+		"max_hp": 131,
+		"reward_gold": 14
+	  },
+	  {
+		"type": "fast_flyer",
+		"count": 9,
+		"interval": 0.22,
+		"max_hp": 81,
+		"reward_gold": 15
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 14,
+	"name": "Stealth Mask",
+	"reward": 76,
+	"groups": [
+	  {
+		"type": "cloaked",
+		"count": 10,
+		"interval": 0.32,
+		"max_hp": 224,
+		"reward_gold": 19
+	  },
+	  {
+		"type": "basic",
+		"count": 17,
+		"interval": 0.16,
+		"max_hp": 119,
+		"reward_gold": 10
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 15,
+	"name": "Elemental Trial III",
+	"reward": 100,
+	"groups": [
+	  {
+		"type": "tank",
+		"count": 7,
+		"interval": 0.5,
+		"max_hp": 408,
+		"reward_gold": 24
+	  },
+	  {
+		"type": "runner",
+		"count": 13,
+		"interval": 0.22,
+		"max_hp": 102,
+		"reward_gold": 13
+	  },
+	  {
+		"type": "flyer",
+		"count": 12,
+		"interval": 0.28,
+		"max_hp": 161,
+		"reward_gold": 14
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 16,
+	"name": "Shield Wall",
+	"reward": 84,
+	"groups": [
+	  {
+		"type": "shieldbearer",
+		"count": 6,
+		"interval": 0.54,
+		"max_hp": 580,
+		"reward_gold": 29
+	  },
+	  {
+		"type": "basic",
+		"count": 19,
+		"interval": 0.15,
+		"max_hp": 145,
+		"reward_gold": 11
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 17,
+	"name": "Repair Train",
+	"reward": 88,
+	"groups": [
+	  {
+		"type": "healer",
+		"count": 6,
+		"interval": 0.48,
+		"max_hp": 462,
+		"reward_gold": 24
+	  },
+	  {
+		"type": "tank",
+		"count": 6,
+		"interval": 0.54,
+		"max_hp": 498,
+		"reward_gold": 24
+	  },
+	  {
+		"type": "swarm",
+		"count": 26,
+		"interval": 0.1,
+		"max_hp": 64,
+		"reward_gold": 7
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 18,
+	"name": "Armored Air",
+	"reward": 92,
+	"groups": [
+	  {
+		"type": "fast_flyer",
+		"count": 17,
+		"interval": 0.18,
+		"max_hp": 134,
+		"reward_gold": 16
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 5,
+		"interval": 0.58,
+		"max_hp": 629,
+		"reward_gold": 27
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 19,
+	"name": "Splitter Payload",
+	"reward": 96,
+	"groups": [
+	  {
+		"type": "splitter",
+		"count": 6,
+		"interval": 0.62,
+		"max_hp": 955,
+		"reward_gold": 36
+	  },
+	  {
+		"type": "runner",
+		"count": 14,
+		"interval": 0.2,
+		"max_hp": 152,
+		"reward_gold": 14
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 20,
+	"name": "Elemental Trial IV",
+	"reward": 120,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 4,
+		"interval": 0.78,
+		"max_hp": 1248,
+		"reward_gold": 40
+	  },
+	  {
+		"type": "healer",
+		"count": 6,
+		"interval": 0.42,
+		"max_hp": 624,
+		"reward_gold": 26
+	  },
+	  {
+		"type": "basic",
+		"count": 20,
+		"interval": 0.14,
+		"max_hp": 216,
+		"reward_gold": 11
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 21,
+	"name": "Cloak Rush",
+	"reward": 104,
+	"groups": [
+	  {
+		"type": "cloaked",
+		"count": 14,
+		"interval": 0.26,
+		"max_hp": 513,
+		"reward_gold": 22
+	  },
+	  {
+		"type": "fast",
+		"count": 17,
+		"interval": 0.18,
+		"max_hp": 169,
+		"reward_gold": 13
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 22,
+	"name": "Swarm Anchor",
+	"reward": 108,
+	"groups": [
+	  {
+		"type": "swarm",
+		"count": 39,
+		"interval": 0.08,
+		"max_hp": 121,
+		"reward_gold": 7
+	  },
+	  {
+		"type": "tank",
+		"count": 6,
+		"interval": 0.48,
+		"max_hp": 935,
+		"reward_gold": 26
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 23,
+	"name": "Hunter Raid",
+	"reward": 112,
+	"groups": [
+	  {
+		"type": "hunter",
+		"count": 12,
+		"interval": 0.3,
+		"max_hp": 811,
+		"reward_gold": 27
+	  },
+	  {
+		"type": "runner",
+		"count": 13,
+		"interval": 0.18,
+		"max_hp": 258,
+		"reward_gold": 15
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 24,
+	"name": "Disruptor Wing",
+	"reward": 116,
+	"groups": [
+	  {
+		"type": "disruptor",
+		"count": 7,
+		"interval": 0.42,
+		"max_hp": 1182,
+		"reward_gold": 33
+	  },
+	  {
+		"type": "flyer",
+		"count": 17,
+		"interval": 0.22,
+		"max_hp": 449,
+		"reward_gold": 17
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 25,
+	"name": "Elemental Trial V",
+	"reward": 140,
+	"groups": [
+	  {
+		"type": "shieldbearer",
+		"count": 7,
+		"interval": 0.5,
+		"max_hp": 1621,
+		"reward_gold": 34
+	  },
+	  {
+		"type": "healer",
+		"count": 7,
+		"interval": 0.36,
+		"max_hp": 1171,
+		"reward_gold": 28
+	  },
+	  {
+		"type": "tank",
+		"count": 7,
+		"interval": 0.44,
+		"max_hp": 1261,
+		"reward_gold": 28
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 26,
+	"name": "Air Pressure",
+	"reward": 124,
+	"groups": [
+	  {
+		"type": "armored_flyer",
+		"count": 9,
+		"interval": 0.48,
+		"max_hp": 1831,
+		"reward_gold": 31
+	  },
+	  {
+		"type": "fast_flyer",
+		"count": 19,
+		"interval": 0.16,
+		"max_hp": 389,
+		"reward_gold": 19
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 27,
+	"name": "Splitter Swarm",
+	"reward": 128,
+	"groups": [
+	  {
+		"type": "splitter",
+		"count": 9,
+		"interval": 0.52,
+		"max_hp": 2782,
+		"reward_gold": 41
+	  },
+	  {
+		"type": "swarm",
+		"count": 37,
+		"interval": 0.08,
+		"max_hp": 228,
+		"reward_gold": 8
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 28,
+	"name": "Bulwark Mask",
+	"reward": 132,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 6,
+		"interval": 0.68,
+		"max_hp": 3633,
+		"reward_gold": 45
+	  },
+	  {
+		"type": "cloaked",
+		"count": 16,
+		"interval": 0.22,
+		"max_hp": 1187,
+		"reward_gold": 24
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 29,
+	"name": "Hunter Skies",
+	"reward": 136,
+	"groups": [
+	  {
+		"type": "hunter",
+		"count": 16,
+		"interval": 0.24,
+		"max_hp": 1698,
+		"reward_gold": 29
+	  },
+	  {
+		"type": "fast_flyer",
+		"count": 17,
+		"interval": 0.16,
+		"max_hp": 525,
+		"reward_gold": 19
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 30,
+	"name": "Elemental Trial VI",
+	"reward": 160,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 7,
+		"interval": 0.62,
+		"max_hp": 4436,
+		"reward_gold": 46
+	  },
+	  {
+		"type": "healer",
+		"count": 9,
+		"interval": 0.32,
+		"max_hp": 2218,
+		"reward_gold": 29
+	  },
+	  {
+		"type": "runner",
+		"count": 19,
+		"interval": 0.16,
+		"max_hp": 597,
+		"reward_gold": 16
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 31,
+	"name": "Mass Swarm",
+	"reward": 144,
+	"groups": [
+	  {
+		"type": "basic",
+		"count": 27,
+		"interval": 0.1,
+		"max_hp": 849,
+		"reward_gold": 13
+	  },
+	  {
+		"type": "swarm",
+		"count": 48,
+		"interval": 0.06,
+		"max_hp": 339,
+		"reward_gold": 8
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 32,
+	"name": "Shielded Armor",
+	"reward": 148,
+	"groups": [
+	  {
+		"type": "tank",
+		"count": 13,
+		"interval": 0.34,
+		"max_hp": 2917,
+		"reward_gold": 30
+	  },
+	  {
+		"type": "shieldbearer",
+		"count": 9,
+		"interval": 0.38,
+		"max_hp": 3750,
+		"reward_gold": 37
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 33,
+	"name": "Disruptor Armor",
+	"reward": 152,
+	"groups": [
+	  {
+		"type": "disruptor",
+		"count": 10,
+		"interval": 0.32,
+		"max_hp": 3338,
+		"reward_gold": 37
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 9,
+		"interval": 0.42,
+		"max_hp": 3683,
+		"reward_gold": 34
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 34,
+	"name": "Silent Rush",
+	"reward": 156,
+	"groups": [
+	  {
+		"type": "cloaked",
+		"count": 22,
+		"interval": 0.18,
+		"max_hp": 2162,
+		"reward_gold": 26
+	  },
+	  {
+		"type": "runner",
+		"count": 20,
+		"interval": 0.14,
+		"max_hp": 891,
+		"reward_gold": 17
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 35,
+	"name": "Elemental Trial VII",
+	"reward": 180,
+	"groups": [
+	  {
+		"type": "splitter",
+		"count": 12,
+		"interval": 0.42,
+		"max_hp": 6184,
+		"reward_gold": 45
+	  },
+	  {
+		"type": "healer",
+		"count": 9,
+		"interval": 0.3,
+		"max_hp": 3654,
+		"reward_gold": 31
+	  },
+	  {
+		"type": "fast",
+		"count": 26,
+		"interval": 0.12,
+		"max_hp": 787,
+		"reward_gold": 16
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 36,
+	"name": "Fast Air Flood",
+	"reward": 164,
+	"groups": [
+	  {
+		"type": "fast_flyer",
+		"count": 29,
+		"interval": 0.12,
+		"max_hp": 1056,
+		"reward_gold": 21
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 12,
+		"interval": 0.34,
+		"max_hp": 4969,
+		"reward_gold": 35
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 37,
+	"name": "Hunter Guard",
+	"reward": 168,
+	"groups": [
+	  {
+		"type": "hunter",
+		"count": 19,
+		"interval": 0.2,
+		"max_hp": 3775,
+		"reward_gold": 32
+	  },
+	  {
+		"type": "shieldbearer",
+		"count": 10,
+		"interval": 0.34,
+		"max_hp": 6178,
+		"reward_gold": 39
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 38,
+	"name": "Bulwark Swarm",
+	"reward": 172,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 9,
+		"interval": 0.55,
+		"max_hp": 9860,
+		"reward_gold": 51
+	  },
+	  {
+		"type": "swarm",
+		"count": 58,
+		"interval": 0.05,
+		"max_hp": 682,
+		"reward_gold": 9
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 39,
+	"name": "Stealth Air",
+	"reward": 176,
+	"groups": [
+	  {
+		"type": "disruptor",
+		"count": 13,
+		"interval": 0.26,
+		"max_hp": 6076,
+		"reward_gold": 40
+	  },
+	  {
+		"type": "cloaked",
+		"count": 20,
+		"interval": 0.16,
+		"max_hp": 3562,
+		"reward_gold": 28
+	  },
+	  {
+		"type": "flyer",
+		"count": 20,
+		"interval": 0.16,
+		"max_hp": 2305,
+		"reward_gold": 20
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 40,
+	"name": "Elemental Trial VIII",
+	"reward": 200,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 10,
+		"interval": 0.5,
+		"max_hp": 12040,
+		"reward_gold": 52
+	  },
+	  {
+		"type": "healer",
+		"count": 12,
+		"interval": 0.26,
+		"max_hp": 6020,
+		"reward_gold": 33
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 12,
+		"interval": 0.3,
+		"max_hp": 7409,
+		"reward_gold": 37
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 41,
+	"name": "Runner Siege",
+	"reward": 184,
+	"groups": [
+	  {
+		"type": "runner",
+		"count": 32,
+		"interval": 0.1,
+		"max_hp": 2452,
+		"reward_gold": 19
+	  },
+	  {
+		"type": "tank",
+		"count": 14,
+		"interval": 0.28,
+		"max_hp": 9805,
+		"reward_gold": 34
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 42,
+	"name": "Shield Splitters",
+	"reward": 188,
+	"groups": [
+	  {
+		"type": "splitter",
+		"count": 14,
+		"interval": 0.34,
+		"max_hp": 17026,
+		"reward_gold": 49
+	  },
+	  {
+		"type": "shieldbearer",
+		"count": 12,
+		"interval": 0.3,
+		"max_hp": 13931,
+		"reward_gold": 42
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 43,
+	"name": "Disruptor Flight",
+	"reward": 192,
+	"groups": [
+	  {
+		"type": "fast_flyer",
+		"count": 36,
+		"interval": 0.08,
+		"max_hp": 2907,
+		"reward_gold": 23
+	  },
+	  {
+		"type": "disruptor",
+		"count": 13,
+		"interval": 0.22,
+		"max_hp": 12400,
+		"reward_gold": 42
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 44,
+	"name": "Hunter Cloak",
+	"reward": 196,
+	"groups": [
+	  {
+		"type": "cloaked",
+		"count": 26,
+		"interval": 0.14,
+		"max_hp": 8033,
+		"reward_gold": 29
+	  },
+	  {
+		"type": "hunter",
+		"count": 20,
+		"interval": 0.16,
+		"max_hp": 10395,
+		"reward_gold": 35
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 45,
+	"name": "Elemental Trial IX",
+	"reward": 220,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 12,
+		"interval": 0.44,
+		"max_hp": 27149,
+		"reward_gold": 55
+	  },
+	  {
+		"type": "healer",
+		"count": 13,
+		"interval": 0.22,
+		"max_hp": 13575,
+		"reward_gold": 35
+	  },
+	  {
+		"type": "swarm",
+		"count": 65,
+		"interval": 0.045,
+		"max_hp": 1880,
+		"reward_gold": 10
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 46,
+	"name": "Armored Skyfall",
+	"reward": 204,
+	"groups": [
+	  {
+		"type": "armored_flyer",
+		"count": 17,
+		"interval": 0.24,
+		"max_hp": 18462,
+		"reward_gold": 40
+	  },
+	  {
+		"type": "fast_flyer",
+		"count": 32,
+		"interval": 0.08,
+		"max_hp": 3923,
+		"reward_gold": 24
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 47,
+	"name": "Splitter Raid",
+	"reward": 208,
+	"groups": [
+	  {
+		"type": "splitter",
+		"count": 17,
+		"interval": 0.28,
+		"max_hp": 28050,
+		"reward_gold": 52
+	  },
+	  {
+		"type": "runner",
+		"count": 32,
+		"interval": 0.08,
+		"max_hp": 4463,
+		"reward_gold": 20
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 48,
+	"name": "Bulwark Cloak",
+	"reward": 212,
+	"groups": [
+	  {
+		"type": "shieldbearer",
+		"count": 16,
+		"interval": 0.22,
+		"max_hp": 25360,
+		"reward_gold": 45
+	  },
+	  {
+		"type": "bulwark",
+		"count": 13,
+		"interval": 0.36,
+		"max_hp": 36631,
+		"reward_gold": 57
+	  },
+	  {
+		"type": "cloaked",
+		"count": 26,
+		"interval": 0.12,
+		"max_hp": 11976,
+		"reward_gold": 31
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 49,
+	"name": "Disruptor Hunt",
+	"reward": 216,
+	"groups": [
+	  {
+		"type": "disruptor",
+		"count": 17,
+		"interval": 0.18,
+		"max_hp": 22574,
+		"reward_gold": 45
+	  },
+	  {
+		"type": "hunter",
+		"count": 24,
+		"interval": 0.12,
+		"max_hp": 17125,
+		"reward_gold": 37
+	  },
+	  {
+		"type": "fast_flyer",
+		"count": 29,
+		"interval": 0.08,
+		"max_hp": 5293,
+		"reward_gold": 25
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 50,
+	"name": "Elemental Trial X",
+	"reward": 240,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 16,
+		"interval": 0.3,
+		"max_hp": 44727,
+		"reward_gold": 58
+	  },
+	  {
+		"type": "healer",
+		"count": 17,
+		"interval": 0.16,
+		"max_hp": 22363,
+		"reward_gold": 37
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 16,
+		"interval": 0.2,
+		"max_hp": 27525,
+		"reward_gold": 42
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 51,
+	"name": "Overrun Swarm",
+	"reward": 224,
+	"groups": [
+	  {
+		"type": "swarm",
+		"count": 86,
+		"interval": 0.035,
+		"max_hp": 3421,
+		"reward_gold": 10
+	  },
+	  {
+		"type": "runner",
+		"count": 37,
+		"interval": 0.06,
+		"max_hp": 6653,
+		"reward_gold": 21
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 52,
+	"name": "Shield Payload",
+	"reward": 228,
+	"groups": [
+	  {
+		"type": "splitter",
+		"count": 22,
+		"interval": 0.22,
+		"max_hp": 46211,
+		"reward_gold": 55
+	  },
+	  {
+		"type": "shieldbearer",
+		"count": 17,
+		"interval": 0.18,
+		"max_hp": 37809,
+		"reward_gold": 47
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 53,
+	"name": "Air Disruption",
+	"reward": 232,
+	"groups": [
+	  {
+		"type": "disruptor",
+		"count": 20,
+		"interval": 0.14,
+		"max_hp": 33655,
+		"reward_gold": 47
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 20,
+		"interval": 0.16,
+		"max_hp": 37137,
+		"reward_gold": 43
+	  },
+	  {
+		"type": "fast_flyer",
+		"count": 37,
+		"interval": 0.06,
+		"max_hp": 7892,
+		"reward_gold": 26
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 54,
+	"name": "Assassin Wave",
+	"reward": 236,
+	"groups": [
+	  {
+		"type": "cloaked",
+		"count": 37,
+		"interval": 0.08,
+		"max_hp": 21800,
+		"reward_gold": 32
+	  },
+	  {
+		"type": "hunter",
+		"count": 30,
+		"interval": 0.09,
+		"max_hp": 28213,
+		"reward_gold": 39
+	  },
+	  {
+		"type": "bulwark",
+		"count": 13,
+		"interval": 0.26,
+		"max_hp": 66683,
+		"reward_gold": 61
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 55,
+	"name": "Final Elemental Trial",
+	"reward": 260,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 19,
+		"interval": 0.24,
+		"max_hp": 73686,
+		"reward_gold": 61
+	  },
+	  {
+		"type": "healer",
+		"count": 20,
+		"interval": 0.12,
+		"max_hp": 36842,
+		"reward_gold": 39
+	  },
+	  {
+		"type": "splitter",
+		"count": 20,
+		"interval": 0.18,
+		"max_hp": 62349,
+		"reward_gold": 57
+	  }
+	],
+	"intel": "Element pick is earned after this wave."
+  },
+  {
+	"wave": 56,
+	"name": "Late Air Flood",
+	"reward": 244,
+	"groups": [
+	  {
+		"type": "fast_flyer",
+		"count": 50,
+		"interval": 0.045,
+		"max_hp": 10647,
+		"reward_gold": 27
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 26,
+		"interval": 0.1,
+		"max_hp": 50106,
+		"reward_gold": 44
+	  },
+	  {
+		"type": "disruptor",
+		"count": 19,
+		"interval": 0.1,
+		"max_hp": 45408,
+		"reward_gold": 49
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 57,
+	"name": "Ground Overrun",
+	"reward": 248,
+	"groups": [
+	  {
+		"type": "runner",
+		"count": 50,
+		"interval": 0.045,
+		"max_hp": 12112,
+		"reward_gold": 22
+	  },
+	  {
+		"type": "swarm",
+		"count": 101,
+		"interval": 0.025,
+		"max_hp": 6228,
+		"reward_gold": 11
+	  },
+	  {
+		"type": "shieldbearer",
+		"count": 20,
+		"interval": 0.12,
+		"max_hp": 62289,
+		"reward_gold": 49
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 58,
+	"name": "Shadow Payload",
+	"reward": 252,
+	"groups": [
+	  {
+		"type": "cloaked",
+		"count": 50,
+		"interval": 0.055,
+		"max_hp": 32503,
+		"reward_gold": 34
+	  },
+	  {
+		"type": "hunter",
+		"count": 36,
+		"interval": 0.07,
+		"max_hp": 42061,
+		"reward_gold": 41
+	  },
+	  {
+		"type": "splitter",
+		"count": 24,
+		"interval": 0.12,
+		"max_hp": 84124,
+		"reward_gold": 59
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 59,
+	"name": "Command Siege",
+	"reward": 256,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 24,
+		"interval": 0.16,
+		"max_hp": 109858,
+		"reward_gold": 64
+	  },
+	  {
+		"type": "healer",
+		"count": 23,
+		"interval": 0.08,
+		"max_hp": 54929,
+		"reward_gold": 41
+	  },
+	  {
+		"type": "disruptor",
+		"count": 23,
+		"interval": 0.08,
+		"max_hp": 61266,
+		"reward_gold": 50
+	  },
+	  {
+		"type": "armored_flyer",
+		"count": 24,
+		"interval": 0.1,
+		"max_hp": 67604,
+		"reward_gold": 46
+	  }
+	],
+	"intel": ""
+  },
+  {
+	"wave": 60,
+	"name": "Final Normal Wave",
+	"reward": 340,
+	"groups": [
+	  {
+		"type": "bulwark",
+		"count": 29,
+		"interval": 0.12,
+		"max_hp": 163881,
+		"reward_gold": 64
+	  },
+	  {
+		"type": "splitter",
+		"count": 29,
+		"interval": 0.1,
+		"max_hp": 138668,
+		"reward_gold": 60
+	  },
+	  {
+		"type": "healer",
+		"count": 26,
+		"interval": 0.07,
+		"max_hp": 81940,
+		"reward_gold": 41
+	  },
+	  {
+		"type": "disruptor",
+		"count": 26,
+		"interval": 0.065,
+		"max_hp": 91395,
+		"reward_gold": 51
+	  },
+	  {
+		"type": "fast_flyer",
+		"count": 58,
+		"interval": 0.035,
+		"max_hp": 21430,
+		"reward_gold": 28
+	  }
+	],
+	"intel": "Final normal wave. No element pick after this wave."
   }
 ]

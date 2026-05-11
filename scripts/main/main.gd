@@ -3,13 +3,17 @@ extends Node2D
 # Preload scripts for dynamic node creation if missing in scene
 const LEVEL_MANAGER_SCRIPT_PATH = "res://scripts/managers/level_manager.gd"
 const MAP_VISUAL_LAYER_SCRIPT_PATH = "res://scripts/map/map_visual_layer.gd"
+const MAZE_MAP_RENDERER_SCRIPT = preload("res://scripts/map/maze_map_renderer.gd")
+const ENEMY_ROUTE_OVERLAY_SCRIPT = preload("res://scripts/map/enemy_route_overlay.gd")
+const GRID_PATHFINDING_MANAGER_SCRIPT = preload("res://scripts/navigation/grid_pathfinding_manager.gd")
 const UI_THEME_MANAGER_SCRIPT = preload("res://scripts/ui/ui_theme_manager.gd")
 const BALANCE_SOLVER_SCRIPT = "res://scripts/debug/balance_solver.gd"
 const AUTO_PLAY_VERIFIER_SCRIPT = preload("res://scripts/debug/auto_play_verifier.gd")
 const LEVEL_VALIDATOR_SCRIPT = preload("res://scripts/debug/level_validator.gd")
 const SPAWN_FORMATION_PLANNER_SCRIPT = preload("res://scripts/managers/spawn_formation_planner.gd")
+const ELEMENT_PROGRESSION_MANAGER_SCRIPT = preload("res://scripts/managers/element_progression_manager.gd")
 
-enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, PAUSED, GAME_OVER, VICTORY }
+enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
 	IDLE,
 	SOLVING,
@@ -66,18 +70,21 @@ const RIGHT_SIDEBAR_WIDTH = 260
 const OUTER_MARGIN = 0 # Removed for maximal expansion
 
 var level_manager: LevelManager = null
+var pathfinding_manager: Node = null
 var level_validator: Node = null
 var balance_solver: Node = null
 var auto_play_verifier: Node = null
 var debug_starting_gold_override: int = -1
 var map_visual_layer: Node2D = null
+var maze_map_renderer: Node2D = null
+var enemy_route_overlay: Node2D = null
 var selected_tower: Node2D = null
 var current_state: GameState = GameState.MENU
 var current_level_path: String = ""
 var current_level_id: String = ""
 var selected_level_id: int = 0
-var available_tower_types: Array[String] = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
-var selected_loadout: Array[String] = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
+var available_tower_types: Array[String] = ["basic_tower_t1"]
+var selected_loadout: Array[String] = ["basic_tower_t1"]
 var active_level_loadout: Array[String] = []
 const MAX_TOWER_LOADOUT_SIZE: int = 8
 const MIN_TOWER_LOADOUT_SIZE: int = 1
@@ -89,6 +96,11 @@ var hero_panel: Node = null
 var hero_cooldown: float = 0.0
 var hero_active_duration: float = 0.0
 var hero_is_deployed: bool = false
+var element_progression_manager = null
+const ELEMENT_PICK_INTERVAL: int = 5
+const ELEMENT_TD_FINAL_WAVE: int = 60
+# Element TD pacing: no free element at the start; picks are earned after wave 5, 10, ... 55.
+const STARTING_ELEMENT_PICKS: int = 0
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -115,18 +127,14 @@ func _ready() -> void:
 		debug_button.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	_ensure_level_nodes_exist()
+	_ensure_element_progression_manager()
 
 	if OS.has_feature("web"):
 		_show_audio_unlock_overlay()
 
 	if build_manager:
 		build_manager.setup(game_manager, tower_container, projectile_container)
-		if game_hud:
-			var prices = {}
-			for id in ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]:
-				var config = build_manager.towers_config.get(id, {})
-				prices[id] = config.get("cost", 0)
-			game_hud.set_tower_prices(prices)
+		_refresh_elemental_tower_catalog()
 
 	# Initial Audio Setup
 	if audio_manager and save_manager:
@@ -339,8 +347,12 @@ func _refresh_start_wave_ui() -> void:
 	var next_wave_number = wave_manager.get_next_wave_number()
 	var next_wave_name = wave_manager.get_next_wave_name()
 	var level_cleared = total_waves > 0 and not wave_running and not wave_manager.has_next_wave()
-	var can_start = current_state == GameState.BUILD and not wave_running and wave_manager.has_next_wave()
+	var can_start = (current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE) and not wave_running and wave_manager.has_next_wave()
 	var locked_label = ""
+
+	if _has_pending_element_pick():
+		can_start = false
+		locked_label = "Choose Element"
 
 	match current_state:
 		GameState.GAME_OVER:
@@ -373,8 +385,43 @@ func _setup_game_from_level() -> void:
 	# Clear existing gameplay state
 	_clear_gameplay_state()
 
+	# Hide old map visual layer — MazeMapRenderer handles lightweight drawing now
 	if map_visual_layer:
-		map_visual_layer.setup(level_manager)
+		map_visual_layer.visible = false
+
+	if maze_map_renderer == null:
+		maze_map_renderer = MAZE_MAP_RENDERER_SCRIPT.new()
+		maze_map_renderer.name = "MazeMapRenderer"
+		map_root.add_child(maze_map_renderer)
+		map_root.move_child(maze_map_renderer, 0)
+
+	maze_map_renderer.setup(level_manager)
+
+	if pathfinding_manager:
+		pathfinding_manager.setup_grid(level_manager)
+
+	# Enemy route overlay was designed for dynamic-maze mode. Element TD clone
+	# levels are fixed-path maps, so the extra cyan shortest-route guideline would
+	# fight the actual road visual. Keep it opt-in only.
+	var show_dynamic_route_overlay := _should_show_dynamic_route_overlay()
+	if show_dynamic_route_overlay:
+		if enemy_route_overlay == null:
+			enemy_route_overlay = ENEMY_ROUTE_OVERLAY_SCRIPT.new()
+			enemy_route_overlay.name = "EnemyRouteOverlay"
+			map_root.add_child(enemy_route_overlay)
+
+		if pathfinding_manager:
+			enemy_route_overlay.visible = true
+			enemy_route_overlay.setup(
+				pathfinding_manager,
+				pathfinding_manager.spawn_cells,
+				pathfinding_manager.target_cells
+			)
+	else:
+		if enemy_route_overlay != null and is_instance_valid(enemy_route_overlay):
+			enemy_route_overlay.visible = false
+			if enemy_route_overlay.has_method("set_visible_for_wave"):
+				enemy_route_overlay.set_visible_for_wave(false)
 
 	# Clear and setup paths
 	for p in active_path_nodes.values():
@@ -413,6 +460,13 @@ func _setup_game_from_level() -> void:
 	_update_world_layout()
 
 	if wave_manager:
+		if wave_manager.has_method("set_pathfinding_manager"):
+			wave_manager.set_pathfinding_manager(pathfinding_manager)
+		# Important for Element TD fixed-path maps: configure pathing mode before spawning.
+		# Without this, ground enemies keep using dynamic shortest-path movement while
+		# the renderer draws the fixed Path2D road, causing visual/path mismatch.
+		if wave_manager.has_method("configure_from_level"):
+			wave_manager.configure_from_level(level_manager)
 		wave_manager.setup(active_path_nodes)
 		if level_manager.level_data.has("waves") and level_manager.level_data["waves"] is Array and not level_manager.level_data["waves"].is_empty():
 			wave_manager.load_waves_from_data(level_manager.level_data["waves"])
@@ -426,8 +480,16 @@ func _setup_game_from_level() -> void:
 
 	if build_manager:
 		build_manager.configure_from_level(level_manager)
+		if build_manager.has_method("set_pathfinding_manager"):
+			build_manager.set_pathfinding_manager(pathfinding_manager)
 		build_manager.active_loadout = active_level_loadout
 		build_manager.reset_build_state()
+
+	if element_progression_manager:
+		element_progression_manager.reset()
+		if STARTING_ELEMENT_PICKS > 0:
+			element_progression_manager.grant_pick(STARTING_ELEMENT_PICKS)
+		_refresh_elemental_shop()
 
 	if game_manager:
 		var gold_to_apply: int = level_manager.starting_gold
@@ -444,7 +506,8 @@ func _setup_game_from_level() -> void:
 
 	if game_hud:
 		game_hud.set_level_name(level_manager.level_name)
-		game_hud.refresh_tower_shop(active_level_loadout)
+		_refresh_elemental_shop()
+		_show_pending_element_choice()
 
 	update_hud()
 	_refresh_hud_wave_intel()
@@ -482,6 +545,21 @@ func update_hud() -> void:
 	_refresh_hud_stats()
 	_refresh_start_wave_ui()
 
+func _has_pending_element_pick() -> bool:
+	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
+
+func _should_show_dynamic_route_overlay() -> bool:
+	if level_manager == null:
+		return false
+	# Default is OFF for Element TD fixed-path clone maps. A future dynamic-maze
+	# level can opt back in with: "show_dynamic_route_overlay": true
+	return bool(level_manager.level_data.get("show_dynamic_route_overlay", false))
+
+func _is_element_pick_wave(wave_number: int) -> bool:
+	# Warcraft 3 Element TD pacing: element choices happen every 5 waves,
+	# ending at wave 55 so wave 60 remains the final normal creep wave.
+	return wave_number > 0 and wave_number < ELEMENT_TD_FINAL_WAVE and wave_number % ELEMENT_PICK_INTERVAL == 0
+
 func _refresh_hud_stats() -> void:
 	if game_hud and game_manager:
 		game_hud.set_gold(game_manager.gold)
@@ -506,12 +584,18 @@ func _ensure_level_nodes_exist() -> void:
 	leaderboard_service = load("res://scripts/core/leaderboard_service.gd").new()
 	add_child(leaderboard_service)
 	level_manager = get_node_or_null("LevelManager")
+	pathfinding_manager = get_node_or_null("GridPathfindingManager")
 	map_visual_layer = get_node_or_null("MapVisualLayer")
 
 	if level_manager == null:
 		level_manager = LevelManager.new()
 		level_manager.name = "LevelManager"
 		add_child(level_manager)
+
+	if pathfinding_manager == null:
+		pathfinding_manager = GRID_PATHFINDING_MANAGER_SCRIPT.new()
+		pathfinding_manager.name = "GridPathfindingManager"
+		add_child(pathfinding_manager)
 
 	if map_visual_layer == null:
 		map_visual_layer = Node2D.new()
@@ -525,6 +609,91 @@ func _ensure_level_nodes_exist() -> void:
 			world_root.move_child(map_visual_layer, 0)
 		else:
 			add_child(map_visual_layer)
+
+func _ensure_element_progression_manager() -> void:
+	if element_progression_manager != null and is_instance_valid(element_progression_manager):
+		return
+	element_progression_manager = get_node_or_null("ElementProgressionManager")
+	if element_progression_manager == null:
+		element_progression_manager = ELEMENT_PROGRESSION_MANAGER_SCRIPT.new()
+		element_progression_manager.name = "ElementProgressionManager"
+		add_child(element_progression_manager)
+	if element_progression_manager.has_signal("element_levels_changed") and not element_progression_manager.element_levels_changed.is_connected(_on_element_levels_changed):
+		element_progression_manager.element_levels_changed.connect(_on_element_levels_changed)
+	if element_progression_manager.has_signal("element_pick_available") and not element_progression_manager.element_pick_available.is_connected(_on_element_pick_available):
+		element_progression_manager.element_pick_available.connect(_on_element_pick_available)
+
+func _refresh_elemental_tower_catalog() -> void:
+	if build_manager == null or game_hud == null:
+		return
+	var catalog: Dictionary = {}
+	var prices: Dictionary = {}
+	for tower_id in build_manager.towers_config.keys():
+		var cfg: Dictionary = build_manager.towers_config.get(tower_id, {})
+		catalog[tower_id] = cfg
+		prices[tower_id] = int(cfg.get("cost", 0))
+	game_hud.set_tower_catalog(catalog)
+	game_hud.set_tower_prices(prices)
+
+func _refresh_elemental_shop() -> void:
+	if build_manager == null or game_hud == null:
+		return
+	var ids: Array[String] = ["basic_tower_t1"]
+	if element_progression_manager and element_progression_manager.has_method("get_buildable_tower_ids"):
+		ids = element_progression_manager.get_buildable_tower_ids(build_manager.towers_config)
+		if ids.is_empty():
+			ids = ["basic_tower_t1"]
+	active_level_loadout = ids.duplicate()
+	build_manager.active_loadout = ids.duplicate()
+	if build_manager.has_method("set_unlocked_tower_ids"):
+		build_manager.set_unlocked_tower_ids(ids)
+	game_hud.refresh_tower_shop(ids)
+	if element_progression_manager and element_progression_manager.has_method("get_element_levels"):
+		game_hud.set_element_levels(element_progression_manager.get_element_levels())
+
+func _show_pending_element_choice() -> void:
+	if game_hud == null or element_progression_manager == null:
+		return
+	if element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick():
+		game_hud.show_element_choice(element_progression_manager.get_element_levels(), element_progression_manager.pending_picks)
+
+func _on_element_pick_available(_pending_picks: int) -> void:
+	_show_pending_element_choice()
+	_refresh_start_wave_ui()
+	if game_hud:
+		game_hud.set_build_status("Choose an element before the next wave")
+
+func _on_element_levels_changed(levels: Dictionary) -> void:
+	if game_hud:
+		game_hud.set_element_levels(levels)
+	_refresh_elemental_shop()
+	_refresh_start_wave_ui()
+
+func _on_element_choice_requested(element_id: String) -> void:
+	if element_progression_manager == null:
+		return
+	if element_progression_manager.choose_element(element_id):
+		_refresh_elemental_shop()
+		if game_hud:
+			game_hud.set_build_status("Element unlocked: %s" % element_progression_manager.get_element_label(element_id))
+			if element_progression_manager.pending_picks > 0:
+				game_hud.show_element_choice(element_progression_manager.get_element_levels(), element_progression_manager.pending_picks)
+			else:
+				game_hud.hide_element_choice()
+	else:
+		if game_hud:
+			game_hud.set_build_status("Cannot choose that element")
+	_refresh_start_wave_ui()
+
+func _config_unlocked_for_upgrade(cfg: Dictionary) -> bool:
+	if element_progression_manager == null or not element_progression_manager.has_method("can_build_tower"):
+		return true
+	return element_progression_manager.can_build_tower(cfg)
+
+func _locked_upgrade_reason(cfg: Dictionary) -> String:
+	if element_progression_manager and element_progression_manager.has_method("get_locked_reason"):
+		return element_progression_manager.get_locked_reason(cfg)
+	return "Required elements are not unlocked"
 
 func _connect_signals() -> void:
 	if main_menu:
@@ -544,6 +713,10 @@ func _connect_signals() -> void:
 		game_hud.pause_requested.connect(_on_pause_requested)
 		game_hud.restart_requested.connect(restart_level)
 		game_hud.upgrade_tower_requested.connect(_on_upgrade_tower_requested)
+		game_hud.sell_tower_requested.connect(_on_sell_tower_requested)
+		game_hud.branch_upgrade_requested.connect(_on_branch_upgrade_requested)
+		if game_hud.has_signal("element_choice_requested"):
+			game_hud.element_choice_requested.connect(_on_element_choice_requested)
 		game_hud.deselect_tower_requested.connect(_deselect_tower)
 		game_hud.target_mode_changed.connect(_on_target_mode_changed)
 		game_hud.main_menu_requested.connect(return_to_menu)
@@ -612,7 +785,7 @@ func _connect_signals() -> void:
 		game_manager.game_resumed.connect(_on_game_resumed)
 
 func _process(delta: float) -> void:
-	if current_state == GameState.WAVE or current_state == GameState.BUILD:
+	if current_state == GameState.WAVE or current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE:
 		_update_hero_timers(delta)
 		
 	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
@@ -711,7 +884,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				if auto_play_verifier:
 					_start_debug_auto_play()
 
-	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
+	if current_state != GameState.BUILD: return
 
 	if event is InputEventMouseButton and event.pressed:
 		var local_mouse = map_root.to_local(get_global_mouse_position())
@@ -881,14 +1054,13 @@ func start_next_level() -> void:
 		return_to_menu()
 
 func get_default_loadout_for_level(_level_id: String) -> Array[String]:
-	return ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
+	# Loadout system removed: every level starts with Basic Tower T1 only.
+	# Advanced towers are reached through the upgrade tree (T1→T2→T3→branch).
+	return ["basic_tower_t1"]
 
 func is_valid_loadout(loadout: Array[String]) -> bool:
-	if loadout.size() < MIN_TOWER_LOADOUT_SIZE: return false
-	if loadout.size() > MAX_TOWER_LOADOUT_SIZE: return false
-	for tower_type in loadout:
-		if not available_tower_types.has(tower_type): return false
-	return true
+	# Loadout system removed: the only valid loadout is ["basic_tower_t1"].
+	return loadout == ["basic_tower_t1"]
 
 func _clear_gameplay_state() -> void:
 	if tower_container:
@@ -1153,6 +1325,7 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.set_paused(false)
 				game_hud.enter_gameplay_mode()
 				game_hud.show_build_panel()
+				game_hud.set_build_status("Planning Phase — build your maze")
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
 			if hero_panel:
@@ -1173,6 +1346,19 @@ func _refresh_ui_for_phase() -> void:
 				var hero_enabled = level_manager.hero_config.get("enabled", false) if level_manager else false
 				hero_panel.visible = hero_enabled
 				if OS.is_debug_build(): print("[HERO_UI] visible=", hero_panel.visible, " reason=GameState.WAVE")
+			if world_root: world_root.show()
+			get_tree().paused = false
+
+		GameState.WAVE_COMPLETE:
+			if game_hud:
+				game_hud.show()
+				game_hud.set_paused(false)
+				game_hud.enter_gameplay_mode()
+				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
+				_refresh_gameplay_hud_state()
+			if hero_panel:
+				var hero_enabled = level_manager.hero_config.get("enabled", false) if level_manager else false
+				hero_panel.visible = hero_enabled
 			if world_root: world_root.show()
 			get_tree().paused = false
 
@@ -1207,7 +1393,7 @@ func _on_game_resumed() -> void:
 			set_game_phase(GameState.BUILD)
 
 func _on_tower_build_selected(tower_id: String) -> void:
-	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
+	if current_state != GameState.BUILD: return
 	_deselect_tower()
 	if build_manager:
 		build_manager.set_selected_tower(tower_id)
@@ -1250,20 +1436,134 @@ func _deselect_tower() -> void:
 	clear_selected_tower()
 
 func _on_upgrade_tower_requested() -> void:
-	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
+	if current_state != GameState.BUILD: return
 	if selected_tower == null or not selected_tower.can_upgrade(): return
-	var cost = selected_tower.get_upgrade_cost()
+
+	# Branch point — show branch options instead of direct upgrade
+	if selected_tower.is_branch_point():
+		if game_hud:
+			var info: Dictionary = selected_tower.get_info()
+			var branch_configs: Array[Dictionary] = []
+			for branch_id in info["next_upgrade_ids"]:
+				var cfg: Dictionary = build_manager.towers_config.get(branch_id, {})
+				if not cfg.is_empty() and _config_unlocked_for_upgrade(cfg):
+					var branch_cost := _read_config_upgrade_cost(cfg)
+					branch_configs.append({
+						"id": branch_id,
+						"name": cfg.get("name", cfg.get("display_name", branch_id)),
+						"description": cfg.get("description", ""),
+						"tier": cfg.get("tier", 2),
+						"cost": branch_cost
+					})
+			if branch_configs.is_empty():
+				game_hud.set_build_status("No unlocked specialization. Choose more elements.")
+			else:
+				game_hud.show_branch_options(branch_configs)
+		return
+
+	var next_ids: Array = selected_tower.get_info().get("next_upgrade_ids", [])
+	if not next_ids.is_empty():
+		var next_cfg: Dictionary = build_manager.towers_config.get(str(next_ids[0]), {})
+		if not _config_unlocked_for_upgrade(next_cfg):
+			if game_hud:
+				game_hud.set_build_status(_locked_upgrade_reason(next_cfg))
+			return
+
+	var cost: int = selected_tower.get_upgrade_cost()
+	if cost <= 0:
+		if game_hud:
+			game_hud.set_build_status("Upgrade unavailable")
+		return
+
 	if game_manager and game_manager.spend_gold(cost):
-		var prev_lvl = selected_tower.level_index + 1
-		selected_tower.upgrade()
+		var tower := selected_tower
+		tower.upgrade()
 		if game_manager.battle_telemetry:
-			game_manager.battle_telemetry.log_tower_upgraded(selected_tower.tower_id, prev_lvl, selected_tower.level_index + 1, cost)
-		game_hud.show_tower_info(selected_tower.get_info())
-		game_hud.set_build_status("Tower Upgraded!")
+			game_manager.battle_telemetry.log_tower_upgraded(tower.tower_id, tower.tree_tier - 1, tower.tree_tier, cost)
+		# Re-select to fully refresh UI with new upgrade_id
+		clear_selected_tower()
+		_select_tower(tower)
+		if game_hud:
+			game_hud.set_build_status("Tower Upgraded!")
 		if audio_manager:
 			audio_manager.play_sfx("tower_upgrade")
 	elif game_hud:
 		game_hud.set_build_status("Not enough gold!")
+	_play_ui_click()
+
+
+func _on_branch_upgrade_requested(branch_id: String) -> void:
+	if selected_tower == null or not is_instance_valid(selected_tower):
+		return
+	if current_state != GameState.BUILD:
+		return
+
+	var new_config: Dictionary = build_manager.towers_config.get(branch_id, {})
+	if new_config.is_empty():
+		return
+
+	if not _config_unlocked_for_upgrade(new_config):
+		if game_hud:
+			game_hud.set_build_status(_locked_upgrade_reason(new_config))
+		return
+
+	var cost: int = _read_config_upgrade_cost(new_config)
+	if cost <= 0:
+		if game_hud:
+			game_hud.set_build_status("Branch upgrade unavailable")
+		return
+
+	if game_manager and game_manager.spend_gold(cost):
+		var tower := selected_tower
+		tower.upgrade_to(branch_id, new_config)
+		# Re-select to fully refresh UI with new upgrade_id and branch_id
+		clear_selected_tower()
+		_select_tower(tower)
+		if game_hud:
+			game_hud.hide_branch_options()
+			game_hud.set_build_status("%s upgraded!" % new_config.get("name", "Tower"))
+		if audio_manager:
+			audio_manager.play_sfx("tower_upgrade")
+	_play_ui_click()
+
+
+## Reads upgrade_cost from a tower config dict — the cost to upgrade INTO it.
+func _read_config_upgrade_cost(p_config: Dictionary) -> int:
+	if p_config.is_empty():
+		return -1
+	if p_config.has("levels") and p_config["levels"].size() > 0:
+		var cost_val = p_config["levels"][0].get("upgrade_cost", -1)
+		if cost_val > 0:
+			return cost_val
+	return p_config.get("upgrade_cost", -1)
+
+
+func _on_sell_tower_requested() -> void:
+	if selected_tower == null or not is_instance_valid(selected_tower):
+		return
+	if current_state != GameState.BUILD:
+		return
+
+	var cell: Vector2i = selected_tower.get_grid_cell()
+	var refund: int = selected_tower.get_sell_refund()
+
+	# Remove tower via build manager (handles occupancy + pathfinding blocker)
+	if build_manager and build_manager.has_method("remove_tower_at_cell"):
+		build_manager.remove_tower_at_cell(cell)
+
+	# Refund gold
+	if game_manager:
+		game_manager.add_gold(refund)
+
+	# Clear selection UI
+	_deselect_tower()
+
+	if game_hud:
+		game_hud.set_build_status("Tower sold ($%d refunded)" % refund)
+
+	if audio_manager:
+		audio_manager.play_sfx("ui_click")
+
 
 func _on_target_mode_changed(mode: String) -> void:
 	if selected_tower == null or not is_instance_valid(selected_tower):
@@ -1274,7 +1574,13 @@ func _on_target_mode_changed(mode: String) -> void:
 	_play_ui_click()
 
 func _on_start_wave_requested() -> void:
-	if current_state != GameState.BUILD: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE: return
+	if _has_pending_element_pick():
+		_show_pending_element_choice()
+		if game_hud:
+			game_hud.set_build_status("Choose an element before starting the next wave")
+		_refresh_start_wave_ui()
+		return
 	if audio_manager: audio_manager.unlock_audio()
 	if wave_manager:
 		wave_manager.start_next_wave()
@@ -1334,15 +1640,27 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		_refresh_gameplay_hud_state()
 
 func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> void:
-	set_game_phase(GameState.BUILD)
+	set_game_phase(GameState.WAVE_COMPLETE)
 	if game_manager:
 		game_manager.award_wave_completion(reward)
+	if game_hud:
+		game_hud.set_status("Wave %d cleared! +%d Gold" % [wave_number, reward])
+		show_wave_feedback("Wave Cleared! +%d Gold" % reward, Color(0.2, 1.0, 0.4))
+		_refresh_gameplay_hud_state()
+	if audio_manager:
+		audio_manager.play_sfx("gold_gain")
+	if element_progression_manager and _is_element_pick_wave(wave_number):
+		element_progression_manager.grant_pick(1)
+		_show_pending_element_choice()
 		if game_hud:
-			game_hud.set_status("Wave %d cleared! +%d Gold" % [wave_number, reward])
-			show_wave_feedback("Wave Cleared! +%d Gold" % reward, Color(0.2, 1.0, 0.4))
-			_refresh_gameplay_hud_state()
-		if audio_manager:
-			audio_manager.play_sfx("gold_gain")
+			game_hud.set_status("Elemental Guardian defeated — choose an element")
+			show_wave_feedback("Choose an Element", Color(0.4, 0.85, 1.0))
+		_refresh_start_wave_ui()
+	# Auto-advance to planning after a brief reward moment
+	get_tree().create_timer(2.5).timeout.connect(func():
+		if current_state == GameState.WAVE_COMPLETE:
+			set_game_phase(GameState.BUILD)
+	)
 
 func _on_all_waves_completed() -> void:
 	if game_manager:
@@ -1968,6 +2286,10 @@ func _refresh_hud_wave_intel() -> void:
 	)
 
 func _refresh_route_preview() -> void:
+	# MazeMapRenderer guideline handles route visualization
+	if maze_map_renderer:
+		return
+
 	if not map_visual_layer or not wave_manager or not level_manager:
 		return
 	

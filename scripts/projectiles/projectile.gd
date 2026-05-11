@@ -1,5 +1,7 @@
 extends Node2D
 
+const PERFORMANCE_MODE := true  # Disables projectile trail and impact effects for 60 FPS
+
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
@@ -75,14 +77,13 @@ func _process(delta: float) -> void:
 		return
 		
 	global_position += to_target.normalized() * speed * delta
-	_update_trail()
-	
+
+	if not PERFORMANCE_MODE:
+		_update_trail()
+
 	lifetime -= delta
 	if lifetime <= 0:
 		queue_free()
-	
-	if OS.is_debug_build():
-		queue_redraw()
 
 func _update_trail() -> void:
 	# Avoid adding points if we're already at the target or dead
@@ -106,7 +107,14 @@ func _draw() -> void:
 	if attack_type == "chain":
 		_draw_lightning_projectile()
 		return
-		
+
+	if PERFORMANCE_MODE:
+		var perf_color := Color(0.3, 1.0, 0.6, 1.0) if speed > 550 else Color(0.3, 0.7, 1.0, 1.0)
+		if attack_type == "splash": perf_color = Color(1.0, 0.5, 0.2, 1.0)
+		elif attack_type == "slow": perf_color = Color(0.7, 0.5, 1.0, 1.0)
+		draw_circle(Vector2.ZERO, 4.0, perf_color)
+		return
+
 	# 1. Draw Trail (Global points converted to local space)
 	if trail_points.size() >= 2:
 		var base_color = modulate
@@ -162,8 +170,7 @@ func hit_target() -> void:
 		else:
 			hit_global = target.global_position
 		
-	if OS.is_debug_build():
-		if OS.is_debug_build(): print("[Projectile] Hit global captured at ", hit_global)
+	pass # hit captured
 
 	if attack_type == "splash" or attack_type == "slow":
 		apply_area_effect(hit_global)
@@ -217,6 +224,7 @@ func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 	return best_target
 
 func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
+	if PERFORMANCE_MODE: return
 	if impact_effect_scene:
 		var effect = impact_effect_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
@@ -250,7 +258,7 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 			audio_manager.play_sfx("projectile_hit")
 
 	# Spawn visual effect at hit position
-	if splash_effect_scene:
+	if not PERFORMANCE_MODE and splash_effect_scene:
 		var effect = splash_effect_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 		if effects_container:

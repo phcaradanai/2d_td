@@ -7,6 +7,9 @@ signal pause_requested()
 signal restart_requested()
 signal upgrade_tower_requested()
 signal deselect_tower_requested()
+signal sell_tower_requested()
+signal branch_upgrade_requested(branch_id: String)
+signal element_choice_requested(element_id: String)
 signal target_mode_changed(mode: String)
 signal main_menu_requested()
 signal audio_settings_changed(settings: Dictionary)
@@ -53,6 +56,9 @@ signal back_to_map_requested()
 @onready var tower_target_label: Label = null # Will be added dynamically or linked
 @onready var upgrade_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/UpgradeTowerButton
 @onready var deselect_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/DeselectTowerButton
+var sell_tower_button: Button = null
+var branch_option_buttons: Array[Button] = []
+var branch_options_container: VBoxContainer = null
 
 # Center Message Panel
 @onready var center_message_panel: PanelContainer = $Root/CenterMessagePanel
@@ -151,6 +157,14 @@ var tower_descriptions = {
 }
 
 var tower_prices := {} # id: cost
+var tower_catalog: Dictionary = {} # id: full tower config
+var tower_shop_scroll: ScrollContainer = null
+var tower_shop_list: VBoxContainer = null
+var dynamic_tower_buttons: Dictionary = {} # id: Button
+var element_status_label: Label = null
+var element_choice_panel: PanelContainer = null
+var element_choice_list: VBoxContainer = null
+var current_element_levels: Dictionary = {}
 
 const RESULT_PANEL_SCENE = preload("res://scenes/ui/ResultPanel.tscn")
 var result_panel: Control = null
@@ -166,6 +180,8 @@ func _ready() -> void:
 	center_restart_button.pressed.connect(_on_restart_pressed)
 	
 	_setup_right_sidebar_layout()
+	_ensure_elemental_shop_ui()
+	_ensure_element_choice_ui()
 	
 	# Instantiate Result Panel
 	result_panel = RESULT_PANEL_SCENE.instantiate()
@@ -207,7 +223,7 @@ func _ready() -> void:
 			back_to_map_requested.emit()
 	)
 	
-	basic_tower_button.pressed.connect(func(): _on_tower_btn_pressed("basic_tower", basic_tower_button))
+	basic_tower_button.pressed.connect(func(): _on_tower_btn_pressed("basic_tower_t1", basic_tower_button))
 	rapid_tower_button.pressed.connect(func(): _on_tower_btn_pressed("rapid_tower", rapid_tower_button))
 	cannon_tower_button.pressed.connect(func(): _on_tower_btn_pressed("cannon_tower", cannon_tower_button))
 	slow_tower_button.pressed.connect(func(): _on_tower_btn_pressed("slow_tower", slow_tower_button))
@@ -217,6 +233,27 @@ func _ready() -> void:
 	cancel_build_button.pressed.connect(func(): cancel_build_requested.emit())
 	upgrade_tower_button.pressed.connect(func(): upgrade_tower_requested.emit())
 	deselect_tower_button.pressed.connect(func(): deselect_tower_requested.emit())
+	
+	# Create Sell Tower button dynamically
+	var tower_info_vbox := upgrade_tower_button.get_parent()
+	if tower_info_vbox:
+		sell_tower_button = Button.new()
+		sell_tower_button.name = "SellTowerButton"
+		sell_tower_button.text = "Sell"
+		sell_tower_button.size_flags_horizontal = Control.SIZE_FILL
+		sell_tower_button.add_theme_color_override("font_color", Color(1.0, 0.45, 0.2))
+		sell_tower_button.pressed.connect(func(): sell_tower_requested.emit())
+		sell_tower_button.hide()
+		tower_info_vbox.add_child(sell_tower_button)
+		tower_info_vbox.move_child(sell_tower_button, tower_info_vbox.get_child_count() - 2) # above Deselect
+	
+	# Create branch options container (hidden by default, shown at T3 branch point)
+	if tower_info_vbox:
+		branch_options_container = VBoxContainer.new()
+		branch_options_container.name = "BranchOptionsContainer"
+		branch_options_container.hide()
+		tower_info_vbox.add_child(branch_options_container)
+		tower_info_vbox.move_child(branch_options_container, tower_info_vbox.get_child_count() - 3)
 	
 	target_mode_option_button.clear()
 	for mode in target_modes:
@@ -351,73 +388,219 @@ func set_gold(value: int) -> void:
 	_update_tower_affordability(value)
 
 func _update_tower_affordability(current_gold: int) -> void:
-	# Update button appearance based on gold
-	for btn_info in [
-		{"btn": basic_tower_button, "id": "basic_tower"},
-		{"btn": rapid_tower_button, "id": "rapid_tower"},
-		{"btn": cannon_tower_button, "id": "cannon_tower"},
-		{"btn": slow_tower_button, "id": "slow_tower"},
-		{"btn": sniper_tower_button, "id": "sniper_tower"},
-		{"btn": lightning_tower_button, "id": "lightning_tower"},
-		{"btn": sawblade_tower_button, "id": "sawblade_tower"}
-	]:
-		var cost = tower_prices.get(btn_info["id"], 999)
-		if current_gold < cost:
-			btn_info["btn"].modulate = Color(1, 0.4, 0.4, 0.8)
-		else:
-			btn_info["btn"].modulate = Color(1, 1, 1, 1)
-		
-		# Update label with price if possible
-		var base_name = btn_info["id"].replace("_tower", "").capitalize()
-		btn_info["btn"].text = "%s ($%d)" % [base_name, cost]
-		
-		# Enhanced Tooltip
-		var desc = tower_descriptions.get(btn_info["id"], "Defensive structure.")
-		var targets = "Land Only"
-		var attack = "Single"
-		
-		match btn_info["id"]:
-			"basic_tower": 
-				attack = "Single"
-			"rapid_tower": 
-				targets = "Land & Air"
-				attack = "Rapid Single"
-			"cannon_tower": 
-				attack = "Splash Area"
-			"slow_tower": 
-				attack = "Area Slow"
-			"sniper_tower": 
-				targets = "Land & Air"
-				attack = "Heavy Single"
-			"lightning_tower": 
-				targets = "Land & Air"
-				attack = "Chain Jump"
-			"sawblade_tower": 
-				attack = "Close Aura"
-		
-		btn_info["btn"].tooltip_text = "%s\n\nType: %s\nTargets: %s\nCost: %d Credits" % [desc, attack, targets, cost]
+	for tower_id in dynamic_tower_buttons.keys():
+		var btn: Button = dynamic_tower_buttons[tower_id]
+		if btn == null or not is_instance_valid(btn):
+			continue
+		var cost: int = int(tower_prices.get(tower_id, 50))
+		var cfg: Dictionary = tower_catalog.get(tower_id, {})
+		btn.modulate = Color(1, 1, 1, 1) if current_gold >= cost else Color(1, 0.4, 0.4, 0.8)
+		btn.text = "%s  $%d" % [_format_tower_button_name(tower_id, cfg), cost]
+		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
 
 func refresh_tower_shop(active_loadout: Array[String]) -> void:
-	# If empty, default to everything (safety)
-	var final_loadout = active_loadout
-	if final_loadout.is_empty():
-		final_loadout = ["basic_tower", "rapid_tower", "cannon_tower", "slow_tower", "sniper_tower", "lightning_tower", "sawblade_tower"]
-	
-	basic_tower_button.visible = final_loadout.has("basic_tower")
-	rapid_tower_button.visible = final_loadout.has("rapid_tower")
-	cannon_tower_button.visible = final_loadout.has("cannon_tower")
-	slow_tower_button.visible = final_loadout.has("slow_tower")
-	sniper_tower_button.visible = final_loadout.has("sniper_tower")
-	lightning_tower_button.visible = final_loadout.has("lightning_tower")
-	sawblade_tower_button.visible = final_loadout.has("sawblade_tower")
-	
-	# Update layout to collapse gaps
-	var container = basic_tower_button.get_parent()
-	if container is BoxContainer:
-		container.queue_sort()
+	_ensure_elemental_shop_ui()
+	_hide_static_tower_buttons()
+	_clear_dynamic_tower_buttons()
+
+	var ids: Array[String] = active_loadout.duplicate()
+	if ids.is_empty():
+		ids = ["basic_tower_t1"]
+
+	for tower_id in ids:
+		var cfg: Dictionary = tower_catalog.get(tower_id, {})
+		var btn := Button.new()
+		btn.name = "TowerButton_%s" % tower_id
+		btn.size_flags_horizontal = Control.SIZE_FILL
+		btn.focus_mode = Control.FOCUS_NONE
+		var cost: int = int(tower_prices.get(tower_id, cfg.get("cost", 50)))
+		btn.text = "%s  $%d" % [_format_tower_button_name(tower_id, cfg), cost]
+		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
+		var captured_tower_id: String = tower_id
+		var captured_button: Button = btn
+		btn.pressed.connect(func(): _on_tower_btn_pressed(captured_tower_id, captured_button))
+		tower_shop_list.add_child(btn)
+		dynamic_tower_buttons[tower_id] = btn
+
+	if element_status_label:
+		element_status_label.text = _format_element_levels(current_element_levels)
+
+	_update_tower_affordability(_get_current_gold_for_hud())
+
+func set_tower_catalog(catalog: Dictionary) -> void:
+	tower_catalog = catalog.duplicate(true)
+	for tower_id in tower_catalog.keys():
+		var cfg: Dictionary = tower_catalog[tower_id]
+		if not tower_prices.has(tower_id):
+			tower_prices[tower_id] = int(cfg.get("cost", 0))
 
 func set_tower_prices(prices: Dictionary) -> void:
 	tower_prices = prices
+
+func set_element_levels(levels: Dictionary) -> void:
+	current_element_levels = levels.duplicate(true)
+	if element_status_label:
+		element_status_label.text = _format_element_levels(current_element_levels)
+
+func show_element_choice(levels: Dictionary, pending_picks: int = 1) -> void:
+	_ensure_element_choice_ui()
+	set_element_levels(levels)
+	if element_choice_panel == null or element_choice_list == null:
+		return
+	for child in element_choice_list.get_children():
+		child.queue_free()
+
+	var title := Label.new()
+	title.text = "Choose Element  (%d pick%s)" % [pending_picks, "s" if pending_picks != 1 else ""]
+	title.add_theme_color_override("font_color", Color(0.4, 0.95, 1.0))
+	element_choice_list.add_child(title)
+
+	for element_id in ["light", "darkness", "water", "fire", "nature", "earth"]:
+		var level: int = int(levels.get(element_id, 0))
+		var btn := Button.new()
+		btn.size_flags_horizontal = Control.SIZE_FILL
+		btn.text = "%s  Lv.%d → Lv.%d" % [_element_label(element_id), level, min(level + 1, 3)]
+		btn.disabled = level >= 3
+		btn.tooltip_text = "Unlock or upgrade %s element. Dual/Triple towers open automatically from combinations." % _element_label(element_id)
+		var captured_element_id: String = element_id
+		btn.pressed.connect(func(): element_choice_requested.emit(captured_element_id))
+		element_choice_list.add_child(btn)
+
+	element_choice_panel.show()
+
+func hide_element_choice() -> void:
+	if element_choice_panel:
+		element_choice_panel.hide()
+
+func _ensure_elemental_shop_ui() -> void:
+	if tower_shop_list != null and is_instance_valid(tower_shop_list):
+		return
+	var container := basic_tower_button.get_parent()
+	if container == null:
+		return
+	_hide_static_tower_buttons()
+
+	element_status_label = Label.new()
+	element_status_label.name = "ElementStatusLabel"
+	element_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	element_status_label.text = "Elements: none"
+	element_status_label.add_theme_color_override("font_color", Color(0.45, 0.9, 1.0))
+	container.add_child(element_status_label)
+	container.move_child(element_status_label, basic_tower_button.get_index())
+
+	tower_shop_scroll = ScrollContainer.new()
+	tower_shop_scroll.name = "ElementalTowerShopScroll"
+	tower_shop_scroll.custom_minimum_size = Vector2(0, 360)
+	tower_shop_scroll.size_flags_horizontal = Control.SIZE_FILL
+	tower_shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	container.add_child(tower_shop_scroll)
+	container.move_child(tower_shop_scroll, element_status_label.get_index() + 1)
+
+	tower_shop_list = VBoxContainer.new()
+	tower_shop_list.name = "ElementalTowerShopList"
+	tower_shop_list.size_flags_horizontal = Control.SIZE_FILL
+	tower_shop_scroll.add_child(tower_shop_list)
+
+func _ensure_element_choice_ui() -> void:
+	if element_choice_panel != null and is_instance_valid(element_choice_panel):
+		return
+	if root == null:
+		return
+	element_choice_panel = PanelContainer.new()
+	element_choice_panel.name = "ElementChoicePanel"
+	element_choice_panel.visible = false
+	element_choice_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	element_choice_panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
+	element_choice_panel.offset_left = -310
+	element_choice_panel.offset_top = -170
+	element_choice_panel.offset_right = -20
+	element_choice_panel.offset_bottom = 170
+	root.add_child(element_choice_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 12)
+	margin.add_theme_constant_override("margin_bottom", 12)
+	element_choice_panel.add_child(margin)
+
+	element_choice_list = VBoxContainer.new()
+	element_choice_list.name = "ElementChoiceList"
+	element_choice_list.size_flags_horizontal = Control.SIZE_FILL
+	margin.add_child(element_choice_list)
+
+func _hide_static_tower_buttons() -> void:
+	for btn in [basic_tower_button, rapid_tower_button, cannon_tower_button, slow_tower_button, sniper_tower_button, lightning_tower_button, sawblade_tower_button]:
+		if btn:
+			btn.hide()
+
+func _clear_dynamic_tower_buttons() -> void:
+	if tower_shop_list == null:
+		return
+	for child in tower_shop_list.get_children():
+		child.queue_free()
+	dynamic_tower_buttons.clear()
+
+func _format_tower_button_name(tower_id: String, cfg: Dictionary) -> String:
+	var combo_type: String = str(cfg.get("combo_type", "neutral")).capitalize()
+	var name: String = str(cfg.get("display_name", cfg.get("name", tower_id)))
+	if combo_type != "Neutral":
+		return "%s • %s" % [_elements_short(cfg.get("elements", [])), name]
+	return name
+
+func _build_tower_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> String:
+	if cfg.is_empty():
+		return "Cost: %d Credits" % cost
+	var desc: String = str(cfg.get("description", "Defensive structure."))
+	var elements_text: String = _elements_full(cfg.get("elements", []))
+	var combo: String = str(cfg.get("combo_type", "neutral")).capitalize()
+	var target_categories: Array = cfg.get("target_categories", ["land"])
+	var targets: String = "Land + Air" if target_categories.has("air") and target_categories.has("land") else ("Air Only" if target_categories.has("air") else "Land Only")
+	return "%s\n\nCombo: %s\nElements: %s\nTargets: %s\nCost: %d Credits" % [desc, combo, elements_text, targets, cost]
+
+func _elements_short(raw_elements: Array) -> String:
+	if raw_elements.is_empty():
+		return "N"
+	var out: Array[String] = []
+	for raw in raw_elements:
+		out.append(_element_label(str(raw)).substr(0, 1))
+	return "+".join(out)
+
+func _elements_full(raw_elements: Array) -> String:
+	if raw_elements.is_empty():
+		return "Neutral"
+	var out: Array[String] = []
+	for raw in raw_elements:
+		out.append(_element_label(str(raw)))
+	return " + ".join(out)
+
+func _format_element_levels(levels: Dictionary) -> String:
+	var parts: Array[String] = []
+	for element_id in ["light", "darkness", "water", "fire", "nature", "earth"]:
+		var level: int = int(levels.get(element_id, 0))
+		if level > 0:
+			parts.append("%s%d" % [_element_label(element_id).substr(0, 1), level])
+	if parts.is_empty():
+		return "Elements: none - first pick after Wave 5"
+	return "Elements: " + "  ".join(parts)
+
+func _element_label(element_id: String) -> String:
+	match element_id:
+		"light": return "Light"
+		"darkness": return "Darkness"
+		"water": return "Water"
+		"fire": return "Fire"
+		"nature": return "Nature"
+		"earth": return "Earth"
+		_: return element_id.capitalize()
+
+func _get_current_gold_for_hud() -> int:
+	var scene := get_tree().current_scene
+	if scene:
+		var gm := scene.get_node_or_null("GameManager")
+		if gm:
+			return int(gm.get("gold"))
+	return 0
 
 func set_lives(value: int) -> void:
 	var old_text = lives_label.text
@@ -617,7 +800,18 @@ func enter_result_mode(summary: Dictionary, improvements: Dictionary = {}, rank:
 func show_tower_info(info: Dictionary) -> void:
 	show_tower_info_panel()
 	tower_name_label.text = info["name"]
-	tower_level_label.text = "Level: " + str(info["level"]) + "/" + str(info["max_level"])
+
+	# Show tier and branch info
+	var tier_text := "Tier %d" % info["tier"]
+	var info_elements: Array = info.get("elements", [])
+	if not info_elements.is_empty():
+		tier_text += "  |  %s" % _elements_full(info_elements)
+	elif info.get("branch_id", "") != "":
+		tier_text += "  |  %s" % info["branch_id"].capitalize()
+	if info.get("is_max_tier", false):
+		tier_text += "  [MAX]"
+	tower_level_label.text = tier_text
+
 	tower_damage_label.text = "Damage: " + str(info["damage"])
 	tower_range_label.text = "Range: " + str(info["range"])
 	tower_fire_rate_label.text = "Fire Rate: " + str(info["fire_rate"]) + "s"
@@ -668,17 +862,79 @@ func show_tower_info(info: Dictionary) -> void:
 		target_mode_option_button.select(mode_index)
 	updating_target_mode_ui = false
 	
-	if info["can_upgrade"]:
+	if info.get("is_max_tier", false):
+		tower_upgrade_cost_label.text = "MAX TIER"
+		upgrade_tower_button.disabled = true
+		upgrade_tower_button.text = "MAX TIER"
+	elif info.get("is_branch_point", false):
+		tower_upgrade_cost_label.text = "Choose Specialization"
+		upgrade_tower_button.disabled = false
+		upgrade_tower_button.text = "Evolve"
+	elif info["can_upgrade"] and info["upgrade_cost"] > 0:
 		tower_upgrade_cost_label.text = "Upgrade - %d Gold" % info["upgrade_cost"]
 		upgrade_tower_button.disabled = false
 		upgrade_tower_button.text = "Upgrade"
-	else:
-		tower_upgrade_cost_label.text = "Max Level"
+	elif info["can_upgrade"]:
+		tower_upgrade_cost_label.text = "Upgrade (N/A)"
 		upgrade_tower_button.disabled = true
-		upgrade_tower_button.text = "Max Level"
+		upgrade_tower_button.text = "Upgrade (N/A)"
+	else:
+		tower_upgrade_cost_label.text = "MAX TIER"
+		upgrade_tower_button.disabled = true
+		upgrade_tower_button.text = "MAX TIER"
+
+	if sell_tower_button:
+		var refund := int(info.get("sell_refund", 0))
+		sell_tower_button.text = "Sell ($%d)" % refund
+		sell_tower_button.show()
 
 func hide_tower_info() -> void:
 	hide_tower_info_panel()
+	hide_branch_options()
+	if sell_tower_button:
+		sell_tower_button.hide()
+
+
+func show_branch_options(branches: Array[Dictionary]) -> void:
+	hide_branch_options()
+	if branch_options_container == null:
+		return
+
+	for branch in branches:
+		var btn := Button.new()
+		var branch_name: String = branch.get("name", "")
+		var branch_cost: int = branch.get("cost", 0)
+		var branch_desc: String = branch.get("description", "")
+		btn.text = "%s ($%d)" % [branch_name, branch_cost]
+		if branch_desc != "":
+			btn.tooltip_text = branch_desc
+		btn.size_flags_horizontal = Control.SIZE_FILL
+		btn.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
+		var branch_id: String = branch.get("id", "")
+		btn.pressed.connect(func(): branch_upgrade_requested.emit(branch_id))
+		branch_options_container.add_child(btn)
+		branch_option_buttons.append(btn)
+
+	branch_options_container.show()
+
+	# Hide normal upgrade/sell while branches are shown
+	if upgrade_tower_button: upgrade_tower_button.hide()
+	if tower_upgrade_cost_label: tower_upgrade_cost_label.hide()
+	if sell_tower_button: sell_tower_button.hide()
+
+
+func hide_branch_options() -> void:
+	for btn in branch_option_buttons:
+		if is_instance_valid(btn):
+			btn.queue_free()
+	branch_option_buttons.clear()
+	if branch_options_container:
+		branch_options_container.hide()
+
+	# Restore upgrade/sell visibility
+	if upgrade_tower_button: upgrade_tower_button.show()
+	if tower_upgrade_cost_label: tower_upgrade_cost_label.show()
+	if sell_tower_button: sell_tower_button.show()
 
 func show_center_message(title: String, show_buttons: bool = true) -> void:
 	set_panel_active(center_message_panel, true, true)
@@ -813,11 +1069,15 @@ func pulse_label(label: Control, pulse_scale: float = 1.1) -> void:
 	label.set_meta("pulse_tween", tween)
 
 func _on_tower_btn_pressed(id: String, btn: Button) -> void:
-	var cost = tower_prices.get(id, 999)
+	var cost = tower_prices.get(id, 50)
 	# Check affordability here for feedback
 	var gold = 0
-	if get_tree().current_scene.game_manager:
-		gold = get_tree().current_scene.game_manager.gold
+	var scene := get_tree().current_scene
+	var gm: Node = null
+	if scene:
+		gm = scene.get_node_or_null("GameManager")
+	if gm:
+		gold = int(gm.get("gold"))
 	
 	if gold < cost:
 		shake_node(btn)
@@ -1213,3 +1473,7 @@ func _get_trait_description(trait_name: String) -> String:
 		"lightning": return "Chain: Hits multiple targets."
 		"sawblade": return "Bleed: Extra damage over time."
 		_: return trait_name.capitalize()
+
+
+func _on_tower_build_selected(tower_id: String) -> void:
+	pass # Replace with function body.
