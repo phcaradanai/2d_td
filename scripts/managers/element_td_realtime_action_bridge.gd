@@ -1,8 +1,10 @@
 extends Node
 
 # Element TD WC3-like real-time action bridge.
-# Handles build / select / upgrade / sell during active WAVE without relying on
-# legacy main.gd selection paths that were built for pre-wave actions only.
+# Handles build / select / linear upgrade / sell during active WAVE.
+# Element TD WC3 uses element picks to unlock combo towers in the shop; it does
+# not use branch-transform upgrades from an existing tower, so this bridge keeps
+# upgrades linear and leaves combination choice to the shop unlock system.
 
 const GAME_STATE_WAVE := 3
 const GAME_STATE_PAUSED := 5
@@ -48,7 +50,6 @@ func _connect_runtime_signals() -> void:
 	_connect_signal(game_hud, "tower_build_selected", Callable(self, "_on_tower_build_selected"))
 	_connect_signal(game_hud, "cancel_build_requested", Callable(self, "_on_cancel_build_requested"))
 	_connect_signal(game_hud, "upgrade_tower_requested", Callable(self, "_on_upgrade_tower_requested"))
-	_connect_signal(game_hud, "branch_upgrade_requested", Callable(self, "_on_branch_upgrade_requested"))
 	_connect_signal(game_hud, "sell_tower_requested", Callable(self, "_on_sell_tower_requested"))
 	_connect_signal(game_hud, "deselect_tower_requested", Callable(self, "_on_deselect_tower_requested"))
 	_connect_signal(build_manager, "tower_placed", Callable(self, "_on_tower_placed"))
@@ -147,14 +148,7 @@ func _on_upgrade_tower_requested() -> void:
 	if _handling_hud_action or not realtime_upgrade_enabled or not _is_wave_realtime_window():
 		return
 	_handling_hud_action = true
-	_try_upgrade_selected_tower("")
-	_handling_hud_action = false
-
-func _on_branch_upgrade_requested(branch_id: String) -> void:
-	if _handling_hud_action or not realtime_upgrade_enabled or not _is_wave_realtime_window():
-		return
-	_handling_hud_action = true
-	_try_upgrade_selected_tower(branch_id)
+	_try_upgrade_selected_tower()
 	_handling_hud_action = false
 
 func _on_sell_tower_requested() -> void:
@@ -195,7 +189,7 @@ func _sync_realtime_hud_controls() -> void:
 			var button = dynamic_buttons[tower_id]
 			if button is Button and is_instance_valid(button):
 				button.disabled = false
-	for property_name in ["sell_tower_button", "deselect_tower_button", "cancel_build_button"]:
+	for property_name in ["upgrade_tower_button", "sell_tower_button", "deselect_tower_button", "cancel_build_button"]:
 		var control = game_hud.get(property_name)
 		if control is BaseButton and is_instance_valid(control):
 			control.disabled = false
@@ -288,7 +282,7 @@ func _update_tower_panel(tower: Node2D) -> void:
 	if game_hud == null or tower == null or not is_instance_valid(tower):
 		return
 	var cfg := _get_current_tower_config(tower)
-	var options := _get_upgrade_options(tower)
+	var upgrade_id := _pick_upgrade_id(tower)
 	_set_control_visible("right_sidebar_container", true)
 	_set_control_visible("right_sidebar", true)
 	_set_label_text("tower_name_label", _get_tower_display_name(tower))
@@ -298,21 +292,18 @@ func _update_tower_panel(tower: Node2D) -> void:
 	_set_label_text("tower_fire_rate_label", "Fire Rate: %s" % _fmt_number(cfg.get("fire_rate", cfg.get("attack_speed", tower.get("fire_rate")))))
 	_set_label_text("tower_splash_label", "Splash: %s" % _fmt_number(cfg.get("splash_radius", tower.get("splash_radius"))))
 	_set_label_text("tower_slow_label", _build_effect_summary(cfg))
-	_sync_branch_upgrade_options(options)
+	_hide_unused_branch_container()
 	var upgrade_btn = game_hud.get("upgrade_tower_button")
 	if upgrade_btn is Button and is_instance_valid(upgrade_btn):
 		upgrade_btn.visible = true
-		if options.is_empty():
+		if upgrade_id == "":
 			upgrade_btn.text = "No Upgrade"
 			upgrade_btn.disabled = true
-		elif options.size() == 1:
-			var upgrade_cfg := _get_tower_config(options[0])
+		else:
+			var upgrade_cfg := _get_tower_config(upgrade_id)
 			var cost := int(upgrade_cfg.get("upgrade_cost", upgrade_cfg.get("cost", 0)))
 			upgrade_btn.text = "Upgrade  $%d" % cost
 			upgrade_btn.disabled = false
-		else:
-			upgrade_btn.text = "Choose Upgrade Branch"
-			upgrade_btn.disabled = true
 	var sell_btn = game_hud.get("sell_tower_button")
 	if sell_btn is Button and is_instance_valid(sell_btn):
 		sell_btn.visible = true
@@ -323,54 +314,21 @@ func _update_tower_panel(tower: Node2D) -> void:
 		deselect_btn.visible = true
 		deselect_btn.disabled = false
 
-func _sync_branch_upgrade_options(options: Array[String]) -> void:
+func _hide_unused_branch_container() -> void:
 	if game_hud == null:
 		return
 	var container = game_hud.get("branch_options_container")
-	if not (container is VBoxContainer) or not is_instance_valid(container):
-		return
-	for child in container.get_children():
-		child.queue_free()
-	var buttons: Array[Button] = []
-	if options.size() <= 1:
+	if container is Control and is_instance_valid(container):
+		for child in container.get_children():
+			child.queue_free()
 		container.hide()
-		game_hud.set("branch_option_buttons", buttons)
-		return
-	container.show()
-	var title := Label.new()
-	title.text = "Choose branch"
-	title.add_theme_color_override("font_color", Color(0.4, 0.95, 1.0))
-	container.add_child(title)
-	for option_id in options:
-		var cfg := _get_tower_config(option_id)
-		var btn := Button.new()
-		btn.size_flags_horizontal = Control.SIZE_FILL
-		btn.text = _format_upgrade_option_label(option_id, cfg)
-		btn.tooltip_text = _format_upgrade_option_tooltip(option_id, cfg)
-		var captured_id := option_id
-		btn.pressed.connect(func(): _on_branch_upgrade_requested(captured_id))
-		container.add_child(btn)
-		buttons.append(btn)
-	game_hud.set("branch_option_buttons", buttons)
-
-func _format_upgrade_option_label(option_id: String, cfg: Dictionary) -> String:
-	var display := str(cfg.get("display_name", cfg.get("name", option_id)))
-	var cost := int(cfg.get("upgrade_cost", cfg.get("cost", 0)))
-	var elements_text := _elements_short(cfg.get("elements", []))
-	return "%s  %s  $%d" % [elements_text, display, cost]
-
-func _format_upgrade_option_tooltip(option_id: String, cfg: Dictionary) -> String:
-	if cfg.is_empty():
-		return option_id
-	var combo := str(cfg.get("combo_type", "tower")).capitalize()
-	var desc := str(cfg.get("description", ""))
-	var elements_text := _elements_full(cfg.get("elements", []))
-	return "%s\nCombo: %s\nElements: %s" % [desc, combo, elements_text]
+	if game_hud.get("branch_option_buttons") is Array:
+		game_hud.set("branch_option_buttons", [])
 
 func _manual_hide_tower_panel() -> void:
 	if game_hud == null:
 		return
-	_sync_branch_upgrade_options([])
+	_hide_unused_branch_container()
 	for property_name in ["right_sidebar", "right_sidebar_container"]:
 		var control = game_hud.get(property_name)
 		if control is Control and is_instance_valid(control):
@@ -431,17 +389,14 @@ func _build_effect_summary(cfg: Dictionary) -> String:
 		parts.append("Elements: %s" % "+".join(element_names))
 	return "Effect: %s" % (", ".join(parts) if not parts.is_empty() else "None")
 
-func _try_upgrade_selected_tower(branch_id: String) -> bool:
+func _try_upgrade_selected_tower() -> bool:
 	var tower := _get_selected_tower()
 	if tower == null:
 		_set_status("Select a tower to upgrade")
 		return false
-	var upgrade_id := _pick_upgrade_id(tower, branch_id)
+	var upgrade_id := _pick_upgrade_id(tower)
 	if upgrade_id == "":
-		if _get_upgrade_options(tower).size() > 1:
-			_set_status("Choose an upgrade branch")
-		else:
-			_set_status("No upgrade available")
+		_set_status("No upgrade available")
 		_update_tower_panel(tower)
 		return false
 	var upgrade_config := _get_tower_config(upgrade_id)
@@ -477,17 +432,14 @@ func _get_upgrade_options(tower: Node2D) -> Array[String]:
 				options.append(id)
 	return options
 
-func _pick_upgrade_id(tower: Node2D, branch_id: String) -> String:
+func _pick_upgrade_id(tower: Node2D) -> String:
 	var options := _get_upgrade_options(tower)
 	if options.is_empty():
 		return ""
-	if branch_id == "" and options.size() == 1:
-		return options[0]
-	for id in options:
-		var cfg := _get_tower_config(id)
-		if id == branch_id or str(cfg.get("branch_id", "")) == branch_id:
-			return id
-	return ""
+	if options.size() > 1:
+		push_warning("Element TD runtime does not support branch-transform upgrades. Keep combo choice in the shop. Tower=%s options=%s" % [_get_tower_id(tower), str(options)])
+		return ""
+	return options[0]
 
 func _get_tower_config(tower_id: String) -> Dictionary:
 	if build_manager == null or tower_id == "":
@@ -519,10 +471,6 @@ func _is_upgrade_unlocked(tower: Node2D, upgrade_id: String, upgrade_config: Dic
 func _apply_upgrade_config_to_tower(tower: Node2D, upgrade_config: Dictionary, upgrade_cost: int) -> void:
 	var previous_invested := _get_tower_invested_gold(tower)
 	var cell := _get_tower_cell(tower)
-	# Do not call upgrade_to() here. tower.gd's upgrade_to currently requires a
-	# different 2-argument signature, and a one-argument dynamic call crashes.
-	# setup(config, cell) is the shared safe path that reapplies tower stats,
-	# visuals, next_upgrade_ids, tier, elements, and targeting config.
 	if tower.has_method("upgrade_to_config"):
 		tower.call("upgrade_to_config", upgrade_config)
 	else:
@@ -611,32 +559,6 @@ func _set_status(message: String) -> void:
 		game_hud.call("set_status", message)
 	if main != null and main.has_method("show_wave_feedback"):
 		main.call("show_wave_feedback", message, Color(0.45, 0.9, 1.0))
-
-func _elements_short(raw_elements: Variant) -> String:
-	if not (raw_elements is Array) or raw_elements.is_empty():
-		return "N"
-	var out: Array[String] = []
-	for raw in raw_elements:
-		out.append(_element_label(str(raw)).substr(0, 1))
-	return "+".join(out)
-
-func _elements_full(raw_elements: Variant) -> String:
-	if not (raw_elements is Array) or raw_elements.is_empty():
-		return "Neutral"
-	var out: Array[String] = []
-	for raw in raw_elements:
-		out.append(_element_label(str(raw)))
-	return " + ".join(out)
-
-func _element_label(element_id: String) -> String:
-	match element_id:
-		"light": return "Light"
-		"darkness": return "Dark"
-		"water": return "Water"
-		"fire": return "Fire"
-		"nature": return "Nature"
-		"earth": return "Earth"
-		_: return element_id.capitalize()
 
 func _format_tower_id(tower_id: String) -> String:
 	return tower_id.replace("_", " ").capitalize()
