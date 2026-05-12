@@ -1,12 +1,10 @@
 extends Node
 
 # Element TD WC3-like real-time action bridge.
-# This node intentionally handles only the active WAVE state so the existing
-# pre-wave build flow in main.gd remains untouched and duplicate-safe.
+# Handles build / select / upgrade / sell during active WAVE without relying on
+# legacy main.gd selection paths that were built for pre-wave actions only.
 
-const GAME_STATE_BUILD := 2
 const GAME_STATE_WAVE := 3
-const GAME_STATE_WAVE_COMPLETE := 4
 const GAME_STATE_PAUSED := 5
 const GAME_STATE_GAME_OVER := 6
 const GAME_STATE_VICTORY := 7
@@ -59,13 +57,10 @@ func _connect_runtime_signals() -> void:
 	_connect_hud_button_press("deselect_tower_button", Callable(self, "_on_deselect_button_pressed_direct"))
 
 func _connect_signal(source: Object, signal_name: String, callable: Callable) -> void:
-	if source == null:
+	if source == null or not source.has_signal(signal_name):
 		return
-	if not source.has_signal(signal_name):
-		return
-	if source.is_connected(signal_name, callable):
-		return
-	source.connect(signal_name, callable)
+	if not source.is_connected(signal_name, callable):
+		source.connect(signal_name, callable)
 
 func _connect_hud_button_press(property_name: String, callable: Callable) -> void:
 	if game_hud == null:
@@ -75,41 +70,41 @@ func _connect_hud_button_press(property_name: String, callable: Callable) -> voi
 		_connect_signal(control, "pressed", callable)
 
 func _unhandled_input(event: InputEvent) -> void:
-	if not _is_wave_realtime_window():
-		return
-	if build_manager == null:
+	if not _is_wave_realtime_window() or build_manager == null:
 		return
 
 	if event is InputEventMouseMotion:
 		if _has_selected_build_tower() and build_manager.has_method("update_hover"):
-			build_manager.update_hover(_get_tower_container_mouse_position())
+			build_manager.call("update_hover", _get_tower_container_mouse_position())
 		return
 
-	if event is InputEventMouseButton and event.pressed:
-		if event.button_index == MOUSE_BUTTON_RIGHT:
-			if _has_selected_build_tower():
-				_clear_build_selection()
-				get_viewport().set_input_as_handled()
-				return
-			if _get_selected_tower() != null:
-				_clear_tower_selection()
-				get_viewport().set_input_as_handled()
-				return
+	if not (event is InputEventMouseButton) or not event.pressed:
+		return
 
-		if event.button_index != MOUSE_BUTTON_LEFT:
-			return
-
+	if event.button_index == MOUSE_BUTTON_RIGHT:
 		if _has_selected_build_tower():
-			var placed := build_manager.try_place_tower(_get_tower_container_mouse_position())
-			if placed:
-				_refresh_hud_after_economy_change()
+			_clear_build_selection()
+			get_viewport().set_input_as_handled()
+			return
+		if _get_selected_tower() != null:
+			_clear_tower_selection()
 			get_viewport().set_input_as_handled()
 			return
 
-		var clicked_tower := _find_tower_under_mouse()
-		if clicked_tower != null:
-			_select_tower(clicked_tower)
-			get_viewport().set_input_as_handled()
+	if event.button_index != MOUSE_BUTTON_LEFT:
+		return
+
+	if _has_selected_build_tower():
+		var placed := bool(build_manager.call("try_place_tower", _get_tower_container_mouse_position()))
+		if placed:
+			_refresh_hud_after_economy_change()
+		get_viewport().set_input_as_handled()
+		return
+
+	var clicked_tower := _find_tower_under_mouse()
+	if clicked_tower != null:
+		_select_tower(clicked_tower)
+		get_viewport().set_input_as_handled()
 
 func _on_tower_build_selected(tower_id: String) -> void:
 	if _handling_hud_action or not realtime_build_enabled or not _is_wave_realtime_window():
@@ -118,18 +113,15 @@ func _on_tower_build_selected(tower_id: String) -> void:
 		return
 	_handling_hud_action = true
 	if build_manager.has_method("set_selected_tower"):
-		build_manager.set_selected_tower(tower_id)
+		build_manager.call("set_selected_tower", tower_id)
 	_set_status("Build during wave: %s" % _format_tower_id(tower_id))
 	_handling_hud_action = false
 
 func _on_cancel_build_requested() -> void:
-	if not _is_wave_realtime_window():
-		return
-	_clear_build_selection()
+	if _is_wave_realtime_window():
+		_clear_build_selection()
 
 func _on_upgrade_button_pressed_direct() -> void:
-	# Direct button hook fixes cases where GameHUD/Main consumes or ignores the
-	# upgrade signal during WAVE before the bridge can act.
 	if not _is_wave_realtime_window():
 		return
 	var now := Time.get_ticks_msec()
@@ -173,16 +165,12 @@ func _on_sell_tower_requested() -> void:
 	_handling_hud_action = false
 
 func _on_deselect_tower_requested() -> void:
-	if not _is_wave_realtime_window():
-		return
-	_clear_tower_selection()
+	if _is_wave_realtime_window():
+		_clear_tower_selection()
 
 func _on_tower_placed(tower: Node2D, tower_id: String, _cost: int) -> void:
 	if tower == null or not is_instance_valid(tower):
 		return
-	# WC3-like build timing: towers placed mid-wave should not fire on the exact
-	# same frame they appear. This gives real-time building pressure without
-	# needing a full construction animation pass yet.
 	_apply_short_fire_lockout(tower, REALTIME_BUILD_LOCKOUT_SEC)
 	if _is_wave_realtime_window():
 		_set_status("Built %s" % _format_tower_id(tower_id))
@@ -201,32 +189,26 @@ func _is_wave_realtime_window() -> bool:
 func _sync_realtime_hud_controls() -> void:
 	if game_hud == null:
 		return
-
-	# Some existing UI paths disable build/upgrade controls during WAVE. Element TD
-	# expects these actions to stay available, while the actual validators still
-	# reject invalid/too-expensive actions.
 	var dynamic_buttons = game_hud.get("dynamic_tower_buttons")
 	if dynamic_buttons is Dictionary:
 		for tower_id in dynamic_buttons.keys():
 			var button = dynamic_buttons[tower_id]
 			if button is Button and is_instance_valid(button):
 				button.disabled = false
-
 	for property_name in ["upgrade_tower_button", "sell_tower_button", "deselect_tower_button", "cancel_build_button"]:
 		var control = game_hud.get(property_name)
 		if control is BaseButton and is_instance_valid(control):
 			control.disabled = false
-
 	var target_mode_control = game_hud.get("target_mode_option_button")
 	if target_mode_control is OptionButton and is_instance_valid(target_mode_control):
 		target_mode_control.disabled = false
 
 func _has_selected_build_tower() -> bool:
-	return build_manager != null and build_manager.has_method("has_selected_tower") and bool(build_manager.has_selected_tower())
+	return build_manager != null and build_manager.has_method("has_selected_tower") and bool(build_manager.call("has_selected_tower"))
 
 func _clear_build_selection() -> void:
 	if build_manager != null and build_manager.has_method("clear_selected_tower"):
-		build_manager.clear_selected_tower()
+		build_manager.call("clear_selected_tower")
 	_set_status("Build cancelled")
 
 func _get_tower_container_mouse_position() -> Vector2:
@@ -239,11 +221,10 @@ func _find_tower_under_mouse() -> Node2D:
 		return null
 	var local_pos := _get_tower_container_mouse_position()
 	if build_manager != null and build_manager.has_method("local_to_cell") and build_manager.has_method("get_tower_at_cell"):
-		var cell: Vector2i = build_manager.local_to_cell(local_pos)
-		var cell_tower = build_manager.get_tower_at_cell(cell)
+		var cell: Vector2i = build_manager.call("local_to_cell", local_pos)
+		var cell_tower = build_manager.call("get_tower_at_cell", cell)
 		if cell_tower is Node2D and is_instance_valid(cell_tower):
 			return cell_tower
-
 	var best_tower: Node2D = null
 	var best_distance := select_radius
 	for node in get_tree().get_nodes_in_group("placed_towers"):
@@ -259,33 +240,25 @@ func _find_tower_under_mouse() -> Node2D:
 func _select_tower(tower: Node2D) -> void:
 	if tower == null or not is_instance_valid(tower):
 		return
-
-	# Ask main.gd to do its normal selection work first when available, but do
-	# not trust it during WAVE because the legacy flow can ignore tower clicks.
+	# Let main.gd do any side effects it supports, then force bridge selection.
 	for method_name in ["_on_tower_clicked", "_select_tower", "select_tower"]:
 		if main != null and main.has_method(method_name):
 			main.call(method_name, tower)
 			break
-
-	# Force the canonical selected tower for real-time upgrade/sell actions.
 	_clear_tower_visual_selection_only()
 	selected_tower = tower
 	if main != null:
 		main.set("selected_tower", tower)
 	_set_tower_selected(tower, true)
 	_update_tower_panel(tower)
-	_set_status("Selected %s" % str(tower.get("display_name")))
+	_set_status("Selected %s" % _get_tower_display_name(tower))
 
 func _clear_tower_selection() -> void:
 	_clear_tower_visual_selection_only()
 	selected_tower = null
 	if main != null:
 		main.set("selected_tower", null)
-	if game_hud != null:
-		for method_name in ["hide_tower_info", "clear_tower_info", "hide_selected_tower"]:
-			if game_hud.has_method(method_name):
-				game_hud.call(method_name)
-				break
+	_manual_hide_tower_panel()
 	_set_status("Tower deselected")
 
 func _clear_tower_visual_selection_only() -> void:
@@ -313,43 +286,129 @@ func _set_tower_selected(tower: Node2D, value: bool) -> void:
 			tower.queue_redraw()
 
 func _update_tower_panel(tower: Node2D) -> void:
-	if game_hud == null or tower == null:
+	# Do not call GameHUD.show_tower_info() from this bridge. Its signature expects
+	# structured config arguments, not a tower object, and calling it with the wrong
+	# type crashes during WAVE selection. Update existing HUD fields directly.
+	if game_hud == null or tower == null or not is_instance_valid(tower):
 		return
-	for method_name in ["show_tower_info", "show_tower_details", "update_tower_info", "set_selected_tower"]:
-		if game_hud.has_method(method_name):
-			game_hud.call(method_name, tower)
-			return
+	var cfg := _get_current_tower_config(tower)
+	_set_control_visible("right_sidebar_container", true)
+	_set_control_visible("right_sidebar", true)
+	_set_label_text("tower_name_label", _get_tower_display_name(tower))
+	_set_label_text("tower_level_label", "Tier: %s" % str(cfg.get("tier", cfg.get("level", tower.get("level")))))
+	_set_label_text("tower_damage_label", "Damage: %s" % _fmt_number(cfg.get("damage", tower.get("damage"))))
+	_set_label_text("tower_range_label", "Range: %s" % _fmt_number(cfg.get("range", tower.get("range"))))
+	_set_label_text("tower_fire_rate_label", "Fire Rate: %s" % _fmt_number(cfg.get("fire_rate", cfg.get("attack_speed", tower.get("fire_rate")))))
+	_set_label_text("tower_splash_label", "Splash: %s" % _fmt_number(cfg.get("splash_radius", tower.get("splash_radius"))))
+	_set_label_text("tower_slow_label", _build_effect_summary(cfg))
+	var upgrade_id := _pick_upgrade_id(tower, "")
+	var upgrade_btn = game_hud.get("upgrade_tower_button")
+	if upgrade_btn is Button and is_instance_valid(upgrade_btn):
+		upgrade_btn.visible = true
+		upgrade_btn.disabled = false
+		if upgrade_id == "":
+			upgrade_btn.text = "No Upgrade"
+		else:
+			var upgrade_cfg := _get_tower_config(upgrade_id)
+			var cost := int(upgrade_cfg.get("upgrade_cost", upgrade_cfg.get("cost", 0)))
+			upgrade_btn.text = "Upgrade  $%d" % cost
+	var sell_btn = game_hud.get("sell_tower_button")
+	if sell_btn is Button and is_instance_valid(sell_btn):
+		sell_btn.visible = true
+		sell_btn.disabled = false
+		sell_btn.text = "Sell  +%d" % _get_sell_refund(tower)
+	var deselect_btn = game_hud.get("deselect_tower_button")
+	if deselect_btn is Button and is_instance_valid(deselect_btn):
+		deselect_btn.visible = true
+		deselect_btn.disabled = false
+
+func _manual_hide_tower_panel() -> void:
+	if game_hud == null:
+		return
+	for property_name in ["right_sidebar", "right_sidebar_container"]:
+		var control = game_hud.get(property_name)
+		if control is Control and is_instance_valid(control):
+			control.visible = false
+
+func _set_control_visible(property_name: String, value: bool) -> void:
+	var control = game_hud.get(property_name) if game_hud != null else null
+	if control is Control and is_instance_valid(control):
+		control.visible = value
+
+func _set_label_text(property_name: String, text: String) -> void:
+	var label = game_hud.get(property_name) if game_hud != null else null
+	if label is Label and is_instance_valid(label):
+		label.text = text
+
+func _get_current_tower_config(tower: Node2D) -> Dictionary:
+	var raw_cfg = tower.get("config")
+	if raw_cfg is Dictionary:
+		return raw_cfg.duplicate(true)
+	var tower_id := _get_tower_id(tower)
+	return _get_tower_config(tower_id)
+
+func _get_tower_display_name(tower: Node2D) -> String:
+	var cfg := _get_current_tower_config(tower)
+	var display := str(cfg.get("display_name", cfg.get("name", "")))
+	if display != "":
+		return display
+	return _format_tower_id(_get_tower_id(tower))
+
+func _get_tower_id(tower: Node2D) -> String:
+	for key in ["tower_id", "id", "tower_type"]:
+		var value = tower.get(key)
+		if value != null and str(value) != "":
+			return str(value)
+	var cfg = tower.get("config")
+	if cfg is Dictionary:
+		return str(cfg.get("id", cfg.get("tower_id", "")))
+	return "tower"
+
+func _fmt_number(value: Variant) -> String:
+	if value == null:
+		return "-"
+	if value is float:
+		return "%.1f" % float(value)
+	return str(value)
+
+func _build_effect_summary(cfg: Dictionary) -> String:
+	var parts: Array[String] = []
+	if float(cfg.get("slow_percent", 0.0)) > 0.0:
+		parts.append("Slow %.0f%%" % (float(cfg.get("slow_percent", 0.0)) * 100.0))
+	if float(cfg.get("splash_radius", 0.0)) > 0.0:
+		parts.append("AoE %s" % _fmt_number(cfg.get("splash_radius")))
+	var elements = cfg.get("elements", [])
+	if elements is Array and not elements.is_empty():
+		var element_names: Array[String] = []
+		for e in elements:
+			element_names.append(str(e))
+		parts.append("Elements: %s" % "+".join(element_names))
+	return "Effect: %s" % (", ".join(parts) if not parts.is_empty() else "None")
 
 func _try_upgrade_selected_tower(branch_id: String) -> bool:
 	var tower := _get_selected_tower()
 	if tower == null:
 		_set_status("Select a tower to upgrade")
 		return false
-
 	var upgrade_id := _pick_upgrade_id(tower, branch_id)
 	if upgrade_id == "":
 		_set_status("No upgrade available")
+		_update_tower_panel(tower)
 		return false
-
 	var upgrade_config := _get_tower_config(upgrade_id)
 	if upgrade_config.is_empty():
 		_set_status("Upgrade config missing: %s" % upgrade_id)
 		return false
-
 	if not _is_upgrade_unlocked(upgrade_id, upgrade_config):
 		_set_status("Need matching element level for %s" % _format_tower_id(upgrade_id))
 		return false
-
 	var cost := int(upgrade_config.get("upgrade_cost", upgrade_config.get("cost", 0)))
-	if cost <= 0:
-		cost = int(upgrade_config.get("cost", 0))
 	if game_manager == null or not game_manager.has_method("spend_gold"):
 		_set_status("Game manager missing")
 		return false
-	if not game_manager.spend_gold(cost):
+	if not bool(game_manager.call("spend_gold", cost)):
 		_set_status("Not enough gold for upgrade: %d" % cost)
 		return false
-
 	_apply_upgrade_config_to_tower(tower, upgrade_config, cost)
 	_apply_short_fire_lockout(tower, REALTIME_UPGRADE_LOCKOUT_SEC)
 	_update_tower_panel(tower)
@@ -369,13 +428,12 @@ func _pick_upgrade_id(tower: Node2D, branch_id: String) -> String:
 		return ""
 	if branch_id == "" and options.size() == 1:
 		return options[0]
-
 	for id in options:
 		var cfg := _get_tower_config(id)
 		if id == branch_id or str(cfg.get("branch_id", "")) == branch_id:
 			return id
 	if branch_id == "" and options.size() > 1:
-		_set_status("Choose an upgrade branch")
+		return options[0]
 	return ""
 
 func _get_tower_config(tower_id: String) -> Dictionary:
@@ -391,20 +449,17 @@ func _get_tower_config(tower_id: String) -> Dictionary:
 
 func _is_upgrade_unlocked(upgrade_id: String, upgrade_config: Dictionary) -> bool:
 	if build_manager != null and build_manager.has_method("is_tower_unlocked"):
-		return bool(build_manager.is_tower_unlocked(upgrade_id))
+		return bool(build_manager.call("is_tower_unlocked", upgrade_id))
 	return int(upgrade_config.get("required_element_level", 0)) <= 0
 
 func _apply_upgrade_config_to_tower(tower: Node2D, upgrade_config: Dictionary, upgrade_cost: int) -> void:
 	var previous_invested := _get_tower_invested_gold(tower)
 	var cell := _get_tower_cell(tower)
-
 	for method_name in ["upgrade_to_config", "upgrade_to", "apply_upgrade_config"]:
 		if tower.has_method(method_name):
 			tower.call(method_name, upgrade_config)
 			tower.set("total_invested_gold", previous_invested + upgrade_cost)
 			return
-
-	# Fallback: Tower.setup already exists and applies all current tower stats.
 	if tower.has_method("setup"):
 		tower.call("setup", upgrade_config, cell)
 		tower.set("total_invested_gold", previous_invested + upgrade_cost)
@@ -421,15 +476,14 @@ func _try_sell_selected_tower() -> bool:
 	if build_manager == null or not build_manager.has_method("remove_tower_at_cell"):
 		_set_status("Build manager cannot sell towers")
 		return false
-
 	var cell := _get_tower_cell(tower)
 	var refund := _get_sell_refund(tower)
-	var sold := bool(build_manager.remove_tower_at_cell(cell))
+	var sold := bool(build_manager.call("remove_tower_at_cell", cell))
 	if not sold:
 		_set_status("Sell failed")
 		return false
 	if game_manager != null and game_manager.has_method("add_gold") and refund > 0:
-		game_manager.add_gold(refund)
+		game_manager.call("add_gold", refund)
 	_clear_tower_selection()
 	_refresh_hud_after_economy_change()
 	_set_status("Sold tower +%d" % refund)
@@ -442,7 +496,7 @@ func _get_tower_cell(tower: Node2D) -> Vector2i:
 	if raw_cell is Vector2i:
 		return raw_cell
 	if build_manager != null and build_manager.has_method("local_to_cell") and tower != null:
-		return build_manager.local_to_cell(tower.position)
+		return build_manager.call("local_to_cell", tower.position)
 	return Vector2i.ZERO
 
 func _get_tower_invested_gold(tower: Node2D) -> int:
@@ -460,14 +514,12 @@ func _get_sell_refund(tower: Node2D) -> int:
 		return int(tower.call("get_sell_refund_amount"))
 	if tower.has_method("get_sell_value"):
 		return int(tower.call("get_sell_value"))
-
 	var invested := _get_tower_invested_gold(tower)
 	var cfg = tower.get("config")
 	if cfg is Dictionary:
 		var mode := str(cfg.get("sell_refund_mode", ""))
 		if mode == "nearly_full":
-			var loss := int(cfg.get("sell_refund_loss", 1))
-			return max(0, invested - loss)
+			return max(0, invested - int(cfg.get("sell_refund_loss", 1)))
 	return int(floor(float(invested) * DEFAULT_SELL_REFUND_RATE))
 
 func _apply_short_fire_lockout(tower: Node2D, seconds: float) -> void:
