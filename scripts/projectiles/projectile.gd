@@ -22,9 +22,8 @@ const ELEMENT_DAMAGE_STRONG_MULTIPLIER: float = 1.50
 const ELEMENT_DAMAGE_WEAK_MULTIPLIER: float = 0.75
 const ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER: float = 1.0
 
-# Until every wave has explicit elemental armor metadata, infer a stable armor
-# profile from enemy archetype. This makes the mechanic testable immediately
-# without changing existing wave/enemy JSON contracts.
+# Backward-compatible safety net only. Stage 5C moves enemy armor into
+# data/enemies.json and WaveManager writes it to enemy metadata at spawn time.
 const ENEMY_TYPE_ARMOR_FALLBACK := {
 	"basic": "earth",
 	"fast": "nature",
@@ -390,11 +389,13 @@ func _get_attack_elements_from_source() -> Array[String]:
 	return out
 
 func _source_id_contains_element(normalized_source: String, element_id: String) -> bool:
-	return normalized_source == element_id \
-		or normalized_source.begins_with(element_id + "_") \
-		or normalized_source.begins_with("pure_" + element_id) \
-		or normalized_source.find("_" + element_id + "_") >= 0 \
+	return (
+		normalized_source == element_id
+		or normalized_source.begins_with(element_id + "_")
+		or normalized_source.begins_with("pure_" + element_id)
+		or normalized_source.find("_" + element_id + "_") >= 0
 		or normalized_source.ends_with("_" + element_id)
+	)
 
 func _get_target_armor_element(enemy: Variant) -> String:
 	if enemy == null or not is_instance_valid(enemy):
@@ -404,6 +405,11 @@ func _get_target_armor_element(enemy: Variant) -> String:
 		var explicit_method_value := _normalize_element_id(str(enemy.get_armor_element()))
 		if explicit_method_value != "":
 			return explicit_method_value
+
+	if enemy.has_meta("armor_element"):
+		var meta_value := _normalize_element_id(str(enemy.get_meta("armor_element")))
+		if meta_value != "":
+			return meta_value
 
 	var explicit_value := _normalize_element_id(str(enemy.get("armor_element")))
 	if explicit_value != "":
