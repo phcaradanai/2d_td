@@ -5,6 +5,7 @@ const PERFORMANCE_MODE := true  # Disables projectile trail and impact effects f
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
+const ENEMIES_DATA_PATH := "res://data/enemies.json"
 
 # Element TD WC3-style elemental damage relation.
 # Cycle used by classic Element TD logic:
@@ -22,8 +23,9 @@ const ELEMENT_DAMAGE_STRONG_MULTIPLIER: float = 1.50
 const ELEMENT_DAMAGE_WEAK_MULTIPLIER: float = 0.75
 const ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER: float = 1.0
 
-# Backward-compatible safety net only. Stage 5C moves enemy armor into
-# data/enemies.json and WaveManager writes it to enemy metadata at spawn time.
+# Backward-compatible safety net only. Stage 5C reads enemy armor from
+# data/enemies.json first, then falls back here only if older/custom enemy data
+# has not been migrated yet.
 const ENEMY_TYPE_ARMOR_FALLBACK := {
 	"basic": "earth",
 	"fast": "nature",
@@ -41,6 +43,9 @@ const ENEMY_TYPE_ARMOR_FALLBACK := {
 	"armored_flyer": "earth",
 	"disruptor": "darkness",
 }
+
+var enemy_armor_data_cache: Dictionary = {}
+var enemy_armor_data_loaded: bool = false
 
 var target: Node2D = null
 var damage: float = 0.0
@@ -420,7 +425,48 @@ func _get_target_armor_element(enemy: Variant) -> String:
 		type_id = str(enemy.get_enemy_type()).to_lower()
 	else:
 		type_id = str(enemy.get("enemy_type")).to_lower()
+
+	var data_value := _get_armor_element_from_enemy_data(type_id)
+	if data_value != "":
+		return data_value
+
 	return _normalize_element_id(str(ENEMY_TYPE_ARMOR_FALLBACK.get(type_id, "")))
+
+func _get_armor_element_from_enemy_data(type_id: String) -> String:
+	var normalized_type := type_id.to_lower().strip_edges()
+	if normalized_type == "":
+		return ""
+	_ensure_enemy_armor_data_loaded()
+	return _normalize_element_id(str(enemy_armor_data_cache.get(normalized_type, "")))
+
+func _ensure_enemy_armor_data_loaded() -> void:
+	if enemy_armor_data_loaded:
+		return
+	enemy_armor_data_loaded = true
+	enemy_armor_data_cache.clear()
+	if not FileAccess.file_exists(ENEMIES_DATA_PATH):
+		return
+	var file := FileAccess.open(ENEMIES_DATA_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var json_text := file.get_as_text()
+	file.close()
+	var json := JSON.new()
+	var error := json.parse(json_text)
+	if error != OK:
+		return
+	if not (json.data is Dictionary):
+		return
+	for key in json.data.keys():
+		var enemy_config = json.data[key]
+		if not (enemy_config is Dictionary):
+			continue
+		var armor_value := _normalize_element_id(str(enemy_config.get("armor_element", "")))
+		if armor_value != "":
+			enemy_armor_data_cache[str(key).to_lower()] = armor_value
+			var config_id := str(enemy_config.get("id", "")).to_lower().strip_edges()
+			if config_id != "":
+				enemy_armor_data_cache[config_id] = armor_value
 
 func _normalize_element_id(raw_element: String) -> String:
 	var value := raw_element.to_lower().strip_edges()
