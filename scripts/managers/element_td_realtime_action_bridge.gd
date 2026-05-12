@@ -462,18 +462,19 @@ func _is_upgrade_unlocked(tower: Node2D, upgrade_id: String, upgrade_config: Dic
 func _apply_upgrade_config_to_tower(tower: Node2D, upgrade_config: Dictionary, upgrade_cost: int) -> void:
 	var previous_invested := _get_tower_invested_gold(tower)
 	var cell := _get_tower_cell(tower)
-	for method_name in ["upgrade_to_config", "upgrade_to", "apply_upgrade_config"]:
-		if tower.has_method(method_name):
-			tower.call(method_name, upgrade_config)
-			tower.set("total_invested_gold", previous_invested + upgrade_cost)
-			return
-	if tower.has_method("setup"):
+	# Do not call upgrade_to() here. tower.gd's upgrade_to currently requires a
+	# different 2-argument signature, and a one-argument dynamic call crashes.
+	# setup(config, cell) is the shared safe path that reapplies tower stats,
+	# visuals, next_upgrade_ids, tier, elements, and targeting config.
+	if tower.has_method("upgrade_to_config"):
+		tower.call("upgrade_to_config", upgrade_config)
+	else:
 		tower.call("setup", upgrade_config, cell)
-		tower.set("total_invested_gold", previous_invested + upgrade_cost)
-		if tower.has_method("set_projectile_container") and main != null:
-			var projectiles := main.get_node_or_null("WorldRoot/MapRoot/ProjectileContainer")
-			if projectiles != null:
-				tower.call("set_projectile_container", projectiles)
+	tower.set("total_invested_gold", previous_invested + upgrade_cost)
+	if tower.has_method("set_projectile_container") and main != null:
+		var projectiles := main.get_node_or_null("WorldRoot/MapRoot/ProjectileContainer")
+		if projectiles != null:
+			tower.call("set_projectile_container", projectiles)
 
 func _try_sell_selected_tower() -> bool:
 	var tower := _get_selected_tower()
