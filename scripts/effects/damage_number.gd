@@ -6,21 +6,30 @@ extends Node2D
 
 @onready var label: Label = get_node_or_null("Label") as Label
 
+var pending_text: String = "-0"
+var pending_color: Color = Color.WHITE
+var pending_font_size: int = 18
+
 func setup(amount: int, color: Color = Color.WHITE) -> void:
-	if label:
-		label.text = "-" + str(amount)
-		label.add_theme_color_override("font_color", color)
+	setup_text("-" + str(amount), color, 18)
+
+func setup_text(text: String, color: Color = Color.WHITE, font_size: int = 14) -> void:
+	pending_text = text
+	pending_color = color
+	pending_font_size = font_size
+	_apply_label_style()
 
 func _ready() -> void:
 	if label == null:
 		label = Label.new()
 		label.name = "Label"
-		label.text = "-0"
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		label.position = Vector2(-40, -18)
-		label.size = Vector2(80, 36)
+		label.position = Vector2(-64, -18)
+		label.size = Vector2(128, 36)
 		add_child(label)
+
+	_apply_label_style()
 
 	var tween = create_tween()
 	tween.set_parallel(true)
@@ -42,3 +51,10 @@ func _ready() -> void:
 		.set_delay(fade_delay)
 	
 	tween.chain().tween_callback(queue_free)
+
+func _apply_label_style() -> void:
+	if label == null:
+		return
+	label.text = pending_text
+	label.add_theme_color_override("font_color", pending_color)
+	label.add_theme_font_size_override("font_size", pending_font_size)
