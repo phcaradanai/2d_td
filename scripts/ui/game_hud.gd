@@ -8,7 +8,6 @@ signal restart_requested()
 signal upgrade_tower_requested()
 signal deselect_tower_requested()
 signal sell_tower_requested()
-signal branch_upgrade_requested(branch_id: String)
 signal element_choice_requested(element_id: String)
 signal target_mode_changed(mode: String)
 signal main_menu_requested()
@@ -57,8 +56,6 @@ signal back_to_map_requested()
 @onready var upgrade_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/UpgradeTowerButton
 @onready var deselect_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/DeselectTowerButton
 var sell_tower_button: Button = null
-var branch_option_buttons: Array[Button] = []
-var branch_options_container: VBoxContainer = null
 
 # Center Message Panel
 @onready var center_message_panel: PanelContainer = $Root/CenterMessagePanel
@@ -247,14 +244,6 @@ func _ready() -> void:
 		sell_tower_button.hide()
 		tower_info_vbox.add_child(sell_tower_button)
 		tower_info_vbox.move_child(sell_tower_button, tower_info_vbox.get_child_count() - 2) # above Deselect
-	
-	# Create branch options container (hidden by default, shown at T3 branch point)
-	if tower_info_vbox:
-		branch_options_container = VBoxContainer.new()
-		branch_options_container.name = "BranchOptionsContainer"
-		branch_options_container.hide()
-		tower_info_vbox.add_child(branch_options_container)
-		tower_info_vbox.move_child(branch_options_container, tower_info_vbox.get_child_count() - 3)
 	
 	target_mode_option_button.clear()
 	for mode in target_modes:
@@ -981,10 +970,6 @@ func show_tower_info(info: Dictionary) -> void:
 		tower_upgrade_cost_label.text = "MAX TIER"
 		upgrade_tower_button.disabled = true
 		upgrade_tower_button.text = "MAX TIER"
-	elif info.get("is_branch_point", false):
-		tower_upgrade_cost_label.text = "Choose Specialization"
-		upgrade_tower_button.disabled = false
-		upgrade_tower_button.text = "Evolve"
 	elif info["can_upgrade"] and info["upgrade_cost"] > 0:
 		tower_upgrade_cost_label.text = "Upgrade - %d Gold" % info["upgrade_cost"]
 		upgrade_tower_button.disabled = false
@@ -1005,51 +990,8 @@ func show_tower_info(info: Dictionary) -> void:
 
 func hide_tower_info() -> void:
 	hide_tower_info_panel()
-	hide_branch_options()
 	if sell_tower_button:
 		sell_tower_button.hide()
-
-
-func show_branch_options(branches: Array[Dictionary]) -> void:
-	hide_branch_options()
-	if branch_options_container == null:
-		return
-
-	for branch in branches:
-		var btn := Button.new()
-		var branch_name: String = branch.get("name", "")
-		var branch_cost: int = branch.get("cost", 0)
-		var branch_desc: String = branch.get("description", "")
-		btn.text = "%s ($%d)" % [branch_name, branch_cost]
-		if branch_desc != "":
-			btn.tooltip_text = branch_desc
-		btn.size_flags_horizontal = Control.SIZE_FILL
-		btn.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0))
-		var branch_id: String = branch.get("id", "")
-		btn.pressed.connect(func(): branch_upgrade_requested.emit(branch_id))
-		branch_options_container.add_child(btn)
-		branch_option_buttons.append(btn)
-
-	branch_options_container.show()
-
-	# Hide normal upgrade/sell while branches are shown
-	if upgrade_tower_button: upgrade_tower_button.hide()
-	if tower_upgrade_cost_label: tower_upgrade_cost_label.hide()
-	if sell_tower_button: sell_tower_button.hide()
-
-
-func hide_branch_options() -> void:
-	for btn in branch_option_buttons:
-		if is_instance_valid(btn):
-			btn.queue_free()
-	branch_option_buttons.clear()
-	if branch_options_container:
-		branch_options_container.hide()
-
-	# Restore upgrade/sell visibility
-	if upgrade_tower_button: upgrade_tower_button.show()
-	if tower_upgrade_cost_label: tower_upgrade_cost_label.show()
-	if sell_tower_button: sell_tower_button.show()
 
 func show_center_message(title: String, show_buttons: bool = true) -> void:
 	set_panel_active(center_message_panel, true, true)
