@@ -7,10 +7,11 @@
     "reward_gold": 8,
     "base_damage": 1,
     "category": "land",
+    "armor_element": "earth",
     "movement_type": "ground",
     "visual_type": "basic",
     "tags": ["core", "baseline"],
-    "description": "Standard digital virus node. Balanced and predictable.",
+    "description": "Standard digital virus node. Balanced and predictable. Armor: Earth.",
     "counter_towers": ["basic", "rapid"]
   },
   "fast": {
@@ -21,10 +22,11 @@
     "reward_gold": 9,
     "base_damage": 1,
     "category": "land",
+    "armor_element": "nature",
     "movement_type": "ground",
     "visual_type": "fast",
     "tags": ["fast", "fragile"],
-    "description": "Accelerated data packet. Hard to hit with slow-firing towers.",
+    "description": "Accelerated data packet. Hard to hit with slow-firing towers. Armor: Nature.",
     "counter_towers": ["rapid", "slow"]
   },
   "tank": {
@@ -35,10 +37,11 @@
     "reward_gold": 18,
     "base_damage": 2,
     "category": "land",
+    "armor_element": "earth",
     "movement_type": "ground",
     "visual_type": "tank",
     "tags": ["heavy", "armored"],
-    "description": "Reinforced industrial drone. Takes heavy fire to neutralize.",
+    "description": "Reinforced industrial drone. Takes heavy fire to neutralize. Armor: Earth.",
     "counter_towers": ["sniper", "sawblade", "cannon"]
   },
   "bulwark": {
@@ -49,6 +52,7 @@
     "reward_gold": 25,
     "base_damage": 2,
     "category": "land",
+    "armor_element": "light",
     "movement_type": "ground",
     "visual_type": "bulwark",
     "tags": ["heavy", "shield", "frontline"],
@@ -57,7 +61,7 @@
       "radius": 120,
       "reduction": 0.35
     },
-    "description": "Shield generator unit. Leads heavy convoys with a protective energy dome.",
+    "description": "Shield generator unit. Leads heavy convoys with a protective energy dome. Armor: Light.",
     "counter_towers": ["cannon", "lightning", "slow"]
   },
   "hunter": {
@@ -68,10 +72,11 @@
     "reward_gold": 14,
     "base_damage": 1,
     "category": "land",
+    "armor_element": "darkness",
     "movement_type": "ground",
     "visual_type": "hunter",
     "tags": ["anti_hero", "fast", "danger"],
-    "description": "A lethal virus that targets your Guardian directly.",
+    "description": "A lethal virus that targets your Guardian directly. Armor: Darkness.",
     "counter_towers": ["sniper", "basic", "lightning"]
   },
   "swarm": {
@@ -82,10 +87,11 @@
     "reward_gold": 3,
     "base_damage": 1,
     "category": "land",
+    "armor_element": "water",
     "movement_type": "ground",
     "visual_type": "swarm",
     "tags": ["swarm", "small"],
-    "description": "Fragments of corrupted code. Weak individually, dangerous in numbers.",
+    "description": "Fragments of corrupted code. Weak individually, dangerous in numbers. Armor: Water.",
     "counter_towers": ["cannon", "lightning", "sawblade"]
   },
   "runner": {
@@ -96,10 +102,11 @@
     "reward_gold": 11,
     "base_damage": 1,
     "category": "land",
+    "armor_element": "nature",
     "movement_type": "ground",
     "visual_type": "runner",
     "tags": ["fast", "runner"],
-    "description": "High-speed infiltration unit. Requires slowing or rapid fire.",
+    "description": "High-speed infiltration unit. Requires slowing or rapid fire. Armor: Nature.",
     "counter_towers": ["slow", "rapid"]
   },
   "shieldbearer": {
@@ -110,6 +117,7 @@
     "reward_gold": 20,
     "base_damage": 2,
     "category": "land",
+    "armor_element": "light",
     "movement_type": "ground",
     "visual_type": "shieldbearer",
     "tags": ["support", "shield", "heavy"],
@@ -118,7 +126,7 @@
       "radius": 90,
       "shield_reduction": 0.25
     },
-    "description": "Projects an energy shield around nearby enemies.",
+    "description": "Projects an energy shield around nearby enemies. Armor: Light.",
     "counter_towers": ["cannon", "lightning", "slow"]
   },
   "healer": {
@@ -129,6 +137,7 @@
     "reward_gold": 22,
     "base_damage": 1,
     "category": "land",
+    "armor_element": "water",
     "movement_type": "ground",
     "visual_type": "healer",
     "tags": ["support", "healing"],
@@ -138,7 +147,7 @@
       "heal_amount": 5,
       "interval": 1.0
     },
-    "description": "Restores integrity to nearby corrupted units.",
+    "description": "Restores integrity to nearby corrupted units. Armor: Water.",
     "counter_towers": ["sniper", "basic"]
   },
   "splitter": {
@@ -149,6 +158,7 @@
     "reward_gold": 25,
     "base_damage": 2,
     "category": "land",
+    "armor_element": "fire",
     "movement_type": "ground",
     "visual_type": "splitter",
     "tags": ["heavy", "splitter"],
@@ -157,7 +167,7 @@
       "count": 3,
       "type": "basic"
     },
-    "description": "Unstable entity that splits into smaller nodes upon destruction.",
+    "description": "Unstable entity that splits into smaller nodes upon destruction. Armor: Fire.",
     "counter_towers": ["cannon", "lightning"]
   },
   "cloaked": {
@@ -168,11 +178,12 @@
     "reward_gold": 15,
     "base_damage": 1,
     "category": "land",
+    "armor_element": "darkness",
     "movement_type": "ground",
     "visual_type": "cloaked",
     "tags": ["stealth", "medium"],
     "skill": "stealth",
-    "description": "Effect: Towers prefer other enemies first. Can be targeted only when no other valid enemy is in range.",
+    "description": "Effect: Towers prefer other enemies first. Can be targeted only when no other valid enemy is in range. Armor: Darkness.",
     "counter_towers": ["rapid", "lightning"]
   },
   "flyer": {
@@ -183,10 +194,11 @@
     "reward_gold": 12,
     "base_damage": 1,
     "category": "air",
+    "armor_element": "light",
     "movement_type": "air",
     "visual_type": "flyer",
     "tags": ["air", "scout"],
-    "description": "Standard aerial drone. Bypasses ground-only defenses.",
+    "description": "Standard aerial drone. Bypasses ground-only defenses. Armor: Light.",
     "counter_towers": ["sniper", "lightning", "rapid"]
   },
   "fast_flyer": {
@@ -197,10 +209,11 @@
     "reward_gold": 14,
     "base_damage": 1,
     "category": "air",
+    "armor_element": "nature",
     "movement_type": "air",
     "visual_type": "fast_flyer",
     "tags": ["air", "fast"],
-    "description": "High-speed aerial intruder. Hard to track without precision fire.",
+    "description": "High-speed aerial intruder. Hard to track without precision fire. Armor: Nature.",
     "counter_towers": ["sniper", "lightning"]
   },
   "armored_flyer": {
@@ -211,10 +224,11 @@
     "reward_gold": 25,
     "base_damage": 2,
     "category": "air",
+    "armor_element": "earth",
     "movement_type": "air",
     "visual_type": "armored_flyer",
     "tags": ["air", "heavy", "armored"],
-    "description": "Tough aerial unit designed to absorb anti-air fire.",
+    "description": "Tough aerial unit designed to absorb anti-air fire. Armor: Earth.",
     "counter_towers": ["sniper", "lightning"]
   },
   "disruptor": {
@@ -225,6 +239,7 @@
     "reward_gold": 30,
     "base_damage": 1,
     "category": "air",
+    "armor_element": "darkness",
     "movement_type": "air",
     "visual_type": "disruptor",
     "tags": ["air", "support", "disruptor"],
@@ -233,7 +248,7 @@
       "radius": 150,
       "fire_rate_penalty": 0.5
     },
-    "description": "Emits an EMP field that slows down tower reload cycles.",
+    "description": "Emits an EMP field that slows down tower reload cycles. Armor: Darkness.",
     "counter_towers": ["sniper", "lightning"]
   }
 }
