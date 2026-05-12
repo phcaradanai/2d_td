@@ -2253,58 +2253,59 @@ func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categories: 
 
 func recommend_roles_for_wave(traits: Array[String]) -> Array[String]:
 	var roles: Array[String] = []
-	
+
+	# Element TD-style guidance: recommend element roles and combo directions,
+	# not old tower classes such as Basic/Rapid/Cannon/Slow/Guardian.
 	if traits.has("Air"):
-		roles.append("Universal")
-		roles.append("Rapid")
-		
+		roles.append("Light/Nature anti-air")
+		roles.append("Dual universal tower")
+
 	if traits.has("Fast"):
-		roles.append("Rapid")
-		roles.append("Slow")
-		
+		roles.append("Water slow")
+		roles.append("Light rapid")
+
 	if traits.has("Heavy"):
-		roles.append("Cannon")
-		roles.append("Basic")
-		
+		roles.append("Fire splash")
+		roles.append("Earth high damage")
+
 	if traits.has("Shield"):
-		roles.append("Cannon")
-		roles.append("Slow")
-		roles.append("Guardian")
-		
+		roles.append("Fire + Earth splash")
+		roles.append("Darkness vulnerability")
+
 	if traits.has("Anti-Hero"):
-		roles.append("Rapid")
-		roles.append("Basic")
-		roles.append("Guardian (Careful)")
-		
+		roles.append("Light burst")
+		roles.append("Water control")
+
 	if traits.has("Swarm"):
-		roles.append("Cannon")
-		roles.append("Slow")
-		
+		roles.append("Fire splash")
+		roles.append("Water + Nature slow field")
+
 	if traits.has("Mixed"):
-		roles.append("Basic")
-		roles.append("Slow")
-		
+		roles.append("Dual element coverage")
+		roles.append("Triple combo tower")
+
 	if traits.has("Stealth"):
-		roles.append("Rapid")
-		roles.append("Lightning")
-		
+		roles.append("Light reveal damage")
+		roles.append("Darkness chain pressure")
+
 	if traits.has("Healing") or traits.has("Splitting"):
-		roles.append("Sniper")
-		roles.append("Lightning")
-		
+		roles.append("Light + Darkness chain")
+		roles.append("Earth single-target focus")
+
 	if traits.has("Disruption"):
-		roles.append("Sniper")
-		roles.append("Guardian")
-		
+		roles.append("Long range element combo")
+		roles.append("Split tower placement")
+
 	if roles.is_empty():
-		roles.append("Basic")
-		
-	# Deduplicate and sort
+		roles.append("Starter tower")
+		roles.append("Choose first element")
+
 	var unique: Array[String] = []
 	for r in roles:
-		if not unique.has(r): unique.append(r)
-	unique.sort()
+		if not unique.has(r):
+			unique.append(r)
 	return unique
+
 
 func _get_preview_wave_groups(wave_data: Dictionary) -> Array:
 	if wave_data.has("groups") and wave_data["groups"] is Array:
