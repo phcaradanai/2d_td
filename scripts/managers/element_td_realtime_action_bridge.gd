@@ -240,7 +240,6 @@ func _find_tower_under_mouse() -> Node2D:
 func _select_tower(tower: Node2D) -> void:
 	if tower == null or not is_instance_valid(tower):
 		return
-	# Let main.gd do any side effects it supports, then force bridge selection.
 	for method_name in ["_on_tower_clicked", "_select_tower", "select_tower"]:
 		if main != null and main.has_method(method_name):
 			main.call(method_name, tower)
@@ -286,9 +285,6 @@ func _set_tower_selected(tower: Node2D, value: bool) -> void:
 			tower.queue_redraw()
 
 func _update_tower_panel(tower: Node2D) -> void:
-	# Do not call GameHUD.show_tower_info() from this bridge. Its signature expects
-	# structured config arguments, not a tower object, and calling it with the wrong
-	# type crashes during WAVE selection. Update existing HUD fields directly.
 	if game_hud == null or tower == null or not is_instance_valid(tower):
 		return
 	var cfg := _get_current_tower_config(tower)
@@ -399,8 +395,8 @@ func _try_upgrade_selected_tower(branch_id: String) -> bool:
 	if upgrade_config.is_empty():
 		_set_status("Upgrade config missing: %s" % upgrade_id)
 		return false
-	if not _is_upgrade_unlocked(upgrade_id, upgrade_config):
-		_set_status("Need matching element level for %s" % _format_tower_id(upgrade_id))
+	if not _is_upgrade_unlocked(tower, upgrade_id, upgrade_config):
+		_set_status("Need matching upgrade path for %s" % _format_tower_id(upgrade_id))
 		return false
 	var cost := int(upgrade_config.get("upgrade_cost", upgrade_config.get("cost", 0)))
 	if game_manager == null or not game_manager.has_method("spend_gold"):
@@ -447,7 +443,18 @@ func _get_tower_config(tower_id: String) -> Dictionary:
 		return (tree[tower_id] as Dictionary).duplicate(true)
 	return {}
 
-func _is_upgrade_unlocked(upgrade_id: String, upgrade_config: Dictionary) -> bool:
+func _is_upgrade_unlocked(tower: Node2D, upgrade_id: String, upgrade_config: Dictionary) -> bool:
+	# BuildManager.is_tower_unlocked() is a shop/build-entry filter. Upgrade targets
+	# such as light_t2 have build_entry=false, so using the shop filter here blocks
+	# a valid tower upgrade during WAVE. For upgrades, trust the current tower's
+	# next_upgrade_ids as the authoritative path gate, then keep a conservative
+	# fallback for legacy/direct unlocks.
+	if tower != null:
+		var raw_upgrades = tower.get("next_upgrade_ids")
+		if raw_upgrades is Array:
+			for raw in raw_upgrades:
+				if str(raw) == upgrade_id:
+					return true
 	if build_manager != null and build_manager.has_method("is_tower_unlocked"):
 		return bool(build_manager.call("is_tower_unlocked", upgrade_id))
 	return int(upgrade_config.get("required_element_level", 0)) <= 0
