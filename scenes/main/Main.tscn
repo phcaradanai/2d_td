@@ -12,6 +12,7 @@
 [ext_resource type="Script" uid="uid://d2sb635lpjyq8" path="res://scripts/managers/audio_manager.gd" id="10_audio_manager"]
 [ext_resource type="Script" uid="uid://dv41ycbtr7u6x" path="res://scripts/ui/camera_shake.gd" id="11_camera_shake"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DebugPanel.tscn" id="12_debug_panel"]
+[ext_resource type="Script" path="res://scripts/managers/element_td_realtime_action_bridge.gd" id="13_realtime_bridge"]
 
 [node name="Main" type="Node2D" unique_id=1149536152]
 script = ExtResource("1_main_script")
@@ -57,6 +58,9 @@ script = ExtResource("2_wave_manager")
 
 [node name="BuildManager" type="Node" parent="." unique_id=1943301077]
 script = ExtResource("5_build_manager")
+
+[node name="ElementTDRealtimeActionBridge" type="Node" parent="." unique_id=1081900171]
+script = ExtResource("13_realtime_bridge")
 
 [node name="SaveManager" type="Node" parent="." unique_id=197385919]
 script = ExtResource("9_save_manager")
