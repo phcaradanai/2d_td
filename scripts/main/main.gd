@@ -62,6 +62,7 @@ const VERSION = "v1.0.0-RC1"
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
+const NEUTRAL_STARTER_TOWER_IDS: Array[String] = ["basic_tower_t1", "neutral_cannon_t1"]
 
 # Layout Constants
 const TOP_BAR_HEIGHT = 60
@@ -85,8 +86,8 @@ var current_state: GameState = GameState.MENU
 var current_level_path: String = ""
 var current_level_id: String = ""
 var selected_level_id: int = 0
-var available_tower_types: Array[String] = ["basic_tower_t1"]
-var selected_loadout: Array[String] = ["basic_tower_t1"]
+var available_tower_types: Array[String] = NEUTRAL_STARTER_TOWER_IDS.duplicate()
+var selected_loadout: Array[String] = NEUTRAL_STARTER_TOWER_IDS.duplicate()
 var active_level_loadout: Array[String] = []
 const MAX_TOWER_LOADOUT_SIZE: int = 8
 const MIN_TOWER_LOADOUT_SIZE: int = 1
@@ -721,11 +722,20 @@ func _refresh_elemental_tower_catalog() -> void:
 func _refresh_elemental_shop() -> void:
 	if build_manager == null or game_hud == null:
 		return
-	var ids: Array[String] = ["basic_tower_t1"]
+	var ids: Array[String] = NEUTRAL_STARTER_TOWER_IDS.duplicate()
 	if element_progression_manager and element_progression_manager.has_method("get_buildable_tower_ids"):
 		ids = element_progression_manager.get_buildable_tower_ids(build_manager.towers_config)
 		if ids.is_empty():
-			ids = ["basic_tower_t1"]
+			ids = NEUTRAL_STARTER_TOWER_IDS.duplicate()
+		else:
+			var merged_ids: Array[String] = []
+			for neutral_id in NEUTRAL_STARTER_TOWER_IDS:
+				if build_manager.towers_config.has(neutral_id) and not merged_ids.has(neutral_id):
+					merged_ids.append(neutral_id)
+			for tower_id in ids:
+				if not merged_ids.has(tower_id):
+					merged_ids.append(tower_id)
+			ids = merged_ids
 	active_level_loadout = ids.duplicate()
 	build_manager.active_loadout = ids.duplicate()
 	if build_manager.has_method("set_unlocked_tower_ids"):
@@ -1135,11 +1145,11 @@ func start_next_level() -> void:
 func get_default_loadout_for_level(_level_id: String) -> Array[String]:
 	# Loadout system removed: every level starts with Basic Tower T1 only.
 	# Advanced towers are reached through the upgrade tree (T1→T2→T3→branch).
-	return ["basic_tower_t1"]
+	return NEUTRAL_STARTER_TOWER_IDS.duplicate()
 
 func is_valid_loadout(loadout: Array[String]) -> bool:
-	# Loadout system removed: the only valid loadout is ["basic_tower_t1"].
-	return loadout == ["basic_tower_t1"]
+	# Loadout system removed: neutral starters are always available.
+	return loadout == NEUTRAL_STARTER_TOWER_IDS
 
 func _clear_gameplay_state() -> void:
 	_stop_auto_next_wave_countdown()

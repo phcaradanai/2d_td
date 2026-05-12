@@ -642,6 +642,11 @@ func _get_config_upgrade_cost(p_config: Dictionary) -> int:
 
 
 func get_sell_refund() -> int:
+	# Element TD WC3-style opener behavior: Arrow/Cannon are beginner towers
+	# that can be sold back almost fully so players can transition into elemental builds.
+	if _is_neutral_starter():
+		return max(0, total_invested_gold - 1)
+
 	var rate: float = 0.70
 	match tree_tier:
 		1: rate = 0.75
@@ -1210,6 +1215,14 @@ func _is_neutral_arrow_starter() -> bool:
 	var id_value := str(tower_id).strip_edges().to_lower()
 	var name_value := str(display_name).strip_edges().to_lower()
 	return id_value == "basic_tower_t1" or name_value == "neutral arrow tower"
+
+func _is_neutral_cannon_starter() -> bool:
+	var id_value := str(tower_id).strip_edges().to_lower()
+	var name_value := str(display_name).strip_edges().to_lower()
+	return id_value == "neutral_cannon_t1" or name_value == "neutral cannon tower"
+
+func _is_neutral_starter() -> bool:
+	return _is_neutral_arrow_starter() or _is_neutral_cannon_starter() or bool(config.get("starter_full_refund", false))
 
 func _force_neutral_arrow_targets_if_needed() -> void:
 	if not _is_neutral_arrow_starter():
