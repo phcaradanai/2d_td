@@ -1,6 +1,7 @@
 extends Node2D
 
 const PERFORMANCE_MODE := true  # Disables projectile trail and impact effects for 60 FPS
+const ELEMENTAL_DEBUG_FLOATING_TEXT := true
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -72,6 +73,7 @@ var vulnerability_duration: float = 0.0
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
 @onready var splash_effect_scene: PackedScene = preload("res://scenes/effects/SplashEffect.tscn")
 @onready var impact_effect_scene: PackedScene = preload("res://scenes/effects/ImpactEffect.tscn")
+@onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
 var trail_points: Array[Vector2] = []
 @export var max_trail_points: int = 8
 @export var min_point_distance: float = 4.0
@@ -226,8 +228,10 @@ func hit_target() -> void:
 		apply_area_effect(hit_global)
 	else:
 		if target and target.has_method("take_damage"):
-			var final_damage := _calculate_elemental_damage(damage, target)
+			var elemental_info := _get_elemental_damage_info(damage, target)
+			var final_damage := float(elemental_info.get("final_damage", damage))
 			target.take_damage(final_damage, hit_global, source_id, attack_type)
+			_spawn_elemental_debug_text(hit_global, elemental_info)
 			_apply_damage_amp_to_enemy(target)
 			# STANDARD: Use captured hit point and current pos for angle
 			var impact_angle = (hit_global - global_position).angle()
@@ -344,26 +348,53 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 				if attack_type == "splash":
 					# Linear Falloff: 100% at center, 50% at edge
 					var falloff = 1.0 - (dist / effect_radius) * 0.5
-					var splash_damage := _calculate_elemental_damage(damage * falloff, enemy)
+					var splash_info := _get_elemental_damage_info(damage * falloff, enemy)
+					var splash_damage := float(splash_info.get("final_damage", damage * falloff))
 					enemy.take_damage(splash_damage, enemy_pos, source_id, attack_type)
+					_spawn_elemental_debug_text(enemy_pos, splash_info)
 				elif attack_type == "slow":
 					# Area slow deals its low base damage + applies debuffs.
-					var slow_damage := _calculate_elemental_damage(damage, enemy)
+					var slow_info := _get_elemental_damage_info(damage, enemy)
+					var slow_damage := float(slow_info.get("final_damage", damage))
 					enemy.take_damage(slow_damage, enemy_pos, source_id, attack_type)
+					_spawn_elemental_debug_text(enemy_pos, slow_info)
 					if enemy.has_method("apply_slow"):
 						enemy.apply_slow(slow_percent, slow_duration)
 					_apply_damage_amp_to_enemy(enemy)
 
 func _calculate_elemental_damage(raw_damage: float, enemy: Variant) -> float:
+	return float(_get_elemental_damage_info(raw_damage, enemy).get("final_damage", raw_damage))
+
+func _get_elemental_damage_info(raw_damage: float, enemy: Variant) -> Dictionary:
+	var info := {
+		"raw_damage": raw_damage,
+		"final_damage": raw_damage,
+		"multiplier": ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER,
+		"attack_elements": PackedStringArray(),
+		"armor_element": "",
+		"text": "",
+		"relation": "neutral",
+	}
 	if raw_damage <= 0.0:
-		return raw_damage
+		return info
 	var attack_elements := _get_attack_elements_from_source()
 	if attack_elements.is_empty():
-		return raw_damage
+		return info
 	var armor_element := _get_target_armor_element(enemy)
 	if armor_element == "":
-		return raw_damage
-	return raw_damage * _calculate_elemental_multiplier(attack_elements, armor_element)
+		return info
+	var multiplier := _calculate_elemental_multiplier(attack_elements, armor_element)
+	var final_damage := raw_damage * multiplier
+	info["final_damage"] = final_damage
+	info["multiplier"] = multiplier
+	info["attack_elements"] = PackedStringArray(attack_elements)
+	info["armor_element"] = armor_element
+	info["text"] = _build_elemental_debug_text(attack_elements, armor_element, multiplier)
+	if multiplier > ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER + 0.01:
+		info["relation"] = "strong"
+	elif multiplier < ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER - 0.01:
+		info["relation"] = "weak"
+	return info
 
 func _calculate_elemental_multiplier(attack_elements: Array[String], armor_element: String) -> float:
 	if attack_elements.is_empty() or armor_element == "":
@@ -386,6 +417,58 @@ func _single_element_multiplier(attack_element: String, armor_element: String) -
 	if str(ELEMENT_STRONG_AGAINST.get(armor_element, "")) == attack_element:
 		return ELEMENT_DAMAGE_WEAK_MULTIPLIER
 	return ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER
+
+func _spawn_elemental_debug_text(hit_pos: Vector2, info: Dictionary) -> void:
+	if not ELEMENTAL_DEBUG_FLOATING_TEXT:
+		return
+	var multiplier := float(info.get("multiplier", ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER))
+	if is_equal_approx(multiplier, ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER):
+		return
+	var text := str(info.get("text", ""))
+	if text == "":
+		return
+	var effect = damage_number_scene.instantiate()
+	var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if effects_container:
+		effects_container.add_child(effect)
+	else:
+		get_tree().current_scene.add_child(effect)
+	effect.global_position = hit_pos + Vector2(0, -22)
+	if effect.has_method("setup_text"):
+		effect.setup_text(text, _get_elemental_debug_color(multiplier), 12)
+	elif effect.has_method("setup"):
+		effect.setup(int(round(abs(multiplier * 100.0))), _get_elemental_debug_color(multiplier))
+
+func _get_elemental_debug_color(multiplier: float) -> Color:
+	if multiplier > ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER + 0.01:
+		return Color(0.35, 1.0, 0.55, 1.0)
+	if multiplier < ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER - 0.01:
+		return Color(1.0, 0.35, 0.35, 1.0)
+	return Color.WHITE
+
+func _build_elemental_debug_text(attack_elements: Array[String], armor_element: String, multiplier: float) -> String:
+	if attack_elements.is_empty() or armor_element == "":
+		return ""
+	var attack_label := "+".join(_format_element_labels(attack_elements))
+	var armor_label := _format_element_label(armor_element)
+	var arrow := "="
+	if multiplier > ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER + 0.01:
+		arrow = ">"
+	elif multiplier < ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER - 0.01:
+		arrow = "<"
+	return "%s %s %s x%.2f" % [attack_label, arrow, armor_label, multiplier]
+
+func _format_element_labels(elements: Array[String]) -> PackedStringArray:
+	var labels := PackedStringArray()
+	for element_id in elements:
+		labels.append(_format_element_label(element_id))
+	return labels
+
+func _format_element_label(element_id: String) -> String:
+	var value := _normalize_element_id(element_id)
+	if value == "":
+		return "?"
+	return value.substr(0, 1).to_upper() + value.substr(1)
 
 func _get_attack_elements_from_source() -> Array[String]:
 	if not attack_elements_override.is_empty():
