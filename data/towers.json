@@ -2091,10 +2091,10 @@
 	],
 	"cost": 135,
 	"upgrade_cost": 0,
-	"description": "Support pulse / rapid control",
+	"description": "Element TD-style support aura. Buffs attack speed of up to 4 nearby non-support towers; does not attack creeps.",
 	"projectile_speed": 560,
 	"visual_type": "rapid",
-	"attack_type": "single",
+	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
       "air"
@@ -2106,7 +2106,11 @@
 		"range": 170,
 		"fire_rate": 0.28
 	  }
-	]
+	],
+	"support_type": "attack_speed",
+	"support_value": 0.2,
+	"support_limit": 4,
+	"support_targeting": "nearby_non_support_towers"
   },
   "well_t2": {
 	"id": "well_t2",
@@ -2127,10 +2131,10 @@
 	],
 	"cost": 135,
 	"upgrade_cost": 180,
-	"description": "Support pulse / rapid control",
+	"description": "Element TD-style support aura. Buffs attack speed of up to 4 nearby non-support towers; does not attack creeps.",
 	"projectile_speed": 560,
 	"visual_type": "rapid",
-	"attack_type": "single",
+	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
       "air"
@@ -2142,7 +2146,11 @@
 		"range": 184,
 		"fire_rate": 0.26
 	  }
-	]
+	],
+	"support_type": "attack_speed",
+	"support_value": 0.35,
+	"support_limit": 4,
+	"support_targeting": "nearby_non_support_towers"
   },
   "well_t3": {
 	"id": "well_t3",
@@ -2161,10 +2169,10 @@
 	"next_upgrade_ids": [],
 	"cost": 135,
 	"upgrade_cost": 330,
-	"description": "Support pulse / rapid control",
+	"description": "Element TD-style support aura. Buffs attack speed of up to 4 nearby non-support towers; does not attack creeps.",
 	"projectile_speed": 560,
 	"visual_type": "rapid",
-	"attack_type": "single",
+	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
       "air"
@@ -2176,7 +2184,11 @@
 		"range": 198,
 		"fire_rate": 0.24
 	  }
-	]
+	],
+	"support_type": "attack_speed",
+	"support_value": 0.55,
+	"support_limit": 4,
+	"support_targeting": "nearby_non_support_towers"
   },
   "hydro_t1": {
 	"id": "hydro_t1",
@@ -2421,12 +2433,13 @@
 	],
 	"cost": 135,
 	"upgrade_cost": 0,
-	"description": "Forge heavy burst",
+	"description": "Element TD-style support aura. Buffs damage of up to 4 nearby non-support towers; does not attack creeps.",
 	"projectile_speed": 560,
 	"visual_type": "cannon",
-	"attack_type": "splash",
+	"attack_type": "support_aura",
 	"target_categories": [
-      "land"
+	  "land",
+      "air"
 	],
 	"levels": [
 	  {
@@ -2437,7 +2450,10 @@
 		"splash_radius": 78
 	  }
 	],
-	"splash_radius": 78
+	"support_type": "damage",
+	"support_value": 0.25,
+	"support_limit": 4,
+	"support_targeting": "nearby_non_support_towers"
   },
   "blacksmith_t2": {
 	"id": "blacksmith_t2",
@@ -2458,12 +2474,13 @@
 	],
 	"cost": 135,
 	"upgrade_cost": 180,
-	"description": "Forge heavy burst",
+	"description": "Element TD-style support aura. Buffs damage of up to 4 nearby non-support towers; does not attack creeps.",
 	"projectile_speed": 560,
 	"visual_type": "cannon",
-	"attack_type": "splash",
+	"attack_type": "support_aura",
 	"target_categories": [
-      "land"
+	  "land",
+      "air"
 	],
 	"levels": [
 	  {
@@ -2474,7 +2491,10 @@
 		"splash_radius": 88
 	  }
 	],
-	"splash_radius": 88
+	"support_type": "damage",
+	"support_value": 0.45,
+	"support_limit": 4,
+	"support_targeting": "nearby_non_support_towers"
   },
   "blacksmith_t3": {
 	"id": "blacksmith_t3",
@@ -2493,12 +2513,13 @@
 	"next_upgrade_ids": [],
 	"cost": 135,
 	"upgrade_cost": 330,
-	"description": "Forge heavy burst",
+	"description": "Element TD-style support aura. Buffs damage of up to 4 nearby non-support towers; does not attack creeps.",
 	"projectile_speed": 560,
 	"visual_type": "cannon",
-	"attack_type": "splash",
+	"attack_type": "support_aura",
 	"target_categories": [
-      "land"
+	  "land",
+      "air"
 	],
 	"levels": [
 	  {
@@ -2509,7 +2530,10 @@
 		"splash_radius": 98
 	  }
 	],
-	"splash_radius": 98
+	"support_type": "damage",
+	"support_value": 0.7,
+	"support_limit": 4,
+	"support_targeting": "nearby_non_support_towers"
   },
   "mushroom_t1": {
 	"id": "mushroom_t1",

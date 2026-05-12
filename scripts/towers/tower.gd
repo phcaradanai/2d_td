@@ -101,7 +101,34 @@ var clone_interval: float = 15.0
 var clone_current_target: Node2D = null
 var _clone_active_time_left: float = 0.0
 var _clone_scan_time_left: float = 0.0
+var _clone_recent_target_cooldowns: Dictionary = {} # tower instance id -> seconds remaining before this Trickery can clone it again
 const CLONE_SCAN_INTERVAL := 0.25
+const TRICKERY_RECENT_TARGET_COOLDOWN := 60.0
+var _clone_last_target_instance_id: int = 0
+var clone_manual_target: Node2D = null
+
+# Element TD-style Well / Blacksmith support auras.
+# Well buffs attack speed; Blacksmith buffs damage. They support up to 4
+# nearby non-support towers and do not attack creeps directly.
+var support_type: String = ""
+var support_value: float = 0.0
+var support_limit: int = 4
+var support_targets: Array = []
+var _support_scan_timer: float = 0.0
+const SUPPORT_SCAN_INTERVAL := 0.25
+const BUFF_BADGE_FONT_SIZE := 10
+const BUFF_BADGE_PADDING := Vector2(6.0, 3.0)
+const SUPPORT_BADGE_SIZE := Vector2(108.0, 20.0)
+const SUPPORT_COOLDOWN_RING_RADIUS := 12.0
+const SUPPORT_OVERLAY_Z_INDEX := 2000
+const CLONE_FIRE_FLASH_MS := 180
+const SUPPORT_OVERLAY_MAX_TARGET_HINTS := 8
+
+var _normal_z_index: int = 0
+var _normal_z_as_relative: bool = true
+var _selection_z_lift_active: bool = false
+var _clone_visual_fire_until_msec: int = 0
+var _clone_visual_fire_target_global: Vector2 = Vector2.ZERO
 
 var projectile_scene: PackedScene = preload("res://scenes/projectiles/Projectile.tscn")
 var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/MuzzleFlash.tscn")
@@ -163,6 +190,9 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 		clone_damage_multiplier = float(config.get("clone_damage_multiplier", 0.0))
 		clone_duration = float(config.get("clone_duration", 0.0))
 		clone_interval = float(config.get("clone_interval", 15.0))
+		support_type = str(config.get("support_type", "")).to_lower()
+		support_value = float(config.get("support_value", 0.0))
+		support_limit = int(config.get("support_limit", 4))
 		_update_range_collision()
 	
 	_ensure_sprite_node()
@@ -224,6 +254,9 @@ func apply_level_stats() -> void:
 		clone_damage_multiplier = float(data.get("clone_damage_multiplier", config.get("clone_damage_multiplier", 0.0)))
 		clone_duration = float(data.get("clone_duration", config.get("clone_duration", 0.0)))
 		clone_interval = float(data.get("clone_interval", config.get("clone_interval", 15.0)))
+		support_type = str(data.get("support_type", config.get("support_type", support_type))).to_lower()
+		support_value = float(data.get("support_value", config.get("support_value", support_value)))
+		support_limit = int(data.get("support_limit", config.get("support_limit", support_limit)))
 		_update_range_collision()
 		apply_level_visuals()
 		queue_redraw()
@@ -409,13 +442,6 @@ func _draw() -> void:
 		var local_origin = to_local(get_range_origin())
 		draw_arc(local_origin, visual_range, 0, TAU, 32, Color(1, 1, 1, 0.1), 1.0)
 
-	if _is_trickery_clone_support() and is_instance_valid(clone_current_target):
-		var target_local := to_local(clone_current_target.global_position)
-		var pulse_clone := 0.45 + sin(Time.get_ticks_msec() * 0.008) * 0.2
-		draw_line(Vector2.ZERO, target_local, Color(0.75, 0.45, 1.0, pulse_clone), 3.0)
-		draw_circle(target_local, 12.0, Color(0.75, 0.45, 1.0, 0.12))
-		draw_arc(target_local, 15.0, 0, TAU, 32, Color(0.85, 0.65, 1.0, 0.55), 2.0)
-
 	if not use_sprite:
 		# 2. Base Plate (Static)
 		_draw_base_plate()
@@ -424,6 +450,14 @@ func _draw() -> void:
 		if turret_pivot:
 			draw_set_transform(Vector2.ZERO, turret_pivot.rotation, Vector2.ONE)
 			_draw_turret_top()
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+	# Support preview overlays are intentionally selection-only and are drawn LAST.
+	# Drawing after the tower body keeps badges/ghosts as a top-up layer instead
+	# of letting the tower base/turret cover them. The selected support tower also
+	# gets a temporary z-index lift in set_selected(), so overlays stay above
+	# sibling towers on the map.
+	_draw_selected_support_overlays()
 
 func _draw_base_plate() -> void:
 	var lvl = tree_tier
@@ -682,6 +716,8 @@ func upgrade() -> bool:
 ## Reads upgrade cost from the target config — each entry's upgrade_cost is the
 ## cost to upgrade INTO it.
 func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
+	_clear_support_targets()
+	_remove_clone_from_current_target()
 	var upgrade_cost := _get_config_upgrade_cost(new_config)
 	if upgrade_cost <= 0:
 		push_error("[UPGRADE] Invalid upgrade_cost=%d for tower=%s target=%s" % [upgrade_cost, upgrade_id, target_tower_id])
@@ -720,6 +756,9 @@ func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
 		clone_damage_multiplier = float(new_config.get("clone_damage_multiplier", 0.0))
 		clone_duration = float(new_config.get("clone_duration", 0.0))
 		clone_interval = float(new_config.get("clone_interval", 15.0))
+		support_type = str(new_config.get("support_type", "")).to_lower()
+		support_value = float(new_config.get("support_value", 0.0))
+		support_limit = int(new_config.get("support_limit", 4))
 
 	next_upgrade_ids = _extract_string_array(new_config.get("next_upgrade_ids", []))
 	tree_tier = new_config.get("tier", tree_tier + 1)
@@ -736,6 +775,7 @@ func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
 		level_badge.text = "T%d" % tree_tier
 
 	# Clear old Trickery clone link when changing identity.
+	clone_manual_target = null
 	_remove_clone_from_current_target()
 
 	# Clear current target so tower re-evaluates with new stats/type
@@ -793,6 +833,7 @@ func play_upgrade_effect() -> void:
 
 func set_selected(value: bool) -> void:
 	is_selected = value
+	_update_support_overlay_z_lift()
 	apply_level_visuals()
 	queue_redraw()
 
@@ -833,9 +874,18 @@ func get_info() -> Dictionary:
 		"clone_duration": clone_duration,
 		"clone_interval": clone_interval,
 		"clone_target_name": _get_clone_target_name(),
+		"clone_manual_target_name": _get_manual_clone_target_name(),
 		"clone_active_time_left": _clone_active_time_left,
+		"support_type": support_type,
+		"support_value": support_value,
+		"support_limit": support_limit,
+		"support_target_count": _count_valid_support_targets(),
 		"effective_damage": get_effective_damage(),
+		"effective_fire_rate": get_effective_fire_rate(),
 		"active_damage_bonus_percent": get_active_damage_bonus_percent(),
+		"active_damage_bonus_tag": get_active_damage_bonus_tag(),
+		"active_fire_rate_bonus_percent": get_active_fire_rate_bonus_percent(),
+		"active_fire_rate_bonus_tag": get_active_fire_rate_bonus_tag(),
 		"target_categories": target_categories.duplicate(),
 		"target_mode": target_mode
 	}
@@ -890,11 +940,25 @@ func _disable_control_mouse_filter(node: Node) -> void:
 
 func _on_click_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		var selected_trickery = _find_selected_trickery_waiting_for_target()
+		if is_instance_valid(selected_trickery) and selected_trickery != self:
+			if selected_trickery.has_method("try_set_manual_clone_target") and selected_trickery.try_set_manual_clone_target(self):
+				get_viewport().set_input_as_handled()
+				return
 		clicked.emit(self)
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
+		return
+
+	if _is_support_aura():
+		_process_support_aura(delta)
+		idle_rotation += delta * 4.0
+		if turret_pivot:
+			turret_pivot.rotation += delta * 0.4
+		if is_selected:
+			queue_redraw()
 		return
 
 	if _is_trickery_clone_support():
@@ -904,7 +968,7 @@ func _process(delta: float) -> void:
 			var dir := clone_current_target.global_position - get_targeting_origin()
 			if dir.length_squared() > 0.001:
 				turret_pivot.rotation = lerp_angle(turret_pivot.rotation, dir.angle(), min(1.0, aim_turn_speed * delta))
-		if is_selected or is_instance_valid(clone_current_target) or Engine.get_process_frames() % 2 == 0:
+		if is_selected:
 			queue_redraw()
 		return
 		
@@ -1007,6 +1071,8 @@ func _update_aim_indicator(delta: float) -> void:
 			target_marker.visible = false
 
 func shoot() -> void:
+	if _is_support_aura() or _is_trickery_clone_support():
+		return
 	if attack_type == "aura":
 		_perform_aura_attack()
 		return
@@ -1063,6 +1129,10 @@ func shoot() -> void:
 		
 		if audio_manager:
 			audio_manager.play_sfx(sfx_name)
+
+	var clone_source := _get_active_clone_source()
+	if is_instance_valid(clone_source) and clone_source.has_method("notify_clone_target_fired"):
+		clone_source.notify_clone_target_fired(self, current_target)
 	shot_fired.emit(self, current_target, Time.get_ticks_msec() / 1000.0)
 
 func _perform_aura_attack() -> void:
@@ -1267,6 +1337,282 @@ func get_enemies_in_range() -> Array:
 	return _enemies_in_range_cache
 
 
+func _is_support_aura() -> bool:
+	var lower_support := support_type.to_lower()
+	return attack_type == "support_aura" or lower_support == "attack_speed" or lower_support == "damage"
+
+func _get_support_color() -> Color:
+	if support_type == "attack_speed":
+		return Color(0.35, 0.85, 1.0, 1.0)
+	if support_type == "damage":
+		return Color(1.0, 0.55, 0.25, 1.0)
+	return Color(0.65, 0.85, 1.0, 1.0)
+
+func _draw_selected_support_overlays() -> void:
+	# Keep support overlays selection-only. This prevents visual clutter and avoids
+	# redrawing badges on every buffed tower during normal gameplay.
+	if is_selected and _is_trickery_clone_support():
+		_draw_trickery_selection_overlay()
+
+	if is_selected and _is_support_aura():
+		var support_color := _get_support_color()
+		var pulse_support := 0.38 + sin(Time.get_ticks_msec() * 0.006) * 0.16
+		for support_target in support_targets:
+			if is_instance_valid(support_target):
+				var support_local := to_local(support_target.global_position)
+				draw_line(Vector2.ZERO, support_local, Color(support_color.r, support_color.g, support_color.b, pulse_support), 2.8)
+				draw_circle(support_local, 11.0, Color(support_color.r, support_color.g, support_color.b, 0.14))
+				_draw_support_target_badge(support_local, support_color)
+
+func _draw_trickery_selection_overlay() -> void:
+	var clone_color := Color(0.86, 0.55, 1.0, 1.0)
+
+	if is_instance_valid(clone_current_target):
+		var target_local := to_local(clone_current_target.global_position)
+		var pulse_clone := 0.50 + sin(Time.get_ticks_msec() * 0.008) * 0.20
+		draw_line(Vector2.ZERO, target_local, Color(0.78, 0.45, 1.0, pulse_clone), 3.2)
+		draw_circle(target_local, 13.0, Color(0.78, 0.45, 1.0, 0.16))
+		draw_arc(target_local, 16.0, 0, TAU, 36, Color(0.9, 0.72, 1.0, 0.65), 2.2)
+		_draw_trickery_clone_ghost(target_local)
+		_draw_clone_target_badge(target_local)
+
+	var overlay_candidates := _get_trickery_overlay_candidates()
+	var drawn := 0
+	for candidate in overlay_candidates:
+		if drawn >= SUPPORT_OVERLAY_MAX_TARGET_HINTS:
+			break
+		if not is_instance_valid(candidate):
+			continue
+		if candidate == clone_current_target:
+			continue
+		var local_pos := to_local(candidate.global_position)
+		if _is_clone_recently_used(candidate):
+			_draw_trickery_cooldown_indicator(local_pos, candidate)
+			drawn += 1
+		elif _is_valid_clone_target(candidate):
+			# Make manual targeting readable without cluttering the map: a selected
+			# Trickery shows which nearby towers can be clicked to lock a clone target.
+			draw_circle(local_pos, 11.0, Color(clone_color.r, clone_color.g, clone_color.b, 0.10))
+			draw_arc(local_pos, 14.0, 0, TAU, 32, Color(0.88, 0.65, 1.0, 0.44), 1.6)
+			_draw_buff_badge(local_pos + Vector2(0, -36), "CLICK", Color(0.72, 0.95, 1.0, 1.0))
+			drawn += 1
+
+func _get_trickery_overlay_candidates() -> Array:
+	var candidates: Array = []
+	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+		if candidate == self or not is_instance_valid(candidate):
+			continue
+		if _is_non_cloneable_support_tower(candidate):
+			continue
+		if not candidate.has_method("apply_damage_modifier"):
+			continue
+		if global_position.distance_to(candidate.global_position) > attack_range:
+			continue
+		candidates.append(candidate)
+	candidates.sort_custom(Callable(self, "_sort_clone_candidates"))
+	return candidates
+
+func _draw_trickery_cooldown_indicator(local_pos: Vector2, tower: Variant) -> void:
+	var left := _get_clone_recent_cooldown_left(tower)
+	if left <= 0.0:
+		return
+	var progress := 1.0 - clampf(left / max(0.1, TRICKERY_RECENT_TARGET_COOLDOWN), 0.0, 1.0)
+	var center := local_pos + Vector2(0, -34)
+	var r := SUPPORT_COOLDOWN_RING_RADIUS
+	draw_circle(center, r + 3.0, Color(0.05, 0.04, 0.08, 0.72))
+	draw_arc(center, r, 0, TAU, 28, Color(0.55, 0.45, 0.70, 0.36), 2.4)
+	draw_arc(center, r, -PI * 0.5, -PI * 0.5 + TAU * progress, 28, Color(0.90, 0.65, 1.0, 0.88), 3.0)
+	draw_circle(center, 3.0, Color(0.90, 0.75, 1.0, 0.92))
+	_draw_buff_badge(local_pos + Vector2(0, -60), "CD %ds" % int(ceil(left)), Color(0.78, 0.64, 1.0, 1.0))
+
+func _update_support_overlay_z_lift() -> void:
+	var should_lift := is_selected and (_is_support_aura() or _is_trickery_clone_support())
+	if should_lift and not _selection_z_lift_active:
+		_normal_z_index = z_index
+		_normal_z_as_relative = z_as_relative
+		z_as_relative = false
+		z_index = SUPPORT_OVERLAY_Z_INDEX
+		_selection_z_lift_active = true
+	elif not should_lift and _selection_z_lift_active:
+		z_index = _normal_z_index
+		z_as_relative = _normal_z_as_relative
+		_selection_z_lift_active = false
+
+func _draw_support_target_badge(local_pos: Vector2, color: Color) -> void:
+	var pct := int(round(support_value * 100.0))
+	if pct <= 0:
+		return
+	var label := "+BUFF"
+	if support_type == "attack_speed":
+		label = "+SPD %d%%" % pct
+	elif support_type == "damage":
+		label = "+DMG %d%%" % pct
+	_draw_buff_badge(local_pos + Vector2(0, -36), label, color)
+
+func _draw_clone_target_badge(local_pos: Vector2) -> void:
+	var pct := int(round(clone_damage_multiplier * 100.0))
+	if pct <= 0:
+		return
+	var label := "+CLONE %d%%" % pct
+	if is_instance_valid(clone_manual_target) and clone_manual_target == clone_current_target:
+		label = "+CLONE %d%%" % pct
+		# Separate lock dot keeps badge size identical to Well/Blacksmith badges.
+		draw_circle(local_pos + Vector2(50, -30), 4.0, Color(1.0, 0.9, 1.0, 0.95))
+	_draw_buff_badge(local_pos + Vector2(0, -36), label, Color(0.86, 0.55, 1.0, 1.0))
+
+func _draw_trickery_clone_ghost(local_pos: Vector2) -> void:
+	var now_ms := Time.get_ticks_msec()
+	var pulse := 0.55 + sin(now_ms * 0.01) * 0.18
+	# Offset the ghost away from the real tower so the player can see that the
+	# clone is a separate firing projection, not just a hidden stat buff.
+	var ghost_pos := local_pos + Vector2(34.0, -34.0 + sin(now_ms * 0.004) * 3.0)
+	var ghost_color := Color(0.78, 0.50, 1.0, 0.34 + pulse * 0.22)
+	var edge_color := Color(0.94, 0.78, 1.0, 0.72 + pulse * 0.22)
+	var r := 18.0
+	var points := PackedVector2Array()
+	for i in range(6):
+		points.append(ghost_pos + Vector2.RIGHT.rotated(PI / 6.0 + float(i) * TAU / 6.0) * r)
+	var ghost_colors := PackedColorArray()
+	for _i in range(points.size()):
+		ghost_colors.append(ghost_color)
+	draw_polygon(points, ghost_colors)
+	for i in range(points.size()):
+		draw_line(points[i], points[(i + 1) % points.size()], edge_color, 2.2)
+	draw_arc(ghost_pos, r + 4.0 + pulse * 2.0, 0, TAU, 36, Color(0.88, 0.55, 1.0, 0.38), 1.5)
+	draw_line(local_pos, ghost_pos, Color(0.78, 0.45, 1.0, 0.38), 1.6)
+	draw_circle(ghost_pos, 5.0, Color(0.98, 0.88, 1.0, 0.78))
+
+	# When the cloned tower fires, flash a short violet tracer from the ghost to
+	# the target. This keeps the gameplay as clone-support while making the
+	# "second firing point" readable during testing.
+	if now_ms <= _clone_visual_fire_until_msec:
+		var fire_target_local := to_local(_clone_visual_fire_target_global)
+		var flash_alpha := float(_clone_visual_fire_until_msec - now_ms) / float(CLONE_FIRE_FLASH_MS)
+		flash_alpha = clampf(flash_alpha, 0.0, 1.0)
+		draw_line(ghost_pos, fire_target_local, Color(0.96, 0.78, 1.0, 0.85 * flash_alpha), 3.0)
+		draw_circle(ghost_pos, 8.0 + (1.0 - flash_alpha) * 8.0, Color(0.95, 0.68, 1.0, 0.45 * flash_alpha))
+
+	var font: Font = ThemeDB.fallback_font
+	if font != null:
+		draw_string(font, ghost_pos + Vector2(-23.0, 36.0), "CLONE", HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.95, 0.82, 1.0, 0.95))
+
+func _draw_active_buff_badges() -> void:
+	var y_offset := -44.0
+	var dmg_pct := get_active_damage_bonus_percent()
+	if dmg_pct > 0:
+		var tag := get_active_damage_bonus_tag()
+		var label := "+DMG %d%%" % dmg_pct
+		var color := Color(1.0, 0.58, 0.24, 1.0)
+		if tag == "clone":
+			label = "+CLONE %d%%" % dmg_pct
+			color = Color(0.86, 0.55, 1.0, 1.0)
+		_draw_buff_badge(Vector2(0, y_offset), label, color)
+		y_offset -= 17.0
+	var spd_pct := get_active_fire_rate_bonus_percent()
+	if spd_pct > 0:
+		_draw_buff_badge(Vector2(0, y_offset), "+SPD %d%%" % spd_pct, Color(0.35, 0.85, 1.0, 1.0))
+
+func _draw_buff_badge(local_center: Vector2, label: String, color: Color) -> void:
+	if label == "":
+		return
+	var font: Font = ThemeDB.fallback_font
+	if font == null:
+		return
+	var rect_size := SUPPORT_BADGE_SIZE
+	var rect := Rect2(local_center - rect_size * 0.5, rect_size)
+	draw_rect(rect.grow(1.0), Color(color.r, color.g, color.b, 0.18), true)
+	draw_rect(rect, Color(0.03, 0.05, 0.08, 0.90), true)
+	draw_rect(rect, Color(color.r, color.g, color.b, 0.78), false, 1.2)
+	var text_size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, rect_size.x, BUFF_BADGE_FONT_SIZE)
+	var y := rect.position.y + (rect_size.y - text_size.y) * 0.5 + text_size.y * 0.82
+	draw_string(font, Vector2(rect.position.x, y), label, HORIZONTAL_ALIGNMENT_CENTER, rect_size.x, BUFF_BADGE_FONT_SIZE, Color(color.r, color.g, color.b, 1.0))
+
+func _process_support_aura(delta: float) -> void:
+	if support_value <= 0.0:
+		_clear_support_targets()
+		return
+	_support_scan_timer -= delta
+	if _support_scan_timer > 0.0:
+		return
+	_support_scan_timer = SUPPORT_SCAN_INTERVAL
+	_refresh_support_targets()
+
+func _refresh_support_targets() -> void:
+	var candidates: Array = []
+	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+		if _is_valid_support_target(candidate):
+			candidates.append(candidate)
+	candidates.sort_custom(Callable(self, "_sort_support_candidates"))
+
+	var desired: Array = []
+	var limit : int = max(0, support_limit)
+	for candidate in candidates:
+		if desired.size() >= limit:
+			break
+		desired.append(candidate)
+
+	for old_target in support_targets.duplicate():
+		if not desired.has(old_target):
+			_remove_support_from_tower(old_target)
+
+	for new_target in desired:
+		if not support_targets.has(new_target):
+			_apply_support_to_tower(new_target)
+
+	support_targets = desired
+
+func _sort_support_candidates(a: Variant, b: Variant) -> bool:
+	var da := INF
+	var db := INF
+	if is_instance_valid(a):
+		da = global_position.distance_squared_to(a.global_position)
+	if is_instance_valid(b):
+		db = global_position.distance_squared_to(b.global_position)
+	return da < db
+
+func _is_valid_support_target(tower: Variant) -> bool:
+	if tower == null or not is_instance_valid(tower):
+		return false
+	if tower == self:
+		return false
+	if _is_non_cloneable_support_tower(tower):
+		return false
+	if global_position.distance_to(tower.global_position) > attack_range:
+		return false
+	if support_type == "attack_speed":
+		return tower.has_method("apply_fire_rate_modifier")
+	if support_type == "damage":
+		return tower.has_method("apply_damage_modifier")
+	return false
+
+func _apply_support_to_tower(tower: Variant) -> void:
+	if not _is_valid_support_target(tower):
+		return
+	if support_type == "attack_speed" and tower.has_method("apply_fire_rate_modifier"):
+		tower.apply_fire_rate_modifier(self, 1.0 + support_value, "well")
+	elif support_type == "damage" and tower.has_method("apply_damage_modifier"):
+		tower.apply_damage_modifier(self, 1.0 + support_value, "blacksmith")
+
+func _remove_support_from_tower(tower: Variant) -> void:
+	if tower == null or not is_instance_valid(tower):
+		return
+	if support_type == "attack_speed" and tower.has_method("remove_fire_rate_modifier"):
+		tower.remove_fire_rate_modifier(self)
+	elif support_type == "damage" and tower.has_method("remove_damage_modifier"):
+		tower.remove_damage_modifier(self)
+
+func _clear_support_targets() -> void:
+	for target in support_targets.duplicate():
+		_remove_support_from_tower(target)
+	support_targets.clear()
+
+func _count_valid_support_targets() -> int:
+	var count := 0
+	for target in support_targets:
+		if is_instance_valid(target):
+			count += 1
+	return count
+
 func _is_trickery_clone_support() -> bool:
 	return attack_type == "clone_support" or str(config.get("support_type", "")).to_lower() == "clone" or tower_id.begins_with("trickery_")
 
@@ -1299,20 +1645,28 @@ func _process_trickery_clone_support(delta: float) -> void:
 	if clone_damage_multiplier <= 0.0:
 		return
 
+	_tick_clone_recent_target_cooldowns(delta)
 	_clone_scan_time_left -= delta
 	if is_instance_valid(clone_current_target):
 		_clone_active_time_left -= delta
-		if _clone_active_time_left <= 0.0 or not _is_valid_clone_target(clone_current_target):
+		if _clone_active_time_left <= 0.0 or not _is_existing_clone_target_still_valid(clone_current_target):
+			var previous_target := clone_current_target
 			_remove_clone_from_current_target()
+			_register_recent_clone_target(previous_target)
 	else:
 		clone_current_target = null
 		_clone_active_time_left = 0.0
 
 	if clone_current_target == null and _clone_scan_time_left <= 0.0:
 		_clone_scan_time_left = max(0.1, clone_interval)
-		_assign_best_clone_target()
+		if is_instance_valid(clone_manual_target) and _is_valid_clone_target(clone_manual_target):
+			_assign_clone_target(clone_manual_target)
+		else:
+			if clone_manual_target != null and not is_instance_valid(clone_manual_target):
+				clone_manual_target = null
+			_assign_best_clone_target()
 
-func _is_valid_clone_target(tower: Variant) -> bool:
+func _is_existing_clone_target_still_valid(tower: Variant) -> bool:
 	if tower == null or not is_instance_valid(tower):
 		return false
 	if _is_non_cloneable_support_tower(tower):
@@ -1321,34 +1675,162 @@ func _is_valid_clone_target(tower: Variant) -> bool:
 		return false
 	return global_position.distance_to(tower.global_position) <= attack_range
 
+func _is_valid_clone_target(tower: Variant) -> bool:
+	if not _is_existing_clone_target_still_valid(tower):
+		return false
+	if _is_clone_recently_used(tower):
+		return false
+	if _is_claimed_by_other_trickery(tower):
+		return false
+	if tower.has_method("get_active_damage_bonus_tag") and str(tower.get_active_damage_bonus_tag()) == "clone":
+		return false
+	return true
+
 func _assign_best_clone_target() -> void:
-	var best: Node2D = null
-	var best_score := -INF
-	var best_dist := INF
+	var candidates: Array = []
 	for candidate in get_tree().get_nodes_in_group("placed_towers"):
-		if not _is_valid_clone_target(candidate):
+		if _is_valid_clone_target(candidate):
+			candidates.append(candidate)
+	if candidates.is_empty():
+		return
+	candidates.sort_custom(Callable(self, "_sort_clone_candidates"))
+	var best: Node2D = candidates[0]
+	# Prefer target variety when multiple valid non-support towers are available.
+	# This avoids a Trickery tower repeatedly linking the same equally-close tower
+	# while nearby towers never receive a clone.
+	if candidates.size() > 1 and _clone_last_target_instance_id != 0:
+		for candidate in candidates:
+			if is_instance_valid(candidate) and candidate.get_instance_id() != _clone_last_target_instance_id:
+				best = candidate
+				break
+	_assign_clone_target(best)
+
+func _assign_clone_target(target: Node2D) -> bool:
+	if target == null or not is_instance_valid(target):
+		return false
+	if not target.has_method("apply_damage_modifier"):
+		return false
+	if clone_current_target == target and _clone_active_time_left > 0.0:
+		return true
+	var previous_target := clone_current_target
+	if is_instance_valid(previous_target) and previous_target != target:
+		_remove_clone_from_current_target()
+		_register_recent_clone_target(previous_target)
+	clone_current_target = target
+	_clone_active_time_left = max(0.1, clone_duration)
+	_clone_last_target_instance_id = target.get_instance_id()
+	target.apply_damage_modifier(self, 1.0 + clone_damage_multiplier, "clone")
+	queue_redraw()
+	if target.has_method("queue_redraw"):
+		target.queue_redraw()
+	return true
+
+func try_set_manual_clone_target(target: Node2D) -> bool:
+	if not _is_trickery_clone_support():
+		return false
+	if target == null or not is_instance_valid(target):
+		return false
+	if target == self:
+		return false
+	if not _is_existing_clone_target_still_valid(target):
+		return false
+	if _is_clone_recently_used(target):
+		return false
+	if _is_claimed_by_other_trickery(target) and target != clone_current_target:
+		return false
+	clone_manual_target = target
+	_clone_scan_time_left = 0.0
+	_assign_clone_target(target)
+	queue_redraw()
+	return true
+
+func clear_manual_clone_target() -> void:
+	clone_manual_target = null
+	queue_redraw()
+
+func _find_selected_trickery_waiting_for_target() -> Node2D:
+	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+		if candidate == self or not is_instance_valid(candidate):
 			continue
-		var dist := global_position.distance_to(candidate.global_position)
-		var candidate_damage := 0.0
-		if candidate.has_method("get_effective_damage"):
-			candidate_damage = float(candidate.get_effective_damage())
+		if not candidate.has_method("try_set_manual_clone_target"):
+			continue
+		var selected_raw = candidate.get("is_selected")
+		if selected_raw != null and bool(selected_raw):
+			return candidate
+	return null
+
+func _sort_clone_candidates(a: Variant, b: Variant) -> bool:
+	var da := INF
+	var db := INF
+	if is_instance_valid(a):
+		da = global_position.distance_squared_to(a.global_position)
+	if is_instance_valid(b):
+		db = global_position.distance_squared_to(b.global_position)
+	if not is_equal_approx(da, db):
+		return da < db
+	var ia := 0
+	var ib := 0
+	if is_instance_valid(a):
+		ia = a.get_instance_id()
+	if is_instance_valid(b):
+		ib = b.get_instance_id()
+	return ia < ib
+
+func _tick_clone_recent_target_cooldowns(delta: float) -> void:
+	if _clone_recent_target_cooldowns.is_empty():
+		return
+	var expired: Array = []
+	for key in _clone_recent_target_cooldowns.keys():
+		var left := float(_clone_recent_target_cooldowns[key]) - delta
+		if left <= 0.0:
+			expired.append(key)
 		else:
-			var raw_damage = candidate.get("damage")
-			if raw_damage != null:
-				candidate_damage = float(raw_damage)
-		var invested := 0.0
-		var raw_invested = candidate.get("total_invested_gold")
-		if raw_invested != null:
-			invested = float(raw_invested)
-		var score := invested + candidate_damage * 10.0
-		if score > best_score or (is_equal_approx(score, best_score) and dist < best_dist):
-			best = candidate
-			best_score = score
-			best_dist = dist
-	if best != null:
-		clone_current_target = best
-		_clone_active_time_left = max(0.1, clone_duration)
-		best.apply_damage_modifier(self, 1.0 + clone_damage_multiplier, "clone")
+			_clone_recent_target_cooldowns[key] = left
+	for key in expired:
+		_clone_recent_target_cooldowns.erase(key)
+
+func _register_recent_clone_target(tower: Variant) -> void:
+	if tower == null or not is_instance_valid(tower):
+		return
+	_clone_recent_target_cooldowns[tower.get_instance_id()] = TRICKERY_RECENT_TARGET_COOLDOWN
+
+func _get_clone_recent_cooldown_left(tower: Variant) -> float:
+	if tower == null or not is_instance_valid(tower):
+		return 0.0
+	var key : Variant = tower.get_instance_id()
+	if not _clone_recent_target_cooldowns.has(key):
+		return 0.0
+	return max(0.0, float(_clone_recent_target_cooldowns[key]))
+
+func _is_clone_recently_used(tower: Variant) -> bool:
+	return _get_clone_recent_cooldown_left(tower) > 0.0
+
+func _is_claimed_by_other_trickery(tower: Variant) -> bool:
+	if tower == null or not is_instance_valid(tower):
+		return false
+	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+		if candidate == self or not is_instance_valid(candidate):
+			continue
+		if not candidate.has_method("get_clone_current_target"):
+			continue
+		var other_target = candidate.get_clone_current_target()
+		if is_instance_valid(other_target) and other_target == tower:
+			return true
+	return false
+
+func get_clone_current_target() -> Node2D:
+	return clone_current_target
+
+func notify_clone_target_fired(source_tower: Node2D, enemy_target: Node2D) -> void:
+	if source_tower == null or not is_instance_valid(source_tower):
+		return
+	if enemy_target == null or not is_instance_valid(enemy_target):
+		return
+	if source_tower != clone_current_target:
+		return
+	_clone_visual_fire_until_msec = Time.get_ticks_msec() + CLONE_FIRE_FLASH_MS
+	_clone_visual_fire_target_global = enemy_target.global_position
+	queue_redraw()
 
 func _remove_clone_from_current_target() -> void:
 	if is_instance_valid(clone_current_target) and clone_current_target.has_method("remove_damage_modifier"):
@@ -1362,6 +1844,14 @@ func _get_clone_target_name() -> String:
 		if raw_name != null and str(raw_name) != "":
 			return str(raw_name)
 		return str(clone_current_target.name)
+	return ""
+
+func _get_manual_clone_target_name() -> String:
+	if is_instance_valid(clone_manual_target):
+		var raw_name = clone_manual_target.get("display_name")
+		if raw_name != null and str(raw_name) != "":
+			return str(raw_name)
+		return str(clone_manual_target.name)
 	return ""
 
 func apply_damage_modifier(source: Node, multiplier: float, tag: String = "") -> void:
@@ -1378,6 +1868,22 @@ func remove_damage_modifier(source: Node) -> void:
 	if damage_modifiers.has(key):
 		damage_modifiers.erase(key)
 		queue_redraw()
+
+func _get_active_clone_source() -> Node2D:
+	var strongest_multiplier := 1.0
+	var strongest_source: Node2D = null
+	for key in damage_modifiers.keys():
+		var entry: Dictionary = damage_modifiers[key]
+		if str(entry.get("tag", "")) != "clone":
+			continue
+		var source: Node = entry.get("source", null)
+		if not is_instance_valid(source) or not source is Node2D:
+			continue
+		var value := float(entry.get("value", 1.0))
+		if value > strongest_multiplier:
+			strongest_multiplier = value
+			strongest_source = source as Node2D
+	return strongest_source
 
 func get_effective_damage() -> float:
 	var strongest_multiplier := 1.0
@@ -1397,28 +1903,65 @@ func get_active_damage_bonus_percent() -> int:
 	var effective := get_effective_damage()
 	if damage <= 0.0:
 		return 0
-	return int(round((effective / damage - 1.0) * 100.0))
+	return max(0, int(round((effective / damage - 1.0) * 100.0)))
+
+func get_active_damage_bonus_tag() -> String:
+	var strongest_multiplier := 1.0
+	var strongest_tag := ""
+	for key in damage_modifiers.keys():
+		var entry: Dictionary = damage_modifiers[key]
+		var source: Node = entry.get("source", null)
+		if not is_instance_valid(source):
+			continue
+		var value := float(entry.get("value", 1.0))
+		if value > strongest_multiplier:
+			strongest_multiplier = value
+			strongest_tag = str(entry.get("tag", ""))
+	return strongest_tag
+
+func get_active_fire_rate_bonus_percent() -> int:
+	var effective := get_effective_fire_rate()
+	if fire_rate <= 0.0 or effective <= 0.0:
+		return 0
+	return max(0, int(round((fire_rate / effective - 1.0) * 100.0)))
+
+func get_active_fire_rate_bonus_tag() -> String:
+	var strongest_multiplier := 1.0
+	var strongest_tag := ""
+	for key in fire_rate_modifiers.keys():
+		var entry: Dictionary = fire_rate_modifiers[key]
+		var source: Node = entry.get("source", null)
+		if not is_instance_valid(source):
+			continue
+		var value := float(entry.get("value", 1.0))
+		if value > strongest_multiplier:
+			strongest_multiplier = value
+			strongest_tag = str(entry.get("tag", ""))
+	return strongest_tag
 
 func get_attack_type() -> String:
 	return attack_type
 
 func _exit_tree() -> void:
+	_clear_support_targets()
+	clone_manual_target = null
 	_remove_clone_from_current_target()
 	# Clean modifiers this tower may have applied to other towers through stale references.
 	for candidate in get_tree().get_nodes_in_group("placed_towers"):
 		if is_instance_valid(candidate) and candidate != self and candidate.has_method("remove_damage_modifier"):
 			candidate.remove_damage_modifier(self)
 
-func apply_fire_rate_modifier(source: Node, multiplier: float) -> void:
+func apply_fire_rate_modifier(source: Node, multiplier: float, tag: String = "") -> void:
 	if source == null or not is_instance_valid(source):
 		return
 	var key := source.get_instance_id()
-	var value := clampf(multiplier, 0.05, 1.0)
-	if not fire_rate_modifiers.has(key) or abs(float(fire_rate_modifiers[key].get("value", 1.0)) - value) > 0.001:
-		fire_rate_modifiers[key] = {"source": source, "value": value}
+	var value := clampf(multiplier, 0.05, 10.0)
+	if not fire_rate_modifiers.has(key) or abs(float(fire_rate_modifiers[key].get("value", 1.0)) - value) > 0.001 or str(fire_rate_modifiers[key].get("tag", "")) != tag:
+		fire_rate_modifiers[key] = {"source": source, "value": value, "tag": tag}
 		fire_rate_modifier_changed.emit(self, source, value)
+		queue_redraw()
 		if OS.is_debug_build():
-			print("[EnemyFeature][TowerDisrupted] tower=%s source=%s multiplier=%.2f effective_interval=%.2f" % [tower_id, str(source.name), value, get_effective_fire_rate()])
+			print("[TowerFireRateModifier] tower=%s source=%s multiplier=%.2f effective_interval=%.2f" % [tower_id, str(source.name), value, get_effective_fire_rate()])
 
 func remove_fire_rate_modifier(source: Node) -> void:
 	if source == null:
@@ -1427,11 +1970,13 @@ func remove_fire_rate_modifier(source: Node) -> void:
 	if fire_rate_modifiers.has(key):
 		fire_rate_modifiers.erase(key)
 		fire_rate_modifier_changed.emit(self, source, 1.0)
+		queue_redraw()
 		if OS.is_debug_build():
 			print("[EnemyFeature][TowerDisruptionRemoved] tower=%s source=%s effective_interval=%.2f" % [tower_id, str(source.name), get_effective_fire_rate()])
 
 func get_effective_fire_rate() -> float:
-	var strongest_multiplier := 1.0
+	var strongest_speed_buff := 1.0
+	var strongest_slow_debuff := 1.0
 	_stale_fire_rate_keys.clear()
 	for key in fire_rate_modifiers.keys():
 		var entry: Dictionary = fire_rate_modifiers[key]
@@ -1439,10 +1984,15 @@ func get_effective_fire_rate() -> float:
 		if not is_instance_valid(source):
 			_stale_fire_rate_keys.append(key)
 			continue
-		strongest_multiplier = min(strongest_multiplier, clampf(float(entry.get("value", 1.0)), 0.05, 1.0))
+		var value := clampf(float(entry.get("value", 1.0)), 0.05, 10.0)
+		if value >= 1.0:
+			strongest_speed_buff = max(strongest_speed_buff, value)
+		else:
+			strongest_slow_debuff = min(strongest_slow_debuff, value)
 	for key in _stale_fire_rate_keys:
 		fire_rate_modifiers.erase(key)
-	return fire_rate / strongest_multiplier
+	var final_multiplier : float = max(0.05, strongest_speed_buff * strongest_slow_debuff)
+	return fire_rate / final_multiplier
 
 func select_first_target(enemies: Array) -> Node2D:
 	var best_target = null

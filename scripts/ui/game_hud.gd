@@ -868,22 +868,39 @@ func show_tower_info(info: Dictionary) -> void:
 
 	var active_damage_bonus := int(info.get("active_damage_bonus_percent", 0))
 	if active_damage_bonus > 0:
-		tower_damage_label.text = "Damage: %s  (+CLONE %d%% → %s)" % [str(info["damage"]), active_damage_bonus, str(int(round(float(info.get("effective_damage", info["damage"])))))]
-		tower_damage_label.modulate = Color(0.9, 0.65, 1.0)
+		var damage_tag := str(info.get("active_damage_bonus_tag", ""))
+		var damage_label := "+DMG"
+		var damage_color := Color(1.0, 0.65, 0.35)
+		if damage_tag == "clone":
+			damage_label = "+CLONE"
+			damage_color = Color(0.9, 0.65, 1.0)
+		tower_damage_label.text = "Damage: %s  (%s %d%% → %s)" % [str(info["damage"]), damage_label, active_damage_bonus, str(int(round(float(info.get("effective_damage", info["damage"])))))]
+		tower_damage_label.modulate = damage_color
 	else:
 		tower_damage_label.text = "Damage: " + str(info["damage"])
 		tower_damage_label.modulate = Color(0.85, 0.9, 1.0)
 	tower_range_label.text = "Range: " + str(info["range"])
-	tower_fire_rate_label.text = "Fire Rate: " + str(info["fire_rate"]) + "s"
+	var active_speed_bonus := int(info.get("active_fire_rate_bonus_percent", 0))
+	if active_speed_bonus > 0:
+		tower_fire_rate_label.text = "Fire Rate: %0.2fs  (+SPD %d%% → %0.2fs)" % [float(info["fire_rate"]), active_speed_bonus, float(info.get("effective_fire_rate", info["fire_rate"]))]
+		tower_fire_rate_label.modulate = Color(0.45, 0.9, 1.0)
+	else:
+		tower_fire_rate_label.text = "Fire Rate: " + str(info["fire_rate"]) + "s"
+		tower_fire_rate_label.modulate = Color(0.85, 0.9, 1.0)
 	
 	if tower_target_label:
-		var targets = info.get("target_categories", ["land"])
-		var target_str = "Targets: "
-		if targets.size() >= 2: target_str += "Land + Air"
-		elif targets.has("air"): target_str += "Air Only"
-		else: target_str += "Land Only"
-		tower_target_label.text = target_str
-		tower_target_label.modulate = Color(0.6, 0.9, 1.0) if targets.has("air") else Color(0.8, 0.8, 0.8)
+		var a_type_for_targets = str(info.get("attack_type", "single"))
+		if a_type_for_targets == "support_aura" or a_type_for_targets == "clone_support":
+			tower_target_label.text = "Targets: Nearby Towers"
+			tower_target_label.modulate = Color(0.65, 0.9, 1.0)
+		else:
+			var targets = info.get("target_categories", ["land"])
+			var target_str = "Targets: "
+			if targets.size() >= 2: target_str += "Land + Air"
+			elif targets.has("air"): target_str += "Air Only"
+			else: target_str += "Land Only"
+			tower_target_label.text = target_str
+			tower_target_label.modulate = Color(0.6, 0.9, 1.0) if targets.has("air") else Color(0.8, 0.8, 0.8)
 	
 	# Clear previous type specific labels
 	tower_splash_label.hide()
@@ -910,6 +927,21 @@ func show_tower_info(info: Dictionary) -> void:
 			var vuln = int(info.get("vulnerability_percent", 0) * 100)
 			tower_splash_label.text = "Type: BLEED AURA (+%d%%)" % vuln
 			tower_splash_label.modulate = Color(1.0, 0.3, 0.3)
+		"support_aura":
+			tower_splash_label.show()
+			var support_type := str(info.get("support_type", ""))
+			var support_pct := int(round(float(info.get("support_value", 0.0)) * 100.0))
+			var support_count := int(info.get("support_target_count", 0))
+			var support_limit := int(info.get("support_limit", 4))
+			if support_type == "attack_speed":
+				tower_splash_label.text = "Type: WELL SPEED AURA +%d%% (%d/%d)" % [support_pct, support_count, support_limit]
+				tower_splash_label.modulate = Color(0.45, 0.9, 1.0)
+			elif support_type == "damage":
+				tower_splash_label.text = "Type: BLACKSMITH DAMAGE AURA +%d%% (%d/%d)" % [support_pct, support_count, support_limit]
+				tower_splash_label.modulate = Color(1.0, 0.65, 0.35)
+			else:
+				tower_splash_label.text = "Type: SUPPORT AURA"
+				tower_splash_label.modulate = Color(0.65, 0.85, 1.0)
 		"clone_support":
 			tower_splash_label.show()
 			var clone_pct = int(float(info.get("clone_damage_multiplier", 0.0)) * 100.0)

@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://d4k3j5l8n2m1"]
 
 [ext_resource type="Script" uid="uid://bj5et7ir3t1bc" path="res://scripts/ui/game_hud.gd" id="1_hud_script"]
-[ext_resource type="Script" uid="uid://blbvr8jjaq5hx" path="res://scripts/ui/star_icon.gd" id="2_star_script"]
+[ext_resource type="Script" path="res://scripts/ui/star_icon.gd" id="2_star_script"]
 
 [node name="GameHUD" type="CanvasLayer" unique_id=1596849358]
 process_mode = 3
