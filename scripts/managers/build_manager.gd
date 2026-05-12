@@ -78,10 +78,10 @@ func load_towers_config() -> void:
 			if OS.is_debug_build(): print("Loaded tower tree: ", towers_tree_config.size(), " entries.")
 
 func _inject_element_td_combo_towers() -> void:
-	# Element TD WC3-like tower availability is combination-based. The authored
-	# JSON contains the six single-element lines and pure towers; this generated
-	# layer fills in the missing dual/triple combo families so the existing
-	# ElementProgressionManager can unlock them from element levels automatically.
+	# Element TD WC3-like tower availability is combination-based.
+	# The authored JSON contains starter/single/pure towers. This generated
+	# layer fills temporary dual/triple combo families until the final authored
+	# Element TD catalog replaces it.
 	for i in range(ELEMENT_TD_ELEMENTS.size()):
 		for j in range(i + 1, ELEMENT_TD_ELEMENTS.size()):
 			var elements := [ELEMENT_TD_ELEMENTS[i], ELEMENT_TD_ELEMENTS[j]]
@@ -128,7 +128,7 @@ func _build_combo_tower_config(tower_id: String, display_base: String, elements:
 	var combo_count := elements.size()
 	var base_damage := float(attack_profile.get("damage", 20.0)) * tier_scale
 	var base_range := int(attack_profile.get("range", 165)) + (tier - 1) * 16
-	var base_fire_rate := max(0.24, float(attack_profile.get("fire_rate", 0.9)) * (1.0 - float(tier - 1) * 0.07))
+	var base_fire_rate : float = max(0.24, float(attack_profile.get("fire_rate", 0.9)) * (1.0 - float(tier - 1) * 0.07))
 	var level_data := {
 		"level": 1,
 		"damage": snapped(base_damage, 0.1),
@@ -148,7 +148,6 @@ func _build_combo_tower_config(tower_id: String, display_base: String, elements:
 		"required_element_level": tier,
 		"build_entry": tier == 1,
 		"shop_order": shop_order,
-		"branch_id": combo_type,
 		"next_upgrade_ids": next_ids,
 		"cost": cost,
 		"upgrade_cost": upgrade_cost,
