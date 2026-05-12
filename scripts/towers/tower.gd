@@ -138,6 +138,7 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 	support_max_targets = int(config.get("support_max_targets", 4))
 	projectile_speed = config.get("projectile_speed", 500.0)
 	target_categories = _normalize_target_categories(config.get("target_categories", DEFAULT_TARGET_CATEGORIES))
+	_force_neutral_arrow_targets_if_needed()
 	grid_cell = cell
 	
 	if config.has("levels"):
@@ -199,6 +200,7 @@ func apply_level_stats() -> void:
 	var data = get_current_level_data()
 	if not data.is_empty():
 		target_categories = _normalize_target_categories(data.get("target_categories", config.get("target_categories", DEFAULT_TARGET_CATEGORIES)))
+		_force_neutral_arrow_targets_if_needed()
 		damage = data.get("damage", 10.0)
 		attack_range = data.get("range", 160.0)
 		fire_rate = data.get("fire_rate", 1.0)
@@ -1204,6 +1206,18 @@ func _normalize_target_categories(raw_categories) -> Array[String]:
 		normalized.append(ENEMY_CATEGORY_LAND)
 	return normalized
 
+func _is_neutral_arrow_starter() -> bool:
+	var id_value := str(tower_id).strip_edges().to_lower()
+	var name_value := str(display_name).strip_edges().to_lower()
+	return id_value == "basic_tower_t1" or name_value == "neutral arrow tower"
+
+func _force_neutral_arrow_targets_if_needed() -> void:
+	if not _is_neutral_arrow_starter():
+		return
+	target_categories.clear()
+	target_categories.append(ENEMY_CATEGORY_LAND)
+	target_categories.append(ENEMY_CATEGORY_AIR)
+
 func find_target() -> Node2D:
 	var enemies = get_enemies_in_range()
 	if enemies.is_empty(): return null
@@ -1367,14 +1381,13 @@ func get_active_support_bonuses() -> Array[Dictionary]:
 				bonuses.append({"type": "attack_speed", "percent": int(round((mult - 1.0) * 100.0)), "source": _support_source_name(spd_source)})
 	return bonuses
 
-func _support_source_name(source: Variant) -> String:
-	if source == null or not is_instance_valid(source):
-		return "Support Tower"
-	if source.has_method("get_tower_display_name"):
+func _support_source_name(source: Node) -> String:
+	if source != null and source.has_method("get_tower_display_name"):
 		return str(source.get_tower_display_name())
-	var display_value: Variant = source.get("display_name")
-	if display_value != null:
-		return str(display_value)
+	if source != null:
+		var display_value: Variant = source.get("display_name")
+		if display_value != null:
+			return str(display_value)
 	return "Support Tower"
 
 func get_tower_display_name() -> String:
@@ -1405,19 +1418,15 @@ func _refresh_support_targets() -> void:
 	var next_targets: Array = []
 	var limit: int = max(1, support_max_targets)
 	for i in range(min(limit, candidates.size())):
-		var candidate_tower = candidates[i].get("tower")
-		if candidate_tower != null and is_instance_valid(candidate_tower):
-			next_targets.append(candidate_tower)
+		next_targets.append(candidates[i].get("tower"))
 	for old_tower in _active_supported_towers.duplicate():
-		if old_tower == null or not is_instance_valid(old_tower):
-			continue
 		if not next_targets.has(old_tower):
 			_remove_support_from_tower(old_tower)
 	for next_tower in next_targets:
 		_apply_support_to_tower(next_tower)
 	_active_supported_towers = next_targets
 
-func _apply_support_to_tower(target_tower: Variant) -> void:
+func _apply_support_to_tower(target_tower: Node) -> void:
 	if target_tower == null or not is_instance_valid(target_tower):
 		return
 	match support_mode:
@@ -1429,7 +1438,7 @@ func _apply_support_to_tower(target_tower: Variant) -> void:
 			if target_tower.has_method("apply_damage_modifier"):
 				target_tower.apply_damage_modifier(self, 1.0 + maxf(0.0, support_bonus))
 
-func _remove_support_from_tower(target_tower: Variant) -> void:
+func _remove_support_from_tower(target_tower: Node) -> void:
 	if target_tower == null or not is_instance_valid(target_tower):
 		return
 	match support_mode:
@@ -1441,12 +1450,8 @@ func _remove_support_from_tower(target_tower: Variant) -> void:
 				target_tower.remove_damage_modifier(self)
 
 func _clear_support_targets() -> void:
-	# Support targets can already be freed when this tower exits the tree.
-	# Keep this untyped/guarded so Godot does not try to pass a freed Object
-	# into a typed Node parameter before our validity checks can run.
 	for target_tower in _active_supported_towers.duplicate():
-		if target_tower != null and is_instance_valid(target_tower):
-			_remove_support_from_tower(target_tower)
+		_remove_support_from_tower(target_tower)
 	_active_supported_towers.clear()
 
 func select_first_target(enemies: Array) -> Node2D:

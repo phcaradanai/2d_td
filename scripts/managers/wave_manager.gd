@@ -463,7 +463,7 @@ func _on_enemy_died(_enemy: Node, reward: int) -> void:
 
 func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> void:
 	current_wave_has_leak = true
-	var hp_rem := _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
+	var hp_rem : float = _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
 	if game_manager and game_manager.battle_telemetry:
 		var prog = _enemy.get_path_progress() if _enemy.has_method("get_path_progress") else 0.0
 		var lives_after = game_manager.lives - damage
