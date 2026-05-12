@@ -866,7 +866,13 @@ func show_tower_info(info: Dictionary) -> void:
 		tier_text += "  [MAX]"
 	tower_level_label.text = tier_text
 
-	tower_damage_label.text = "Damage: " + str(info["damage"])
+	var active_damage_bonus := int(info.get("active_damage_bonus_percent", 0))
+	if active_damage_bonus > 0:
+		tower_damage_label.text = "Damage: %s  (+CLONE %d%% → %s)" % [str(info["damage"]), active_damage_bonus, str(int(round(float(info.get("effective_damage", info["damage"])))))]
+		tower_damage_label.modulate = Color(0.9, 0.65, 1.0)
+	else:
+		tower_damage_label.text = "Damage: " + str(info["damage"])
+		tower_damage_label.modulate = Color(0.85, 0.9, 1.0)
 	tower_range_label.text = "Range: " + str(info["range"])
 	tower_fire_rate_label.text = "Fire Rate: " + str(info["fire_rate"]) + "s"
 	
@@ -904,6 +910,15 @@ func show_tower_info(info: Dictionary) -> void:
 			var vuln = int(info.get("vulnerability_percent", 0) * 100)
 			tower_splash_label.text = "Type: BLEED AURA (+%d%%)" % vuln
 			tower_splash_label.modulate = Color(1.0, 0.3, 0.3)
+		"clone_support":
+			tower_splash_label.show()
+			var clone_pct = int(float(info.get("clone_damage_multiplier", 0.0)) * 100.0)
+			var target_name = str(info.get("clone_target_name", ""))
+			if target_name != "":
+				tower_splash_label.text = "Type: TRICKERY CLONE +%d%% → %s" % [clone_pct, target_name]
+			else:
+				tower_splash_label.text = "Type: TRICKERY CLONE +%d%%" % clone_pct
+			tower_splash_label.modulate = Color(0.9, 0.65, 1.0)
 		_:
 			tower_splash_label.show()
 			tower_splash_label.text = "Type: DIRECT KINETIC"
