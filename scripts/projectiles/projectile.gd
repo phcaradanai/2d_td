@@ -6,6 +6,43 @@ const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
 
+# Element TD WC3-style elemental damage relation.
+# Cycle used by classic Element TD logic:
+# Light > Darkness > Water > Fire > Nature > Earth > Light.
+const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
+const ELEMENT_STRONG_AGAINST := {
+	"light": "darkness",
+	"darkness": "water",
+	"water": "fire",
+	"fire": "nature",
+	"nature": "earth",
+	"earth": "light",
+}
+const ELEMENT_DAMAGE_STRONG_MULTIPLIER: float = 1.50
+const ELEMENT_DAMAGE_WEAK_MULTIPLIER: float = 0.75
+const ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER: float = 1.0
+
+# Until every wave has explicit elemental armor metadata, infer a stable armor
+# profile from enemy archetype. This makes the mechanic testable immediately
+# without changing existing wave/enemy JSON contracts.
+const ENEMY_TYPE_ARMOR_FALLBACK := {
+	"basic": "earth",
+	"fast": "nature",
+	"tank": "earth",
+	"bulwark": "light",
+	"hunter": "darkness",
+	"swarm": "water",
+	"runner": "nature",
+	"shieldbearer": "light",
+	"healer": "water",
+	"splitter": "fire",
+	"cloaked": "darkness",
+	"flyer": "light",
+	"fast_flyer": "nature",
+	"armored_flyer": "earth",
+	"disruptor": "darkness",
+}
+
 var target: Node2D = null
 var damage: float = 0.0
 var speed: float = 500.0
@@ -180,7 +217,8 @@ func hit_target() -> void:
 		apply_area_effect(hit_global)
 	else:
 		if target and target.has_method("take_damage"):
-			target.take_damage(damage, hit_global, source_id, attack_type)
+			var final_damage := _calculate_elemental_damage(damage, target)
+			target.take_damage(final_damage, hit_global, source_id, attack_type)
 			_apply_damage_amp_to_enemy(target)
 			# STANDARD: Use captured hit point and current pos for angle
 			var impact_angle = (hit_global - global_position).angle()
@@ -297,13 +335,94 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 				if attack_type == "splash":
 					# Linear Falloff: 100% at center, 50% at edge
 					var falloff = 1.0 - (dist / effect_radius) * 0.5
-					enemy.take_damage(damage * falloff, enemy_pos, source_id, attack_type)
+					var splash_damage := _calculate_elemental_damage(damage * falloff, enemy)
+					enemy.take_damage(splash_damage, enemy_pos, source_id, attack_type)
 				elif attack_type == "slow":
 					# Area slow deals its low base damage + applies debuffs.
-					enemy.take_damage(damage, enemy_pos, source_id, attack_type)
+					var slow_damage := _calculate_elemental_damage(damage, enemy)
+					enemy.take_damage(slow_damage, enemy_pos, source_id, attack_type)
 					if enemy.has_method("apply_slow"):
 						enemy.apply_slow(slow_percent, slow_duration)
 					_apply_damage_amp_to_enemy(enemy)
+
+func _calculate_elemental_damage(raw_damage: float, enemy: Variant) -> float:
+	if raw_damage <= 0.0:
+		return raw_damage
+	var attack_elements := _get_attack_elements_from_source()
+	if attack_elements.is_empty():
+		return raw_damage
+	var armor_element := _get_target_armor_element(enemy)
+	if armor_element == "":
+		return raw_damage
+	return raw_damage * _calculate_elemental_multiplier(attack_elements, armor_element)
+
+func _calculate_elemental_multiplier(attack_elements: Array[String], armor_element: String) -> float:
+	if attack_elements.is_empty() or armor_element == "":
+		return ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER
+	var total := 0.0
+	for element_id in attack_elements:
+		total += _single_element_multiplier(element_id, armor_element)
+	var average := total / float(attack_elements.size())
+	return clampf(average, ELEMENT_DAMAGE_WEAK_MULTIPLIER, ELEMENT_DAMAGE_STRONG_MULTIPLIER)
+
+func _single_element_multiplier(attack_element: String, armor_element: String) -> float:
+	attack_element = _normalize_element_id(attack_element)
+	armor_element = _normalize_element_id(armor_element)
+	if attack_element == "" or armor_element == "":
+		return ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER
+	if attack_element == armor_element:
+		return ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER
+	if str(ELEMENT_STRONG_AGAINST.get(attack_element, "")) == armor_element:
+		return ELEMENT_DAMAGE_STRONG_MULTIPLIER
+	if str(ELEMENT_STRONG_AGAINST.get(armor_element, "")) == attack_element:
+		return ELEMENT_DAMAGE_WEAK_MULTIPLIER
+	return ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER
+
+func _get_attack_elements_from_source() -> Array[String]:
+	var out: Array[String] = []
+	var normalized_source := source_id.to_lower().strip_edges()
+	if normalized_source == "":
+		return out
+
+	for element_id in ELEMENT_ORDER:
+		if _source_id_contains_element(normalized_source, element_id):
+			out.append(element_id)
+	return out
+
+func _source_id_contains_element(normalized_source: String, element_id: String) -> bool:
+	return normalized_source == element_id \
+		or normalized_source.begins_with(element_id + "_") \
+		or normalized_source.begins_with("pure_" + element_id) \
+		or normalized_source.find("_" + element_id + "_") >= 0 \
+		or normalized_source.ends_with("_" + element_id)
+
+func _get_target_armor_element(enemy: Variant) -> String:
+	if enemy == null or not is_instance_valid(enemy):
+		return ""
+
+	if enemy.has_method("get_armor_element"):
+		var explicit_method_value := _normalize_element_id(str(enemy.get_armor_element()))
+		if explicit_method_value != "":
+			return explicit_method_value
+
+	var explicit_value := _normalize_element_id(str(enemy.get("armor_element")))
+	if explicit_value != "":
+		return explicit_value
+
+	var type_id := ""
+	if enemy.has_method("get_enemy_type"):
+		type_id = str(enemy.get_enemy_type()).to_lower()
+	else:
+		type_id = str(enemy.get("enemy_type")).to_lower()
+	return _normalize_element_id(str(ENEMY_TYPE_ARMOR_FALLBACK.get(type_id, "")))
+
+func _normalize_element_id(raw_element: String) -> String:
+	var value := raw_element.to_lower().strip_edges()
+	if value == "null" or value == "<null>":
+		return ""
+	if ELEMENT_ORDER.has(value):
+		return value
+	return ""
 
 func _apply_damage_amp_to_enemy(enemy: Variant) -> void:
 	if vulnerability_percent <= 0.0 or vulnerability_duration <= 0.0:
