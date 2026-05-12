@@ -27,6 +27,8 @@ var game_hud: Node = null
 var tower_container: Node2D = null
 var selected_tower: Node2D = null
 var _handling_hud_action: bool = false
+var _last_upgrade_press_msec: int = 0
+var _last_sell_press_msec: int = 0
 
 func _ready() -> void:
 	main = get_tree().current_scene
@@ -52,6 +54,9 @@ func _connect_runtime_signals() -> void:
 	_connect_signal(game_hud, "sell_tower_requested", Callable(self, "_on_sell_tower_requested"))
 	_connect_signal(game_hud, "deselect_tower_requested", Callable(self, "_on_deselect_tower_requested"))
 	_connect_signal(build_manager, "tower_placed", Callable(self, "_on_tower_placed"))
+	_connect_hud_button_press("upgrade_tower_button", Callable(self, "_on_upgrade_button_pressed_direct"))
+	_connect_hud_button_press("sell_tower_button", Callable(self, "_on_sell_button_pressed_direct"))
+	_connect_hud_button_press("deselect_tower_button", Callable(self, "_on_deselect_button_pressed_direct"))
 
 func _connect_signal(source: Object, signal_name: String, callable: Callable) -> void:
 	if source == null:
@@ -61,6 +66,13 @@ func _connect_signal(source: Object, signal_name: String, callable: Callable) ->
 	if source.is_connected(signal_name, callable):
 		return
 	source.connect(signal_name, callable)
+
+func _connect_hud_button_press(property_name: String, callable: Callable) -> void:
+	if game_hud == null:
+		return
+	var control = game_hud.get(property_name)
+	if control is BaseButton and is_instance_valid(control):
+		_connect_signal(control, "pressed", callable)
 
 func _unhandled_input(event: InputEvent) -> void:
 	if not _is_wave_realtime_window():
@@ -114,6 +126,30 @@ func _on_cancel_build_requested() -> void:
 	if not _is_wave_realtime_window():
 		return
 	_clear_build_selection()
+
+func _on_upgrade_button_pressed_direct() -> void:
+	# Direct button hook fixes cases where GameHUD/Main consumes or ignores the
+	# upgrade signal during WAVE before the bridge can act.
+	if not _is_wave_realtime_window():
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_upgrade_press_msec < 120:
+		return
+	_last_upgrade_press_msec = now
+	_on_upgrade_tower_requested()
+
+func _on_sell_button_pressed_direct() -> void:
+	if not _is_wave_realtime_window():
+		return
+	var now := Time.get_ticks_msec()
+	if now - _last_sell_press_msec < 120:
+		return
+	_last_sell_press_msec = now
+	_on_sell_tower_requested()
+
+func _on_deselect_button_pressed_direct() -> void:
+	if _is_wave_realtime_window():
+		_clear_tower_selection()
 
 func _on_upgrade_tower_requested() -> void:
 	if _handling_hud_action or not realtime_upgrade_enabled or not _is_wave_realtime_window():
@@ -224,21 +260,21 @@ func _select_tower(tower: Node2D) -> void:
 	if tower == null or not is_instance_valid(tower):
 		return
 
-	# Prefer the existing main.gd selection flow if it is available.
+	# Ask main.gd to do its normal selection work first when available, but do
+	# not trust it during WAVE because the legacy flow can ignore tower clicks.
 	for method_name in ["_on_tower_clicked", "_select_tower", "select_tower"]:
 		if main != null and main.has_method(method_name):
 			main.call(method_name, tower)
-			selected_tower = tower
-			return
+			break
 
-	# Safe fallback for active-wave selection if main.gd intentionally ignores
-	# tower clicks while WAVE is running.
+	# Force the canonical selected tower for real-time upgrade/sell actions.
 	_clear_tower_visual_selection_only()
 	selected_tower = tower
 	if main != null:
 		main.set("selected_tower", tower)
 	_set_tower_selected(tower, true)
 	_update_tower_panel(tower)
+	_set_status("Selected %s" % str(tower.get("display_name")))
 
 func _clear_tower_selection() -> void:
 	_clear_tower_visual_selection_only()
