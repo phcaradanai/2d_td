@@ -6,6 +6,7 @@ const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
 const ENEMIES_DATA_PATH := "res://data/enemies.json"
+const TOWERS_TREE_DATA_PATH := "res://data/towers_tree.json"
 
 # Element TD WC3-style elemental damage relation.
 # Cycle used by classic Element TD logic:
@@ -46,6 +47,8 @@ const ENEMY_TYPE_ARMOR_FALLBACK := {
 
 var enemy_armor_data_cache: Dictionary = {}
 var enemy_armor_data_loaded: bool = false
+var tower_elements_data_cache: Dictionary = {}
+var tower_elements_data_loaded: bool = false
 
 var target: Node2D = null
 var damage: float = 0.0
@@ -61,6 +64,7 @@ var chain_range: float = 0.0
 var chain_falloff: float = 1.0
 var chained_enemies: Array = []
 var source_id: String = ""
+var attack_elements_override: Array[String] = []
 var vulnerability_percent: float = 0.0
 var vulnerability_duration: float = 0.0
 
@@ -72,7 +76,7 @@ var trail_points: Array[Vector2] = []
 @export var max_trail_points: int = 8
 @export var min_point_distance: float = 4.0
 
-func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_effect_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0, p_target_categories: Array = [], p_source_id: String = "", p_vulnerability_percent: float = 0.0, p_vulnerability_duration: float = 0.0) -> void:
+func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_effect_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0, p_target_categories: Array = [], p_source_id: String = "", p_vulnerability_percent: float = 0.0, p_vulnerability_duration: float = 0.0, p_attack_elements: Array = []) -> void:
 	target = p_target
 	damage = p_damage
 	speed = p_speed
@@ -82,6 +86,7 @@ func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_
 	slow_duration = p_slow_duration
 	target_categories = _normalize_target_categories(p_target_categories)
 	source_id = p_source_id
+	attack_elements_override = _normalize_element_array(p_attack_elements)
 	vulnerability_percent = maxf(0.0, p_vulnerability_percent)
 	vulnerability_duration = maxf(0.0, p_vulnerability_duration)
 	
@@ -249,7 +254,7 @@ func _handle_chain_jump(hit_pos: Vector2) -> void:
 		var next_proj = duplicate()
 		get_parent().add_child(next_proj)
 		next_proj.global_position = hit_pos
-		next_proj.setup(next_target, damage * chain_falloff, speed, "chain", effect_radius, slow_percent, slow_duration, target_categories, source_id, vulnerability_percent, vulnerability_duration)
+		next_proj.setup(next_target, damage * chain_falloff, speed, "chain", effect_radius, slow_percent, slow_duration, target_categories, source_id, vulnerability_percent, vulnerability_duration, attack_elements_override)
 		next_proj.setup_chain(chain_jumps - 1, chain_range, chain_falloff, chained_enemies)
 		next_proj.modulate = modulate # Keep lightning color
 
@@ -383,15 +388,69 @@ func _single_element_multiplier(attack_element: String, armor_element: String) -
 	return ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER
 
 func _get_attack_elements_from_source() -> Array[String]:
+	if not attack_elements_override.is_empty():
+		return attack_elements_override.duplicate()
+
 	var out: Array[String] = []
 	var normalized_source := source_id.to_lower().strip_edges()
 	if normalized_source == "":
 		return out
 
+	var data_elements := _get_attack_elements_from_tower_data(normalized_source)
+	if not data_elements.is_empty():
+		return data_elements
+
+	# Legacy fallback for older/custom tower ids that are not in towers_tree.json.
 	for element_id in ELEMENT_ORDER:
 		if _source_id_contains_element(normalized_source, element_id):
 			out.append(element_id)
 	return out
+
+func _get_attack_elements_from_tower_data(source: String) -> Array[String]:
+	var normalized_source := source.to_lower().strip_edges()
+	var out: Array[String] = []
+	if normalized_source == "":
+		return out
+	_ensure_tower_elements_data_loaded()
+	if not tower_elements_data_cache.has(normalized_source):
+		return out
+	var cached = tower_elements_data_cache.get(normalized_source, [])
+	if cached is Array:
+		return _normalize_element_array(cached)
+	return out
+
+func _ensure_tower_elements_data_loaded() -> void:
+	if tower_elements_data_loaded:
+		return
+	tower_elements_data_loaded = true
+	tower_elements_data_cache.clear()
+	if not FileAccess.file_exists(TOWERS_TREE_DATA_PATH):
+		return
+	var file := FileAccess.open(TOWERS_TREE_DATA_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var json_text := file.get_as_text()
+	file.close()
+	var json := JSON.new()
+	var error := json.parse(json_text)
+	if error != OK:
+		return
+	_collect_tower_elements_from_variant(json.data)
+
+func _collect_tower_elements_from_variant(value: Variant) -> void:
+	if value is Dictionary:
+		if value.has("id") and value.has("elements"):
+			var tower_key := str(value.get("id", "")).to_lower().strip_edges()
+			var parsed_elements := _normalize_element_array(value.get("elements", []))
+			if tower_key != "" and not parsed_elements.is_empty():
+				tower_elements_data_cache[tower_key] = parsed_elements
+		for child in value.values():
+			if child is Dictionary or child is Array:
+				_collect_tower_elements_from_variant(child)
+	elif value is Array:
+		for child in value:
+			if child is Dictionary or child is Array:
+				_collect_tower_elements_from_variant(child)
 
 func _source_id_contains_element(normalized_source: String, element_id: String) -> bool:
 	return (
@@ -468,6 +527,19 @@ func _ensure_enemy_armor_data_loaded() -> void:
 			if config_id != "":
 				enemy_armor_data_cache[config_id] = armor_value
 
+func _normalize_element_array(raw_elements) -> Array[String]:
+	var out: Array[String] = []
+	if raw_elements is Array:
+		for raw_element in raw_elements:
+			var value := _normalize_element_id(str(raw_element))
+			if value != "" and not out.has(value):
+				out.append(value)
+	elif raw_elements != null:
+		var value := _normalize_element_id(str(raw_elements))
+		if value != "":
+			out.append(value)
+	return out
+
 func _normalize_element_id(raw_element: String) -> String:
 	var value := raw_element.to_lower().strip_edges()
 	if value == "null" or value == "<null>":
@@ -503,6 +575,7 @@ func _normalize_target_categories(raw_categories) -> Array[String]:
 	if normalized.is_empty():
 		normalized.append(ENEMY_CATEGORY_LAND)
 	return normalized
+
 func _draw_lightning_projectile() -> void:
 	# Jagged tail behind the projectile head
 	var pts = PackedVector2Array()
