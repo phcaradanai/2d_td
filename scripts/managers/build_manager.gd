@@ -20,18 +20,15 @@ var towers_tree_config: Dictionary = {}
 var selected_tower_id: String = ""
 var occupied_cells: Dictionary = {} # cell: bool
 var tower_by_cell: Dictionary = {} # cell_key: tower
-var blocked_cells: Array[Vector2i] = [] # path cells + blocked level cells
+var blocked_cells: Array[Vector2i] = [] # fixed road/spawn/base/non-buildable cells
 var active_loadout: Array[String] = []
 var unlocked_tower_ids: Array[String] = ["basic_tower_t1"]
 
 var game_manager: Node
 var level_manager: Node
-var pathfinding_manager: Node
 var tower_container: Node2D
 var projectile_container: Node2D
 
-const LANE_WIDTH: float = 64.0
-const PLACEMENT_PADDING: float = 4.0
 const DEFAULT_FOOTPRINT_RADIUS: float = 20.0
 
 func setup(p_game_manager: Node, p_tower_container: Node2D, p_projectile_container: Node2D) -> void:
@@ -48,23 +45,14 @@ func configure_from_level(p_level_manager: Node) -> void:
 	grid_origin = level_manager.grid_origin
 	blocked_cells = level_manager.get_all_blocked_cells()
 
-func set_pathfinding_manager(p_pathfinding_manager: Node) -> void:
-	pathfinding_manager = p_pathfinding_manager
+func set_pathfinding_manager(_p_pathfinding_manager: Node) -> void:
+	# Compatibility shim. Element TD WC3 mode is fixed-path only, so build
+	# validation is handled by level blocked/buildable cells instead of dynamic
+	# maze path validation.
+	pass
 
 func load_towers_config() -> void:
-	# Load legacy towers config
-	# if FileAccess.file_exists(towers_data_path):
-	# 	var file = FileAccess.open(towers_data_path, FileAccess.READ)
-	# 	var json_text = file.get_as_text()
-	# 	file.close()
-		
-	# 	var json = JSON.new()
-	# 	var error = json.parse(json_text)
-	# 	if error == OK:
-	# 		towers_config = json.data
-	# 		if OS.is_debug_build(): print("Loaded ", towers_config.size(), " tower types (legacy).")
-
-	# Load tower tree config (new progression system)
+	# Load tower tree config (Element TD progression system)
 	if FileAccess.file_exists(towers_tree_data_path):
 		var file2 = FileAccess.open(towers_tree_data_path, FileAccess.READ)
 		var json_text2 = file2.get_as_text()
@@ -168,20 +156,14 @@ func validate_placement(cell: Vector2i) -> Dictionary:
 		return {"is_valid": false, "reason": "Cannot build outside map", "cost": cost}
 	
 	# Occupancy Check
-	if occupied_cells.has(cell):
-		return {"is_valid": false, "reason": "Cannot build on existing tower", "cost": cost}
-		
-	if pathfinding_manager and pathfinding_manager.has_method("get_blocker_validation_reason") and not _uses_fixed_pathing():
-		var path_reason := str(pathfinding_manager.get_blocker_validation_reason(cell, _get_tower_footprint_cells(cell, config), true))
-		if path_reason != "":
-			return {"is_valid": false, "reason": path_reason, "cost": cost}
-
-	var build_reason := get_build_block_reason(cell)
-	if build_reason != "":
-		return {"is_valid": false, "reason": _format_build_reason(build_reason), "cost": cost}
+	for footprint_cell in _get_tower_footprint_cells(cell, config):
+		if occupied_cells.has(footprint_cell):
+			return {"is_valid": false, "reason": "Cannot build on existing tower", "cost": cost}
+		var build_reason := get_build_block_reason(footprint_cell)
+		if build_reason != "":
+			return {"is_valid": false, "reason": _format_build_reason(build_reason), "cost": cost}
 	
 	return {"is_valid": true, "reason": "Valid", "cost": cost, "config": config}
-
 
 func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	var tower = tower_scene.instantiate()
@@ -199,8 +181,6 @@ func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	for footprint_cell in _get_tower_footprint_cells(cell, config):
 		occupied_cells[footprint_cell] = true
 		tower_by_cell[_cell_key(footprint_cell)] = tower
-	if pathfinding_manager and pathfinding_manager.has_method("set_tower_blocked"):
-		pathfinding_manager.set_tower_blocked(cell, true, _get_tower_footprint_cells(cell, config))
 	tower_placed.emit(tower, selected_tower_id, config.get("cost", 0))
 	
 	if game_manager and "battle_telemetry" in game_manager and game_manager.battle_telemetry:
@@ -233,22 +213,12 @@ func get_build_block_reason(cell: Vector2i) -> String:
 		return "blocked"
 	return ""
 
-func _uses_fixed_pathing() -> bool:
-	if level_manager == null:
-		return false
-	var data = level_manager.get("level_data")
-	if not (data is Dictionary):
-		return false
-	var mode := str(data.get("enemy_pathing_mode", data.get("pathing_mode", "fixed_path"))).to_lower()
-	return mode == "fixed_path" or bool(data.get("fixed_path", false))
-
-
 func _format_build_reason(reason: String) -> String:
 	match reason:
 		"out_of_bounds":
 			return "Cannot build outside map"
 		"path":
-			return "Cannot block enemy path"
+			return "Cannot build on enemy path"
 		"spawn":
 			return "Cannot build on spawn point"
 		"base":
@@ -257,6 +227,8 @@ func _format_build_reason(reason: String) -> String:
 			return "Tile is not buildable"
 		"occupied":
 			return "Cannot build on existing tower"
+		"blocked":
+			return "Tile is blocked"
 		_:
 			return reason
 
@@ -276,14 +248,11 @@ func _get_tower_footprint_cells(cell: Vector2i, config: Dictionary) -> Array[Vec
 		footprint_cells.append(cell)
 	return footprint_cells
 
-
 func _cell_key(cell: Vector2i) -> String:
 	return "%d,%d" % [cell.x, cell.y]
 
-
 func get_tower_at_cell(cell: Vector2i) -> Node:
 	return tower_by_cell.get(_cell_key(cell), null)
-
 
 func remove_tower_at_cell(cell: Vector2i) -> bool:
 	var footprint_cells: Array[Vector2i] = []
@@ -295,7 +264,6 @@ func remove_tower_at_cell(cell: Vector2i) -> bool:
 		return false
 	
 	if tower.has_method("get_grid_cell"):
-		var tower_cell: Vector2i = tower.get_grid_cell()
 		# Gather all footprint cells from tower_by_cell that point to this tower
 		for k in tower_by_cell.keys():
 			if tower_by_cell[k] == tower:
@@ -309,20 +277,14 @@ func remove_tower_at_cell(cell: Vector2i) -> bool:
 		occupied_cells.erase(fc)
 		tower_by_cell.erase(_cell_key(fc))
 	
-	# Clear pathfinding blocker
-	if pathfinding_manager and pathfinding_manager.has_method("set_tower_blocked"):
-		pathfinding_manager.set_tower_blocked(tower.get_grid_cell() if tower.has_method("get_grid_cell") else cell, false, footprint_cells)
-	
 	# Remove the tower node
 	if tower is Node and is_instance_valid(tower):
 		tower.queue_free()
 	
 	return true
 
-
 func is_cell_occupied(cell: Vector2i) -> bool:
 	return occupied_cells.has(cell)
-
 
 func _parse_cell_key(key: String) -> Vector2i:
 	var parts := key.split(",", false, 1)
