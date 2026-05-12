@@ -36,8 +36,13 @@ func _ready() -> void:
 	build_manager = main.get_node_or_null("BuildManager")
 	game_hud = main.get_node_or_null("GameHUD")
 	tower_container = main.get_node_or_null("WorldRoot/MapRoot/TowerContainer") as Node2D
+	set_process(true)
 	set_process_unhandled_input(true)
 	call_deferred("_connect_runtime_signals")
+
+func _process(_delta: float) -> void:
+	if _is_wave_realtime_window():
+		_sync_realtime_hud_controls()
 
 func _connect_runtime_signals() -> void:
 	_connect_signal(game_hud, "tower_build_selected", Callable(self, "_on_tower_build_selected"))
@@ -156,6 +161,29 @@ func _is_wave_realtime_window() -> bool:
 	if state == GAME_STATE_PAUSED or state == GAME_STATE_GAME_OVER or state == GAME_STATE_VICTORY:
 		return false
 	return state == GAME_STATE_WAVE
+
+func _sync_realtime_hud_controls() -> void:
+	if game_hud == null:
+		return
+
+	# Some existing UI paths disable build/upgrade controls during WAVE. Element TD
+	# expects these actions to stay available, while the actual validators still
+	# reject invalid/too-expensive actions.
+	var dynamic_buttons = game_hud.get("dynamic_tower_buttons")
+	if dynamic_buttons is Dictionary:
+		for tower_id in dynamic_buttons.keys():
+			var button = dynamic_buttons[tower_id]
+			if button is Button and is_instance_valid(button):
+				button.disabled = false
+
+	for property_name in ["upgrade_tower_button", "sell_tower_button", "deselect_tower_button", "cancel_build_button"]:
+		var control = game_hud.get(property_name)
+		if control is BaseButton and is_instance_valid(control):
+			control.disabled = false
+
+	var target_mode_control = game_hud.get("target_mode_option_button")
+	if target_mode_control is OptionButton and is_instance_valid(target_mode_control):
+		target_mode_control.disabled = false
 
 func _has_selected_build_tower() -> bool:
 	return build_manager != null and build_manager.has_method("has_selected_tower") and bool(build_manager.has_selected_tower())
