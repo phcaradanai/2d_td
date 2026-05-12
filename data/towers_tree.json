@@ -962,26 +962,25 @@
 		],
 		"cost": 135,
 		"upgrade_cost": 0,
-		"description": "Hologram disruption / damage amp",
+		"description": "Buff support: projects a trickery clone onto one nearby non-support tower, adding shadow-copy damage.",
 		"projectile_speed": 560,
 		"visual_type": "sawblade",
-		"attack_type": "aura",
-		"target_categories": [
-			"land",
-			"air"
-		],
+		"attack_type": "support",
+		"target_categories": [],
 		"levels": [
 			{
 				"level": 1,
-				"damage": 6.0,
-				"range": 130,
-				"fire_rate": 0.85,
-				"vulnerability_percent": 0.16,
-				"vulnerability_duration": 1.8
+				"damage": 0.0,
+				"range": 170,
+				"fire_rate": 0.0,
+				"support_mode": "clone_damage",
+				"support_bonus": 0.4,
+				"support_max_targets": 1
 			}
 		],
-		"vulnerability_percent": 0.16,
-		"vulnerability_duration": 1.8
+		"support_mode": "clone_damage",
+		"support_bonus": 0.4,
+		"support_max_targets": 1
 	},
 	"trickery_t2": {
 		"id": "trickery_t2",
@@ -1002,26 +1001,25 @@
 		],
 		"cost": 135,
 		"upgrade_cost": 180,
-		"description": "Hologram disruption / damage amp",
+		"description": "Buff support: projects a trickery clone onto one nearby non-support tower, adding shadow-copy damage.",
 		"projectile_speed": 560,
 		"visual_type": "sawblade",
-		"attack_type": "aura",
-		"target_categories": [
-			"land",
-			"air"
-		],
+		"attack_type": "support",
+		"target_categories": [],
 		"levels": [
 			{
 				"level": 1,
-				"damage": 10.8,
-				"range": 144,
-				"fire_rate": 0.78,
-				"vulnerability_percent": 0.22,
-				"vulnerability_duration": 2.15
+				"damage": 0.0,
+				"range": 185,
+				"fire_rate": 0.0,
+				"support_mode": "clone_damage",
+				"support_bonus": 1.2,
+				"support_max_targets": 1
 			}
 		],
-		"vulnerability_percent": 0.22,
-		"vulnerability_duration": 2.15
+		"support_mode": "clone_damage",
+		"support_bonus": 1.2,
+		"support_max_targets": 1
 	},
 	"trickery_t3": {
 		"id": "trickery_t3",
@@ -1040,26 +1038,25 @@
 		"next_upgrade_ids": [],
 		"cost": 135,
 		"upgrade_cost": 330,
-		"description": "Hologram disruption / damage amp",
+		"description": "Buff support: projects a trickery clone onto one nearby non-support tower, adding shadow-copy damage.",
 		"projectile_speed": 560,
 		"visual_type": "sawblade",
-		"attack_type": "aura",
-		"target_categories": [
-			"land",
-			"air"
-		],
+		"attack_type": "support",
+		"target_categories": [],
 		"levels": [
 			{
 				"level": 1,
-				"damage": 18.0,
-				"range": 158,
-				"fire_rate": 0.72,
-				"vulnerability_percent": 0.28,
-				"vulnerability_duration": 2.5
+				"damage": 0.0,
+				"range": 200,
+				"fire_rate": 0.0,
+				"support_mode": "clone_damage",
+				"support_bonus": 3.6,
+				"support_max_targets": 1
 			}
 		],
-		"vulnerability_percent": 0.28,
-		"vulnerability_duration": 2.5
+		"support_mode": "clone_damage",
+		"support_bonus": 3.6,
+		"support_max_targets": 1
 	},
 	"ice_t1": {
 		"id": "ice_t1",

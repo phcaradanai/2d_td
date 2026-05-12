@@ -399,6 +399,8 @@ func _draw() -> void:
 			var support_color := Color(0.35, 1.0, 0.85, 0.22)
 			if support_mode == "damage":
 				support_color = Color(1.0, 0.55, 0.2, 0.22)
+			elif support_mode == "clone_damage":
+				support_color = Color(0.72, 0.45, 1.0, 0.24)
 			draw_circle(local_origin, visual_range, support_color)
 			draw_arc(local_origin, visual_range, 0, TAU, 64, Color(support_color.r, support_color.g, support_color.b, 0.8), 2.0)
 		else:
@@ -428,9 +430,13 @@ func _draw_selected_buff_badges(local_origin: Vector2) -> void:
 	for bonus in bonuses:
 		var label := ""
 		var color := Color(0.5, 1.0, 0.75, 0.95)
-		if str(bonus.get("type", "")) == "damage":
+		var bonus_type := str(bonus.get("type", ""))
+		if bonus_type == "damage":
 			label = "+%d%% DMG" % int(bonus.get("percent", 0))
 			color = Color(1.0, 0.65, 0.28, 0.95)
+		elif bonus_type == "clone":
+			label = "+%d%% CLONE" % int(bonus.get("percent", 0))
+			color = Color(0.78, 0.55, 1.0, 0.95)
 		else:
 			label = "+%d%% SPD" % int(bonus.get("percent", 0))
 			color = Color(0.35, 1.0, 0.8, 0.95)
@@ -1384,7 +1390,10 @@ func get_active_support_bonuses() -> Array[Dictionary]:
 		if is_instance_valid(dmg_source):
 			var mult := float(dmg_entry.get("value", 1.0))
 			if mult > 1.001:
-				bonuses.append({"type": "damage", "percent": int(round((mult - 1.0) * 100.0)), "source": _support_source_name(dmg_source)})
+				var bonus_type := "damage"
+				if dmg_source.get("support_mode") == "clone_damage":
+					bonus_type = "clone"
+				bonuses.append({"type": bonus_type, "percent": int(round((mult - 1.0) * 100.0)), "source": _support_source_name(dmg_source)})
 	for key in fire_rate_modifiers.keys():
 		var spd_entry: Dictionary = fire_rate_modifiers[key]
 		var spd_source: Node = spd_entry.get("source", null)
@@ -1439,7 +1448,7 @@ func _refresh_support_targets() -> void:
 		_apply_support_to_tower(next_tower)
 	_active_supported_towers = next_targets
 
-func _apply_support_to_tower(target_tower: Node) -> void:
+func _apply_support_to_tower(target_tower: Variant) -> void:
 	if target_tower == null or not is_instance_valid(target_tower):
 		return
 	match support_mode:
@@ -1450,21 +1459,25 @@ func _apply_support_to_tower(target_tower: Node) -> void:
 		"damage":
 			if target_tower.has_method("apply_damage_modifier"):
 				target_tower.apply_damage_modifier(self, 1.0 + maxf(0.0, support_bonus))
+		"clone_damage":
+			if target_tower.has_method("apply_damage_modifier"):
+				target_tower.apply_damage_modifier(self, 1.0 + maxf(0.0, support_bonus))
 
-func _remove_support_from_tower(target_tower: Node) -> void:
+func _remove_support_from_tower(target_tower: Variant) -> void:
 	if target_tower == null or not is_instance_valid(target_tower):
 		return
 	match support_mode:
 		"attack_speed":
 			if target_tower.has_method("remove_fire_rate_modifier"):
 				target_tower.remove_fire_rate_modifier(self)
-		"damage":
+		"damage", "clone_damage":
 			if target_tower.has_method("remove_damage_modifier"):
 				target_tower.remove_damage_modifier(self)
 
 func _clear_support_targets() -> void:
 	for target_tower in _active_supported_towers.duplicate():
-		_remove_support_from_tower(target_tower)
+		if target_tower != null and is_instance_valid(target_tower):
+			_remove_support_from_tower(target_tower)
 	_active_supported_towers.clear()
 
 func select_first_target(enemies: Array) -> Node2D:
