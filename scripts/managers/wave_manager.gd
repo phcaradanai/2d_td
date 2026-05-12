@@ -34,6 +34,7 @@ var economy_life_kill_counters: Dictionary = {}
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
+const ELEMENT_TD_PATHING_MODE := "fixed_path"
 
 var waves: Array = []
 var enemies_config: Dictionary = {}
@@ -46,10 +47,9 @@ var formation_planner = null
 
 var is_spawning: bool = false
 var path_nodes: Dictionary = {} # id -> Path2D
-var pathfinding_manager: Node = null
 var spawn_generation: int = 0
 var spawn_lane_cursor: int = 0
-var enemy_pathing_mode: String = "fixed_path"
+var enemy_pathing_mode: String = ELEMENT_TD_PATHING_MODE
 var leak_respawn_enabled: bool = false
 
 # Track active wave specifically to avoid index confusion during running wave
@@ -115,13 +115,16 @@ func configure_from_level(level_manager: Node) -> void:
 	if level_manager == null:
 		return
 	var data = level_manager.get("level_data")
+	enemy_pathing_mode = ELEMENT_TD_PATHING_MODE
 	if data is Dictionary:
-		enemy_pathing_mode = str(data.get("enemy_pathing_mode", data.get("pathing_mode", "fixed_path"))).to_lower()
-		# Element TD WC3 core rule: leaked creeps respawn at the start of the path unless a level explicitly opts out.
+		# Element TD WC3 clone rule: levels are fixed-path only. Ignore any older
+		# dynamic-maze/pathing flags that may remain in legacy level data.
 		leak_respawn_enabled = bool(data.get("leak_respawn_enabled", true))
 
-func set_pathfinding_manager(p_pathfinding_manager: Node) -> void:
-	pathfinding_manager = p_pathfinding_manager
+func set_pathfinding_manager(_p_pathfinding_manager: Node) -> void:
+	# Compatibility shim for old scene wiring. Dynamic maze pathfinding is no
+	# longer used by WaveManager in Element TD WC3 mode.
+	pass
 
 func reset_waves() -> void:
 	spawn_generation += 1
@@ -250,6 +253,7 @@ func spawn_enemy(group_data: Dictionary) -> Node:
 	var enemy_type = group_data.get("enemy_type", group_data.get("type", "basic"))
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
 	base_config["category"] = resolve_enemy_category(group_data)
+	base_config["pathing_mode"] = ELEMENT_TD_PATHING_MODE
 	
 	# Merge group overrides into base config
 	for key in group_data.keys():
@@ -276,16 +280,7 @@ func spawn_enemy(group_data: Dictionary) -> Node:
 			enemy_type, path_id, (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0, pos_type, f_id
 		])
 		
-	var spawn_pos: Vector2 = path_node.curve.get_point_position(0) if path_node.curve and path_node.curve.point_count > 0 else Vector2.ZERO
-	var spawn_world: Vector2 = path_node.to_global(spawn_pos)
-	if _uses_dynamic_pathing(base_config) and enemy.has_method("set_dynamic_pathing"):
-		var enemy_parent := _get_enemy_container()
-		enemy_parent.add_child(enemy)
-		enemy.global_position = spawn_world
-		var spawn_cell: Vector2i = pathfinding_manager.world_to_cell(spawn_world)
-		enemy.set_dynamic_pathing(pathfinding_manager, spawn_cell)
-	else:
-		path_node.add_child(enemy)
+	path_node.add_child(enemy)
 	if not is_debug_probe:
 		active_enemy_count += 1
 	
@@ -314,8 +309,8 @@ func spawn_enemy(group_data: Dictionary) -> Node:
 
 	return enemy
 
-func _uses_dynamic_pathing(base_config: Dictionary) -> bool:
-	return enemy_pathing_mode != "fixed_path" and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null
+func _uses_dynamic_pathing(_base_config: Dictionary) -> bool:
+	return false
 
 func _on_sandbox_enemy_died(_enemy: Node, _reward: int) -> void:
 	# Sandbox probes should not award gold or affect wave completion.
@@ -338,11 +333,11 @@ func spawn_sandbox_enemy(enemy_type: String = "basic", category: String = "land"
 		"debug_probe": true
 	})
 
-
 func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D) -> void:
 	if not path_node: return
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
 	base_config["category"] = normalize_enemy_category(base_config.get("category", ENEMY_CATEGORY_LAND))
+	base_config["pathing_mode"] = ELEMENT_TD_PATHING_MODE
 	
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
@@ -351,20 +346,8 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	enemy.died.connect(_on_enemy_died)
 	enemy.reached_base.connect(_on_enemy_reached_base)
 	
-	if _uses_dynamic_pathing(base_config) and enemy.has_method("set_dynamic_pathing"):
-		var enemy_parent := _get_enemy_container()
-		enemy_parent.add_child(enemy)
-		var source_cell := Vector2i.ZERO
-		var source_world := Vector2.ZERO
-		if path_node is Path2D and path_node.curve and path_node.curve.point_count > 0:
-			var offset := clampf(prog, 0.0, path_node.curve.get_baked_length())
-			source_world = path_node.to_global(path_node.curve.sample_baked(offset))
-			source_cell = pathfinding_manager.world_to_cell(source_world)
-		enemy.global_position = source_world
-		enemy.set_dynamic_pathing(pathfinding_manager, source_cell)
-	else:
-		path_node.add_child(enemy)
-		enemy.progress = prog
+	path_node.add_child(enemy)
+	enemy.progress = prog
 	active_enemy_count += 1
 	
 	if game_manager and game_manager.battle_telemetry:
@@ -382,8 +365,11 @@ func _get_enemy_container() -> Node:
 	return scene
 
 func spawn_enemy_at_world_position(enemy_type: String, world_pos: Vector2) -> void:
+	# Debug-only helper kept for tooling. Fixed-path gameplay should use
+	# spawn_enemy/spawn_enemy_at_progress so creeps stay attached to Path2D lanes.
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
 	base_config["category"] = normalize_enemy_category(base_config.get("category", ENEMY_CATEGORY_LAND))
+	base_config["pathing_mode"] = ELEMENT_TD_PATHING_MODE
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
 		enemy.setup(base_config)
@@ -394,8 +380,6 @@ func spawn_enemy_at_world_position(enemy_type: String, world_pos: Vector2) -> vo
 	var parent := _get_enemy_container()
 	parent.add_child(enemy)
 	enemy.global_position = world_pos
-	if _uses_dynamic_pathing(base_config) and enemy.has_method("set_dynamic_pathing"):
-		enemy.set_dynamic_pathing(pathfinding_manager, pathfinding_manager.world_to_cell(world_pos))
 	active_enemy_count += 1
 
 	if game_manager and game_manager.battle_telemetry:
