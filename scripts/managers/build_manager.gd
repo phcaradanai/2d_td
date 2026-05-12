@@ -30,6 +30,15 @@ var tower_container: Node2D
 var projectile_container: Node2D
 
 const DEFAULT_FOOTPRINT_RADIUS: float = 20.0
+const ELEMENT_TD_ELEMENTS: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
+const ELEMENT_TD_LABELS := {
+	"light": "Light",
+	"darkness": "Darkness",
+	"water": "Water",
+	"fire": "Fire",
+	"nature": "Nature",
+	"earth": "Earth"
+}
 
 func setup(p_game_manager: Node, p_tower_container: Node2D, p_projectile_container: Node2D) -> void:
 	game_manager = p_game_manager
@@ -65,7 +74,149 @@ func load_towers_config() -> void:
 			# Merge into towers_config so place_tower can find all configs
 			for key in towers_tree_config:
 				towers_config[key] = towers_tree_config[key]
+			_inject_element_td_combo_towers()
 			if OS.is_debug_build(): print("Loaded tower tree: ", towers_tree_config.size(), " entries.")
+
+func _inject_element_td_combo_towers() -> void:
+	# Element TD WC3-like tower availability is combination-based. The authored
+	# JSON contains the six single-element lines and pure towers; this generated
+	# layer fills in the missing dual/triple combo families so the existing
+	# ElementProgressionManager can unlock them from element levels automatically.
+	for i in range(ELEMENT_TD_ELEMENTS.size()):
+		for j in range(i + 1, ELEMENT_TD_ELEMENTS.size()):
+			var elements := [ELEMENT_TD_ELEMENTS[i], ELEMENT_TD_ELEMENTS[j]]
+			_inject_combo_family(elements, "dual", 260 + (i * 10) + j)
+
+	for i in range(ELEMENT_TD_ELEMENTS.size()):
+		for j in range(i + 1, ELEMENT_TD_ELEMENTS.size()):
+			for k in range(j + 1, ELEMENT_TD_ELEMENTS.size()):
+				var elements := [ELEMENT_TD_ELEMENTS[i], ELEMENT_TD_ELEMENTS[j], ELEMENT_TD_ELEMENTS[k]]
+				_inject_combo_family(elements, "triple", 520 + (i * 100) + (j * 10) + k)
+
+func _inject_combo_family(elements: Array, combo_type: String, shop_order: int) -> void:
+	var family_id := "%s_%s" % [combo_type, _combo_slug(elements)]
+	var display_base := "%s Tower" % _combo_display_name(elements)
+	var costs := [150, 150, 150] if combo_type == "dual" else [250, 250, 250]
+	var upgrade_costs := [0, 190, 360] if combo_type == "dual" else [0, 320, 620]
+	var tiers := [1, 2, 3]
+
+	for idx in range(tiers.size()):
+		var tier: int = tiers[idx]
+		var tower_id := "%s_t%d" % [family_id, tier]
+		if towers_config.has(tower_id):
+			continue
+		var next_ids: Array[String] = []
+		if tier < 3:
+			next_ids.append("%s_t%d" % [family_id, tier + 1])
+		var cfg := _build_combo_tower_config(
+			tower_id,
+			display_base,
+			elements,
+			combo_type,
+			tier,
+			shop_order,
+			int(costs[idx]),
+			int(upgrade_costs[idx]),
+			next_ids
+		)
+		towers_tree_config[tower_id] = cfg
+		towers_config[tower_id] = cfg
+
+func _build_combo_tower_config(tower_id: String, display_base: String, elements: Array, combo_type: String, tier: int, shop_order: int, cost: int, upgrade_cost: int, next_ids: Array[String]) -> Dictionary:
+	var attack_profile := _combo_attack_profile(elements, combo_type)
+	var tier_scale := 1.0 + float(tier - 1) * (0.78 if combo_type == "dual" else 0.86)
+	var combo_count := elements.size()
+	var base_damage := float(attack_profile.get("damage", 20.0)) * tier_scale
+	var base_range := int(attack_profile.get("range", 165)) + (tier - 1) * 16
+	var base_fire_rate := max(0.24, float(attack_profile.get("fire_rate", 0.9)) * (1.0 - float(tier - 1) * 0.07))
+	var level_data := {
+		"level": 1,
+		"damage": snapped(base_damage, 0.1),
+		"range": base_range,
+		"fire_rate": snapped(base_fire_rate, 0.01)
+	}
+	for key in ["splash_radius", "slow_percent", "slow_duration", "slow_radius", "chain_count", "chain_range", "vulnerability_percent", "vulnerability_duration"]:
+		if attack_profile.has(key):
+			level_data[key] = attack_profile[key]
+	var cfg := {
+		"id": tower_id,
+		"name": "%s %s" % [display_base, _roman(tier)],
+		"display_name": "%s %s" % [display_base, _roman(tier)],
+		"tier": tier,
+		"combo_type": combo_type,
+		"elements": elements.duplicate(true),
+		"required_element_level": tier,
+		"build_entry": tier == 1,
+		"shop_order": shop_order,
+		"branch_id": combo_type,
+		"next_upgrade_ids": next_ids,
+		"cost": cost,
+		"upgrade_cost": upgrade_cost,
+		"description": _combo_description(elements, combo_type),
+		"projectile_speed": int(attack_profile.get("projectile_speed", 560)),
+		"visual_type": str(attack_profile.get("visual_type", "basic")),
+		"attack_type": str(attack_profile.get("attack_type", "single")),
+		"target_categories": attack_profile.get("target_categories", ["land", "air"]),
+		"levels": [level_data]
+	}
+	for key in ["splash_radius", "slow_percent", "slow_duration", "slow_radius", "chain_count", "chain_range", "vulnerability_percent", "vulnerability_duration"]:
+		if attack_profile.has(key):
+			cfg[key] = attack_profile[key]
+	return cfg
+
+func _combo_attack_profile(elements: Array, combo_type: String) -> Dictionary:
+	var has_fire := elements.has("fire")
+	var has_water := elements.has("water")
+	var has_nature := elements.has("nature")
+	var has_earth := elements.has("earth")
+	var has_light := elements.has("light")
+	var has_darkness := elements.has("darkness")
+	var combo_bonus := 1.0 if combo_type == "dual" else 1.32
+
+	if has_fire and has_earth:
+		return {"visual_type": "cannon", "attack_type": "splash", "target_categories": ["land"], "damage": 38.0 * combo_bonus, "range": 160, "fire_rate": 1.35, "splash_radius": 84, "projectile_speed": 440}
+	if has_water and has_nature:
+		return {"visual_type": "slow", "attack_type": "slow", "target_categories": ["land", "air"], "damage": 9.0 * combo_bonus, "range": 182, "fire_rate": 0.92, "slow_percent": 0.32, "slow_duration": 2.2, "slow_radius": 76, "projectile_speed": 520}
+	if has_light and has_nature:
+		return {"visual_type": "rapid", "attack_type": "single", "target_categories": ["land", "air"], "damage": 12.0 * combo_bonus, "range": 178, "fire_rate": 0.32, "projectile_speed": 760}
+	if has_light and has_darkness:
+		return {"visual_type": "lightning", "attack_type": "chain", "target_categories": ["land", "air"], "damage": 18.0 * combo_bonus, "range": 184, "fire_rate": 0.82, "chain_count": 3, "chain_range": 86, "projectile_speed": 900}
+	if has_darkness and has_fire:
+		return {"visual_type": "sawblade", "attack_type": "aura", "target_categories": ["land"], "damage": 8.5 * combo_bonus, "range": 146, "fire_rate": 0.7, "vulnerability_percent": 0.18, "vulnerability_duration": 2.0, "projectile_speed": 500}
+	if has_water and has_earth:
+		return {"visual_type": "cannon", "attack_type": "splash", "target_categories": ["land"], "damage": 31.0 * combo_bonus, "range": 170, "fire_rate": 1.18, "splash_radius": 74, "projectile_speed": 470}
+	if has_fire:
+		return {"visual_type": "cannon", "attack_type": "splash", "target_categories": ["land"], "damage": 27.0 * combo_bonus, "range": 165, "fire_rate": 1.12, "splash_radius": 70, "projectile_speed": 480}
+	if has_water:
+		return {"visual_type": "slow", "attack_type": "slow", "target_categories": ["land", "air"], "damage": 8.0 * combo_bonus, "range": 178, "fire_rate": 0.95, "slow_percent": 0.28, "slow_duration": 2.0, "slow_radius": 70, "projectile_speed": 520}
+	if has_nature:
+		return {"visual_type": "rapid", "attack_type": "single", "target_categories": ["land", "air"], "damage": 10.0 * combo_bonus, "range": 170, "fire_rate": 0.34, "projectile_speed": 760}
+	if has_darkness:
+		return {"visual_type": "sawblade", "attack_type": "aura", "target_categories": ["land"], "damage": 7.0 * combo_bonus, "range": 138, "fire_rate": 0.72, "vulnerability_percent": 0.16, "vulnerability_duration": 1.8, "projectile_speed": 500}
+	return {"visual_type": "sniper", "attack_type": "single", "target_categories": ["land", "air"], "damage": 28.0 * combo_bonus, "range": 215, "fire_rate": 0.9, "projectile_speed": 800}
+
+func _combo_slug(elements: Array) -> String:
+	var parts: Array[String] = []
+	for element_id in elements:
+		parts.append(str(element_id))
+	return "_".join(parts)
+
+func _combo_display_name(elements: Array) -> String:
+	var parts: Array[String] = []
+	for element_id in elements:
+		parts.append(str(ELEMENT_TD_LABELS.get(str(element_id), str(element_id).capitalize())))
+	return " + ".join(parts)
+
+func _combo_description(elements: Array, combo_type: String) -> String:
+	return "%s-element combo tower unlocked by %s. Inspired by Element TD WC3 combination towers." % [combo_type.capitalize(), _combo_display_name(elements)]
+
+func _roman(value: int) -> String:
+	match value:
+		1: return "I"
+		2: return "II"
+		3: return "III"
+		4: return "IV"
+		_: return str(value)
 
 func reset_build_state() -> void:
 	selected_tower_id = ""
