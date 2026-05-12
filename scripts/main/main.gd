@@ -99,6 +99,9 @@ var hero_is_deployed: bool = false
 var element_progression_manager = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
+const INTEREST_PICK_ID: String = "__interest__"
+const DEFAULT_INTEREST_UPGRADE_STEP: float = 0.01
+const DEFAULT_MAX_INTEREST_UPGRADES: int = 5
 
 const STARTER_TOWER_IDS := ["basic_tower_t1", "neutral_cannon_tower"]
 var auto_next_wave_enabled: bool = true
@@ -110,7 +113,11 @@ var has_started_first_wave: bool = false
 # Element TD WC3-like interest: active combat only.
 # This prevents planning-phase farming while preserving wave-time economy decisions.
 var element_td_interest_enabled: bool = true
+var element_td_interest_base_rate: float = 0.02
 var element_td_interest_rate: float = 0.02
+var element_td_interest_upgrade_step: float = DEFAULT_INTEREST_UPGRADE_STEP
+var element_td_interest_upgrade_count: int = 0
+var element_td_interest_max_upgrades: int = DEFAULT_MAX_INTEREST_UPGRADES
 var element_td_interest_interval_sec: float = 15.0
 var element_td_interest_elapsed: float = 0.0
 var element_td_interest_disabled_for_wave: bool = false
@@ -570,16 +577,37 @@ func _configure_element_td_interest_from_level() -> void:
 	# Element TD WC3 baseline is 2% interest every 15 seconds.
 	# Keep it active-wave-only in this real-time/pauseable clone so players cannot idle in planning.
 	element_td_interest_enabled = true
-	element_td_interest_rate = 0.02
+	element_td_interest_base_rate = 0.02
+	element_td_interest_upgrade_step = DEFAULT_INTEREST_UPGRADE_STEP
+	element_td_interest_max_upgrades = DEFAULT_MAX_INTEREST_UPGRADES
+	element_td_interest_upgrade_count = 0
 	element_td_interest_interval_sec = 15.0
 	if level_manager:
 		element_td_interest_enabled = bool(level_manager.level_data.get("interest_enabled", true))
-		element_td_interest_rate = float(level_manager.level_data.get("interest_rate", 0.02))
+		element_td_interest_base_rate = float(level_manager.level_data.get("interest_rate", 0.02))
+		element_td_interest_upgrade_step = float(level_manager.level_data.get("interest_upgrade_step", DEFAULT_INTEREST_UPGRADE_STEP))
+		element_td_interest_max_upgrades = int(level_manager.level_data.get("interest_max_upgrades", DEFAULT_MAX_INTEREST_UPGRADES))
 		element_td_interest_interval_sec = float(level_manager.level_data.get("interest_interval_sec", 15.0))
-	element_td_interest_rate = max(0.0, element_td_interest_rate)
+	element_td_interest_base_rate = max(0.0, element_td_interest_base_rate)
+	element_td_interest_upgrade_step = max(0.0, element_td_interest_upgrade_step)
+	element_td_interest_max_upgrades = max(0, element_td_interest_max_upgrades)
+	_recalculate_element_td_interest_rate()
 	element_td_interest_interval_sec = max(1.0, element_td_interest_interval_sec)
 	element_td_interest_elapsed = 0.0
 	element_td_interest_disabled_for_wave = false
+
+func _recalculate_element_td_interest_rate() -> void:
+	element_td_interest_rate = element_td_interest_base_rate + float(element_td_interest_upgrade_count) * element_td_interest_upgrade_step
+	element_td_interest_rate = max(0.0, element_td_interest_rate)
+
+func _format_interest_rate_percent() -> String:
+	return "%.0f%%" % (element_td_interest_rate * 100.0)
+
+func _format_next_interest_rate_percent() -> String:
+	return "%.0f%%" % ((element_td_interest_rate + element_td_interest_upgrade_step) * 100.0)
+
+func _can_choose_interest_upgrade() -> bool:
+	return element_td_interest_enabled and element_td_interest_upgrade_step > 0.0 and element_td_interest_upgrade_count < element_td_interest_max_upgrades
 
 func _has_pending_element_pick() -> bool:
 	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
@@ -775,7 +803,15 @@ func _show_pending_element_choice() -> void:
 	if game_hud == null or element_progression_manager == null:
 		return
 	if element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick():
-		game_hud.show_element_choice(element_progression_manager.get_element_levels(), element_progression_manager.pending_picks)
+		game_hud.show_element_choice(
+			element_progression_manager.get_element_levels(),
+			element_progression_manager.pending_picks,
+			_format_interest_rate_percent(),
+			_format_next_interest_rate_percent(),
+			_can_choose_interest_upgrade(),
+			element_td_interest_upgrade_count,
+			element_td_interest_max_upgrades
+		)
 
 func _on_element_levels_changed(levels: Dictionary) -> void:
 	if game_hud:
@@ -785,18 +821,43 @@ func _on_element_levels_changed(levels: Dictionary) -> void:
 func _on_element_choice_requested(element_id: String) -> void:
 	if element_progression_manager == null:
 		return
+	if element_id == INTEREST_PICK_ID:
+		_choose_interest_upgrade_pick()
+		return
 	if element_progression_manager.choose_element(element_id):
 		_refresh_elemental_shop()
 		if game_hud:
 			game_hud.set_build_status("Element unlocked: %s" % element_progression_manager.get_element_label(element_id))
 			if element_progression_manager.pending_picks > 0:
-				game_hud.show_element_choice(element_progression_manager.get_element_levels(), element_progression_manager.pending_picks)
+				_show_pending_element_choice()
 			else:
 				game_hud.hide_element_choice()
 				_resume_auto_next_wave_after_element_choice()
 	else:
 		if game_hud:
 			game_hud.set_build_status("Cannot choose that element")
+
+func _choose_interest_upgrade_pick() -> void:
+	if element_progression_manager == null:
+		return
+	if int(element_progression_manager.pending_picks) <= 0:
+		return
+	if not _can_choose_interest_upgrade():
+		if game_hud:
+			game_hud.set_build_status("Interest upgrade is already maxed")
+		return
+	element_progression_manager.pending_picks = max(0, int(element_progression_manager.pending_picks) - 1)
+	element_td_interest_upgrade_count += 1
+	_recalculate_element_td_interest_rate()
+	element_td_interest_elapsed = 0.0
+	if game_hud:
+		game_hud.set_build_status("Interest upgraded to %s" % _format_interest_rate_percent())
+		show_wave_feedback("Interest %s" % _format_interest_rate_percent(), Color(1.0, 0.85, 0.25))
+		if int(element_progression_manager.pending_picks) > 0:
+			_show_pending_element_choice()
+		else:
+			game_hud.hide_element_choice()
+			_resume_auto_next_wave_after_element_choice()
 
 func _resume_auto_next_wave_after_element_choice() -> void:
 	# Element choices are awarded after wave 5/10/15... and intentionally pause

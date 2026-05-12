@@ -443,7 +443,7 @@ func set_element_levels(levels: Dictionary) -> void:
 	if element_status_label:
 		element_status_label.text = _format_element_levels(current_element_levels)
 
-func show_element_choice(levels: Dictionary, pending_picks: int = 1) -> void:
+func show_element_choice(levels: Dictionary, pending_picks: int = 1, interest_rate_label: String = "2%", next_interest_rate_label: String = "3%", can_upgrade_interest: bool = true, interest_upgrade_count: int = 0, interest_max_upgrades: int = 5) -> void:
 	_ensure_element_choice_ui()
 	set_element_levels(levels)
 	if element_choice_panel == null or element_choice_list == null:
@@ -466,6 +466,20 @@ func show_element_choice(levels: Dictionary, pending_picks: int = 1) -> void:
 		var captured_element_id: String = element_id
 		btn.pressed.connect(func(): element_choice_requested.emit(captured_element_id))
 		element_choice_list.add_child(btn)
+
+	var divider := HSeparator.new()
+	element_choice_list.add_child(divider)
+
+	var interest_btn := Button.new()
+	interest_btn.size_flags_horizontal = Control.SIZE_FILL
+	interest_btn.text = "Interest  %s → %s" % [interest_rate_label, next_interest_rate_label]
+	interest_btn.disabled = not can_upgrade_interest
+	if interest_max_upgrades > 0:
+		interest_btn.tooltip_text = "Spend this pick to increase Element TD interest instead of unlocking an element. Upgrade %d/%d." % [interest_upgrade_count, interest_max_upgrades]
+	else:
+		interest_btn.tooltip_text = "Interest upgrades are disabled for this level."
+	interest_btn.pressed.connect(func(): element_choice_requested.emit("__interest__"))
+	element_choice_list.add_child(interest_btn)
 
 	element_choice_panel.show()
 

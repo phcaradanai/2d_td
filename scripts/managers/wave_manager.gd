@@ -16,6 +16,21 @@ const SPAWN_EFFECT_SCRIPT: GDScript = preload("res://scripts/effects/spawn_effec
 
 const PERFORMANCE_MODE := true  # Disables spawn VFX for stable 60 FPS
 
+# Element TD-style economy damage towers.
+# Gold towers grant bonus bounty on their own kills.
+# Life towers grant +1 life after a small number of their own kills.
+const ECONOMY_KILL_GOLD_BONUS_PERCENT := {
+	"gold_t1": 0.20,
+	"gold_t2": 0.30,
+	"gold_t3": 0.40,
+}
+const ECONOMY_KILL_LIFE_COUNTER_REQUIRED := {
+	"life_t1": 6,
+	"life_t2": 4,
+	"life_t3": 2,
+}
+var economy_life_kill_counters: Dictionary = {}
+
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
@@ -102,7 +117,8 @@ func configure_from_level(level_manager: Node) -> void:
 	var data = level_manager.get("level_data")
 	if data is Dictionary:
 		enemy_pathing_mode = str(data.get("enemy_pathing_mode", data.get("pathing_mode", "fixed_path"))).to_lower()
-		leak_respawn_enabled = bool(data.get("leak_respawn_enabled", false))
+		# Element TD WC3 core rule: leaked creeps respawn at the start of the path unless a level explicitly opts out.
+		leak_respawn_enabled = bool(data.get("leak_respawn_enabled", true))
 
 func set_pathfinding_manager(p_pathfinding_manager: Node) -> void:
 	pathfinding_manager = p_pathfinding_manager
@@ -225,11 +241,11 @@ func _wait_unpaused(seconds: float, gen: int) -> void:
 			
 		elapsed += get_process_delta_time()
 
-func spawn_enemy(group_data: Dictionary) -> void:
+func spawn_enemy(group_data: Dictionary) -> Node:
 	var requested_path_id: String = str(group_data.get("path", "default"))
 	var path_id: String = _resolve_spawn_path_id(requested_path_id)
 	var path_node = path_nodes.get(path_id, path_nodes.get("default"))
-	if not path_node: return
+	if not path_node: return null
 		
 	var enemy_type = group_data.get("enemy_type", group_data.get("type", "basic"))
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
@@ -295,6 +311,8 @@ func spawn_enemy(group_data: Dictionary) -> void:
 				spawn_color = Color(0.0, 0.941, 1.0, 0.66)
 				spawn_mode = "swarm"
 			effect.setup(spawn_color, 20.0, spawn_mode)
+
+	return enemy
 
 func _uses_dynamic_pathing(base_config: Dictionary) -> bool:
 	return enemy_pathing_mode != "fixed_path" and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null
@@ -423,18 +441,117 @@ func normalize_enemy_category(raw_category) -> String:
 	return ENEMY_CATEGORY_LAND
 
 func _on_enemy_died(_enemy: Node, reward: int) -> void:
+	var source_id := _get_enemy_last_damage_source(_enemy)
+	_apply_economy_tower_kill_effects(source_id, reward)
 	enemy_killed.emit(reward)
 	_on_enemy_removed()
 
+func _get_enemy_last_damage_source(enemy: Variant) -> String:
+	if enemy == null or not is_instance_valid(enemy):
+		return ""
+	if enemy.has_method("get_last_damage_source"):
+		return str(enemy.get_last_damage_source())
+	# Defensive fallback for older enemy scripts.
+	var raw_source = enemy.get("last_damage_source") if enemy.has_method("get") else null
+	return str(raw_source) if raw_source != null else ""
+
+func _apply_economy_tower_kill_effects(source_id: String, reward: int) -> void:
+	if source_id == "" or game_manager == null:
+		return
+
+	if ECONOMY_KILL_GOLD_BONUS_PERCENT.has(source_id):
+		var bonus := int(round(float(reward) * float(ECONOMY_KILL_GOLD_BONUS_PERCENT[source_id])))
+		if bonus > 0:
+			game_manager.add_gold(bonus)
+			if OS.is_debug_build():
+				print("[Economy][GoldTower] source=%s base=%d bonus=%d" % [source_id, reward, bonus])
+
+	if ECONOMY_KILL_LIFE_COUNTER_REQUIRED.has(source_id):
+		var required : int = max(1, int(ECONOMY_KILL_LIFE_COUNTER_REQUIRED[source_id]))
+		var count := int(economy_life_kill_counters.get(source_id, 0)) + 1
+		if count >= required:
+			count = 0
+			if game_manager.has_method("add_lives"):
+				game_manager.add_lives(1, source_id)
+		economy_life_kill_counters[source_id] = count
+
 func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> void:
-	if game_manager and game_manager.battle_telemetry:
-		var hp_rem = _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
-		var prog = _enemy.get_path_progress() if _enemy.has_method("get_path_progress") else 0.0
+	var hp_rem := 0.0
+	var prog := 0.0
+	if _enemy != null and is_instance_valid(_enemy):
+		hp_rem = _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
+		prog = _enemy.get_path_progress() if _enemy.has_method("get_path_progress") else 0.0
+
+	if game_manager and game_manager.battle_telemetry and _enemy != null and is_instance_valid(_enemy):
 		var lives_after = game_manager.lives - damage
 		game_manager.battle_telemetry.log_enemy_leak(_enemy.enemy_type, hp_rem, global_pos, prog, lives_after)
 		
 	base_damaged.emit(damage, global_pos)
+
+	# Element TD WC3-style leak loop: a leaked creep costs life, then returns to
+	# the start so the wave can still be fully defeated and the gold is not lost.
+	# Spawn the replacement before decrementing the old instance so active count
+	# stays stable and wave completion cannot get stuck.
+	if leak_respawn_enabled and _should_respawn_leaked_enemy(_enemy):
+		_respawn_leaked_enemy(_enemy, hp_rem)
+
 	_on_enemy_removed()
+
+func _should_respawn_leaked_enemy(enemy: Node) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if not is_wave_running:
+		return false
+	if game_manager != null and int(game_manager.get("lives")) <= 0:
+		return false
+	if enemy.has_method("get_current_hp") and float(enemy.get_current_hp()) <= 0.0:
+		return false
+	return true
+
+func _respawn_leaked_enemy(enemy: Node, hp_remaining: float) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	var enemy_type := str(enemy.get_enemy_type()) if enemy.has_method("get_enemy_type") else str(enemy.get("enemy_type"))
+	if enemy_type == "" or not enemies_config.has(enemy_type):
+		enemy_type = "basic"
+	var category := ENEMY_CATEGORY_LAND
+	if enemy.has_method("get_enemy_category"):
+		category = normalize_enemy_category(enemy.get_enemy_category())
+	else:
+		category = normalize_enemy_category(enemy.get("enemy_category"))
+	var path_id := _get_path_id_for_enemy(enemy)
+	var respawned := spawn_enemy({
+		"type": enemy_type,
+		"enemy_type": enemy_type,
+		"category": category,
+		"path": path_id,
+		"leak_respawn": true
+	})
+	_apply_respawn_health(respawned, hp_remaining)
+	if OS.is_debug_build():
+		print("[LeakRespawn] enemy=%s path=%s hp=%.1f" % [enemy_type, path_id, hp_remaining])
+
+func _get_path_id_for_enemy(enemy: Node) -> String:
+	if enemy == null or not is_instance_valid(enemy):
+		return "default"
+	var parent := enemy.get_parent()
+	for key in path_nodes.keys():
+		if path_nodes[key] == parent:
+			return str(key)
+	return "default"
+
+func _apply_respawn_health(enemy: Node, hp_remaining: float) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	var max_hp := float(enemy.get("max_hp"))
+	if max_hp <= 0.0:
+		return
+	var preserved_hp := clampf(hp_remaining, 1.0, max_hp)
+	enemy.set("hp", preserved_hp)
+	var hp_bar = enemy.get("hp_bar")
+	if hp_bar != null and is_instance_valid(hp_bar):
+		hp_bar.max_value = max_hp
+		hp_bar.value = preserved_hp
 
 func _on_enemy_removed() -> void:
 	active_enemy_count -= 1

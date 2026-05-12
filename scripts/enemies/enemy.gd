@@ -2293,6 +2293,9 @@ func _recalculate_dynamic_path() -> void:
 	if dynamic_path.size() > 1 and global_position.distance_to(dynamic_path[0]) <= dynamic_target_reached_distance:
 		dynamic_path_index = 1
 
+func get_last_damage_source() -> String:
+	return last_damage_source
+
 func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "", p_attack_type: String = "single") -> void:
 	if is_dead_flag or reached_base_flag: return
 	

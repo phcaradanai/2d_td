@@ -110,6 +110,17 @@ func add_gold(amount: int) -> void:
 		battle_telemetry.log_gold_earned(amount, "kill")
 	gold_changed.emit(gold)
 
+func add_lives(amount: int, source: String = "") -> void:
+	if is_game_over or is_victory:
+		return
+	if amount <= 0:
+		return
+	lives += amount
+	lives_changed.emit(lives)
+	if OS.is_debug_build():
+		var src := source if source != "" else "unknown"
+		print("[Economy][LifeTower] +%d lives from %s -> lives=%d" % [amount, src, lives])
+
 func award_wave_completion(amount: int) -> void:
 	if is_game_over: return
 	
