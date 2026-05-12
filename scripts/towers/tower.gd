@@ -89,6 +89,14 @@ var aim_alpha: float = 0.0 # For smooth fading
 # Shooting variables
 var shoot_cooldown: float = 0.0
 var fire_rate_modifiers: Dictionary = {}
+var damage_modifiers: Dictionary = {}
+var support_mode: String = ""
+var support_bonus: float = 0.0
+var support_max_targets: int = 4
+var support_tick_timer: float = 0.0
+const SUPPORT_REFRESH_INTERVAL: float = 0.18
+var _active_supported_towers: Array = []
+var _stale_damage_modifier_keys: Array = []
 var projectile_scene: PackedScene = preload("res://scenes/projectiles/Projectile.tscn")
 var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/MuzzleFlash.tscn")
 var projectile_container: Node2D = null
@@ -125,6 +133,9 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 	combo_type = str(config.get("combo_type", "neutral"))
 	elements = _extract_string_array(config.get("elements", []))
 	required_element_level = int(config.get("required_element_level", 0))
+	support_mode = str(config.get("support_mode", ""))
+	support_bonus = float(config.get("support_bonus", 0.0))
+	support_max_targets = int(config.get("support_max_targets", 4))
 	projectile_speed = config.get("projectile_speed", 500.0)
 	target_categories = _normalize_target_categories(config.get("target_categories", DEFAULT_TARGET_CATEGORIES))
 	grid_cell = cell
@@ -200,6 +211,9 @@ func apply_level_stats() -> void:
 		chain_jumps = data.get("chain_jumps", 0)
 		chain_range = data.get("chain_range", 0.0)
 		chain_falloff = data.get("chain_falloff", 1.0)
+		support_mode = str(data.get("support_mode", config.get("support_mode", support_mode)))
+		support_bonus = float(data.get("support_bonus", config.get("support_bonus", support_bonus)))
+		support_max_targets = int(data.get("support_max_targets", config.get("support_max_targets", support_max_targets)))
 		_update_range_collision()
 		apply_level_visuals()
 		queue_redraw()
@@ -378,6 +392,15 @@ func _draw() -> void:
 			var p1 = local_origin + Vector2.RIGHT.rotated(a) * (visual_range - 8)
 			var p2 = local_origin + Vector2.RIGHT.rotated(a) * (visual_range + 4)
 			draw_line(p1, p2, Color(0.2, 0.9, 1.0, 0.7), 2.0)
+		
+		if is_support_tower():
+			var support_color := Color(0.35, 1.0, 0.85, 0.22)
+			if support_mode == "damage":
+				support_color = Color(1.0, 0.55, 0.2, 0.22)
+			draw_circle(local_origin, visual_range, support_color)
+			draw_arc(local_origin, visual_range, 0, TAU, 64, Color(support_color.r, support_color.g, support_color.b, 0.8), 2.0)
+		else:
+			_draw_selected_buff_badges(local_origin)
 			
 	elif debug_draw_range:
 		var visual_range = attack_range / global_scale.x
@@ -392,6 +415,29 @@ func _draw() -> void:
 		if turret_pivot:
 			draw_set_transform(Vector2.ZERO, turret_pivot.rotation, Vector2.ONE)
 			_draw_turret_top()
+
+func _draw_selected_buff_badges(local_origin: Vector2) -> void:
+	var bonuses := get_active_support_bonuses()
+	if bonuses.is_empty():
+		return
+	var font := ThemeDB.fallback_font
+	var font_size := 13
+	var y := local_origin.y - 48.0
+	for bonus in bonuses:
+		var label := ""
+		var color := Color(0.5, 1.0, 0.75, 0.95)
+		if str(bonus.get("type", "")) == "damage":
+			label = "+%d%% DMG" % int(bonus.get("percent", 0))
+			color = Color(1.0, 0.65, 0.28, 0.95)
+		else:
+			label = "+%d%% SPD" % int(bonus.get("percent", 0))
+			color = Color(0.35, 1.0, 0.8, 0.95)
+		var size := font.get_string_size(label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size)
+		var rect := Rect2(local_origin.x - size.x * 0.5 - 6.0, y - 14.0, size.x + 12.0, 18.0)
+		draw_rect(rect, Color(0.03, 0.07, 0.10, 0.82), true)
+		draw_rect(rect, color, false, 1.0)
+		draw_string(font, Vector2(local_origin.x - size.x * 0.5, y), label, HORIZONTAL_ALIGNMENT_LEFT, -1, font_size, color)
+		y -= 20.0
 
 func _draw_base_plate() -> void:
 	var lvl = tree_tier
@@ -677,6 +723,10 @@ func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
 	combo_type = str(new_config.get("combo_type", combo_type))
 	elements = _extract_string_array(new_config.get("elements", elements))
 	required_element_level = int(new_config.get("required_element_level", required_element_level))
+	support_mode = str(new_config.get("support_mode", ""))
+	support_bonus = float(new_config.get("support_bonus", 0.0))
+	support_max_targets = int(new_config.get("support_max_targets", 4))
+	_clear_support_targets()
 
 	total_invested_gold += upgrade_cost
 	apply_level_stats()
@@ -761,8 +811,16 @@ func get_info() -> Dictionary:
 		"is_branch_point": is_branch_point(),
 		"next_upgrade_ids": next_upgrade_ids.duplicate(),
 		"damage": damage,
+		"effective_damage": get_effective_damage(),
+		"damage_bonus_percent": get_damage_bonus_percent(),
 		"range": attack_range,
 		"fire_rate": fire_rate,
+		"effective_fire_rate": get_effective_fire_rate(),
+		"attack_speed_bonus_percent": get_attack_speed_bonus_percent(),
+		"active_support_bonuses": get_active_support_bonuses(),
+		"support_mode": support_mode,
+		"support_bonus": support_bonus,
+		"support_max_targets": support_max_targets,
 		"upgrade_cost": up_cost,
 		"can_upgrade": can_up,
 		"total_invested_gold": total_invested_gold,
@@ -805,6 +863,9 @@ func get_targeting_origin() -> Vector2:
 	# Used for rotation calculation source
 	return global_position
 
+func _exit_tree() -> void:
+	_clear_support_targets()
+
 func set_projectile_container(container: Node2D) -> void:
 	projectile_container = container
 
@@ -835,6 +896,15 @@ func _on_click_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: 
 
 func _process(delta: float) -> void:
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
+		return
+		
+	if is_support_tower():
+		support_tick_timer -= delta
+		if support_tick_timer <= 0.0:
+			support_tick_timer = SUPPORT_REFRESH_INTERVAL
+			_refresh_support_targets()
+		if is_selected or debug_draw_range:
+			queue_redraw()
 		return
 		
 	_target_scan_timer -= delta
@@ -978,7 +1048,7 @@ func shoot() -> void:
 			sfx_name = "tower_shoot_slow"
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
-		projectile.setup(current_target, int(damage), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories, tower_id)
+		projectile.setup(current_target, int(round(get_effective_damage())), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories, tower_id, vulnerability_percent, vulnerability_duration)
 		
 		if attack_type == "chain":
 			if projectile.has_method("setup_chain"):
@@ -1019,9 +1089,9 @@ func _perform_aura_attack() -> void:
 	for enemy in enemies:
 		if is_instance_valid(enemy):
 			var enemy_pos = enemy.global_position
-			enemy.take_damage(damage, enemy_pos, tower_id)
+			enemy.take_damage(get_effective_damage(), enemy_pos, tower_id)
 			
-			# Apply vulnerability if sawblade
+			# Apply damage-amplification debuff when configured
 			if vulnerability_percent > 0 and enemy.has_method("apply_vulnerability"):
 				enemy.apply_vulnerability(1.0 + vulnerability_percent, vulnerability_duration)
 				
@@ -1199,12 +1269,15 @@ func apply_fire_rate_modifier(source: Node, multiplier: float) -> void:
 	if source == null or not is_instance_valid(source):
 		return
 	var key := source.get_instance_id()
-	var value := clampf(multiplier, 0.05, 1.0)
+	# multiplier < 1.0 slows the tower down; multiplier > 1.0 speeds it up.
+	var value := clampf(multiplier, 0.05, 5.0)
 	if not fire_rate_modifiers.has(key) or abs(float(fire_rate_modifiers[key].get("value", 1.0)) - value) > 0.001:
 		fire_rate_modifiers[key] = {"source": source, "value": value}
 		fire_rate_modifier_changed.emit(self, source, value)
+		if is_selected:
+			queue_redraw()
 		if OS.is_debug_build():
-			print("[EnemyFeature][TowerDisrupted] tower=%s source=%s multiplier=%.2f effective_interval=%.2f" % [tower_id, str(source.name), value, get_effective_fire_rate()])
+			print("[TowerFireRateModifier] tower=%s source=%s multiplier=%.2f effective_interval=%.2f" % [tower_id, str(source.name), value, get_effective_fire_rate()])
 
 func remove_fire_rate_modifier(source: Node) -> void:
 	if source == null:
@@ -1213,11 +1286,13 @@ func remove_fire_rate_modifier(source: Node) -> void:
 	if fire_rate_modifiers.has(key):
 		fire_rate_modifiers.erase(key)
 		fire_rate_modifier_changed.emit(self, source, 1.0)
+		if is_selected:
+			queue_redraw()
 		if OS.is_debug_build():
 			print("[EnemyFeature][TowerDisruptionRemoved] tower=%s source=%s effective_interval=%.2f" % [tower_id, str(source.name), get_effective_fire_rate()])
 
 func get_effective_fire_rate() -> float:
-	var strongest_multiplier := 1.0
+	var total_multiplier := 1.0
 	_stale_fire_rate_keys.clear()
 	for key in fire_rate_modifiers.keys():
 		var entry: Dictionary = fire_rate_modifiers[key]
@@ -1225,10 +1300,154 @@ func get_effective_fire_rate() -> float:
 		if not is_instance_valid(source):
 			_stale_fire_rate_keys.append(key)
 			continue
-		strongest_multiplier = min(strongest_multiplier, clampf(float(entry.get("value", 1.0)), 0.05, 1.0))
+		total_multiplier *= clampf(float(entry.get("value", 1.0)), 0.05, 5.0)
 	for key in _stale_fire_rate_keys:
 		fire_rate_modifiers.erase(key)
-	return fire_rate / strongest_multiplier
+	return fire_rate / maxf(total_multiplier, 0.05)
+
+func apply_damage_modifier(source: Node, multiplier: float) -> void:
+	if source == null or not is_instance_valid(source):
+		return
+	var key := source.get_instance_id()
+	var value := maxf(1.0, multiplier)
+	damage_modifiers[key] = {"source": source, "value": value}
+	if is_selected:
+		queue_redraw()
+
+func remove_damage_modifier(source: Node) -> void:
+	if source == null:
+		return
+	var key := source.get_instance_id()
+	if damage_modifiers.has(key):
+		damage_modifiers.erase(key)
+		if is_selected:
+			queue_redraw()
+
+func get_effective_damage() -> float:
+	var strongest_multiplier := 1.0
+	_stale_damage_modifier_keys.clear()
+	for key in damage_modifiers.keys():
+		var entry: Dictionary = damage_modifiers[key]
+		var source: Node = entry.get("source", null)
+		if not is_instance_valid(source):
+			_stale_damage_modifier_keys.append(key)
+			continue
+		strongest_multiplier = maxf(strongest_multiplier, maxf(1.0, float(entry.get("value", 1.0))))
+	for key in _stale_damage_modifier_keys:
+		damage_modifiers.erase(key)
+	return damage * strongest_multiplier
+
+func get_damage_bonus_percent() -> int:
+	var effective := get_effective_damage()
+	if damage <= 0.0:
+		return 0
+	return int(round(((effective / damage) - 1.0) * 100.0))
+
+func get_attack_speed_bonus_percent() -> int:
+	var effective := get_effective_fire_rate()
+	if fire_rate <= 0.0:
+		return 0
+	return int(round(((fire_rate / effective) - 1.0) * 100.0))
+
+func get_active_support_bonuses() -> Array[Dictionary]:
+	var bonuses: Array[Dictionary] = []
+	for key in damage_modifiers.keys():
+		var dmg_entry: Dictionary = damage_modifiers[key]
+		var dmg_source: Node = dmg_entry.get("source", null)
+		if is_instance_valid(dmg_source):
+			var mult := float(dmg_entry.get("value", 1.0))
+			if mult > 1.001:
+				bonuses.append({"type": "damage", "percent": int(round((mult - 1.0) * 100.0)), "source": _support_source_name(dmg_source)})
+	for key in fire_rate_modifiers.keys():
+		var spd_entry: Dictionary = fire_rate_modifiers[key]
+		var spd_source: Node = spd_entry.get("source", null)
+		if is_instance_valid(spd_source):
+			var mult := float(spd_entry.get("value", 1.0))
+			if mult > 1.001:
+				bonuses.append({"type": "attack_speed", "percent": int(round((mult - 1.0) * 100.0)), "source": _support_source_name(spd_source)})
+	return bonuses
+
+func _support_source_name(source: Variant) -> String:
+	if source == null or not is_instance_valid(source):
+		return "Support Tower"
+	if source.has_method("get_tower_display_name"):
+		return str(source.get_tower_display_name())
+	var display_value: Variant = source.get("display_name")
+	if display_value != null:
+		return str(display_value)
+	return "Support Tower"
+
+func get_tower_display_name() -> String:
+	return display_name
+
+func is_support_tower() -> bool:
+	return attack_type == "support" or support_mode != ""
+
+func _refresh_support_targets() -> void:
+	if not is_support_tower():
+		_clear_support_targets()
+		return
+	var candidates: Array = []
+	var towers: Array = get_tree().get_nodes_in_group("placed_towers")
+	for candidate in towers:
+		if candidate == self or not is_instance_valid(candidate):
+			continue
+		if candidate.has_method("is_support_tower") and candidate.is_support_tower():
+			continue
+		if not (candidate is Node2D):
+			continue
+		var distance := global_position.distance_to(candidate.global_position)
+		if distance <= attack_range:
+			candidates.append({"tower": candidate, "distance": distance})
+	candidates.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return float(a.get("distance", 0.0)) < float(b.get("distance", 0.0))
+	)
+	var next_targets: Array = []
+	var limit: int = max(1, support_max_targets)
+	for i in range(min(limit, candidates.size())):
+		var candidate_tower = candidates[i].get("tower")
+		if candidate_tower != null and is_instance_valid(candidate_tower):
+			next_targets.append(candidate_tower)
+	for old_tower in _active_supported_towers.duplicate():
+		if old_tower == null or not is_instance_valid(old_tower):
+			continue
+		if not next_targets.has(old_tower):
+			_remove_support_from_tower(old_tower)
+	for next_tower in next_targets:
+		_apply_support_to_tower(next_tower)
+	_active_supported_towers = next_targets
+
+func _apply_support_to_tower(target_tower: Variant) -> void:
+	if target_tower == null or not is_instance_valid(target_tower):
+		return
+	match support_mode:
+		"attack_speed":
+			if target_tower.has_method("apply_fire_rate_modifier"):
+				var multiplier := 1.0 + maxf(0.0, support_bonus)
+				target_tower.apply_fire_rate_modifier(self, multiplier)
+		"damage":
+			if target_tower.has_method("apply_damage_modifier"):
+				target_tower.apply_damage_modifier(self, 1.0 + maxf(0.0, support_bonus))
+
+func _remove_support_from_tower(target_tower: Variant) -> void:
+	if target_tower == null or not is_instance_valid(target_tower):
+		return
+	match support_mode:
+		"attack_speed":
+			if target_tower.has_method("remove_fire_rate_modifier"):
+				target_tower.remove_fire_rate_modifier(self)
+		"damage":
+			if target_tower.has_method("remove_damage_modifier"):
+				target_tower.remove_damage_modifier(self)
+
+func _clear_support_targets() -> void:
+	# Support targets can already be freed when this tower exits the tree.
+	# Keep this untyped/guarded so Godot does not try to pass a freed Object
+	# into a typed Node parameter before our validity checks can run.
+	for target_tower in _active_supported_towers.duplicate():
+		if target_tower != null and is_instance_valid(target_tower):
+			_remove_support_from_tower(target_tower)
+	_active_supported_towers.clear()
 
 func select_first_target(enemies: Array) -> Node2D:
 	var best_target = null

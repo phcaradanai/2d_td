@@ -20,6 +20,8 @@ var chain_range: float = 0.0
 var chain_falloff: float = 1.0
 var chained_enemies: Array = []
 var source_id: String = ""
+var vulnerability_percent: float = 0.0
+var vulnerability_duration: float = 0.0
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
@@ -29,7 +31,7 @@ var trail_points: Array[Vector2] = []
 @export var max_trail_points: int = 8
 @export var min_point_distance: float = 4.0
 
-func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_effect_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0, p_target_categories: Array = [], p_source_id: String = "") -> void:
+func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_type: String = "single", p_effect_radius: float = 0.0, p_slow_percent: float = 0.0, p_slow_duration: float = 0.0, p_target_categories: Array = [], p_source_id: String = "", p_vulnerability_percent: float = 0.0, p_vulnerability_duration: float = 0.0) -> void:
 	target = p_target
 	damage = p_damage
 	speed = p_speed
@@ -39,6 +41,8 @@ func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_
 	slow_duration = p_slow_duration
 	target_categories = _normalize_target_categories(p_target_categories)
 	source_id = p_source_id
+	vulnerability_percent = maxf(0.0, p_vulnerability_percent)
+	vulnerability_duration = maxf(0.0, p_vulnerability_duration)
 	
 	# Density Control: Shorten trail for fast/rapid projectiles to avoid clutter
 	if p_speed > 600:
@@ -177,6 +181,7 @@ func hit_target() -> void:
 	else:
 		if target and target.has_method("take_damage"):
 			target.take_damage(damage, hit_global, source_id, attack_type)
+			_apply_damage_amp_to_enemy(target)
 			# STANDARD: Use captured hit point and current pos for angle
 			var impact_angle = (hit_global - global_position).angle()
 			_spawn_impact_effect(hit_global, Color.WHITE, impact_angle)
@@ -202,7 +207,7 @@ func _handle_chain_jump(hit_pos: Vector2) -> void:
 		var next_proj = duplicate()
 		get_parent().add_child(next_proj)
 		next_proj.global_position = hit_pos
-		next_proj.setup(next_target, damage * chain_falloff, speed, "chain", effect_radius, slow_percent, slow_duration, target_categories, source_id)
+		next_proj.setup(next_target, damage * chain_falloff, speed, "chain", effect_radius, slow_percent, slow_duration, target_categories, source_id, vulnerability_percent, vulnerability_duration)
 		next_proj.setup_chain(chain_jumps - 1, chain_range, chain_falloff, chained_enemies)
 		next_proj.modulate = modulate # Keep lightning color
 
@@ -294,10 +299,17 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 					var falloff = 1.0 - (dist / effect_radius) * 0.5
 					enemy.take_damage(damage * falloff, enemy_pos, source_id, attack_type)
 				elif attack_type == "slow":
-					# Area slow deals its low base damage + applies debuff
+					# Area slow deals its low base damage + applies debuffs.
 					enemy.take_damage(damage, enemy_pos, source_id, attack_type)
 					if enemy.has_method("apply_slow"):
 						enemy.apply_slow(slow_percent, slow_duration)
+					_apply_damage_amp_to_enemy(enemy)
+
+func _apply_damage_amp_to_enemy(enemy: Variant) -> void:
+	if vulnerability_percent <= 0.0 or vulnerability_duration <= 0.0:
+		return
+	if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_vulnerability"):
+		enemy.apply_vulnerability(1.0 + vulnerability_percent, vulnerability_duration)
 
 func can_affect_enemy(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy):

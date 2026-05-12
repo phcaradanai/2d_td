@@ -79,6 +79,8 @@ var map_visual_layer: Node2D = null
 var maze_map_renderer: Node2D = null
 var enemy_route_overlay: Node2D = null
 var selected_tower: Node2D = null
+var selected_tower_info_refresh_timer: float = 0.0
+const SELECTED_TOWER_INFO_REFRESH_INTERVAL := 0.25
 var current_state: GameState = GameState.MENU
 var current_level_path: String = ""
 var current_level_id: String = ""
@@ -98,38 +100,12 @@ var hero_active_duration: float = 0.0
 var hero_is_deployed: bool = false
 var element_progression_manager = null
 const ELEMENT_PICK_INTERVAL: int = 5
-const ELEMENT_TD_FINAL_WAVE: int = 60
-# Element TD pacing: no free element at the start; picks are earned after wave 5, 10, ... 55.
 const STARTING_ELEMENT_PICKS: int = 0
+var auto_next_wave_enabled: bool = false
+var auto_next_wave_delay_sec: float = 15.0
+var auto_next_wave_remaining_sec: float = 0.0
+var auto_next_wave_countdown_active: bool = false
 
-# Element TD economy: WC3 Element TD awards timed interest on unspent gold.
-# Exact clone rule for this project:
-# - interest runs only during an active wave
-# - no interest during planning / element-pick / pause / between-wave waiting
-# - once a creep leaks and costs a life, interest is disabled for that wave
-const DEFAULT_ELEMENT_TD_INTEREST_RATE: float = 0.02
-const DEFAULT_ELEMENT_TD_INTEREST_INTERVAL_SEC: float = 15.0
-const DEFAULT_ELEMENT_TD_INTEREST_CAP: int = 0
-var element_td_interest_timer: Timer = null
-var element_td_interest_enabled: bool = false
-var element_td_interest_rate: float = DEFAULT_ELEMENT_TD_INTEREST_RATE
-var element_td_interest_interval_sec: float = DEFAULT_ELEMENT_TD_INTEREST_INTERVAL_SEC
-var element_td_interest_cap: int = DEFAULT_ELEMENT_TD_INTEREST_CAP
-
-# Element TD pacing: the next wave is not manually stalled forever.
-# Players may start early, but if they wait the next wave begins automatically.
-const DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_ENABLED: bool = true
-const DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_DELAY_SEC: float = 15.0
-# Keep the Start Wave control size stable across normal/countdown states.
-# Without this, multiline countdown text changes the TopBar container minimum size.
-const ELEMENT_TD_START_WAVE_BUTTON_MIN_SIZE := Vector2(192, 56)
-const ELEMENT_TD_START_WAVE_BUTTON_FONT_SIZE: int = 14
-var element_td_auto_next_wave_enabled: bool = DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_ENABLED
-var element_td_auto_next_wave_delay_sec: float = DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_DELAY_SEC
-var element_td_auto_next_wave_timer: Timer = null
-var element_td_auto_next_wave_remaining_sec: int = 0
-var element_td_auto_next_wave_badge: PanelContainer = null
-var element_td_auto_next_wave_badge_label: Label = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -368,6 +344,85 @@ func _cells_from_level_arrays(raw: Variant) -> Array[Vector2i]:
 			out.append(Vector2i(int(item[0]), int(item[1])))
 	return out
 
+func _configure_element_td_runtime_options() -> void:
+	auto_next_wave_enabled = false
+	auto_next_wave_delay_sec = 15.0
+	auto_next_wave_remaining_sec = 0.0
+	auto_next_wave_countdown_active = false
+	if level_manager == null:
+		return
+	var data: Dictionary = {}
+	if level_manager.level_data is Dictionary:
+		data = level_manager.level_data
+	auto_next_wave_enabled = bool(data.get("element_td_auto_next_wave_enabled", data.get("auto_next_wave_enabled", false)))
+	auto_next_wave_delay_sec = float(data.get("element_td_auto_next_wave_delay_sec", data.get("auto_next_wave_delay_sec", 15.0)))
+	if auto_next_wave_delay_sec <= 0.0:
+		auto_next_wave_delay_sec = 15.0
+
+func _has_pending_element_pick() -> bool:
+	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
+
+func _start_auto_next_wave_countdown_if_possible(reset_time: bool = false) -> void:
+	if not auto_next_wave_enabled:
+		_stop_auto_next_wave_countdown()
+		return
+	if wave_manager == null or not wave_manager.has_next_wave() or wave_manager.is_wave_running:
+		_stop_auto_next_wave_countdown()
+		return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
+		_stop_auto_next_wave_countdown()
+		return
+	if _has_pending_element_pick():
+		_stop_auto_next_wave_countdown()
+		return
+	if reset_time or auto_next_wave_remaining_sec <= 0.0:
+		auto_next_wave_remaining_sec = auto_next_wave_delay_sec
+	auto_next_wave_countdown_active = true
+	_refresh_start_wave_ui()
+
+func _stop_auto_next_wave_countdown() -> void:
+	if auto_next_wave_countdown_active or auto_next_wave_remaining_sec != 0.0:
+		auto_next_wave_countdown_active = false
+		auto_next_wave_remaining_sec = 0.0
+		_refresh_start_wave_ui()
+
+func _process_auto_next_wave_countdown(delta: float) -> void:
+	if not auto_next_wave_countdown_active:
+		return
+	if get_tree().paused:
+		return
+	if _has_pending_element_pick():
+		_stop_auto_next_wave_countdown()
+		return
+	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
+		_stop_auto_next_wave_countdown()
+		return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
+		_stop_auto_next_wave_countdown()
+		return
+	auto_next_wave_remaining_sec -= delta
+	if auto_next_wave_remaining_sec <= 0.0:
+		_stop_auto_next_wave_countdown()
+		_on_start_wave_requested()
+		return
+	_refresh_start_wave_ui()
+
+func _should_show_dynamic_route_overlay() -> bool:
+	if level_manager == null:
+		return false
+	var data: Dictionary = {}
+	if level_manager.level_data is Dictionary:
+		data = level_manager.level_data
+	var pathing_mode := str(data.get("enemy_pathing_mode", data.get("pathing_mode", "dynamic"))).strip_edges().to_lower().replace("-", "_")
+	if pathing_mode in ["fixed", "fixed_path", "element_td", "elemental_td", "path2d"]:
+		return false
+	return bool(data.get("show_dynamic_route_overlay", true))
+
+func _clear_dynamic_route_overlay() -> void:
+	if enemy_route_overlay != null and is_instance_valid(enemy_route_overlay):
+		enemy_route_overlay.queue_free()
+	enemy_route_overlay = null
+
 func _refresh_start_wave_ui() -> void:
 	if not game_hud or not wave_manager: return
 
@@ -379,10 +434,6 @@ func _refresh_start_wave_ui() -> void:
 	var can_start = (current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE) and not wave_running and wave_manager.has_next_wave()
 	var locked_label = ""
 
-	if _has_pending_element_pick():
-		can_start = false
-		locked_label = "Choose Element"
-
 	match current_state:
 		GameState.GAME_OVER:
 			locked_label = "Game Over"
@@ -390,6 +441,21 @@ func _refresh_start_wave_ui() -> void:
 			level_cleared = true
 		GameState.MENU, GameState.LEVEL_SELECT:
 			can_start = false
+
+	if _has_pending_element_pick():
+		can_start = false
+		locked_label = "Choose Element"
+
+	if auto_next_wave_countdown_active and locked_label == "" and not wave_running and can_start:
+		if game_hud.has_method("refresh_start_wave_countdown_button"):
+			game_hud.refresh_start_wave_countdown_button(
+				total_waves,
+				next_wave_number,
+				next_wave_name,
+				auto_next_wave_remaining_sec,
+				can_start
+			)
+			return
 
 	game_hud.refresh_start_wave_button(
 		total_waves,
@@ -400,13 +466,6 @@ func _refresh_start_wave_ui() -> void:
 		level_cleared,
 		locked_label
 	)
-	_stabilize_element_td_start_wave_button_layout()
-
-	# Keep the single Start Wave countdown button styled even if HUD refreshes
-	# during the planning countdown.
-	if element_td_auto_next_wave_timer != null and is_instance_valid(element_td_auto_next_wave_timer):
-		if not element_td_auto_next_wave_timer.is_stopped() and element_td_auto_next_wave_remaining_sec > 0:
-			_update_element_td_auto_next_wave_status()
 
 func _refresh_gameplay_hud_state() -> void:
 	_refresh_start_wave_ui()
@@ -436,28 +495,23 @@ func _setup_game_from_level() -> void:
 	if pathfinding_manager:
 		pathfinding_manager.setup_grid(level_manager)
 
-	# Enemy route overlay was designed for dynamic-maze mode. Element TD clone
-	# levels are fixed-path maps, so the extra cyan shortest-route guideline would
-	# fight the actual road visual. Keep it opt-in only.
-	var show_dynamic_route_overlay := _should_show_dynamic_route_overlay()
-	if show_dynamic_route_overlay:
+	# Dynamic route overlay is only for dynamic-maze mode. Element TD fixed-path levels
+	# must not show shortest-route guidelines because they conflict with the real path.
+	if _should_show_dynamic_route_overlay():
 		if enemy_route_overlay == null:
 			enemy_route_overlay = ENEMY_ROUTE_OVERLAY_SCRIPT.new()
 			enemy_route_overlay.name = "EnemyRouteOverlay"
 			map_root.add_child(enemy_route_overlay)
-
 		if pathfinding_manager:
-			enemy_route_overlay.visible = true
 			enemy_route_overlay.setup(
 				pathfinding_manager,
 				pathfinding_manager.spawn_cells,
 				pathfinding_manager.target_cells
 			)
+		if enemy_route_overlay:
+			enemy_route_overlay.visible = true
 	else:
-		if enemy_route_overlay != null and is_instance_valid(enemy_route_overlay):
-			enemy_route_overlay.visible = false
-			if enemy_route_overlay.has_method("set_visible_for_wave"):
-				enemy_route_overlay.set_visible_for_wave(false)
+		_clear_dynamic_route_overlay()
 
 	# Clear and setup paths
 	for p in active_path_nodes.values():
@@ -496,13 +550,21 @@ func _setup_game_from_level() -> void:
 	_update_world_layout()
 
 	if wave_manager:
-		if wave_manager.has_method("set_pathfinding_manager"):
-			wave_manager.set_pathfinding_manager(pathfinding_manager)
-		# Important for Element TD fixed-path maps: configure pathing mode before spawning.
-		# Without this, ground enemies keep using dynamic shortest-path movement while
-		# the renderer draws the fixed Path2D road, causing visual/path mismatch.
+		# Element TD clone levels use fixed Path2D movement.
+		# Configure WaveManager before setup/spawn so land enemies are attached to Path2D
+		# instead of switching back to dynamic shortest-path navigation.
+		var level_pathing_mode := ""
+		if level_manager and level_manager.level_data is Dictionary:
+			level_pathing_mode = str(level_manager.level_data.get("enemy_pathing_mode", level_manager.level_data.get("pathing_mode", ""))).strip_edges().to_lower().replace("-", "_")
 		if wave_manager.has_method("configure_from_level"):
 			wave_manager.configure_from_level(level_manager)
+		if level_pathing_mode in ["fixed", "fixed_path", "element_td", "elemental_td", "path2d"]:
+			if wave_manager.has_method("force_fixed_pathing"):
+				wave_manager.force_fixed_pathing()
+			else:
+				wave_manager.set("use_dynamic_pathing_for_ground", false)
+		if wave_manager.has_method("set_pathfinding_manager"):
+			wave_manager.set_pathfinding_manager(pathfinding_manager)
 		wave_manager.setup(active_path_nodes)
 		if level_manager.level_data.has("waves") and level_manager.level_data["waves"] is Array and not level_manager.level_data["waves"].is_empty():
 			wave_manager.load_waves_from_data(level_manager.level_data["waves"])
@@ -520,6 +582,8 @@ func _setup_game_from_level() -> void:
 			build_manager.set_pathfinding_manager(pathfinding_manager)
 		build_manager.active_loadout = active_level_loadout
 		build_manager.reset_build_state()
+
+	_configure_element_td_runtime_options()
 
 	if element_progression_manager:
 		element_progression_manager.reset()
@@ -546,9 +610,6 @@ func _setup_game_from_level() -> void:
 		_show_pending_element_choice()
 
 	update_hud()
-	_configure_element_td_economy_from_level()
-	# Do not start interest during planning. It starts only when a wave starts.
-	_stop_element_td_interest_timer()
 	_refresh_hud_wave_intel()
 	_refresh_route_preview()
 	# Removed _spawn_hero() as it's now manual deployment
@@ -583,296 +644,6 @@ func _create_curve_from_points(points: PackedVector2Array) -> Curve2D:
 func update_hud() -> void:
 	_refresh_hud_stats()
 	_refresh_start_wave_ui()
-
-func _has_pending_element_pick() -> bool:
-	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
-
-func _should_show_dynamic_route_overlay() -> bool:
-	if level_manager == null:
-		return false
-	# Default is OFF for Element TD fixed-path clone maps. A future dynamic-maze
-	# level can opt back in with: "show_dynamic_route_overlay": true
-	return bool(level_manager.level_data.get("show_dynamic_route_overlay", false))
-
-func _is_element_pick_wave(wave_number: int) -> bool:
-	# Warcraft 3 Element TD pacing: element choices happen every 5 waves,
-	# ending at wave 55 so wave 60 remains the final normal creep wave.
-	return wave_number > 0 and wave_number < ELEMENT_TD_FINAL_WAVE and wave_number % ELEMENT_PICK_INTERVAL == 0
-
-func _configure_element_td_economy_from_level() -> void:
-	element_td_interest_enabled = false
-	element_td_interest_rate = DEFAULT_ELEMENT_TD_INTEREST_RATE
-	element_td_interest_interval_sec = DEFAULT_ELEMENT_TD_INTEREST_INTERVAL_SEC
-	element_td_interest_cap = DEFAULT_ELEMENT_TD_INTEREST_CAP
-	element_td_auto_next_wave_enabled = DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_ENABLED
-	element_td_auto_next_wave_delay_sec = DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_DELAY_SEC
-	if level_manager == null:
-		return
-	var data: Dictionary = {}
-	var raw_data = level_manager.get("level_data")
-	if raw_data is Dictionary:
-		data = raw_data
-	element_td_interest_enabled = bool(data.get("interest_enabled", data.get("element_td_interest_enabled", false)))
-	element_td_interest_rate = float(data.get("interest_rate", data.get("element_td_interest_rate", DEFAULT_ELEMENT_TD_INTEREST_RATE)))
-	element_td_interest_interval_sec = maxf(1.0, float(data.get("interest_interval_sec", data.get("element_td_interest_interval_sec", DEFAULT_ELEMENT_TD_INTEREST_INTERVAL_SEC))))
-	element_td_interest_cap = int(data.get("interest_cap", data.get("element_td_interest_cap", DEFAULT_ELEMENT_TD_INTEREST_CAP)))
-	element_td_auto_next_wave_enabled = bool(data.get("auto_next_wave_enabled", data.get("element_td_auto_next_wave_enabled", DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_ENABLED)))
-	element_td_auto_next_wave_delay_sec = maxf(1.0, float(data.get("auto_next_wave_delay_sec", data.get("element_td_auto_next_wave_delay_sec", DEFAULT_ELEMENT_TD_AUTO_NEXT_WAVE_DELAY_SEC))))
-
-func _ensure_element_td_interest_timer() -> void:
-	if element_td_interest_timer != null and is_instance_valid(element_td_interest_timer):
-		return
-	element_td_interest_timer = Timer.new()
-	element_td_interest_timer.name = "ElementTDInterestTimer"
-	element_td_interest_timer.one_shot = false
-	element_td_interest_timer.autostart = false
-	# Main.gd runs with PROCESS_MODE_ALWAYS for debug/UI reasons, so force the
-	# economy timer to pause with the real game pause instead of inheriting Always.
-	element_td_interest_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
-	add_child(element_td_interest_timer)
-	element_td_interest_timer.timeout.connect(_on_element_td_interest_tick)
-
-func _start_element_td_interest_timer() -> void:
-	_stop_element_td_interest_timer()
-	if not element_td_interest_enabled:
-		return
-	if current_state != GameState.WAVE:
-		return
-	if _has_pending_element_pick():
-		return
-	# At wave_started, enemies may not have spawned yet, so do not require active_enemy_count here.
-	# Only block timer start if this wave has already leaked. The tick itself performs the stricter check.
-	if wave_manager != null and wave_manager.has_method("has_current_wave_leak") and wave_manager.has_current_wave_leak():
-		return
-	_ensure_element_td_interest_timer()
-	element_td_interest_timer.wait_time = element_td_interest_interval_sec
-	element_td_interest_timer.start()
-	if game_hud:
-		game_hud.set_build_status("Interest active: %d%% every %.0fs" % [int(round(element_td_interest_rate * 100.0)), element_td_interest_interval_sec])
-
-func _stop_element_td_interest_timer() -> void:
-	if element_td_interest_timer != null and is_instance_valid(element_td_interest_timer):
-		element_td_interest_timer.stop()
-
-func _on_element_td_interest_tick() -> void:
-	if not element_td_interest_enabled:
-		return
-	if get_tree().paused:
-		return
-	# Element TD-like rule: waiting/planning is not bank farming time.
-	# Interest is earned only while a normal wave is actively being resolved.
-	if current_state != GameState.WAVE:
-		return
-	if _has_pending_element_pick():
-		return
-	if wave_manager != null and wave_manager.has_method("is_interest_eligible") and not wave_manager.is_interest_eligible():
-		_stop_element_td_interest_timer()
-		return
-	if game_manager == null:
-		return
-	var current_gold: int = int(game_manager.gold)
-	if current_gold <= 0:
-		return
-	var interest: int = int(floor(float(current_gold) * element_td_interest_rate))
-	if element_td_interest_cap > 0:
-		interest = mini(interest, element_td_interest_cap)
-	if interest <= 0:
-		return
-	game_manager.add_gold(interest)
-	if game_hud:
-		game_hud.set_status("Interest +%d Gold" % interest)
-	show_wave_feedback("Interest +%d" % interest, Color(1.0, 0.86, 0.22))
-
-func _ensure_element_td_auto_next_wave_timer() -> void:
-	if element_td_auto_next_wave_timer != null and is_instance_valid(element_td_auto_next_wave_timer):
-		return
-	element_td_auto_next_wave_timer = Timer.new()
-	element_td_auto_next_wave_timer.name = "ElementTDAutoNextWaveTimer"
-	element_td_auto_next_wave_timer.one_shot = false
-	element_td_auto_next_wave_timer.autostart = false
-	element_td_auto_next_wave_timer.wait_time = 1.0
-	# Main.gd runs Always for UI/debug, but this timer must stop on real pause.
-	element_td_auto_next_wave_timer.process_mode = Node.PROCESS_MODE_PAUSABLE
-	add_child(element_td_auto_next_wave_timer)
-	element_td_auto_next_wave_timer.timeout.connect(_on_element_td_auto_next_wave_tick)
-
-func _can_element_td_auto_start_next_wave() -> bool:
-	if not element_td_auto_next_wave_enabled:
-		return false
-	if get_tree().paused:
-		return false
-	if _has_pending_element_pick():
-		return false
-	if wave_manager == null:
-		return false
-	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
-		return false
-	if wave_manager.is_wave_running:
-		return false
-	if not wave_manager.has_next_wave():
-		return false
-	return true
-
-func _start_element_td_auto_next_wave_countdown() -> void:
-	_stop_element_td_auto_next_wave_countdown()
-	if not _can_element_td_auto_start_next_wave():
-		return
-	_ensure_element_td_auto_next_wave_timer()
-	element_td_auto_next_wave_remaining_sec = max(1, int(ceil(element_td_auto_next_wave_delay_sec)))
-	element_td_auto_next_wave_timer.start()
-	_refresh_start_wave_ui()
-	_update_element_td_auto_next_wave_status()
-
-func _stop_element_td_auto_next_wave_countdown() -> void:
-	if element_td_auto_next_wave_timer != null and is_instance_valid(element_td_auto_next_wave_timer):
-		element_td_auto_next_wave_timer.stop()
-	element_td_auto_next_wave_remaining_sec = 0
-	_hide_element_td_auto_next_wave_badge()
-	_refresh_start_wave_ui()
-
-func _get_hud_start_wave_button() -> Button:
-	if game_hud == null:
-		return null
-	var direct = game_hud.get("start_wave_button")
-	if direct is Button:
-		return direct
-	return game_hud.get_node_or_null("Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/StartWaveButton") as Button
-
-func _stabilize_element_td_start_wave_button_layout() -> void:
-	var start_button := _get_hud_start_wave_button()
-	if start_button == null:
-		return
-	# Godot containers size children from their minimum size. Locking this keeps
-	# the TopBar from expanding when countdown text switches between one/two lines.
-	start_button.custom_minimum_size = ELEMENT_TD_START_WAVE_BUTTON_MIN_SIZE
-	start_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-	start_button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	start_button.pivot_offset = ELEMENT_TD_START_WAVE_BUTTON_MIN_SIZE * 0.5
-	start_button.add_theme_constant_override("align_to_largest_stylebox", 1)
-
-func _ensure_element_td_auto_next_wave_badge() -> void:
-	# Stage 2E UX fix: the countdown is no longer a separate badge.
-	# The Start Wave button itself becomes the countdown control so players
-	# never confuse a visual badge for a second clickable target.
-	return
-
-func _style_element_td_auto_next_wave_badge(remaining_sec: int) -> void:
-	var start_button := _get_hud_start_wave_button()
-	if start_button == null:
-		return
-	var urgent := remaining_sec <= 5
-	var warning := remaining_sec <= 10
-	var bg := Color(0.04, 0.12, 0.18, 0.96)
-	var border := Color(0.25, 0.86, 1.0, 1.0)
-	var font := Color(0.78, 0.96, 1.0, 1.0)
-	if warning:
-		bg = Color(0.19, 0.12, 0.03, 0.97)
-		border = Color(1.0, 0.70, 0.14, 1.0)
-		font = Color(1.0, 0.88, 0.34, 1.0)
-	if urgent:
-		bg = Color(0.30, 0.04, 0.03, 0.98)
-		border = Color(1.0, 0.22, 0.12, 1.0)
-		font = Color(1.0, 0.62, 0.45, 1.0)
-
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = bg
-	normal.border_color = border
-	# Keep border and content margins identical for all urgency states so the
-	# button minimum size does not fluctuate inside the TopBar container.
-	normal.set_border_width_all(2)
-	normal.set_corner_radius_all(12)
-	normal.set_content_margin(SIDE_LEFT, 14)
-	normal.set_content_margin(SIDE_RIGHT, 14)
-	normal.set_content_margin(SIDE_TOP, 8)
-	normal.set_content_margin(SIDE_BOTTOM, 8)
-
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = bg.lightened(0.10)
-	hover.border_color = border.lightened(0.08)
-
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = bg.darkened(0.15)
-	pressed.border_color = border.darkened(0.05)
-
-	start_button.add_theme_stylebox_override("normal", normal)
-	start_button.add_theme_stylebox_override("hover", hover)
-	start_button.add_theme_stylebox_override("pressed", pressed)
-	start_button.add_theme_color_override("font_color", font)
-	start_button.add_theme_color_override("font_hover_color", font.lightened(0.08))
-	start_button.add_theme_color_override("font_pressed_color", font.darkened(0.08))
-	start_button.add_theme_font_size_override("font_size", ELEMENT_TD_START_WAVE_BUTTON_FONT_SIZE)
-	_stabilize_element_td_start_wave_button_layout()
-
-	# Pulse by color only. Scaling a Control inside a container can visually nudge
-	# surrounding UI and made the TopBar feel like it was expanding/shrinking.
-	if urgent:
-		start_button.modulate = Color(1.0, 0.84 + (0.16 if remaining_sec % 2 == 0 else 0.0), 0.84, 1.0)
-	else:
-		start_button.modulate = Color.WHITE
-	start_button.scale = Vector2.ONE
-
-func _hide_element_td_auto_next_wave_badge() -> void:
-	# Reset the Start Wave button after countdown ends. GameHUD.refresh_start_wave_button()
-	# will restore the normal text/enabled state immediately after this.
-	var start_button := _get_hud_start_wave_button()
-	if start_button != null:
-		start_button.remove_theme_stylebox_override("normal")
-		start_button.remove_theme_stylebox_override("hover")
-		start_button.remove_theme_stylebox_override("pressed")
-		start_button.remove_theme_color_override("font_color")
-		start_button.remove_theme_color_override("font_hover_color")
-		start_button.remove_theme_color_override("font_pressed_color")
-		start_button.remove_theme_font_size_override("font_size")
-		start_button.modulate = Color.WHITE
-		start_button.scale = Vector2.ONE
-		start_button.tooltip_text = ""
-		_stabilize_element_td_start_wave_button_layout()
-	if element_td_auto_next_wave_badge != null and is_instance_valid(element_td_auto_next_wave_badge):
-		element_td_auto_next_wave_badge.queue_free()
-	element_td_auto_next_wave_badge = null
-	element_td_auto_next_wave_badge_label = null
-
-func _update_element_td_auto_next_wave_status() -> void:
-	if not game_hud or wave_manager == null:
-		return
-	var next_wave_number: int = wave_manager.get_next_wave_number()
-	var next_wave_name: String = wave_manager.get_next_wave_name()
-	var label := "Next wave"
-	if next_wave_number > 0:
-		label = "Wave %d" % next_wave_number
-	if next_wave_name != "":
-		label += ": %s" % next_wave_name
-
-	var start_button := _get_hud_start_wave_button()
-	if start_button != null and next_wave_number > 0:
-		start_button.text = "START WAVE %d\nAUTO IN %ds" % [next_wave_number, element_td_auto_next_wave_remaining_sec]
-		start_button.tooltip_text = "%s will auto-start in %d seconds. Click this button to start now." % [label, element_td_auto_next_wave_remaining_sec]
-		_style_element_td_auto_next_wave_badge(element_td_auto_next_wave_remaining_sec)
-
-	game_hud.set_build_status("Planning Phase — %s auto-starts in %ds" % [label, element_td_auto_next_wave_remaining_sec])
-
-func _on_element_td_auto_next_wave_tick() -> void:
-	if not _can_element_td_auto_start_next_wave():
-		_stop_element_td_auto_next_wave_countdown()
-		return
-	element_td_auto_next_wave_remaining_sec -= 1
-	if element_td_auto_next_wave_remaining_sec <= 0:
-		_stop_element_td_auto_next_wave_countdown()
-		_start_next_wave_from_element_td_auto_timer()
-		return
-	_update_element_td_auto_next_wave_status()
-
-func _start_next_wave_from_element_td_auto_timer() -> void:
-	if not _can_element_td_auto_start_next_wave():
-		return
-	if audio_manager:
-		audio_manager.unlock_audio()
-	if game_hud:
-		game_hud.set_build_status("Auto-starting wave")
-	if wave_manager:
-		wave_manager.start_next_wave()
-	if audio_manager:
-		audio_manager.play_sfx("start_wave")
 
 func _refresh_hud_stats() -> void:
 	if game_hud and game_manager:
@@ -932,10 +703,8 @@ func _ensure_element_progression_manager() -> void:
 		element_progression_manager = ELEMENT_PROGRESSION_MANAGER_SCRIPT.new()
 		element_progression_manager.name = "ElementProgressionManager"
 		add_child(element_progression_manager)
-	if element_progression_manager.has_signal("element_levels_changed") and not element_progression_manager.element_levels_changed.is_connected(_on_element_levels_changed):
+	if element_progression_manager.has_signal("element_levels_changed"):
 		element_progression_manager.element_levels_changed.connect(_on_element_levels_changed)
-	if element_progression_manager.has_signal("element_pick_available") and not element_progression_manager.element_pick_available.is_connected(_on_element_pick_available):
-		element_progression_manager.element_pick_available.connect(_on_element_pick_available)
 
 func _refresh_elemental_tower_catalog() -> void:
 	if build_manager == null or game_hud == null:
@@ -971,18 +740,10 @@ func _show_pending_element_choice() -> void:
 	if element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick():
 		game_hud.show_element_choice(element_progression_manager.get_element_levels(), element_progression_manager.pending_picks)
 
-func _on_element_pick_available(_pending_picks: int) -> void:
-	_stop_element_td_auto_next_wave_countdown()
-	_show_pending_element_choice()
-	_refresh_start_wave_ui()
-	if game_hud:
-		game_hud.set_build_status("Choose an element before the next wave")
-
 func _on_element_levels_changed(levels: Dictionary) -> void:
 	if game_hud:
 		game_hud.set_element_levels(levels)
 	_refresh_elemental_shop()
-	_refresh_start_wave_ui()
 
 func _on_element_choice_requested(element_id: String) -> void:
 	if element_progression_manager == null:
@@ -995,12 +756,10 @@ func _on_element_choice_requested(element_id: String) -> void:
 				game_hud.show_element_choice(element_progression_manager.get_element_levels(), element_progression_manager.pending_picks)
 			else:
 				game_hud.hide_element_choice()
+				_start_auto_next_wave_countdown_if_possible(true)
 	else:
 		if game_hud:
 			game_hud.set_build_status("Cannot choose that element")
-	_refresh_start_wave_ui()
-	if element_progression_manager != null and not _has_pending_element_pick():
-		_start_element_td_auto_next_wave_countdown()
 
 func _config_unlocked_for_upgrade(cfg: Dictionary) -> bool:
 	if element_progression_manager == null or not element_progression_manager.has_method("can_build_tower"):
@@ -1105,6 +864,8 @@ func _process(delta: float) -> void:
 	if current_state == GameState.WAVE or current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE:
 		_update_hero_timers(delta)
 		
+	_refresh_selected_tower_info(delta)
+	_process_auto_next_wave_countdown(delta)
 	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 
 	if build_manager and build_manager.is_build_mode_active():
@@ -1339,9 +1100,9 @@ func start_level(level_path: String) -> void:
 			return
 
 	set_game_phase(GameState.BUILD)
-	_start_element_td_auto_next_wave_countdown()
 	_refresh_hud_wave_intel()
 	_refresh_route_preview()
+	_start_auto_next_wave_countdown_if_possible(true)
 
 	if audio_manager:
 		audio_manager.play_music("gameplay")
@@ -1381,8 +1142,8 @@ func is_valid_loadout(loadout: Array[String]) -> bool:
 	return loadout == ["basic_tower_t1"]
 
 func _clear_gameplay_state() -> void:
-	_stop_element_td_interest_timer()
-	_stop_element_td_auto_next_wave_countdown()
+	_stop_auto_next_wave_countdown()
+	_clear_dynamic_route_overlay()
 	if tower_container:
 		for tower in tower_container.get_children():
 			tower.queue_free()
@@ -1701,6 +1462,18 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.enter_result_overlay()
 			if world_root: world_root.show()
 
+func _refresh_selected_tower_info(delta: float) -> void:
+	if selected_tower == null or not is_instance_valid(selected_tower):
+		return
+	if game_hud == null:
+		return
+	selected_tower_info_refresh_timer -= delta
+	if selected_tower_info_refresh_timer > 0.0:
+		return
+	selected_tower_info_refresh_timer = SELECTED_TOWER_INFO_REFRESH_INTERVAL
+	if selected_tower.has_method("get_info"):
+		game_hud.show_tower_info(selected_tower.get_info())
+
 func _on_game_paused() -> void:
 	set_game_phase(GameState.PAUSED)
 
@@ -1737,6 +1510,7 @@ func _select_tower(tower: Node2D) -> void:
 
 	if is_instance_valid(tower):
 		selected_tower = tower
+		selected_tower_info_refresh_timer = 0.0
 		if selected_tower.has_method("set_selected"):
 			selected_tower.set_selected(true)
 		if game_hud:
@@ -1896,13 +1670,11 @@ func _on_target_mode_changed(mode: String) -> void:
 func _on_start_wave_requested() -> void:
 	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE: return
 	if _has_pending_element_pick():
-		_show_pending_element_choice()
 		if game_hud:
-			game_hud.set_build_status("Choose an element before starting the next wave")
-		_refresh_start_wave_ui()
+			game_hud.set_build_status("Choose an element before the next wave")
 		return
-	_stop_element_td_auto_next_wave_countdown()
 	if audio_manager: audio_manager.unlock_audio()
+	_stop_auto_next_wave_countdown()
 	if wave_manager:
 		wave_manager.start_next_wave()
 	if audio_manager:
@@ -1951,20 +1723,17 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status(label_text)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
-	_stop_element_td_auto_next_wave_countdown()
+	_stop_auto_next_wave_countdown()
 	_clear_route_preview()
 	set_game_phase(GameState.WAVE)
 	if game_manager:
 		game_manager.set_current_wave(wave_number)
-	_start_element_td_interest_timer()
 	if game_hud:
 		game_hud.set_status("Wave %d: %s" % [wave_number, wave_name])
 		show_wave_feedback("Wave %d: %s" % [wave_number, wave_name], Color(1, 0.8, 0.2))
 		_refresh_gameplay_hud_state()
 
 func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> void:
-	# No interest during the waiting period between waves.
-	_stop_element_td_interest_timer()
 	set_game_phase(GameState.WAVE_COMPLETE)
 	if game_manager:
 		game_manager.award_wave_completion(reward)
@@ -1974,22 +1743,20 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 		_refresh_gameplay_hud_state()
 	if audio_manager:
 		audio_manager.play_sfx("gold_gain")
-	if element_progression_manager and _is_element_pick_wave(wave_number):
+	if element_progression_manager and wave_number > 0 and wave_number % ELEMENT_PICK_INTERVAL == 0:
 		element_progression_manager.grant_pick(1)
 		_show_pending_element_choice()
-		if game_hud:
-			game_hud.set_status("Elemental Guardian defeated — choose an element")
-			show_wave_feedback("Choose an Element", Color(0.4, 0.85, 1.0))
-		_refresh_start_wave_ui()
-	# Auto-advance to planning after a brief reward moment, then begin the
-	# Element TD-style next-wave countdown unless an element pick must be made.
+		_stop_auto_next_wave_countdown()
+	# Auto-advance to planning after a brief reward moment. Countdown starts only
+	# when no element pick is blocking the next wave.
 	get_tree().create_timer(2.5).timeout.connect(func():
 		if current_state == GameState.WAVE_COMPLETE:
 			set_game_phase(GameState.BUILD)
-			_start_element_td_auto_next_wave_countdown()
+			_start_auto_next_wave_countdown_if_possible(true)
 	)
 
 func _on_all_waves_completed() -> void:
+	_stop_auto_next_wave_countdown()
 	if game_manager:
 		game_manager.trigger_victory()
 	_clear_route_preview()
@@ -2007,12 +1774,6 @@ func _on_enemy_killed(reward_gold: int) -> void:
 func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 	if game_manager:
 		game_manager.damage_base(base_damage)
-
-	# Element TD rule: once a creep leaks and costs a life, the interest clock
-	# stops for that wave. Respawned/second-pass creeps do not generate interest.
-	_stop_element_td_interest_timer()
-	if game_hud and current_state == GameState.WAVE:
-		game_hud.set_build_status("Interest stopped until next wave")
 
 	shake_camera(15.0, 0.4)
 	if game_hud:
@@ -2049,10 +1810,9 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 		audio_manager.play_sfx("enemy_reach_base")
 
 func _on_game_over() -> void:
+	_stop_auto_next_wave_countdown()
 	if OS.is_debug_build(): print("[Main] Game Over Triggered")
 	set_game_phase(GameState.GAME_OVER)
-	_stop_element_td_interest_timer()
-	_stop_element_td_auto_next_wave_countdown()
 	_clear_route_preview()
 
 	clear_selected_tower()
@@ -2095,9 +1855,8 @@ func _clear_projectiles_and_targeting() -> void:
 				tower.clear_targeting_line()
 
 func _on_victory() -> void:
+	_stop_auto_next_wave_countdown()
 	set_game_phase(GameState.VICTORY)
-	_stop_element_td_interest_timer()
-	_stop_element_td_auto_next_wave_countdown()
 	_clear_route_preview()
 
 	clear_selected_tower()

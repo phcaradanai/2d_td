@@ -111,13 +111,47 @@ func configure_from_level(level_manager: Node) -> void:
 	var raw_data = level_manager.get("level_data")
 	if raw_data is Dictionary:
 		data = raw_data
-	var mode := str(data.get("enemy_pathing_mode", data.get("pathing_mode", "dynamic_maze"))).strip_edges().to_lower()
-	if mode in ["fixed", "fixed_path", "fixed-path", "element_td", "elemental_td"]:
-		use_dynamic_pathing_for_ground = false
+	var mode := _normalize_pathing_mode(data.get("enemy_pathing_mode", data.get("pathing_mode", "dynamic_maze")))
+	use_dynamic_pathing_for_ground = not _is_fixed_path_mode(mode)
 	leak_respawn_enabled = bool(data.get("leak_respawn_enabled", false))
 	leak_respawn_health_mode = str(data.get("leak_respawn_health_mode", "preserve")).strip_edges().to_lower()
 	if OS.is_debug_build():
 		print("[WaveManager] pathing_mode=", mode, " dynamic_ground=", use_dynamic_pathing_for_ground, " leak_respawn=", leak_respawn_enabled, " hp_mode=", leak_respawn_health_mode)
+
+func force_fixed_pathing() -> void:
+	use_dynamic_pathing_for_ground = false
+
+func _normalize_pathing_mode(raw_mode) -> String:
+	return str(raw_mode).strip_edges().to_lower().replace("-", "_")
+
+func _is_fixed_path_mode(mode: String) -> bool:
+	return mode in ["fixed", "fixed_path", "element_td", "elemental_td", "path2d"]
+
+func _should_use_dynamic_pathing_for_enemy(config: Dictionary) -> bool:
+	return use_dynamic_pathing_for_ground and normalize_enemy_category(config.get("category", ENEMY_CATEGORY_LAND)) == ENEMY_CATEGORY_LAND and pathfinding_manager != null
+
+func _stamp_enemy_pathing_config(config: Dictionary) -> void:
+	# Let Enemy.gd know which movement model the WaveManager selected.
+	# This prevents older enemy-side dynamic-path defaults from overriding fixed Path2D levels.
+	config["pathing_mode"] = "dynamic_maze" if use_dynamic_pathing_for_ground else "fixed_path"
+	config["enemy_pathing_mode"] = config["pathing_mode"]
+	config["use_dynamic_pathing"] = use_dynamic_pathing_for_ground
+	config["dynamic_pathing_enabled"] = use_dynamic_pathing_for_ground
+
+func _attach_enemy_to_path(enemy: Node, path_node: Node, progress: float = 0.0) -> void:
+	path_node.add_child(enemy)
+	if enemy.has_method("clear_dynamic_pathing"):
+		enemy.clear_dynamic_pathing()
+	if enemy is PathFollow2D:
+		enemy.progress = maxf(0.0, progress)
+	elif enemy is Node2D:
+		var local_pos := Vector2.ZERO
+		if path_node is Path2D and path_node.curve and path_node.curve.point_count > 0:
+			if progress > 0.0:
+				local_pos = path_node.curve.sample_baked(clampf(progress, 0.0, path_node.curve.get_baked_length()))
+			else:
+				local_pos = path_node.curve.get_point_position(0)
+		enemy.position = local_pos
 
 func reset_waves() -> void:
 	spawn_generation += 1
@@ -254,6 +288,7 @@ func spawn_enemy(group_data: Dictionary) -> void:
 		if key != "count" and key != "spawn_delay":
 			base_config[key] = group_data[key]
 	
+	_stamp_enemy_pathing_config(base_config)
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
 		enemy.setup(base_config)
@@ -272,14 +307,14 @@ func spawn_enemy(group_data: Dictionary) -> void:
 		
 	var spawn_pos: Vector2 = path_node.curve.get_point_position(0) if path_node.curve and path_node.curve.point_count > 0 else Vector2.ZERO
 	var spawn_world: Vector2 = path_node.to_global(spawn_pos)
-	if use_dynamic_pathing_for_ground and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null and enemy.has_method("set_dynamic_pathing"):
+	if _should_use_dynamic_pathing_for_enemy(base_config) and enemy.has_method("set_dynamic_pathing"):
 		var enemy_parent := _get_enemy_container()
 		enemy_parent.add_child(enemy)
 		enemy.global_position = spawn_world
 		var spawn_cell: Vector2i = pathfinding_manager.world_to_cell(spawn_world)
 		enemy.set_dynamic_pathing(pathfinding_manager, spawn_cell)
 	else:
-		path_node.add_child(enemy)
+		_attach_enemy_to_path(enemy, path_node, 0.0)
 	active_enemy_count += 1
 	
 	if game_manager and game_manager.battle_telemetry:
@@ -324,6 +359,7 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	if not path_node: return
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
 	base_config["category"] = normalize_enemy_category(base_config.get("category", ENEMY_CATEGORY_LAND))
+	_stamp_enemy_pathing_config(base_config)
 	
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
@@ -332,7 +368,7 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	enemy.died.connect(_on_enemy_died)
 	enemy.reached_base.connect(_on_enemy_reached_base)
 	
-	if use_dynamic_pathing_for_ground and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null and enemy.has_method("set_dynamic_pathing"):
+	if _should_use_dynamic_pathing_for_enemy(base_config) and enemy.has_method("set_dynamic_pathing"):
 		var enemy_parent := _get_enemy_container()
 		enemy_parent.add_child(enemy)
 		var source_cell := Vector2i.ZERO
@@ -344,8 +380,7 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 		enemy.global_position = source_world
 		enemy.set_dynamic_pathing(pathfinding_manager, source_cell)
 	else:
-		path_node.add_child(enemy)
-		enemy.progress = prog
+		_attach_enemy_to_path(enemy, path_node, prog)
 	active_enemy_count += 1
 	
 	if game_manager and game_manager.battle_telemetry:
@@ -365,6 +400,7 @@ func _get_enemy_container() -> Node:
 func spawn_enemy_at_world_position(enemy_type: String, world_pos: Vector2) -> void:
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
 	base_config["category"] = normalize_enemy_category(base_config.get("category", ENEMY_CATEGORY_LAND))
+	_stamp_enemy_pathing_config(base_config)
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
 		enemy.setup(base_config)
@@ -375,7 +411,7 @@ func spawn_enemy_at_world_position(enemy_type: String, world_pos: Vector2) -> vo
 	var parent := _get_enemy_container()
 	parent.add_child(enemy)
 	enemy.global_position = world_pos
-	if use_dynamic_pathing_for_ground and base_config.get("category") == ENEMY_CATEGORY_LAND and pathfinding_manager != null and enemy.has_method("set_dynamic_pathing"):
+	if _should_use_dynamic_pathing_for_enemy(base_config) and enemy.has_method("set_dynamic_pathing"):
 		enemy.set_dynamic_pathing(pathfinding_manager, pathfinding_manager.world_to_cell(world_pos))
 	active_enemy_count += 1
 
@@ -427,7 +463,7 @@ func _on_enemy_died(_enemy: Node, reward: int) -> void:
 
 func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> void:
 	current_wave_has_leak = true
-	var hp_rem : float = _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
+	var hp_rem := _enemy.get_current_hp() if _enemy.has_method("get_current_hp") else 0.0
 	if game_manager and game_manager.battle_telemetry:
 		var prog = _enemy.get_path_progress() if _enemy.has_method("get_path_progress") else 0.0
 		var lives_after = game_manager.lives - damage
