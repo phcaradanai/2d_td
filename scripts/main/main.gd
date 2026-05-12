@@ -106,6 +106,14 @@ var auto_next_wave_delay_sec: float = 15.0
 var auto_next_wave_remaining: float = 0.0
 var auto_next_wave_countdown_active: bool = false
 var has_started_first_wave: bool = false
+
+# Element TD WC3-like interest: active combat only.
+# This prevents planning-phase farming while preserving wave-time economy decisions.
+var element_td_interest_enabled: bool = true
+var element_td_interest_rate: float = 0.02
+var element_td_interest_interval_sec: float = 15.0
+var element_td_interest_elapsed: float = 0.0
+var element_td_interest_disabled_for_wave: bool = false
 var sandbox_layer: CanvasLayer = null
 var sandbox_panel: PanelContainer = null
 
@@ -397,6 +405,7 @@ func _setup_game_from_level() -> void:
 	# Clear existing gameplay state
 	_clear_gameplay_state()
 	_configure_auto_next_wave_from_level()
+	_configure_element_td_interest_from_level()
 	has_started_first_wave = false
 	_stop_auto_next_wave_countdown()
 
@@ -557,6 +566,21 @@ func _configure_auto_next_wave_from_level() -> void:
 		auto_next_wave_delay_sec = float(level_manager.level_data.get("auto_next_wave_delay_sec", 15.0))
 	auto_next_wave_delay_sec = max(1.0, auto_next_wave_delay_sec)
 
+func _configure_element_td_interest_from_level() -> void:
+	# Element TD WC3 baseline is 2% interest every 15 seconds.
+	# Keep it active-wave-only in this real-time/pauseable clone so players cannot idle in planning.
+	element_td_interest_enabled = true
+	element_td_interest_rate = 0.02
+	element_td_interest_interval_sec = 15.0
+	if level_manager:
+		element_td_interest_enabled = bool(level_manager.level_data.get("interest_enabled", true))
+		element_td_interest_rate = float(level_manager.level_data.get("interest_rate", 0.02))
+		element_td_interest_interval_sec = float(level_manager.level_data.get("interest_interval_sec", 15.0))
+	element_td_interest_rate = max(0.0, element_td_interest_rate)
+	element_td_interest_interval_sec = max(1.0, element_td_interest_interval_sec)
+	element_td_interest_elapsed = 0.0
+	element_td_interest_disabled_for_wave = false
+
 func _has_pending_element_pick() -> bool:
 	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
 
@@ -608,6 +632,36 @@ func _update_auto_next_wave_countdown(delta: float) -> void:
 		_on_start_wave_requested()
 	else:
 		_refresh_start_wave_ui()
+
+func _update_element_td_interest(delta: float) -> void:
+	if not element_td_interest_enabled:
+		return
+	if get_tree().paused or current_state == GameState.PAUSED:
+		return
+	if current_state != GameState.WAVE:
+		return
+	if _has_pending_element_pick():
+		return
+	if element_td_interest_disabled_for_wave:
+		return
+	if wave_manager == null or not wave_manager.is_wave_running:
+		return
+	if game_manager == null or game_manager.is_game_over or game_manager.is_victory:
+		return
+	# Do not tick after the final creep is gone but before wave_complete signal settles.
+	if int(wave_manager.get("active_enemy_count")) <= 0:
+		return
+
+	element_td_interest_elapsed += delta
+	while element_td_interest_elapsed >= element_td_interest_interval_sec:
+		element_td_interest_elapsed -= element_td_interest_interval_sec
+		var interest_gold := int(floor(float(game_manager.gold) * element_td_interest_rate))
+		if interest_gold <= 0:
+			continue
+		game_manager.add_gold(interest_gold)
+		if game_hud:
+			game_hud.set_status("Interest +%d" % interest_gold)
+			show_wave_feedback("Interest +%d" % interest_gold, Color(1.0, 0.85, 0.25))
 
 func _level_uses_fixed_pathing() -> bool:
 	if level_manager == null:
@@ -862,6 +916,7 @@ func _connect_signals() -> void:
 
 func _process(delta: float) -> void:
 	_update_auto_next_wave_countdown(delta)
+	_update_element_td_interest(delta)
 	if current_state == GameState.WAVE or current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE:
 		_update_hero_timers(delta)
 		
@@ -1714,6 +1769,8 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status(label_text)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
+	element_td_interest_elapsed = 0.0
+	element_td_interest_disabled_for_wave = false
 	_stop_auto_next_wave_countdown()
 	_clear_route_preview()
 	set_game_phase(GameState.WAVE)
@@ -1725,6 +1782,8 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		_refresh_gameplay_hud_state()
 
 func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> void:
+	element_td_interest_elapsed = 0.0
+	element_td_interest_disabled_for_wave = false
 	set_game_phase(GameState.WAVE_COMPLETE)
 	if game_manager:
 		game_manager.award_wave_completion(reward)
@@ -1760,6 +1819,10 @@ func _on_enemy_killed(reward_gold: int) -> void:
 		audio_manager.play_sfx("enemy_die")
 
 func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
+	# Element TD-style leak respawn still lets the creep be killed later,
+	# but interest for this wave stops after a leak to avoid abuse.
+	element_td_interest_disabled_for_wave = true
+	element_td_interest_elapsed = 0.0
 	if game_manager:
 		game_manager.damage_base(base_damage)
 

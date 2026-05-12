@@ -106,6 +106,15 @@ const CLONE_SCAN_INTERVAL := 0.25
 const TRICKERY_RECENT_TARGET_COOLDOWN := 60.0
 var _clone_last_target_instance_id: int = 0
 var clone_manual_target: Node2D = null
+var _clone_timer_started: bool = false
+
+# Manual Trickery targeting UX. Drag from a selected Trickery tower to the
+# non-support tower you want to clone. This is cheaper and clearer than keeping
+# click badges visible on every possible target.
+var _trickery_dragging_target: bool = false
+var _trickery_drag_world_pos: Vector2 = Vector2.ZERO
+var _trickery_drag_hover_target: Node2D = null
+const TRICKERY_DRAG_TARGET_RADIUS := 36.0
 
 # Element TD-style Well / Blacksmith support auras.
 # Well buffs attack speed; Blacksmith buffs damage. They support up to 4
@@ -832,6 +841,8 @@ func play_upgrade_effect() -> void:
 		effect.setup(Color(1, 1, 0.5, 0.8), 2.0)
 
 func set_selected(value: bool) -> void:
+	if not value and _trickery_dragging_target:
+		_cancel_trickery_drag_targeting()
 	is_selected = value
 	_update_support_overlay_z_lift()
 	apply_level_visuals()
@@ -940,12 +951,28 @@ func _disable_control_mouse_filter(node: Node) -> void:
 
 func _on_click_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: int) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-		var selected_trickery = _find_selected_trickery_waiting_for_target()
-		if is_instance_valid(selected_trickery) and selected_trickery != self:
-			if selected_trickery.has_method("try_set_manual_clone_target") and selected_trickery.try_set_manual_clone_target(self):
-				get_viewport().set_input_as_handled()
-				return
+		if is_selected and _is_trickery_clone_support():
+			_begin_trickery_drag_targeting(get_global_mouse_position())
+			get_viewport().set_input_as_handled()
+			return
 		clicked.emit(self)
+		get_viewport().set_input_as_handled()
+
+func _input(event: InputEvent) -> void:
+	if not _trickery_dragging_target:
+		return
+	if not is_selected or not _is_trickery_clone_support():
+		_cancel_trickery_drag_targeting()
+		return
+
+	if event is InputEventMouseMotion:
+		_update_trickery_drag_targeting(get_global_mouse_position())
+		get_viewport().set_input_as_handled()
+	elif event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and not event.pressed:
+		_finish_trickery_drag_targeting(get_global_mouse_position())
+		get_viewport().set_input_as_handled()
+	elif event is InputEventKey and event.pressed and event.keycode == KEY_ESCAPE:
+		_cancel_trickery_drag_targeting()
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
@@ -1390,12 +1417,67 @@ func _draw_trickery_selection_overlay() -> void:
 			_draw_trickery_cooldown_indicator(local_pos, candidate)
 			drawn += 1
 		elif _is_valid_clone_target(candidate):
-			# Make manual targeting readable without cluttering the map: a selected
-			# Trickery shows which nearby towers can be clicked to lock a clone target.
-			draw_circle(local_pos, 11.0, Color(clone_color.r, clone_color.g, clone_color.b, 0.10))
-			draw_arc(local_pos, 14.0, 0, TAU, 32, Color(0.88, 0.65, 1.0, 0.44), 1.6)
-			_draw_buff_badge(local_pos + Vector2(0, -36), "CLICK", Color(0.72, 0.95, 1.0, 1.0))
+			var candidate_alpha := 0.22
+			if _trickery_dragging_target:
+				candidate_alpha = 0.40
+				if candidate == _trickery_drag_hover_target:
+					candidate_alpha = 0.72
+			draw_circle(local_pos, 11.0, Color(clone_color.r, clone_color.g, clone_color.b, candidate_alpha * 0.25))
+			draw_arc(local_pos, 14.0, 0, TAU, 32, Color(0.88, 0.65, 1.0, candidate_alpha), 1.6)
+			if _trickery_dragging_target and candidate == _trickery_drag_hover_target:
+				_draw_buff_badge(local_pos + Vector2(0, -36), "DROP", Color(0.72, 0.95, 1.0, 1.0))
 			drawn += 1
+
+	if _trickery_dragging_target:
+		var drag_local := to_local(_trickery_drag_world_pos)
+		draw_line(Vector2.ZERO, drag_local, Color(0.72, 0.95, 1.0, 0.78), 2.8)
+		draw_circle(drag_local, 8.0, Color(0.72, 0.95, 1.0, 0.35))
+		if is_instance_valid(_trickery_drag_hover_target):
+			draw_line(drag_local, to_local(_trickery_drag_hover_target.global_position), Color(0.95, 0.80, 1.0, 0.58), 1.6)
+	else:
+		_draw_buff_badge(Vector2(0, -52), "DRAG TO LINK", Color(0.72, 0.95, 1.0, 1.0))
+
+func _begin_trickery_drag_targeting(world_pos: Vector2) -> void:
+	_trickery_dragging_target = true
+	_trickery_drag_world_pos = world_pos
+	_trickery_drag_hover_target = _find_clone_target_at_world(world_pos)
+	queue_redraw()
+
+func _update_trickery_drag_targeting(world_pos: Vector2) -> void:
+	_trickery_drag_world_pos = world_pos
+	var next_hover := _find_clone_target_at_world(world_pos)
+	if next_hover != _trickery_drag_hover_target:
+		_trickery_drag_hover_target = next_hover
+	queue_redraw()
+
+func _finish_trickery_drag_targeting(world_pos: Vector2) -> void:
+	var target := _find_clone_target_at_world(world_pos)
+	_trickery_dragging_target = false
+	_trickery_drag_world_pos = world_pos
+	_trickery_drag_hover_target = null
+	if is_instance_valid(target):
+		try_set_manual_clone_target(target)
+	queue_redraw()
+
+func _cancel_trickery_drag_targeting() -> void:
+	_trickery_dragging_target = false
+	_trickery_drag_hover_target = null
+	queue_redraw()
+
+func _find_clone_target_at_world(world_pos: Vector2) -> Node2D:
+	var best: Node2D = null
+	var best_dist := INF
+	for candidate in _get_trickery_overlay_candidates():
+		if not is_instance_valid(candidate):
+			continue
+		if not _is_valid_clone_target(candidate):
+			continue
+		var dist := world_pos.distance_squared_to(candidate.global_position)
+		var radius_sq := TRICKERY_DRAG_TARGET_RADIUS * TRICKERY_DRAG_TARGET_RADIUS
+		if dist <= radius_sq and dist < best_dist:
+			best = candidate
+			best_dist = dist
+	return best
 
 func _get_trickery_overlay_candidates() -> Array:
 	var candidates: Array = []
@@ -1641,30 +1723,55 @@ func _is_non_cloneable_support_tower(tower: Variant) -> bool:
 		return true
 	return false
 
+func _is_wave_active_for_trickery() -> bool:
+	var root := get_tree().current_scene
+	if root == null:
+		return false
+	var wave_manager := root.get_node_or_null("WaveManager")
+	if wave_manager != null:
+		var raw_running = wave_manager.get("is_wave_running")
+		if raw_running != null:
+			return bool(raw_running)
+	return false
+
 func _process_trickery_clone_support(delta: float) -> void:
 	if clone_damage_multiplier <= 0.0:
 		return
 
-	_tick_clone_recent_target_cooldowns(delta)
-	_clone_scan_time_left -= delta
+	# Element TD-style timing: Trickery can be linked during planning, but its
+	# duration/cooldown should not be consumed while no wave is running or before
+	# the cloned tower has actually started firing.
+	var wave_active := _is_wave_active_for_trickery()
+	if wave_active:
+		_tick_clone_recent_target_cooldowns(delta)
+
 	if is_instance_valid(clone_current_target):
-		_clone_active_time_left -= delta
-		if _clone_active_time_left <= 0.0 or not _is_existing_clone_target_still_valid(clone_current_target):
-			var previous_target := clone_current_target
+		if not _is_existing_clone_target_still_valid(clone_current_target):
+			var invalid_target := clone_current_target
 			_remove_clone_from_current_target()
-			_register_recent_clone_target(previous_target)
+			if _clone_timer_started:
+				_register_recent_clone_target(invalid_target)
+		elif wave_active and _clone_timer_started:
+			_clone_active_time_left -= delta
+			if _clone_active_time_left <= 0.0:
+				var previous_target := clone_current_target
+				_remove_clone_from_current_target()
+				_register_recent_clone_target(previous_target)
 	else:
 		clone_current_target = null
 		_clone_active_time_left = 0.0
+		_clone_timer_started = false
 
-	if clone_current_target == null and _clone_scan_time_left <= 0.0:
-		_clone_scan_time_left = max(0.1, clone_interval)
-		if is_instance_valid(clone_manual_target) and _is_valid_clone_target(clone_manual_target):
-			_assign_clone_target(clone_manual_target)
-		else:
-			if clone_manual_target != null and not is_instance_valid(clone_manual_target):
-				clone_manual_target = null
-			_assign_best_clone_target()
+	if wave_active and clone_current_target == null:
+		_clone_scan_time_left -= delta
+		if _clone_scan_time_left <= 0.0:
+			_clone_scan_time_left = max(0.1, clone_interval)
+			if is_instance_valid(clone_manual_target) and _is_valid_clone_target(clone_manual_target):
+				_assign_clone_target(clone_manual_target)
+			else:
+				if clone_manual_target != null and not is_instance_valid(clone_manual_target):
+					clone_manual_target = null
+				_assign_best_clone_target()
 
 func _is_existing_clone_target_still_valid(tower: Variant) -> bool:
 	if tower == null or not is_instance_valid(tower):
@@ -1713,11 +1820,14 @@ func _assign_clone_target(target: Node2D) -> bool:
 	if clone_current_target == target and _clone_active_time_left > 0.0:
 		return true
 	var previous_target := clone_current_target
+	var previous_started := _clone_timer_started
 	if is_instance_valid(previous_target) and previous_target != target:
 		_remove_clone_from_current_target()
-		_register_recent_clone_target(previous_target)
+		if previous_started:
+			_register_recent_clone_target(previous_target)
 	clone_current_target = target
 	_clone_active_time_left = max(0.1, clone_duration)
+	_clone_timer_started = false
 	_clone_last_target_instance_id = target.get_instance_id()
 	target.apply_damage_modifier(self, 1.0 + clone_damage_multiplier, "clone")
 	queue_redraw()
@@ -1828,6 +1938,10 @@ func notify_clone_target_fired(source_tower: Node2D, enemy_target: Node2D) -> vo
 		return
 	if source_tower != clone_current_target:
 		return
+	# Start consuming Trickery duration only after the cloned tower actually fires.
+	# This prevents the clone from expiring in planning or while enemies are out of
+	# range, which felt like the support was bugged.
+	_clone_timer_started = true
 	_clone_visual_fire_until_msec = Time.get_ticks_msec() + CLONE_FIRE_FLASH_MS
 	_clone_visual_fire_target_global = enemy_target.global_position
 	queue_redraw()
@@ -1837,6 +1951,7 @@ func _remove_clone_from_current_target() -> void:
 		clone_current_target.remove_damage_modifier(self)
 	clone_current_target = null
 	_clone_active_time_left = 0.0
+	_clone_timer_started = false
 
 func _get_clone_target_name() -> String:
 	if is_instance_valid(clone_current_target):
