@@ -905,7 +905,6 @@ func _connect_signals() -> void:
 		game_hud.restart_requested.connect(restart_level)
 		game_hud.upgrade_tower_requested.connect(_on_upgrade_tower_requested)
 		game_hud.sell_tower_requested.connect(_on_sell_tower_requested)
-		game_hud.branch_upgrade_requested.connect(_on_branch_upgrade_requested)
 		if game_hud.has_signal("element_choice_requested"):
 			game_hud.element_choice_requested.connect(_on_element_choice_requested)
 		game_hud.deselect_tower_requested.connect(_deselect_tower)
@@ -1252,7 +1251,7 @@ func start_next_level() -> void:
 
 func get_default_loadout_for_level(_level_id: String) -> Array[String]:
 	# Loadout system removed: every level starts with Basic Tower T1 only.
-	# Advanced towers are reached through the upgrade tree (T1→T2→T3→branch).
+	# Advanced towers are unlocked through element picks and built from the shop.
 	return ["basic_tower_t1"]
 
 func is_valid_loadout(loadout: Array[String]) -> bool:
@@ -1636,28 +1635,6 @@ func _on_upgrade_tower_requested() -> void:
 	if current_state != GameState.BUILD: return
 	if selected_tower == null or not selected_tower.can_upgrade(): return
 
-	# Branch point — show branch options instead of direct upgrade
-	if selected_tower.is_branch_point():
-		if game_hud:
-			var info: Dictionary = selected_tower.get_info()
-			var branch_configs: Array[Dictionary] = []
-			for branch_id in info["next_upgrade_ids"]:
-				var cfg: Dictionary = build_manager.towers_config.get(branch_id, {})
-				if not cfg.is_empty() and _config_unlocked_for_upgrade(cfg):
-					var branch_cost := _read_config_upgrade_cost(cfg)
-					branch_configs.append({
-						"id": branch_id,
-						"name": cfg.get("name", cfg.get("display_name", branch_id)),
-						"description": cfg.get("description", ""),
-						"tier": cfg.get("tier", 2),
-						"cost": branch_cost
-					})
-			if branch_configs.is_empty():
-				game_hud.set_build_status("No unlocked specialization. Choose more elements.")
-			else:
-				game_hud.show_branch_options(branch_configs)
-		return
-
 	var next_ids: Array = selected_tower.get_info().get("next_upgrade_ids", [])
 	if not next_ids.is_empty():
 		var next_cfg: Dictionary = build_manager.towers_config.get(str(next_ids[0]), {})
@@ -1688,40 +1665,6 @@ func _on_upgrade_tower_requested() -> void:
 		game_hud.set_build_status("Not enough gold!")
 	_play_ui_click()
 
-
-func _on_branch_upgrade_requested(branch_id: String) -> void:
-	if selected_tower == null or not is_instance_valid(selected_tower):
-		return
-	if current_state != GameState.BUILD:
-		return
-
-	var new_config: Dictionary = build_manager.towers_config.get(branch_id, {})
-	if new_config.is_empty():
-		return
-
-	if not _config_unlocked_for_upgrade(new_config):
-		if game_hud:
-			game_hud.set_build_status(_locked_upgrade_reason(new_config))
-		return
-
-	var cost: int = _read_config_upgrade_cost(new_config)
-	if cost <= 0:
-		if game_hud:
-			game_hud.set_build_status("Branch upgrade unavailable")
-		return
-
-	if game_manager and game_manager.spend_gold(cost):
-		var tower := selected_tower
-		tower.upgrade_to(branch_id, new_config)
-		# Re-select to fully refresh UI with new upgrade_id and branch_id
-		clear_selected_tower()
-		_select_tower(tower)
-		if game_hud:
-			game_hud.hide_branch_options()
-			game_hud.set_build_status("%s upgraded!" % new_config.get("name", "Tower"))
-		if audio_manager:
-			audio_manager.play_sfx("tower_upgrade")
-	_play_ui_click()
 
 
 ## Reads upgrade_cost from a tower config dict — the cost to upgrade INTO it.
