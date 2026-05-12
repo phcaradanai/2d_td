@@ -279,16 +279,23 @@ func is_blocked_cell(cell: Vector2i) -> bool:
 func get_build_block_reason(cell: Vector2i) -> String:
 	if cell.x < 0 or cell.x >= grid_cols or cell.y < 0 or cell.y >= grid_rows:
 		return "out_of_bounds"
-	
+
 	if cell in spawn_cells:
 		return "spawn"
 
 	if cell in base_cells:
 		return "base"
-		
+
 	if cell in blocked_cells:
 		return "blocked"
-	
+
+	# Element TD fixed-path maps: build freely around the road, but never on the enemy path.
+	if is_path_cell(cell) or is_visual_road_cell(cell):
+		return "path"
+
+	if buildable_mode == "manual" and not buildable_cells.is_empty() and not buildable_cells.has(cell):
+		return "non_buildable"
+
 	return ""
 
 func _cells_from_arrays(raw: Variant) -> Array[Vector2i]:

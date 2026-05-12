@@ -62,7 +62,6 @@ const VERSION = "v1.0.0-RC1"
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
-const NEUTRAL_STARTER_TOWER_IDS: Array[String] = ["basic_tower_t1", "neutral_cannon_t1"]
 
 # Layout Constants
 const TOP_BAR_HEIGHT = 60
@@ -80,14 +79,12 @@ var map_visual_layer: Node2D = null
 var maze_map_renderer: Node2D = null
 var enemy_route_overlay: Node2D = null
 var selected_tower: Node2D = null
-var selected_tower_info_refresh_timer: float = 0.0
-const SELECTED_TOWER_INFO_REFRESH_INTERVAL := 0.25
 var current_state: GameState = GameState.MENU
 var current_level_path: String = ""
 var current_level_id: String = ""
 var selected_level_id: int = 0
-var available_tower_types: Array[String] = NEUTRAL_STARTER_TOWER_IDS.duplicate()
-var selected_loadout: Array[String] = NEUTRAL_STARTER_TOWER_IDS.duplicate()
+var available_tower_types: Array[String] = ["basic_tower_t1"]
+var selected_loadout: Array[String] = ["basic_tower_t1"]
 var active_level_loadout: Array[String] = []
 const MAX_TOWER_LOADOUT_SIZE: int = 8
 const MIN_TOWER_LOADOUT_SIZE: int = 1
@@ -102,11 +99,15 @@ var hero_is_deployed: bool = false
 var element_progression_manager = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
-var auto_next_wave_enabled: bool = false
-var auto_next_wave_delay_sec: float = 15.0
-var auto_next_wave_remaining_sec: float = 0.0
-var auto_next_wave_countdown_active: bool = false
 
+const STARTER_TOWER_IDS := ["basic_tower_t1", "neutral_cannon_tower"]
+var auto_next_wave_enabled: bool = true
+var auto_next_wave_delay_sec: float = 15.0
+var auto_next_wave_remaining: float = 0.0
+var auto_next_wave_countdown_active: bool = false
+var has_started_first_wave: bool = false
+var sandbox_layer: CanvasLayer = null
+var sandbox_panel: PanelContainer = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -345,85 +346,6 @@ func _cells_from_level_arrays(raw: Variant) -> Array[Vector2i]:
 			out.append(Vector2i(int(item[0]), int(item[1])))
 	return out
 
-func _configure_element_td_runtime_options() -> void:
-	auto_next_wave_enabled = false
-	auto_next_wave_delay_sec = 15.0
-	auto_next_wave_remaining_sec = 0.0
-	auto_next_wave_countdown_active = false
-	if level_manager == null:
-		return
-	var data: Dictionary = {}
-	if level_manager.level_data is Dictionary:
-		data = level_manager.level_data
-	auto_next_wave_enabled = bool(data.get("element_td_auto_next_wave_enabled", data.get("auto_next_wave_enabled", false)))
-	auto_next_wave_delay_sec = float(data.get("element_td_auto_next_wave_delay_sec", data.get("auto_next_wave_delay_sec", 15.0)))
-	if auto_next_wave_delay_sec <= 0.0:
-		auto_next_wave_delay_sec = 15.0
-
-func _has_pending_element_pick() -> bool:
-	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
-
-func _start_auto_next_wave_countdown_if_possible(reset_time: bool = false) -> void:
-	if not auto_next_wave_enabled:
-		_stop_auto_next_wave_countdown()
-		return
-	if wave_manager == null or not wave_manager.has_next_wave() or wave_manager.is_wave_running:
-		_stop_auto_next_wave_countdown()
-		return
-	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
-		_stop_auto_next_wave_countdown()
-		return
-	if _has_pending_element_pick():
-		_stop_auto_next_wave_countdown()
-		return
-	if reset_time or auto_next_wave_remaining_sec <= 0.0:
-		auto_next_wave_remaining_sec = auto_next_wave_delay_sec
-	auto_next_wave_countdown_active = true
-	_refresh_start_wave_ui()
-
-func _stop_auto_next_wave_countdown() -> void:
-	if auto_next_wave_countdown_active or auto_next_wave_remaining_sec != 0.0:
-		auto_next_wave_countdown_active = false
-		auto_next_wave_remaining_sec = 0.0
-		_refresh_start_wave_ui()
-
-func _process_auto_next_wave_countdown(delta: float) -> void:
-	if not auto_next_wave_countdown_active:
-		return
-	if get_tree().paused:
-		return
-	if _has_pending_element_pick():
-		_stop_auto_next_wave_countdown()
-		return
-	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
-		_stop_auto_next_wave_countdown()
-		return
-	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
-		_stop_auto_next_wave_countdown()
-		return
-	auto_next_wave_remaining_sec -= delta
-	if auto_next_wave_remaining_sec <= 0.0:
-		_stop_auto_next_wave_countdown()
-		_on_start_wave_requested()
-		return
-	_refresh_start_wave_ui()
-
-func _should_show_dynamic_route_overlay() -> bool:
-	if level_manager == null:
-		return false
-	var data: Dictionary = {}
-	if level_manager.level_data is Dictionary:
-		data = level_manager.level_data
-	var pathing_mode := str(data.get("enemy_pathing_mode", data.get("pathing_mode", "dynamic"))).strip_edges().to_lower().replace("-", "_")
-	if pathing_mode in ["fixed", "fixed_path", "element_td", "elemental_td", "path2d"]:
-		return false
-	return bool(data.get("show_dynamic_route_overlay", true))
-
-func _clear_dynamic_route_overlay() -> void:
-	if enemy_route_overlay != null and is_instance_valid(enemy_route_overlay):
-		enemy_route_overlay.queue_free()
-	enemy_route_overlay = null
-
 func _refresh_start_wave_ui() -> void:
 	if not game_hud or not wave_manager: return
 
@@ -435,6 +357,10 @@ func _refresh_start_wave_ui() -> void:
 	var can_start = (current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE) and not wave_running and wave_manager.has_next_wave()
 	var locked_label = ""
 
+	if _has_pending_element_pick() and not wave_running and not level_cleared:
+		can_start = false
+		locked_label = "Choose Element"
+
 	match current_state:
 		GameState.GAME_OVER:
 			locked_label = "Game Over"
@@ -443,30 +369,20 @@ func _refresh_start_wave_ui() -> void:
 		GameState.MENU, GameState.LEVEL_SELECT:
 			can_start = false
 
-	if _has_pending_element_pick():
-		can_start = false
-		locked_label = "Choose Element"
-
-	if auto_next_wave_countdown_active and locked_label == "" and not wave_running and can_start:
-		if game_hud.has_method("refresh_start_wave_countdown_button"):
-			game_hud.refresh_start_wave_countdown_button(
-				total_waves,
-				next_wave_number,
-				next_wave_name,
-				auto_next_wave_remaining_sec,
-				can_start
-			)
-			return
-
-	game_hud.refresh_start_wave_button(
-		total_waves,
-		next_wave_number,
-		next_wave_name,
-		wave_running,
-		can_start,
-		level_cleared,
-		locked_label
-	)
+	var manual_first_wave := _is_waiting_for_manual_first_wave()
+	if game_hud.has_method("refresh_start_wave_button"):
+		game_hud.refresh_start_wave_button(
+			total_waves,
+			next_wave_number,
+			next_wave_name,
+			wave_running,
+			can_start,
+			level_cleared,
+			locked_label,
+			auto_next_wave_countdown_active,
+			auto_next_wave_remaining,
+			manual_first_wave
+		)
 
 func _refresh_gameplay_hud_state() -> void:
 	_refresh_start_wave_ui()
@@ -480,6 +396,9 @@ func _setup_game_from_level() -> void:
 
 	# Clear existing gameplay state
 	_clear_gameplay_state()
+	_configure_auto_next_wave_from_level()
+	has_started_first_wave = false
+	_stop_auto_next_wave_countdown()
 
 	# Hide old map visual layer — MazeMapRenderer handles lightweight drawing now
 	if map_visual_layer:
@@ -496,23 +415,21 @@ func _setup_game_from_level() -> void:
 	if pathfinding_manager:
 		pathfinding_manager.setup_grid(level_manager)
 
-	# Dynamic route overlay is only for dynamic-maze mode. Element TD fixed-path levels
-	# must not show shortest-route guidelines because they conflict with the real path.
-	if _should_show_dynamic_route_overlay():
-		if enemy_route_overlay == null:
-			enemy_route_overlay = ENEMY_ROUTE_OVERLAY_SCRIPT.new()
-			enemy_route_overlay.name = "EnemyRouteOverlay"
-			map_root.add_child(enemy_route_overlay)
-		if pathfinding_manager:
-			enemy_route_overlay.setup(
-				pathfinding_manager,
-				pathfinding_manager.spawn_cells,
-				pathfinding_manager.target_cells
-			)
-		if enemy_route_overlay:
-			enemy_route_overlay.visible = true
-	else:
-		_clear_dynamic_route_overlay()
+	# Enemy route overlay — draws one lightweight route per spawn to core
+	if enemy_route_overlay == null:
+		enemy_route_overlay = ENEMY_ROUTE_OVERLAY_SCRIPT.new()
+		enemy_route_overlay.name = "EnemyRouteOverlay"
+		map_root.add_child(enemy_route_overlay)
+
+	if pathfinding_manager:
+		enemy_route_overlay.setup(
+			pathfinding_manager,
+			pathfinding_manager.spawn_cells,
+			pathfinding_manager.target_cells
+		)
+		if level_manager:
+			var show_dynamic_overlay := bool(level_manager.level_data.get("show_dynamic_route_overlay", false))
+			enemy_route_overlay.visible = show_dynamic_overlay and not _level_uses_fixed_pathing()
 
 	# Clear and setup paths
 	for p in active_path_nodes.values():
@@ -551,21 +468,10 @@ func _setup_game_from_level() -> void:
 	_update_world_layout()
 
 	if wave_manager:
-		# Element TD clone levels use fixed Path2D movement.
-		# Configure WaveManager before setup/spawn so land enemies are attached to Path2D
-		# instead of switching back to dynamic shortest-path navigation.
-		var level_pathing_mode := ""
-		if level_manager and level_manager.level_data is Dictionary:
-			level_pathing_mode = str(level_manager.level_data.get("enemy_pathing_mode", level_manager.level_data.get("pathing_mode", ""))).strip_edges().to_lower().replace("-", "_")
-		if wave_manager.has_method("configure_from_level"):
-			wave_manager.configure_from_level(level_manager)
-		if level_pathing_mode in ["fixed", "fixed_path", "element_td", "elemental_td", "path2d"]:
-			if wave_manager.has_method("force_fixed_pathing"):
-				wave_manager.force_fixed_pathing()
-			else:
-				wave_manager.set("use_dynamic_pathing_for_ground", false)
 		if wave_manager.has_method("set_pathfinding_manager"):
 			wave_manager.set_pathfinding_manager(pathfinding_manager)
+		if wave_manager.has_method("configure_from_level"):
+			wave_manager.configure_from_level(level_manager)
 		wave_manager.setup(active_path_nodes)
 		if level_manager.level_data.has("waves") and level_manager.level_data["waves"] is Array and not level_manager.level_data["waves"].is_empty():
 			wave_manager.load_waves_from_data(level_manager.level_data["waves"])
@@ -584,12 +490,9 @@ func _setup_game_from_level() -> void:
 		build_manager.active_loadout = active_level_loadout
 		build_manager.reset_build_state()
 
-	_configure_element_td_runtime_options()
-
 	if element_progression_manager:
 		element_progression_manager.reset()
-		if STARTING_ELEMENT_PICKS > 0:
-			element_progression_manager.grant_pick(STARTING_ELEMENT_PICKS)
+		element_progression_manager.grant_pick(STARTING_ELEMENT_PICKS)
 		_refresh_elemental_shop()
 
 	if game_manager:
@@ -645,6 +548,73 @@ func _create_curve_from_points(points: PackedVector2Array) -> Curve2D:
 func update_hud() -> void:
 	_refresh_hud_stats()
 	_refresh_start_wave_ui()
+
+func _configure_auto_next_wave_from_level() -> void:
+	auto_next_wave_enabled = true
+	auto_next_wave_delay_sec = 15.0
+	if level_manager:
+		auto_next_wave_enabled = bool(level_manager.level_data.get("auto_next_wave_enabled", true))
+		auto_next_wave_delay_sec = float(level_manager.level_data.get("auto_next_wave_delay_sec", 15.0))
+	auto_next_wave_delay_sec = max(1.0, auto_next_wave_delay_sec)
+
+func _has_pending_element_pick() -> bool:
+	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
+
+func _is_waiting_for_manual_first_wave() -> bool:
+	return not has_started_first_wave and wave_manager != null and wave_manager.get_next_wave_number() == 1 and not wave_manager.is_wave_running
+
+func _maybe_start_auto_next_wave_countdown() -> void:
+	if not auto_next_wave_enabled:
+		_stop_auto_next_wave_countdown()
+		return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
+		return
+	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
+		_stop_auto_next_wave_countdown()
+		return
+	if _has_pending_element_pick():
+		_stop_auto_next_wave_countdown()
+		return
+	# Element TD-like pacing, but first wave is manual so the player can place opener towers.
+	if _is_waiting_for_manual_first_wave():
+		_stop_auto_next_wave_countdown()
+		return
+	if auto_next_wave_countdown_active:
+		return
+	auto_next_wave_remaining = auto_next_wave_delay_sec
+	auto_next_wave_countdown_active = true
+	_refresh_start_wave_ui()
+
+func _stop_auto_next_wave_countdown() -> void:
+	auto_next_wave_countdown_active = false
+	auto_next_wave_remaining = 0.0
+	_refresh_start_wave_ui()
+
+func _update_auto_next_wave_countdown(delta: float) -> void:
+	if not auto_next_wave_countdown_active:
+		return
+	if get_tree().paused or _has_pending_element_pick() or current_state == GameState.PAUSED:
+		_refresh_start_wave_ui()
+		return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
+		_stop_auto_next_wave_countdown()
+		return
+	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
+		_stop_auto_next_wave_countdown()
+		return
+	auto_next_wave_remaining -= delta
+	if auto_next_wave_remaining <= 0.0:
+		auto_next_wave_remaining = 0.0
+		_on_start_wave_requested()
+	else:
+		_refresh_start_wave_ui()
+
+func _level_uses_fixed_pathing() -> bool:
+	if level_manager == null:
+		return false
+	var mode := str(level_manager.level_data.get("enemy_pathing_mode", level_manager.level_data.get("pathing_mode", "fixed_path"))).to_lower()
+	return mode == "fixed_path" or bool(level_manager.level_data.get("fixed_path", false))
+
 
 func _refresh_hud_stats() -> void:
 	if game_hud and game_manager:
@@ -722,20 +692,10 @@ func _refresh_elemental_tower_catalog() -> void:
 func _refresh_elemental_shop() -> void:
 	if build_manager == null or game_hud == null:
 		return
-	var ids: Array[String] = NEUTRAL_STARTER_TOWER_IDS.duplicate()
+	var ids: Array[String] = []
 	if element_progression_manager and element_progression_manager.has_method("get_buildable_tower_ids"):
 		ids = element_progression_manager.get_buildable_tower_ids(build_manager.towers_config)
-		if ids.is_empty():
-			ids = NEUTRAL_STARTER_TOWER_IDS.duplicate()
-		else:
-			var merged_ids: Array[String] = []
-			for neutral_id in NEUTRAL_STARTER_TOWER_IDS:
-				if build_manager.towers_config.has(neutral_id) and not merged_ids.has(neutral_id):
-					merged_ids.append(neutral_id)
-			for tower_id in ids:
-				if not merged_ids.has(tower_id):
-					merged_ids.append(tower_id)
-			ids = merged_ids
+	ids = _ensure_starter_towers_in_shop(ids)
 	active_level_loadout = ids.duplicate()
 	build_manager.active_loadout = ids.duplicate()
 	if build_manager.has_method("set_unlocked_tower_ids"):
@@ -743,6 +703,19 @@ func _refresh_elemental_shop() -> void:
 	game_hud.refresh_tower_shop(ids)
 	if element_progression_manager and element_progression_manager.has_method("get_element_levels"):
 		game_hud.set_element_levels(element_progression_manager.get_element_levels())
+
+func _ensure_starter_towers_in_shop(ids: Array[String]) -> Array[String]:
+	var out: Array[String] = []
+	for starter_id in STARTER_TOWER_IDS:
+		if build_manager and build_manager.towers_config.has(starter_id) and not out.has(starter_id):
+			out.append(starter_id)
+	for id in ids:
+		var tid := str(id)
+		if not out.has(tid):
+			out.append(tid)
+	if out.is_empty():
+		out.append("basic_tower_t1")
+	return out
 
 func _show_pending_element_choice() -> void:
 	if game_hud == null or element_progression_manager == null:
@@ -766,10 +739,27 @@ func _on_element_choice_requested(element_id: String) -> void:
 				game_hud.show_element_choice(element_progression_manager.get_element_levels(), element_progression_manager.pending_picks)
 			else:
 				game_hud.hide_element_choice()
-				_start_auto_next_wave_countdown_if_possible(true)
+				_resume_auto_next_wave_after_element_choice()
 	else:
 		if game_hud:
 			game_hud.set_build_status("Cannot choose that element")
+
+func _resume_auto_next_wave_after_element_choice() -> void:
+	# Element choices are awarded after wave 5/10/15... and intentionally pause
+	# auto-advance while the popup is open. Once the final pending pick is resolved,
+	# return to the normal between-wave countdown so the run does not stall.
+	if _has_pending_element_pick():
+		return
+	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
+		_refresh_start_wave_ui()
+		return
+	if current_state == GameState.WAVE_COMPLETE:
+		set_game_phase(GameState.BUILD)
+	elif current_state != GameState.BUILD:
+		_refresh_start_wave_ui()
+		return
+	call_deferred("_maybe_start_auto_next_wave_countdown")
+	_refresh_start_wave_ui()
 
 func _config_unlocked_for_upgrade(cfg: Dictionary) -> bool:
 	if element_progression_manager == null or not element_progression_manager.has_method("can_build_tower"):
@@ -871,11 +861,10 @@ func _connect_signals() -> void:
 		game_manager.game_resumed.connect(_on_game_resumed)
 
 func _process(delta: float) -> void:
+	_update_auto_next_wave_countdown(delta)
 	if current_state == GameState.WAVE or current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE:
 		_update_hero_timers(delta)
 		
-	_refresh_selected_tower_info(delta)
-	_process_auto_next_wave_countdown(delta)
 	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 
 	if build_manager and build_manager.is_build_mode_active():
@@ -902,6 +891,10 @@ func _process(delta: float) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
+		if event.keycode == KEY_D and Input.is_key_pressed(KEY_F9) and (OS.is_debug_build() or enable_debug_tools):
+			_toggle_sandbox_panel()
+			get_viewport().set_input_as_handled()
+			return
 		if event.keycode == KEY_F1 and (OS.is_debug_build() or enable_debug_tools):
 			_toggle_debug_panel()
 			get_viewport().set_input_as_handled()
@@ -1112,7 +1105,6 @@ func start_level(level_path: String) -> void:
 	set_game_phase(GameState.BUILD)
 	_refresh_hud_wave_intel()
 	_refresh_route_preview()
-	_start_auto_next_wave_countdown_if_possible(true)
 
 	if audio_manager:
 		audio_manager.play_music("gameplay")
@@ -1145,15 +1137,13 @@ func start_next_level() -> void:
 func get_default_loadout_for_level(_level_id: String) -> Array[String]:
 	# Loadout system removed: every level starts with Basic Tower T1 only.
 	# Advanced towers are reached through the upgrade tree (T1→T2→T3→branch).
-	return NEUTRAL_STARTER_TOWER_IDS.duplicate()
+	return ["basic_tower_t1"]
 
 func is_valid_loadout(loadout: Array[String]) -> bool:
-	# Loadout system removed: neutral starters are always available.
-	return loadout == NEUTRAL_STARTER_TOWER_IDS
+	# Loadout system removed: the only valid loadout is ["basic_tower_t1"].
+	return loadout == ["basic_tower_t1"]
 
 func _clear_gameplay_state() -> void:
-	_stop_auto_next_wave_countdown()
-	_clear_dynamic_route_overlay()
 	if tower_container:
 		for tower in tower_container.get_children():
 			tower.queue_free()
@@ -1472,18 +1462,6 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.enter_result_overlay()
 			if world_root: world_root.show()
 
-func _refresh_selected_tower_info(delta: float) -> void:
-	if selected_tower == null or not is_instance_valid(selected_tower):
-		return
-	if game_hud == null:
-		return
-	selected_tower_info_refresh_timer -= delta
-	if selected_tower_info_refresh_timer > 0.0:
-		return
-	selected_tower_info_refresh_timer = SELECTED_TOWER_INFO_REFRESH_INTERVAL
-	if selected_tower.has_method("get_info"):
-		game_hud.show_tower_info(selected_tower.get_info())
-
 func _on_game_paused() -> void:
 	set_game_phase(GameState.PAUSED)
 
@@ -1520,7 +1498,6 @@ func _select_tower(tower: Node2D) -> void:
 
 	if is_instance_valid(tower):
 		selected_tower = tower
-		selected_tower_info_refresh_timer = 0.0
 		if selected_tower.has_method("set_selected"):
 			selected_tower.set_selected(true)
 		if game_hud:
@@ -1678,17 +1655,21 @@ func _on_target_mode_changed(mode: String) -> void:
 	_play_ui_click()
 
 func _on_start_wave_requested() -> void:
-	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE: return
+	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
+		return
 	if _has_pending_element_pick():
 		if game_hud:
-			game_hud.set_build_status("Choose an element before the next wave")
+			game_hud.set_build_status("Choose an element before starting the next wave")
 		return
-	if audio_manager: audio_manager.unlock_audio()
+	if wave_manager == null or not wave_manager.has_next_wave():
+		return
 	_stop_auto_next_wave_countdown()
-	if wave_manager:
-		wave_manager.start_next_wave()
+	has_started_first_wave = true
+	if audio_manager: audio_manager.unlock_audio()
+	wave_manager.start_next_wave()
 	if audio_manager:
 		audio_manager.play_sfx("start_wave")
+	_refresh_start_wave_ui()
 
 func _on_cancel_build_requested() -> void:
 	if build_manager:
@@ -1756,17 +1737,14 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 	if element_progression_manager and wave_number > 0 and wave_number % ELEMENT_PICK_INTERVAL == 0:
 		element_progression_manager.grant_pick(1)
 		_show_pending_element_choice()
-		_stop_auto_next_wave_countdown()
-	# Auto-advance to planning after a brief reward moment. Countdown starts only
-	# when no element pick is blocking the next wave.
+	# Auto-advance to planning after a brief reward moment
 	get_tree().create_timer(2.5).timeout.connect(func():
 		if current_state == GameState.WAVE_COMPLETE:
 			set_game_phase(GameState.BUILD)
-			_start_auto_next_wave_countdown_if_possible(true)
+			_maybe_start_auto_next_wave_countdown()
 	)
 
 func _on_all_waves_completed() -> void:
-	_stop_auto_next_wave_countdown()
 	if game_manager:
 		game_manager.trigger_victory()
 	_clear_route_preview()
@@ -1820,7 +1798,6 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 		audio_manager.play_sfx("enemy_reach_base")
 
 func _on_game_over() -> void:
-	_stop_auto_next_wave_countdown()
 	if OS.is_debug_build(): print("[Main] Game Over Triggered")
 	set_game_phase(GameState.GAME_OVER)
 	_clear_route_preview()
@@ -1865,7 +1842,6 @@ func _clear_projectiles_and_targeting() -> void:
 				tower.clear_targeting_line()
 
 func _on_victory() -> void:
-	_stop_auto_next_wave_countdown()
 	set_game_phase(GameState.VICTORY)
 	_clear_route_preview()
 
@@ -2011,6 +1987,113 @@ func _show_audio_unlock_overlay() -> void:
 		if OS.is_debug_build(): print("[Main] Audio unlock overlay shown for Web.")
 
 # Wave Data Processing Helpers
+func _toggle_sandbox_panel() -> void:
+	_ensure_sandbox_panel()
+	if sandbox_layer:
+		sandbox_layer.visible = not sandbox_layer.visible
+		if game_hud:
+			game_hud.set_build_status("Sandbox Lab " + ("ON" if sandbox_layer.visible else "OFF"))
+
+func _ensure_sandbox_panel() -> void:
+	if sandbox_layer != null and is_instance_valid(sandbox_layer):
+		return
+	sandbox_layer = CanvasLayer.new()
+	sandbox_layer.name = "SandboxLabLayer"
+	sandbox_layer.layer = 450
+	sandbox_layer.visible = false
+	add_child(sandbox_layer)
+	sandbox_panel = PanelContainer.new()
+	sandbox_panel.name = "SandboxLabPanel"
+	sandbox_panel.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	sandbox_panel.offset_left = -260
+	sandbox_panel.offset_top = 72
+	sandbox_panel.offset_right = -16
+	sandbox_panel.offset_bottom = 430
+	sandbox_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	sandbox_layer.add_child(sandbox_panel)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 10)
+	margin.add_theme_constant_override("margin_right", 10)
+	margin.add_theme_constant_override("margin_top", 10)
+	margin.add_theme_constant_override("margin_bottom", 10)
+	sandbox_panel.add_child(margin)
+	var box := VBoxContainer.new()
+	box.add_theme_constant_override("separation", 6)
+	margin.add_child(box)
+	var title := Label.new()
+	title.text = "SANDBOX LAB  F9+D"
+	title.add_theme_color_override("font_color", Color(0.3, 0.95, 1.0))
+	box.add_child(title)
+	_add_sandbox_button(box, "Spawn Land", func(): _sandbox_spawn("basic", "land"))
+	_add_sandbox_button(box, "Spawn Air", func(): _sandbox_spawn("flyer", "air"))
+	_add_sandbox_button(box, "Spawn Land + Air", func():
+		_sandbox_spawn("basic", "land")
+		_sandbox_spawn("flyer", "air")
+	)
+	_add_sandbox_separator(box, "Elements")
+	for element_id in ["light", "darkness", "water", "fire", "nature", "earth"]:
+		var eid := str(element_id)
+		_add_sandbox_button(box, "+1 " + eid.capitalize(), Callable(self, "_sandbox_add_element").bind(eid, 1))
+	_add_sandbox_button(box, "All +1", func():
+		for eid in ["light", "darkness", "water", "fire", "nature", "earth"]:
+			_sandbox_add_element(eid, 1)
+	)
+	_add_sandbox_button(box, "All Lv3", func(): _sandbox_set_all_elements(3))
+	_add_sandbox_separator(box, "Utility")
+	_add_sandbox_button(box, "+500 Gold", func():
+		if game_manager:
+			game_manager.add_gold(500)
+			update_hud()
+	)
+	_add_sandbox_button(box, "Kill All", func(): _debug_kill_all_enemies())
+
+func _add_sandbox_button(parent: Node, text: String, callback: Callable) -> void:
+	var btn := Button.new()
+	btn.text = text
+	btn.custom_minimum_size = Vector2(210, 30)
+	btn.pressed.connect(callback)
+	parent.add_child(btn)
+
+func _add_sandbox_separator(parent: Node, text: String) -> void:
+	var label := Label.new()
+	label.text = text
+	label.add_theme_color_override("font_color", Color(1.0, 0.75, 0.25))
+	parent.add_child(label)
+
+func _sandbox_spawn(enemy_type: String, category: String) -> void:
+	if wave_manager == null:
+		return
+	if wave_manager.has_method("spawn_sandbox_enemy"):
+		wave_manager.spawn_sandbox_enemy(enemy_type, category)
+	elif wave_manager.has_method("spawn_enemy"):
+		wave_manager.spawn_enemy({"type": enemy_type, "enemy_type": enemy_type, "category": category, "path": "default", "debug_probe": true})
+
+func _sandbox_add_element(element_id: String, amount: int = 1) -> void:
+	if element_progression_manager == null:
+		return
+	for i in range(amount):
+		element_progression_manager.grant_pick(1)
+		element_progression_manager.choose_element(element_id)
+	if game_hud:
+		game_hud.hide_element_choice()
+	_refresh_elemental_shop()
+	_refresh_start_wave_ui()
+
+func _sandbox_set_all_elements(target_level: int) -> void:
+	if element_progression_manager == null:
+		return
+	var levels: Dictionary = element_progression_manager.get_element_levels()
+	for eid in ["light", "darkness", "water", "fire", "nature", "earth"]:
+		while int(levels.get(eid, 0)) < target_level:
+			element_progression_manager.grant_pick(1)
+			element_progression_manager.choose_element(eid)
+			levels = element_progression_manager.get_element_levels()
+	if game_hud:
+		game_hud.hide_element_choice()
+	_refresh_elemental_shop()
+	_refresh_start_wave_ui()
+
+
 func load_waves_config(path: String) -> Array:
 	if path == "" or not FileAccess.file_exists(path): return []
 	var file = FileAccess.open(path, FileAccess.READ)

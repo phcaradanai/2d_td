@@ -27,7 +27,6 @@ var unlocked_tower_ids: Array[String] = ["basic_tower_t1"]
 var game_manager: Node
 var level_manager: Node
 var pathfinding_manager: Node
-var use_path_blocking_validation: bool = true
 var tower_container: Node2D
 var projectile_container: Node2D
 
@@ -48,12 +47,6 @@ func configure_from_level(p_level_manager: Node) -> void:
 	grid_rows = level_manager.grid_rows
 	grid_origin = level_manager.grid_origin
 	blocked_cells = level_manager.get_all_blocked_cells()
-	use_path_blocking_validation = true
-	var raw_data = level_manager.get("level_data")
-	if raw_data is Dictionary:
-		var mode := str(raw_data.get("enemy_pathing_mode", raw_data.get("pathing_mode", "dynamic_maze"))).strip_edges().to_lower()
-		if mode in ["fixed", "fixed_path", "fixed-path", "element_td", "elemental_td"]:
-			use_path_blocking_validation = false
 
 func set_pathfinding_manager(p_pathfinding_manager: Node) -> void:
 	pathfinding_manager = p_pathfinding_manager
@@ -178,7 +171,7 @@ func validate_placement(cell: Vector2i) -> Dictionary:
 	if occupied_cells.has(cell):
 		return {"is_valid": false, "reason": "Cannot build on existing tower", "cost": cost}
 		
-	if use_path_blocking_validation and pathfinding_manager and pathfinding_manager.has_method("get_blocker_validation_reason"):
+	if pathfinding_manager and pathfinding_manager.has_method("get_blocker_validation_reason") and not _uses_fixed_pathing():
 		var path_reason := str(pathfinding_manager.get_blocker_validation_reason(cell, _get_tower_footprint_cells(cell, config), true))
 		if path_reason != "":
 			return {"is_valid": false, "reason": path_reason, "cost": cost}
@@ -206,7 +199,7 @@ func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	for footprint_cell in _get_tower_footprint_cells(cell, config):
 		occupied_cells[footprint_cell] = true
 		tower_by_cell[_cell_key(footprint_cell)] = tower
-	if use_path_blocking_validation and pathfinding_manager and pathfinding_manager.has_method("set_tower_blocked"):
+	if pathfinding_manager and pathfinding_manager.has_method("set_tower_blocked"):
 		pathfinding_manager.set_tower_blocked(cell, true, _get_tower_footprint_cells(cell, config))
 	tower_placed.emit(tower, selected_tower_id, config.get("cost", 0))
 	
@@ -239,6 +232,16 @@ func get_build_block_reason(cell: Vector2i) -> String:
 	elif cell in blocked_cells:
 		return "blocked"
 	return ""
+
+func _uses_fixed_pathing() -> bool:
+	if level_manager == null:
+		return false
+	var data = level_manager.get("level_data")
+	if not (data is Dictionary):
+		return false
+	var mode := str(data.get("enemy_pathing_mode", data.get("pathing_mode", "fixed_path"))).to_lower()
+	return mode == "fixed_path" or bool(data.get("fixed_path", false))
+
 
 func _format_build_reason(reason: String) -> String:
 	match reason:
@@ -307,7 +310,7 @@ func remove_tower_at_cell(cell: Vector2i) -> bool:
 		tower_by_cell.erase(_cell_key(fc))
 	
 	# Clear pathfinding blocker
-	if use_path_blocking_validation and pathfinding_manager and pathfinding_manager.has_method("set_tower_blocked"):
+	if pathfinding_manager and pathfinding_manager.has_method("set_tower_blocked"):
 		pathfinding_manager.set_tower_blocked(tower.get_grid_cell() if tower.has_method("get_grid_cell") else cell, false, footprint_cells)
 	
 	# Remove the tower node

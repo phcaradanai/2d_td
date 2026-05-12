@@ -173,6 +173,7 @@ func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	start_wave_button.pressed.connect(func(): start_wave_requested.emit())
+	_configure_start_wave_button_layout()
 	settings_button.pressed.connect(func(): set_panel_active(settings_panel, true, true))
 	pause_button.pressed.connect(func(): pause_requested.emit())
 	
@@ -642,6 +643,32 @@ func set_build_status(text: String) -> void:
 	build_status_label.text = text
 	cancel_build_button.visible = (text != "Build: None")
 
+func _configure_start_wave_button_layout() -> void:
+	if start_wave_button == null:
+		return
+	start_wave_button.custom_minimum_size = Vector2(150, 42)
+	start_wave_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	start_wave_button.clip_text = false
+	start_wave_button.add_theme_font_size_override("font_size", 13)
+
+func _style_start_wave_button(mode: String) -> void:
+	if start_wave_button == null:
+		return
+	start_wave_button.custom_minimum_size = Vector2(150, 42)
+	var font_color := Color(0.86, 0.96, 1.0)
+	match mode:
+		"urgent": font_color = Color(1.0, 0.35, 0.2)
+		"warning": font_color = Color(1.0, 0.78, 0.25)
+		"manual": font_color = Color(0.55, 0.95, 1.0)
+		"running": font_color = Color(0.62, 0.68, 0.72)
+		"locked": font_color = Color(0.95, 0.45, 0.45)
+		"cleared": font_color = Color(0.4, 1.0, 0.55)
+		_: font_color = Color(0.86, 0.96, 1.0)
+	start_wave_button.add_theme_color_override("font_color", font_color)
+	start_wave_button.add_theme_color_override("font_hover_color", font_color.lightened(0.15))
+	start_wave_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+
+
 func set_start_wave_enabled(enabled: bool) -> void:
 	if start_wave_button == null: return
 	start_wave_button.disabled = not enabled
@@ -663,13 +690,15 @@ func update_start_wave_button(next_wave_number: int, total_waves: int, wave_name
 		if next_wave_label:
 			next_wave_label.text = "Next: %d/%d" % [next_wave_number, total_waves]
 
-func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_name: String, wave_running: bool, can_start: bool, level_cleared: bool, locked_label: String = "") -> void:
+func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_name: String, wave_running: bool, can_start: bool, level_cleared: bool, locked_label: String = "", countdown_active: bool = false, countdown_remaining: float = 0.0, manual_first_wave: bool = false) -> void:
 	if start_wave_button == null:
 		return
+	_configure_start_wave_button_layout()
 	
 	if total_waves <= 0:
 		start_wave_button.text = "No Waves"
 		start_wave_button.disabled = true
+		_style_start_wave_button("locked")
 		if next_wave_label:
 			next_wave_label.text = "No waves loaded"
 		return
@@ -677,6 +706,7 @@ func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_nam
 	if locked_label != "":
 		start_wave_button.text = locked_label
 		start_wave_button.disabled = true
+		_style_start_wave_button("locked")
 		if next_wave_label:
 			next_wave_label.text = locked_label
 		return
@@ -684,6 +714,7 @@ func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_nam
 	if level_cleared or next_wave_number <= 0 or next_wave_number > total_waves:
 		start_wave_button.text = "Cleared"
 		start_wave_button.disabled = true
+		_style_start_wave_button("cleared")
 		if next_wave_label:
 			next_wave_label.text = "All waves cleared"
 		return
@@ -691,17 +722,40 @@ func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_nam
 	if wave_running:
 		start_wave_button.text = "In Progress"
 		start_wave_button.disabled = true
+		_style_start_wave_button("running")
 		if next_wave_label:
 			next_wave_label.text = "Wave %d/%d active" % [next_wave_number, total_waves]
 		return
-	
-	start_wave_button.text = "Start %d" % next_wave_number
+
 	start_wave_button.disabled = not can_start
-	if next_wave_label:
-		if wave_name != "":
-			next_wave_label.text = "Next: %d/%d - %s" % [next_wave_number, total_waves, wave_name]
+	var wave_title := "Wave %d" % next_wave_number
+	if wave_name != "":
+		wave_title = "Wave %d: %s" % [next_wave_number, wave_name]
+
+	if manual_first_wave:
+		start_wave_button.text = "START WAVE %d" % next_wave_number
+		_style_start_wave_button("manual")
+		if next_wave_label:
+			next_wave_label.text = "%s — manual start" % wave_title
+		return
+
+	if countdown_active:
+		var seconds := int(ceil(max(0.0, countdown_remaining)))
+		start_wave_button.text = "START %d • %ds" % [next_wave_number, seconds]
+		if seconds <= 5:
+			_style_start_wave_button("urgent")
+		elif seconds <= 10:
+			_style_start_wave_button("warning")
 		else:
-			next_wave_label.text = "Next: %d/%d" % [next_wave_number, total_waves]
+			_style_start_wave_button("normal")
+		if next_wave_label:
+			next_wave_label.text = "%s — auto in %ds" % [wave_title, seconds]
+		return
+
+	start_wave_button.text = "Start %d" % next_wave_number
+	_style_start_wave_button("normal")
+	if next_wave_label:
+		next_wave_label.text = "%s — ready" % wave_title
 
 func set_paused(paused: bool) -> void:
 	if paused:
@@ -797,11 +851,6 @@ func enter_result_mode(summary: Dictionary, improvements: Dictionary = {}, rank:
 		leaks_summary_label.text = "Leaks: " + str(summary.get("enemies_leaked", 0))
 		gold_summary_label.text = "Gold: " + str(summary.get("gold_remaining", 0))
 
-func _format_stat_number(value: float) -> String:
-	if abs(value - round(value)) < 0.01:
-		return str(int(round(value)))
-	return "%.1f" % value
-
 func show_tower_info(info: Dictionary) -> void:
 	show_tower_info_panel()
 	tower_name_label.text = info["name"]
@@ -817,26 +866,9 @@ func show_tower_info(info: Dictionary) -> void:
 		tier_text += "  [MAX]"
 	tower_level_label.text = tier_text
 
-	var base_damage := float(info.get("damage", 0.0))
-	var effective_damage := float(info.get("effective_damage", base_damage))
-	var damage_bonus_percent := int(info.get("damage_bonus_percent", 0))
-	if damage_bonus_percent > 0:
-		tower_damage_label.text = "Damage: %s  (+%s / +%d%%)" % [_format_stat_number(base_damage), _format_stat_number(effective_damage - base_damage), damage_bonus_percent]
-		tower_damage_label.modulate = Color(1.0, 0.68, 0.28)
-	else:
-		tower_damage_label.text = "Damage: " + _format_stat_number(base_damage)
-		tower_damage_label.modulate = Color(0.9, 0.9, 0.9)
-
+	tower_damage_label.text = "Damage: " + str(info["damage"])
 	tower_range_label.text = "Range: " + str(info["range"])
-	var base_fire_rate := float(info.get("fire_rate", 0.0))
-	var effective_fire_rate := float(info.get("effective_fire_rate", base_fire_rate))
-	var speed_bonus_percent := int(info.get("attack_speed_bonus_percent", 0))
-	if speed_bonus_percent > 0:
-		tower_fire_rate_label.text = "Fire Rate: %.2fs  (+%d%% speed)" % [effective_fire_rate, speed_bonus_percent]
-		tower_fire_rate_label.modulate = Color(0.35, 1.0, 0.78)
-	else:
-		tower_fire_rate_label.text = "Fire Rate: %.2fs" % base_fire_rate
-		tower_fire_rate_label.modulate = Color(0.9, 0.9, 0.9)
+	tower_fire_rate_label.text = "Fire Rate: " + str(info["fire_rate"]) + "s"
 	
 	if tower_target_label:
 		var targets = info.get("target_categories", ["land"])
@@ -872,39 +904,10 @@ func show_tower_info(info: Dictionary) -> void:
 			var vuln = int(info.get("vulnerability_percent", 0) * 100)
 			tower_splash_label.text = "Type: BLEED AURA (+%d%%)" % vuln
 			tower_splash_label.modulate = Color(1.0, 0.3, 0.3)
-		"support":
-			tower_splash_label.show()
-			var support_bonus := int(round(float(info.get("support_bonus", 0.0)) * 100.0))
-			var support_mode := str(info.get("support_mode", ""))
-			if support_mode == "damage":
-				tower_splash_label.text = "Type: BUFF AURA  +%d%% Damage  / %d towers" % [support_bonus, int(info.get("support_max_targets", 4))]
-				tower_splash_label.modulate = Color(1.0, 0.62, 0.25)
-			elif support_mode == "clone_damage":
-				tower_splash_label.text = "Type: TRICKERY CLONE  +%d%% Damage  / %d tower" % [support_bonus, int(info.get("support_max_targets", 1))]
-				tower_splash_label.modulate = Color(0.78, 0.55, 1.0)
-			else:
-				tower_splash_label.text = "Type: BUFF AURA  +%d%% Attack Speed  / %d towers" % [support_bonus, int(info.get("support_max_targets", 4))]
-				tower_splash_label.modulate = Color(0.35, 1.0, 0.78)
 		_:
 			tower_splash_label.show()
-			var active_bonuses: Array = info.get("active_support_bonuses", [])
-			if not active_bonuses.is_empty():
-				var bonus_texts: Array[String] = []
-				for bonus in active_bonuses:
-					var bonus_type := str(bonus.get("type", ""))
-					var bonus_percent := int(bonus.get("percent", 0))
-					var source_name := str(bonus.get("source", "Support"))
-					if bonus_type == "damage":
-						bonus_texts.append("+%d%% DMG (%s)" % [bonus_percent, source_name])
-					elif bonus_type == "clone":
-						bonus_texts.append("+%d%% CLONE (%s)" % [bonus_percent, source_name])
-					else:
-						bonus_texts.append("+%d%% SPD (%s)" % [bonus_percent, source_name])
-				tower_splash_label.text = "Buffed: " + ", ".join(bonus_texts)
-				tower_splash_label.modulate = Color(0.45, 1.0, 0.8)
-			else:
-				tower_splash_label.text = "Type: DIRECT KINETIC"
-				tower_splash_label.modulate = Color(0.7, 0.8, 0.9)
+			tower_splash_label.text = "Type: DIRECT KINETIC"
+			tower_splash_label.modulate = Color(0.7, 0.8, 0.9)
 	
 	updating_target_mode_ui = true
 	var current_mode = info.get("target_mode", "first")

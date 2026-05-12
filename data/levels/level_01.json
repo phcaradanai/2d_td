@@ -1,6 +1,6 @@
 {
 	"id": "level_01",
-	"name": "Element TD Clone Test - Fixed Path 60 Waves",
+	"name": "Level 1 - Neon Training Road",
 	"area_id": 1,
 	"grid_size": 64,
 	"grid_cols": 20,
@@ -10,7 +10,7 @@
 		"y": 0
 	},
 	"starting_gold": 260,
-	"starting_lives": 60,
+	"starting_lives": 20,
 	"waves_path": "res://data/waves.json",
 	"buildable_mode": "full_non_path",
 	"spawn_cell": [
@@ -539,9 +539,9 @@
 			2
 		]
 	],
-	"camera_fit_mode": "road_focus",
-	"camera_focus_margin_cells_x": 1.0,
-	"camera_focus_margin_cells_y": 1.0,
+	"camera_fit_mode": "",
+	"camera_focus_margin_cells_x": 1.3,
+	"camera_focus_margin_cells_y": 1.35,
 	"guideline_cells": [
 		[
 			0,
@@ -792,18 +792,10 @@
 			10
 		]
 	],
+	"pathing_mode": "fixed_path",
 	"enemy_pathing_mode": "fixed_path",
 	"show_dynamic_route_overlay": false,
-	"pathing_mode": "fixed_path",
-	"leak_respawn_enabled": true,
-	"leak_respawn_health_mode": "preserve",
-	"interest_enabled": true,
-	"interest_rate": 0.02,
-	"interest_interval_sec": 15.0,
-	"interest_cap": 0,
-	"economy_note": "Element TD clone economy: leaked creeps respawn at the start; interest is 2% every 15s only during active non-leaked waves, with no cap.",
 	"auto_next_wave_enabled": true,
 	"auto_next_wave_delay_sec": 15.0,
-	"element_td_auto_next_wave_enabled": true,
-	"element_td_auto_next_wave_delay_sec": 15.0
+	"road_visual_blocks_building": true
 }
