@@ -21,7 +21,6 @@ var selected_tower_id: String = ""
 var occupied_cells: Dictionary = {} # cell: bool
 var tower_by_cell: Dictionary = {} # cell_key: tower
 var blocked_cells: Array[Vector2i] = [] # fixed road/spawn/base/non-buildable cells
-var active_loadout: Array[String] = []
 var unlocked_tower_ids: Array[String] = ["basic_tower_t1"]
 
 var game_manager: Node
@@ -238,7 +237,6 @@ func clear_selected_tower() -> void:
 
 func set_unlocked_tower_ids(ids: Array[String]) -> void:
 	unlocked_tower_ids = ids.duplicate()
-	active_loadout = ids.duplicate()
 
 func is_tower_unlocked(tower_id: String) -> bool:
 	if unlocked_tower_ids.is_empty():

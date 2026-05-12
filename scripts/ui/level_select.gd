@@ -17,7 +17,6 @@ var main_hbox: BoxContainer = null
 var left_vbox: VBoxContainer = null
 var right_vbox: VBoxContainer = null
 var mission_info_labels: Dictionary = {}
-# loadout_container removed — loadout system eliminated, replaced by starter tower info
 var notification_label: Label = null
 var leaderboard_button: Button = null
 
@@ -589,7 +588,6 @@ func _setup_intel_panel(container: Control) -> void:
 	spacer3.custom_minimum_size.y = 12
 	intel_panel.add_child(spacer3)
 	
-	# Starter Tower info (replaces old EQUIPPED TOWERS loadout section)
 	var starter_container = VBoxContainer.new()
 	starter_container.add_theme_constant_override("separation", 3)
 	intel_panel.add_child(starter_container)
@@ -677,9 +675,6 @@ func _select_level(path: String) -> void:
 		config = main.get_level_config(level_id)
 	else:
 		config = _load_config(level_id)
-	
-	if main and main.has_method("get_default_loadout_for_level"):
-		main.selected_loadout = main.get_default_loadout_for_level(level_id)
 	
 	_update_intel_panel(config)
 	

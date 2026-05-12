@@ -388,12 +388,12 @@ func _update_tower_affordability(current_gold: int) -> void:
 		btn.text = "%s  $%d" % [_format_tower_button_name(tower_id, cfg), cost]
 		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
 
-func refresh_tower_shop(active_loadout: Array[String]) -> void:
+func refresh_tower_shop(tower_ids: Array[String]) -> void:
 	_ensure_elemental_shop_ui()
 	_hide_static_tower_buttons()
 	_clear_dynamic_tower_buttons()
 
-	var ids: Array[String] = active_loadout.duplicate()
+	var ids: Array[String] = tower_ids.duplicate()
 	if ids.is_empty():
 		ids = ["basic_tower_t1"]
 

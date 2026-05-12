@@ -83,11 +83,7 @@ var current_state: GameState = GameState.MENU
 var current_level_path: String = ""
 var current_level_id: String = ""
 var selected_level_id: int = 0
-var available_tower_types: Array[String] = ["basic_tower_t1"]
-var selected_loadout: Array[String] = ["basic_tower_t1"]
-var active_level_loadout: Array[String] = []
-const MAX_TOWER_LOADOUT_SIZE: int = 8
-const MIN_TOWER_LOADOUT_SIZE: int = 1
+
 var pending_unlock_level_id: String = ""
 var leaderboard_service: Node = null
 var leaderboard_panel: Node = null
@@ -503,7 +499,6 @@ func _setup_game_from_level() -> void:
 		build_manager.configure_from_level(level_manager)
 		if build_manager.has_method("set_pathfinding_manager"):
 			build_manager.set_pathfinding_manager(pathfinding_manager)
-		build_manager.active_loadout = active_level_loadout
 		build_manager.reset_build_state()
 
 	if element_progression_manager:
@@ -778,8 +773,6 @@ func _refresh_elemental_shop() -> void:
 	if element_progression_manager and element_progression_manager.has_method("get_buildable_tower_ids"):
 		ids = element_progression_manager.get_buildable_tower_ids(build_manager.towers_config)
 	ids = _ensure_starter_towers_in_shop(ids)
-	active_level_loadout = ids.duplicate()
-	build_manager.active_loadout = ids.duplicate()
 	if build_manager.has_method("set_unlocked_tower_ids"):
 		build_manager.set_unlocked_tower_ids(ids)
 	game_hud.refresh_tower_shop(ids)
@@ -1188,8 +1181,6 @@ func _on_leaderboard_requested(level_id: String) -> void:
 	leaderboard_panel.show_leaderboard(leaderboard_service, level_id)
 
 func start_game(level_path: String) -> void:
-	# Standard start uses current selected_loadout
-	active_level_loadout = selected_loadout.duplicate()
 	start_level(level_path)
 
 func start_level(level_path: String) -> void:
@@ -1248,15 +1239,6 @@ func start_next_level() -> void:
 			return_to_menu()
 	else:
 		return_to_menu()
-
-func get_default_loadout_for_level(_level_id: String) -> Array[String]:
-	# Loadout system removed: every level starts with Basic Tower T1 only.
-	# Advanced towers are unlocked through element picks and built from the shop.
-	return ["basic_tower_t1"]
-
-func is_valid_loadout(loadout: Array[String]) -> bool:
-	# Loadout system removed: the only valid loadout is ["basic_tower_t1"].
-	return loadout == ["basic_tower_t1"]
 
 func _clear_gameplay_state() -> void:
 	if tower_container:
