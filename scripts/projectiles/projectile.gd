@@ -2,6 +2,9 @@ extends Node2D
 
 const PERFORMANCE_MODE := true  # Disables projectile trail and impact effects for 60 FPS
 const ELEMENTAL_DEBUG_FLOATING_TEXT := true
+const ELEMENTAL_DEBUG_FLOATING_TEXT_META := "elemental_debug_floating_text_enabled"
+const ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META := "elemental_debug_floating_text_last_msec"
+const ELEMENTAL_DEBUG_FLOATING_TEXT_MIN_INTERVAL_MSEC := 90
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -419,10 +422,12 @@ func _single_element_multiplier(attack_element: String, armor_element: String) -
 	return ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER
 
 func _spawn_elemental_debug_text(hit_pos: Vector2, info: Dictionary) -> void:
-	if not ELEMENTAL_DEBUG_FLOATING_TEXT:
+	if not _is_elemental_debug_text_enabled():
 		return
 	var multiplier := float(info.get("multiplier", ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER))
 	if is_equal_approx(multiplier, ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER):
+		return
+	if not _claim_elemental_debug_text_slot():
 		return
 	var text := str(info.get("text", ""))
 	if text == "":
@@ -438,6 +443,27 @@ func _spawn_elemental_debug_text(hit_pos: Vector2, info: Dictionary) -> void:
 		effect.setup_text(text, _get_elemental_debug_color(multiplier), 12)
 	elif effect.has_method("setup"):
 		effect.setup(int(round(abs(multiplier * 100.0))), _get_elemental_debug_color(multiplier))
+
+func _is_elemental_debug_text_enabled() -> bool:
+	var scene := get_tree().current_scene
+	if scene != null and scene.has_meta(ELEMENTAL_DEBUG_FLOATING_TEXT_META):
+		return bool(scene.get_meta(ELEMENTAL_DEBUG_FLOATING_TEXT_META))
+	if game_manager != null and game_manager.has_meta(ELEMENTAL_DEBUG_FLOATING_TEXT_META):
+		return bool(game_manager.get_meta(ELEMENTAL_DEBUG_FLOATING_TEXT_META))
+	return ELEMENTAL_DEBUG_FLOATING_TEXT
+
+func _claim_elemental_debug_text_slot() -> bool:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return true
+	var now_msec := Time.get_ticks_msec()
+	var last_msec := 0
+	if scene.has_meta(ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META):
+		last_msec = int(scene.get_meta(ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META))
+	if now_msec - last_msec < ELEMENTAL_DEBUG_FLOATING_TEXT_MIN_INTERVAL_MSEC:
+		return false
+	scene.set_meta(ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META, now_msec)
+	return true
 
 func _get_elemental_debug_color(multiplier: float) -> Color:
 	if multiplier > ELEMENT_DAMAGE_NEUTRAL_MULTIPLIER + 0.01:
