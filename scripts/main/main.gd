@@ -659,10 +659,18 @@ func _level_uses_fixed_pathing() -> bool:
 
 
 func _refresh_hud_stats() -> void:
-	if game_hud and game_manager:
-		game_hud.set_gold(game_manager.gold)
-		game_hud.set_lives(game_manager.lives)
-		game_hud.set_wave(game_manager.current_wave)
+	if game_hud == null or game_manager == null:
+		return
+	_bind_hud_state_presenter()
+	var total_waves := 0
+	if wave_manager:
+		total_waves = wave_manager.get_total_waves()
+	hud_state_presenter.refresh_core_stats(
+		int(game_manager.gold),
+		int(game_manager.lives),
+		int(game_manager.current_wave),
+		total_waves
+	)
 
 func _hide_old_path_visuals() -> void:
 	var old_visual = find_child("PathVisual", true, false)
