@@ -37,7 +37,12 @@ EXPECTED_CONTROLLER_METHODS = [
     "can_upgrade_selected_tower",
     "can_sell_selected_tower",
     "get_selected_tower_sell_value",
+    "get_selected_tower_upgrade_cost",
+    "get_current_gold",
+    "can_afford_selected_tower_upgrade",
+    "get_selected_tower_upgrade_missing_gold",
     "get_selected_tower_upgrade_preview",
+    "get_selected_tower_action_state",
     "has_refresh_hud_callback",
     "has_refresh_tower_shop_callback",
     "has_show_wave_feedback_callback",
@@ -57,6 +62,7 @@ FUNC_RE = re.compile(r"^func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
 DIRECT_TOWER_INFO_RE = re.compile(r"\bgame_hud\.(show_tower_info|hide_tower_info)\s*\(")
 DIRECT_TOWER_STATUS_RE = re.compile(r"\bgame_hud\.set_build_status\s*\((.*(?:Tower|Upgrade|gold|Selected|None).*)")
 TOWER_INFO_METHOD_RE = re.compile(r"func\s+get_selected_tower_info\s*\(\)\s*->\s*Dictionary")
+ACTION_STATE_METHOD_RE = re.compile(r"func\s+get_selected_tower_action_state\s*\(\)\s*->\s*Dictionary")
 
 
 def read(path: Path) -> str:
@@ -103,6 +109,9 @@ def main() -> int:
     if not TOWER_INFO_METHOD_RE.search(controller_text):
         errors.append("TowerInteractionController get_selected_tower_info() must return Dictionary")
 
+    if not ACTION_STATE_METHOD_RE.search(controller_text):
+        errors.append("TowerInteractionController get_selected_tower_action_state() must return Dictionary")
+
     missing_main_markers = [marker for marker in EXPECTED_MAIN_BINDING_MARKERS if marker not in main_text]
     for marker in missing_main_markers:
         warnings.append(f"main.gd has not bound TowerInteractionController yet: {marker}")
@@ -132,7 +141,8 @@ def main() -> int:
     print("Tower Interaction Boundary Audit")
     print("================================")
     print(f"Controller methods: {len(controller_funcs)}")
-    print(f"Tower info helpers present: {all(name in controller_funcs for name in EXPECTED_CONTROLLER_METHODS[-4:])}")
+    print(f"Tower info helpers present: {all(name in controller_funcs for name in EXPECTED_CONTROLLER_METHODS[-7:])}")
+    print(f"Tower action state helper present: {'get_selected_tower_action_state' in controller_funcs}")
     print(f"Main binding markers present: {len(EXPECTED_MAIN_BINDING_MARKERS) - len(missing_main_markers)}/{len(EXPECTED_MAIN_BINDING_MARKERS)}")
     print(f"Binder tower interaction markers present: {len(EXPECTED_BINDER_MARKERS) - len(missing_binder_markers)}/{len(EXPECTED_BINDER_MARKERS)}")
     print(f"Tower keyword lines in main.gd: {len(keyword_lines)}")
