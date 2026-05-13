@@ -1,6 +1,8 @@
 extends RefCounted
 class_name ElementalPickController
 
+const DEFAULT_INTEREST_UPGRADE_STEP: float = 0.01
+
 # Stage 5O-1 skeleton.
 # Owns Element TD pick-related dependencies before moving logic out of main.gd.
 # Keep this class side-effect-light for now: bind dependencies, expose safe accessors,
@@ -12,7 +14,7 @@ var element_progression_manager: Node = null
 var hud_state_presenter: RefCounted = null
 var interest_service: RefCounted = null
 var interest_pick_id: String = ""
-var default_interest_upgrade_step: float = 0.01
+var default_interest_upgrade_step: float = DEFAULT_INTEREST_UPGRADE_STEP
 var refresh_elemental_shop: Callable
 var bind_hud_state_presenter: Callable
 var set_bound_build_status: Callable
@@ -23,11 +25,16 @@ var recalculate_interest_rate: Callable
 var show_wave_feedback: Callable
 
 func _init(owner: Node = null) -> void:
+	# Transitional compatibility path for older setup code. main.gd now uses
+	# explicit bind(deps); remove this once no callers pass the owner directly.
 	if owner != null:
 		bind({"main": owner})
 
 func bind(dependencies: Dictionary) -> void:
+	_reset_dependencies()
 	if dependencies.has("main"):
+		# Transitional compatibility path. Prefer explicit dependency keys below
+		# so this controller does not treat main.gd as a hidden global object.
 		var main = dependencies.get("main")
 		game_hud = main.game_hud
 		build_manager = main.build_manager
@@ -51,7 +58,7 @@ func bind(dependencies: Dictionary) -> void:
 	hud_state_presenter = dependencies.get("hud_state_presenter") as RefCounted
 	interest_service = dependencies.get("interest_service") as RefCounted
 	interest_pick_id = str(dependencies.get("interest_pick_id", ""))
-	default_interest_upgrade_step = float(dependencies.get("default_interest_upgrade_step", 0.01))
+	default_interest_upgrade_step = float(dependencies.get("default_interest_upgrade_step", DEFAULT_INTEREST_UPGRADE_STEP))
 	refresh_elemental_shop = dependencies.get("refresh_elemental_shop", Callable())
 	bind_hud_state_presenter = dependencies.get("bind_hud_state_presenter", Callable())
 	set_bound_build_status = dependencies.get("set_bound_build_status", Callable())
@@ -62,12 +69,16 @@ func bind(dependencies: Dictionary) -> void:
 	show_wave_feedback = dependencies.get("show_wave_feedback", Callable())
 
 func clear() -> void:
+	_reset_dependencies()
+
+func _reset_dependencies() -> void:
 	game_hud = null
 	build_manager = null
 	element_progression_manager = null
 	hud_state_presenter = null
 	interest_service = null
 	interest_pick_id = ""
+	default_interest_upgrade_step = DEFAULT_INTEREST_UPGRADE_STEP
 	refresh_elemental_shop = Callable()
 	bind_hud_state_presenter = Callable()
 	set_bound_build_status = Callable()
@@ -126,19 +137,19 @@ func on_element_choice_requested(element_id: String) -> void:
 		choose_interest_upgrade_pick()
 		return
 	if element_progression_manager.choose_element(element_id):
-		_call(refresh_elemental_shop)
+		_callv(refresh_elemental_shop)
 		if game_hud:
-			_call(bind_hud_state_presenter)
-			_call(set_bound_build_status, "Element unlocked: %s" % element_progression_manager.get_element_label(element_id))
+			_callv(bind_hud_state_presenter)
+			_callv(set_bound_build_status, ["Element unlocked: %s" % element_progression_manager.get_element_label(element_id)])
 			if element_progression_manager.pending_picks > 0:
-				_call(show_pending_element_choice)
+				_callv(show_pending_element_choice)
 			else:
-				_call(hide_element_choice)
-				_call(resume_auto_next_wave_after_element_choice)
+				_callv(hide_element_choice)
+				_callv(resume_auto_next_wave_after_element_choice)
 	else:
 		if game_hud:
-			_call(bind_hud_state_presenter)
-			_call(set_bound_build_status, "Cannot choose that element")
+			_callv(bind_hud_state_presenter)
+			_callv(set_bound_build_status, ["Cannot choose that element"])
 
 func choose_interest_upgrade_pick() -> void:
 	if element_progression_manager == null:
@@ -147,31 +158,26 @@ func choose_interest_upgrade_pick() -> void:
 		return
 	if not can_choose_interest_upgrade():
 		if game_hud:
-			_call(bind_hud_state_presenter)
-		_call(set_bound_build_status, "Interest upgrade is already maxed")
+			_callv(bind_hud_state_presenter)
+		_callv(set_bound_build_status, ["Interest upgrade is already maxed"])
 		return
 	element_progression_manager.pending_picks = max(0, int(element_progression_manager.pending_picks) - 1)
-	if interest_service:
+	if is_instance_valid(interest_service) and interest_service.has_method("apply_upgrade"):
 		interest_service.apply_upgrade()
-	_call(recalculate_interest_rate)
-	if interest_service:
+	_callv(recalculate_interest_rate)
+	if is_instance_valid(interest_service):
 		interest_service.elapsed = 0.0
 	if game_hud:
-		_call(bind_hud_state_presenter)
-		_call(set_bound_build_status, "Interest upgraded to %s" % format_interest_rate_percent())
-		_call(show_wave_feedback, "Interest %s" % format_interest_rate_percent(), Color(1.0, 0.85, 0.25))
+		_callv(bind_hud_state_presenter)
+		_callv(set_bound_build_status, ["Interest upgraded to %s" % format_interest_rate_percent()])
+		_callv(show_wave_feedback, ["Interest %s" % format_interest_rate_percent(), Color(1.0, 0.85, 0.25)])
 		if int(element_progression_manager.pending_picks) > 0:
-			_call(show_pending_element_choice)
+			_callv(show_pending_element_choice)
 		else:
-			_call(hide_element_choice)
-			_call(resume_auto_next_wave_after_element_choice)
+			_callv(hide_element_choice)
+			_callv(resume_auto_next_wave_after_element_choice)
 
-func _call(callback: Callable, arg1: Variant = null, arg2: Variant = null) -> void:
-	if not callback.is_valid():
-		return
-	if arg2 != null:
-		callback.call(arg1, arg2)
-	elif arg1 != null:
-		callback.call(arg1)
-	else:
-		callback.call()
+func _callv(callback: Callable, args: Array = []) -> Variant:
+	if callback.is_valid():
+		return callback.callv(args)
+	return null

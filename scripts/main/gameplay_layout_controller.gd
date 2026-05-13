@@ -27,7 +27,8 @@ func bind(deps: Dictionary) -> void:
 	get_view_size = deps.get("get_view_size", Callable())
 
 func update_world_layout() -> void:
-	if not is_instance_valid(world_root): return
+	if not is_instance_valid(world_root):
+		return
 
 	var view_size := Vector2.ZERO
 	if get_view_size.is_valid():
@@ -58,11 +59,13 @@ func update_world_layout() -> void:
 		background.position = Vector2(-4000, -4000)
 
 func fit_map_to_playfield(playfield_rect: Rect2) -> void:
-	if not level_manager or not map_root or not camera: return
+	if not level_manager or not map_root or not camera:
+		return
 
 	# 1. Calculate map content bounds in world space
 	var content_bounds = get_map_content_bounds()
-	if content_bounds.size == Vector2.ZERO: return
+	if content_bounds.size == Vector2.ZERO:
+		return
 	
 	# Add padding
 	var padding = 40.0

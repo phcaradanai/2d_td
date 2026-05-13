@@ -24,6 +24,12 @@ func bind(deps: Dictionary) -> void:
 	refresh_start_wave_ui = deps.get("refresh_start_wave_ui", Callable())
 	start_wave_requested = deps.get("start_wave_requested", Callable())
 
+func is_bound() -> bool:
+	return has_required_dependencies()
+
+func has_required_dependencies() -> bool:
+	return auto_next_wave_service != null and wave_manager != null and get_current_state.is_valid()
+
 func is_waiting_for_manual_first_wave() -> bool:
 	if auto_next_wave_service == null or wave_manager == null:
 		return false
