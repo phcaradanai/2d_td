@@ -52,17 +52,17 @@ def main() -> int:
     ]:
         require(errors, token in refresh_body, f"_refresh_start_wave_ui missing {token}")
 
-    require(errors, "game_manager.current_wave" not in refresh_body, "_refresh_start_wave_ui must not use current wave as next wave")
-    require(errors, "current_wave" not in presenter_body, "HUDStatePresenter must not derive next wave from current wave")
+    require(errors, "current_wave" in refresh_body, "_refresh_start_wave_ui must pass current wave separately")
+    require(errors, "has_next_wave" in refresh_body, "_refresh_start_wave_ui must pass next-wave availability")
 
     require(errors, presenter_body != "", "HUDStatePresenter missing refresh_start_wave_button")
-    require(errors, "hud.refresh_start_wave_button" in presenter_body, "HUDStatePresenter must call GameHUD.refresh_start_wave_button")
-    for token in ["total_waves", "next_wave_number", "active_wave_number", "wave_running", "countdown_active", "countdown_remaining", "manual_first_wave"]:
+    require(errors, "hud.set_start_wave_action_state" in presenter_body, "HUDStatePresenter must call explicit StartWaveButton action state")
+    require(errors, "hud.set_next_wave_preview" in presenter_body, "HUDStatePresenter must call explicit next wave preview")
+    for token in ["total_waves", "next_wave_number", "wave_running", "countdown_active", "countdown_remaining", "manual_first_wave"]:
         require(errors, token in presenter_body, f"HUDStatePresenter refresh_start_wave_button missing {token}")
-    require(errors, "hud_wave_number = active_wave_number" in presenter_body, "HUDStatePresenter must map active wave separately while a wave is running")
 
     require(errors, hud_body != "", "GameHUD missing refresh_start_wave_button")
-    for token in ["start_wave_button.text", "next_wave_label.text", "countdown_active", "countdown_remaining", "auto in"]:
+    for token in ["set_start_wave_action_state", "set_next_wave_preview", "countdown_active", "countdown_remaining"]:
         require(errors, token in hud_body, f"GameHUD refresh_start_wave_button missing {token}")
 
     print("Start Wave UI Boundary Audit")
@@ -70,7 +70,7 @@ def main() -> int:
     print(f"main _refresh_start_wave_ui found: {refresh_body != ''}")
     print(f"presenter refresh_start_wave_button found: {presenter_body != ''}")
     print(f"GameHUD refresh_start_wave_button found: {hud_body != ''}")
-    print(f"presenter calls GameHUD refresh: {'hud.refresh_start_wave_button' in presenter_body}")
+    print(f"presenter calls explicit button state: {'hud.set_start_wave_action_state' in presenter_body}")
     print(f"main uses next wave number: {'wave_manager.get_next_wave_number()' in refresh_body}")
     print(f"main uses total waves: {'wave_manager.get_total_waves()' in refresh_body}")
 
