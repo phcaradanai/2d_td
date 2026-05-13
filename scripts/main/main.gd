@@ -1503,13 +1503,17 @@ func _on_upgrade_tower_requested() -> void:
 	if current_state != GameState.BUILD: return
 	if selected_tower == null or not selected_tower.can_upgrade(): return
 
-	var next_ids: Array = selected_tower.get_info().get("next_upgrade_ids", [])
-	if not next_ids.is_empty():
-		var next_cfg: Dictionary = build_manager.towers_config.get(str(next_ids[0]), {})
-		if not _config_unlocked_for_upgrade(next_cfg):
-			if game_hud:
-				game_hud.set_build_status(_locked_upgrade_reason(next_cfg))
-			return
+	var next_cfg: Dictionary = {}
+	if selected_tower.has_method("get_next_upgrade_config"):
+		next_cfg = selected_tower.get_next_upgrade_config()
+	else:
+		var next_ids: Array = selected_tower.get_info().get("next_upgrade_ids", [])
+		if not next_ids.is_empty():
+			next_cfg = build_manager.towers_config.get(str(next_ids[0]), {})
+	if not next_cfg.is_empty() and not _config_unlocked_for_upgrade(next_cfg):
+		if game_hud:
+			game_hud.set_build_status(_locked_upgrade_reason(next_cfg))
+		return
 
 	var cost: int = selected_tower.get_upgrade_cost()
 	if cost <= 0:
