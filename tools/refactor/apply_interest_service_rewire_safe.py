@@ -1,9 +1,13 @@
 #!/usr/bin/env python3
-"""Stage 5K-1: safely rewire Element TD interest logic to ElementTDInterestService.
+"""Stage 5K-1/5K-3: safely rewire Element TD interest logic.
 
-This pass makes the service the source of truth, but keeps legacy fields synced
-for old HUD/detail panel call sites that still read them. Cleanup happens in a
-later stage after audit confirms those legacy reads are gone.
+This pass makes ElementTDInterestService the source of truth, but keeps legacy
+fields synced for old HUD/detail panel call sites that still read them. Cleanup
+happens in a later stage after audit confirms those legacy reads are gone.
+
+Stage 5K-3 fixes the migration script itself so it does not reintroduce:
+- assignment inside ternary expressions, which GDScript does not allow;
+- references to an undeclared enemy_manager variable in main.gd.
 """
 from pathlib import Path
 
@@ -77,21 +81,33 @@ UPDATE_SIG = "func _update_element_td_interest(delta: float) -> void:"
 UPDATE_BODY = '''func _update_element_td_interest(delta: float) -> void:
 	if element_td_interest_service == null:
 		return
+
 	var active_enemy_count := 0
-	if enemy_manager:
-		active_enemy_count = enemy_manager.get_active_enemy_count()
+	if wave_manager and wave_manager.has_method("get_active_enemy_count"):
+		active_enemy_count = int(wave_manager.call("get_active_enemy_count"))
+	else:
+		active_enemy_count = get_tree().get_nodes_in_group("enemies").size()
+
+	var current_gold := 0
+	if game_manager:
+		current_gold = int(game_manager.gold)
+
 	var interest_gold: int = int(element_td_interest_service.tick(
 		delta,
-		game_manager.gold if game_manager else 0,
+		current_gold,
 		active_enemy_count,
 		current_state == GameState.WAVE and not get_tree().paused
 	))
+
 	_sync_interest_state_from_service()
+
 	if interest_gold <= 0:
 		return
+
 	if game_manager:
 		game_manager.add_gold(interest_gold)
-	if game_hud:
+
+	if game_hud and game_hud.has_method("show_floating_text"):
 		game_hud.show_floating_text("+%d interest" % interest_gold)
 '''
 
@@ -124,6 +140,58 @@ def replace_func(text: str, sig: str, body: str) -> str:
 	return text[:start] + body.rstrip() + "\n\n" + text[end + 1:]
 
 
+def replace_line_with_block(text: str, target: str, block_lines: list[str]) -> str:
+	out: list[str] = []
+	changed = False
+	for line in text.splitlines():
+		if line.strip() == target:
+			indent = line[: len(line) - len(line.lstrip())]
+			out.extend(indent + block_line for block_line in block_lines)
+			changed = True
+		else:
+			out.append(line)
+	if not changed:
+		return text
+	return "\n".join(out) + "\n"
+
+
+def patch_interest_reset_writes(text: str) -> str:
+	text = replace_line_with_block(
+		text,
+		"element_td_interest_elapsed = 0.0",
+		[
+			"if element_td_interest_service:",
+			"\telement_td_interest_service.elapsed = 0.0",
+			"\t_sync_interest_state_from_service()",
+			"else:",
+			"\telement_td_interest_elapsed = 0.0",
+		],
+	)
+	text = replace_line_with_block(
+		text,
+		"element_td_interest_disabled_for_wave = false",
+		[
+			"if element_td_interest_service:",
+			"\telement_td_interest_service.disabled_for_wave = false",
+			"\t_sync_interest_state_from_service()",
+			"else:",
+			"\telement_td_interest_disabled_for_wave = false",
+		],
+	)
+	text = replace_line_with_block(
+		text,
+		"element_td_interest_disabled_for_wave = true",
+		[
+			"if element_td_interest_service:",
+			"\telement_td_interest_service.disable_for_current_wave()",
+			"\t_sync_interest_state_from_service()",
+			"else:",
+			"\telement_td_interest_disabled_for_wave = true",
+		],
+	)
+	return text
+
+
 def main() -> None:
 	text = MAIN.read_text()
 	old = text
@@ -142,21 +210,20 @@ def main() -> None:
 	text = replace_func(text, FORMAT_NEXT_SIG, FORMAT_NEXT_BODY)
 	text = replace_func(text, CAN_SIG, CAN_BODY)
 	text = replace_func(text, UPDATE_SIG, UPDATE_BODY)
-
-	# Keep service state in sync for existing wave/reset call sites without removing
-	# the legacy assignments yet. A later cleanup pass will replace those directly.
-	text = text.replace("element_td_interest_elapsed = 0.0", "element_td_interest_service.elapsed = 0.0 if element_td_interest_service else element_td_interest_elapsed = 0.0")
-	text = text.replace("element_td_interest_disabled_for_wave = false", "element_td_interest_service.disabled_for_wave = false if element_td_interest_service else element_td_interest_disabled_for_wave = false")
-	text = text.replace("element_td_interest_disabled_for_wave = true", "element_td_interest_service.disable_for_current_wave() if element_td_interest_service else element_td_interest_disabled_for_wave = true")
+	text = patch_interest_reset_writes(text)
 
 	if "func _sync_interest_state_from_service" not in text:
 		raise SystemExit("interest sync helper was not inserted")
 	if "element_td_interest_service.tick" not in text:
 		raise SystemExit("interest tick was not rewired")
+	if "enemy_manager" in text:
+		raise SystemExit("unsafe undeclared enemy_manager reference remains")
+	if " if element_td_interest_service else element_td_interest_" in text:
+		raise SystemExit("unsafe assignment-in-ternary migration remains")
 
 	BACKUP.write_text(old)
 	MAIN.write_text(text)
-	print("Stage 5K-1 applied")
+	print("Stage 5K interest rewire applied")
 	print("Run: godot --headless --path . --quit")
 	print("Run: python3 tools/refactor/audit_legacy_migration_state.py")
 
