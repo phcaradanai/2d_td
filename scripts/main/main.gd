@@ -17,9 +17,7 @@ const AUTO_NEXT_WAVE_SERVICE_SCRIPT = preload("res://scripts/main/auto_next_wave
 const HUD_STATE_PRESENTER_SCRIPT = preload("res://scripts/main/hud_state_presenter.gd")
 const WAVE_PREVIEW_HELPER_SCRIPT = preload("res://scripts/main/wave_preview_helper.gd")
 const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_plan_helper.gd")
-const GAMEPLAY_LAYOUT_CONTROLLER_SCRIPT = preload("res://scripts/main/gameplay_layout_controller.gd")
-const ELEMENTAL_PICK_CONTROLLER_SCRIPT = preload("res://scripts/main/elemental_pick_controller.gd")
-const WAVE_FLOW_CONTROLLER_SCRIPT = preload("res://scripts/main/wave_flow_controller.gd")
+const GAMEPLAY_CONTROLLER_BINDER_SCRIPT = preload("res://scripts/main/gameplay_controller_binder.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -104,9 +102,7 @@ var element_progression_manager = null
 var auto_next_wave_service: RefCounted = null
 var element_td_interest_service: RefCounted = null
 var hud_state_presenter: RefCounted = null
-var _gameplay_layout_controller: RefCounted = null
-var _elemental_pick_controller: RefCounted = null
-var _wave_flow_controller: RefCounted = null
+var _gameplay_controller_binder: RefCounted = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
 const INTEREST_PICK_ID: String = "__interest__"
@@ -194,62 +190,19 @@ func _ready() -> void:
 func _on_viewport_size_changed() -> void:
 	_update_world_layout()
 
+func _get_gameplay_controller_binder() -> RefCounted:
+	if _gameplay_controller_binder == null:
+		_gameplay_controller_binder = GAMEPLAY_CONTROLLER_BINDER_SCRIPT.new()
+	return _gameplay_controller_binder
+
 func _get_gameplay_layout_controller() -> RefCounted:
-	if _gameplay_layout_controller == null:
-		_gameplay_layout_controller = GAMEPLAY_LAYOUT_CONTROLLER_SCRIPT.new()
-	_gameplay_layout_controller.bind({
-		"world_root": world_root,
-		"map_root": map_root,
-		"camera": camera,
-		"background": background,
-		"game_hud": game_hud,
-		"level_manager": level_manager,
-		"top_bar_height": TOP_BAR_HEIGHT,
-		"left_sidebar_width": LEFT_SIDEBAR_WIDTH,
-		"right_sidebar_width": RIGHT_SIDEBAR_WIDTH,
-		"outer_margin": OUTER_MARGIN,
-		"get_view_size": Callable(self, "_get_visible_viewport_size_for_layout"),
-	})
-	return _gameplay_layout_controller
+	return _get_gameplay_controller_binder().get_gameplay_layout_controller(self)
 
 func _get_elemental_pick_controller() -> RefCounted:
-	if _elemental_pick_controller == null:
-		_elemental_pick_controller = ELEMENTAL_PICK_CONTROLLER_SCRIPT.new()
-	_elemental_pick_controller.bind({
-		"game_hud": game_hud,
-		"build_manager": build_manager,
-		"element_progression_manager": element_progression_manager,
-		"hud_state_presenter": hud_state_presenter,
-		"interest_service": element_td_interest_service,
-		"interest_pick_id": INTEREST_PICK_ID,
-		"default_interest_upgrade_step": DEFAULT_INTEREST_UPGRADE_STEP,
-		"refresh_elemental_shop": Callable(self, "_refresh_elemental_shop"),
-		"bind_hud_state_presenter": Callable(self, "_bind_hud_state_presenter"),
-		"set_bound_build_status": Callable(self, "_set_bound_hud_build_status"),
-		"show_pending_element_choice": Callable(self, "_show_pending_element_choice"),
-		"hide_element_choice": Callable(self, "_hide_element_choice"),
-		"resume_auto_next_wave_after_element_choice": Callable(self, "_resume_auto_next_wave_after_element_choice"),
-		"recalculate_interest_rate": Callable(self, "_recalculate_element_td_interest_rate"),
-		"show_wave_feedback": Callable(self, "show_wave_feedback"),
-	})
-	return _elemental_pick_controller
+	return _get_gameplay_controller_binder().get_elemental_pick_controller(self)
 
 func _get_wave_flow_controller() -> RefCounted:
-	if _wave_flow_controller == null:
-		_wave_flow_controller = WAVE_FLOW_CONTROLLER_SCRIPT.new()
-	_wave_flow_controller.bind({
-		"auto_next_wave_service": auto_next_wave_service,
-		"wave_manager": wave_manager,
-		"build_state": GameState.BUILD,
-		"wave_complete_state": GameState.WAVE_COMPLETE,
-		"paused_state": GameState.PAUSED,
-		"get_current_state": Callable(self, "_get_current_game_state"),
-		"has_pending_element_pick": Callable(self, "_has_pending_element_pick"),
-		"is_tree_paused": Callable(self, "_is_tree_paused_for_wave_flow"),
-		"refresh_start_wave_ui": Callable(self, "_refresh_start_wave_ui"),
-		"start_wave_requested": Callable(self, "_on_start_wave_requested"),
-	})
-	return _wave_flow_controller
+	return _get_gameplay_controller_binder().get_wave_flow_controller(self)
 
 func _get_visible_viewport_size_for_layout() -> Vector2:
 	return get_viewport().get_visible_rect().size
