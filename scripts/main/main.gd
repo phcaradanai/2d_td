@@ -1500,8 +1500,17 @@ func _deselect_tower() -> void:
 	clear_selected_tower()
 
 func _on_upgrade_tower_requested() -> void:
-	if current_state != GameState.BUILD: return
-	if selected_tower == null or not selected_tower.can_upgrade(): return
+	if selected_tower == null:
+		return
+	if not can_upgrade_selected_tower():
+		if game_hud:
+			var preview := get_selected_tower_upgrade_preview()
+			var locked_reason := str(preview.get("locked_reason", "")).strip_edges()
+			if locked_reason.is_empty():
+				locked_reason = "Upgrade unavailable"
+			game_hud.set_build_status(locked_reason)
+			show_wave_feedback(locked_reason, Color(1.0, 0.55, 0.2))
+		return
 
 	var next_cfg: Dictionary = {}
 	if selected_tower.has_method("get_next_upgrade_config"):
@@ -1519,6 +1528,7 @@ func _on_upgrade_tower_requested() -> void:
 	if cost <= 0:
 		if game_hud:
 			game_hud.set_build_status("Upgrade unavailable")
+			show_wave_feedback("Upgrade unavailable", Color(1.0, 0.55, 0.2))
 		return
 
 	if game_manager and game_manager.spend_gold(cost):

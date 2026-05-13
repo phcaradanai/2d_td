@@ -664,7 +664,11 @@ func get_next_upgrade_config() -> Dictionary:
 
 
 func can_upgrade() -> bool:
-	return not get_next_upgrade_id().is_empty()
+	if get_next_upgrade_id().is_empty():
+		return false
+	if get_next_upgrade_config().is_empty():
+		return false
+	return true
 
 
 func is_branch_point() -> bool:
@@ -675,11 +679,14 @@ func is_branch_point() -> bool:
 ## For branch points (multiple next_upgrade_ids), returns -1 — each branch
 ## target config carries its own upgrade_cost.
 func get_upgrade_cost() -> int:
-	if next_upgrade_ids.is_empty():
+	if get_next_upgrade_id().is_empty():
 		return -1
 	if next_upgrade_ids.size() > 1:
 		return -1
-	return _get_config_upgrade_cost(get_next_upgrade_config())
+	var next_config := get_next_upgrade_config()
+	if next_config.is_empty():
+		return -1
+	return _get_config_upgrade_cost(next_config)
 
 
 ## Reads upgrade_cost from a config dict. This is the cost to upgrade INTO

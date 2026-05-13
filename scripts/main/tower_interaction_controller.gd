@@ -127,18 +127,24 @@ func get_selected_tower_next_upgrade_config() -> Dictionary:
 
 
 func is_selected_tower_next_upgrade_element_unlocked() -> bool:
+	var next_id := get_selected_tower_next_upgrade_id()
+	if next_id.is_empty():
+		return false
 	var next_config := get_selected_tower_next_upgrade_config()
 	if next_config.is_empty():
-		return true
+		return false
 	if element_progression_manager == null or not element_progression_manager.has_method("can_build_tower"):
 		return true
 	return bool(element_progression_manager.call("can_build_tower", next_config))
 
 
 func get_selected_tower_upgrade_locked_reason() -> String:
+	var next_id := get_selected_tower_next_upgrade_id()
+	if next_id.is_empty():
+		return "Max tier reached"
 	var next_config := get_selected_tower_next_upgrade_config()
 	if next_config.is_empty():
-		return ""
+		return "Upgrade unavailable"
 	if is_selected_tower_next_upgrade_element_unlocked():
 		return ""
 	if element_progression_manager != null and element_progression_manager.has_method("get_locked_reason"):
@@ -150,12 +156,16 @@ func can_upgrade_selected_tower() -> bool:
 	var tower := get_selected_tower()
 	if tower == null:
 		return false
+	if get_selected_tower_next_upgrade_id().is_empty():
+		return false
+	if get_selected_tower_next_upgrade_config().is_empty():
+		return false
 	if not tower.has_method("can_upgrade"):
 		return false
 	if not bool(tower.can_upgrade()):
 		return false
 	return is_selected_tower_next_upgrade_element_unlocked()
-
+	
 
 func can_sell_selected_tower() -> bool:
 	return is_instance_valid(selected_tower)
@@ -206,7 +216,11 @@ func get_selected_tower_upgrade_preview() -> Dictionary:
 	var info := get_selected_tower_info()
 	var cost: int = get_selected_tower_upgrade_cost()
 	var next_id := get_selected_tower_next_upgrade_id()
+	if next_id.is_empty():
+		return {}
 	var next_config := get_selected_tower_next_upgrade_config()
+	if next_config.is_empty():
+		return {}
 	var next_ids: Array = []
 	var raw_ids = info.get("next_upgrade_ids", [])
 	if raw_ids is Array:
@@ -227,8 +241,8 @@ func get_selected_tower_upgrade_preview() -> Dictionary:
 		"element_locked": element_locked,
 		"locked": element_locked,
 		"locked_reason": locked_reason,
-		"can_upgrade": not element_locked,
-		"can_afford": not element_locked and get_current_gold() >= cost,
+		"can_upgrade": not element_locked and cost >= 0,
+		"can_afford": not element_locked and cost >= 0 and get_current_gold() >= cost,
 		"missing_gold": max(0, cost - get_current_gold()) if not element_locked else 0,
 	}
 
@@ -241,7 +255,7 @@ func get_selected_tower_action_state() -> Dictionary:
 	var locked_reason := get_selected_tower_upgrade_locked_reason()
 	var element_locked := not locked_reason.is_empty()
 	var can_upgrade: bool = can_upgrade_selected_tower()
-	var can_afford_upgrade: bool = can_upgrade and current_gold >= upgrade_cost
+	var can_afford_upgrade: bool = can_upgrade and upgrade_cost >= 0 and current_gold >= upgrade_cost
 	return {
 		"has_selection": tower != null,
 		"name": str(info.get("name", "Tower")) if not info.is_empty() else "Tower",
