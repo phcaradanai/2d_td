@@ -196,18 +196,75 @@ func _on_viewport_size_changed() -> void:
 
 func _get_gameplay_layout_controller() -> RefCounted:
 	if _gameplay_layout_controller == null:
-		_gameplay_layout_controller = GAMEPLAY_LAYOUT_CONTROLLER_SCRIPT.new(self)
+		_gameplay_layout_controller = GAMEPLAY_LAYOUT_CONTROLLER_SCRIPT.new()
+	_gameplay_layout_controller.bind({
+		"world_root": world_root,
+		"map_root": map_root,
+		"camera": camera,
+		"background": background,
+		"game_hud": game_hud,
+		"level_manager": level_manager,
+		"top_bar_height": TOP_BAR_HEIGHT,
+		"left_sidebar_width": LEFT_SIDEBAR_WIDTH,
+		"right_sidebar_width": RIGHT_SIDEBAR_WIDTH,
+		"outer_margin": OUTER_MARGIN,
+		"get_view_size": Callable(self, "_get_visible_viewport_size_for_layout"),
+	})
 	return _gameplay_layout_controller
 
 func _get_elemental_pick_controller() -> RefCounted:
 	if _elemental_pick_controller == null:
-		_elemental_pick_controller = ELEMENTAL_PICK_CONTROLLER_SCRIPT.new(self)
+		_elemental_pick_controller = ELEMENTAL_PICK_CONTROLLER_SCRIPT.new()
+	_elemental_pick_controller.bind({
+		"game_hud": game_hud,
+		"build_manager": build_manager,
+		"element_progression_manager": element_progression_manager,
+		"hud_state_presenter": hud_state_presenter,
+		"interest_service": element_td_interest_service,
+		"interest_pick_id": INTEREST_PICK_ID,
+		"default_interest_upgrade_step": DEFAULT_INTEREST_UPGRADE_STEP,
+		"refresh_elemental_shop": Callable(self, "_refresh_elemental_shop"),
+		"bind_hud_state_presenter": Callable(self, "_bind_hud_state_presenter"),
+		"set_bound_build_status": Callable(self, "_set_bound_hud_build_status"),
+		"show_pending_element_choice": Callable(self, "_show_pending_element_choice"),
+		"hide_element_choice": Callable(self, "_hide_element_choice"),
+		"resume_auto_next_wave_after_element_choice": Callable(self, "_resume_auto_next_wave_after_element_choice"),
+		"recalculate_interest_rate": Callable(self, "_recalculate_element_td_interest_rate"),
+		"show_wave_feedback": Callable(self, "show_wave_feedback"),
+	})
 	return _elemental_pick_controller
 
 func _get_wave_flow_controller() -> RefCounted:
 	if _wave_flow_controller == null:
-		_wave_flow_controller = WAVE_FLOW_CONTROLLER_SCRIPT.new(self)
+		_wave_flow_controller = WAVE_FLOW_CONTROLLER_SCRIPT.new()
+	_wave_flow_controller.bind({
+		"auto_next_wave_service": auto_next_wave_service,
+		"wave_manager": wave_manager,
+		"build_state": GameState.BUILD,
+		"wave_complete_state": GameState.WAVE_COMPLETE,
+		"paused_state": GameState.PAUSED,
+		"get_current_state": Callable(self, "_get_current_game_state"),
+		"has_pending_element_pick": Callable(self, "_has_pending_element_pick"),
+		"is_tree_paused": Callable(self, "_is_tree_paused_for_wave_flow"),
+		"refresh_start_wave_ui": Callable(self, "_refresh_start_wave_ui"),
+		"start_wave_requested": Callable(self, "_on_start_wave_requested"),
+	})
 	return _wave_flow_controller
+
+func _get_visible_viewport_size_for_layout() -> Vector2:
+	return get_viewport().get_visible_rect().size
+
+func _get_current_game_state() -> int:
+	return current_state
+
+func _is_tree_paused_for_wave_flow() -> bool:
+	return get_tree().paused
+
+func _set_bound_hud_build_status(message: String) -> void:
+	hud_state_presenter.set_build_status(message)
+
+func _hide_element_choice() -> void:
+	game_hud.hide_element_choice()
 
 func _update_world_layout() -> void:
 	_get_gameplay_layout_controller().update_world_layout()

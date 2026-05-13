@@ -23,6 +23,8 @@ ALLOWED_MAIN_PATTERNS = [
     r"hud_state_presenter\s*==\s*null",
     r"hud_state_presenter\s*=\s*HUD_STATE_PRESENTER_SCRIPT\.new\(\)",
     r"hud_state_presenter\.bind\(game_hud\)",
+    r'"hud_state_presenter":\s*hud_state_presenter',
+    r'"bind_hud_state_presenter":\s*Callable\(self,\s*"_bind_hud_state_presenter"\)',
 ]
 
 EXPECTED_MAIN_PRESENTER_METHODS = {
