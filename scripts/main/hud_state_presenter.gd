@@ -25,6 +25,11 @@ func set_status(message: String, color: Color = DEFAULT_STATUS_COLOR) -> void:
 	elif hud.has_method("show_status"):
 		hud.show_status(message, color)
 
+func set_build_status(message: String) -> void:
+	if hud == null:
+		return
+	_call_optional("set_build_status", [message])
+
 func set_warning(message: String) -> void:
 	set_status(message, WARNING_STATUS_COLOR)
 
