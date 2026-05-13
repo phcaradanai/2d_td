@@ -17,8 +17,8 @@ ROOT = Path(__file__).resolve().parents[2]
 MAIN = ROOT / "scripts/main/main.gd"
 
 FUNC_RE = re.compile(r"^func\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
-EXECUTION_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*(?:selected_tower|tower)\.upgrade\s*\(.*\)\s*$)")
-ANY_UPGRADE_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*\.upgrade\s*\(.*\)\s*$)")
+EXECUTION_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*(?:selected_tower|tower)\.upgrade\s*\(.*\)\s*$)", re.MULTILINE)
+ANY_UPGRADE_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*\.upgrade\s*\(.*\)\s*$)", re.MULTILINE)
 ELEMENT_GATE_RE = re.compile(
     r"element_progression_manager.*can_build_tower|can_build_tower.*element_progression_manager|"
     r"_config_unlocked_for_upgrade\s*\(|can_upgrade_selected_tower\s*\(|"
@@ -72,9 +72,9 @@ def is_execution_candidate(block: FunctionBlock) -> bool:
         return False
     if not SPEND_OR_MUTATE_RE.search(block.text):
         return False
-    if EXECUTION_LINE_RE.search(block.text, re.MULTILINE):
+    if EXECUTION_LINE_RE.search(block.text):
         return True
-    if ANY_UPGRADE_LINE_RE.search(block.text, re.MULTILINE):
+    if ANY_UPGRADE_LINE_RE.search(block.text):
         return True
     return False
 
