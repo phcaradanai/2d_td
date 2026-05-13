@@ -4,10 +4,12 @@ class_name GameplayControllerBinder
 const GAMEPLAY_LAYOUT_CONTROLLER_SCRIPT = preload("res://scripts/main/gameplay_layout_controller.gd")
 const ELEMENTAL_PICK_CONTROLLER_SCRIPT = preload("res://scripts/main/elemental_pick_controller.gd")
 const WAVE_FLOW_CONTROLLER_SCRIPT = preload("res://scripts/main/wave_flow_controller.gd")
+const TOWER_INTERACTION_CONTROLLER_SCRIPT = preload("res://scripts/main/tower_interaction_controller.gd")
 
 var gameplay_layout_controller: RefCounted = null
 var elemental_pick_controller: RefCounted = null
 var wave_flow_controller: RefCounted = null
+var tower_interaction_controller: RefCounted = null
 
 func get_gameplay_layout_controller(main) -> RefCounted:
 	if gameplay_layout_controller == null:
@@ -65,3 +67,18 @@ func get_wave_flow_controller(main) -> RefCounted:
 		"start_wave_requested": Callable(main, "_on_start_wave_requested"),
 	})
 	return wave_flow_controller
+
+func get_tower_interaction_controller(main) -> RefCounted:
+	if tower_interaction_controller == null:
+		tower_interaction_controller = TOWER_INTERACTION_CONTROLLER_SCRIPT.new()
+	tower_interaction_controller.bind({
+		"game_hud": main.game_hud,
+		"build_manager": main.build_manager,
+		"game_manager": main.game_manager,
+		"selected_tower": main.selected_tower,
+		"hud_state_presenter": main.hud_state_presenter,
+		"refresh_hud": Callable(main, "update_hud"),
+		"refresh_tower_shop": Callable(main, "_refresh_elemental_shop"),
+		"show_wave_feedback": Callable(main, "show_wave_feedback"),
+	})
+	return tower_interaction_controller
