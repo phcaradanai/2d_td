@@ -104,11 +104,6 @@ const DEFAULT_INTEREST_UPGRADE_STEP: float = 0.01
 const DEFAULT_MAX_INTEREST_UPGRADES: int = 5
 
 const STARTER_TOWER_IDS := ["basic_tower_t1", "neutral_cannon_tower"]
-var auto_next_wave_enabled: bool = true
-var auto_next_wave_delay_sec: float = 15.0
-var auto_next_wave_remaining: float = 0.0
-var auto_next_wave_countdown_active: bool = false
-var has_started_first_wave: bool = false
 
 # Element TD WC3-like interest: active combat only.
 # This prevents planning-phase farming while preserving wave-time economy decisions.
@@ -377,11 +372,16 @@ func _refresh_start_wave_ui() -> void:
 	can_start = can_start and wave_manager.has_next_wave()
 	can_start = can_start and not wave_manager.is_wave_running
 	can_start = can_start and not _has_pending_element_pick()
+	var countdown_active := false
+	var countdown_remaining := 0.0
+	if auto_next_wave_service:
+		countdown_active = bool(auto_next_wave_service.countdown_active)
+		countdown_remaining = float(auto_next_wave_service.remaining)
 	hud_state_presenter.refresh_start_wave_button(
 		can_start,
 		_is_waiting_for_manual_first_wave(),
-		auto_next_wave_countdown_active,
-		auto_next_wave_remaining,
+		countdown_active,
+		countdown_remaining,
 		wave_manager.get_next_wave_number()
 	)
 
@@ -399,7 +399,7 @@ func _setup_game_from_level() -> void:
 	_clear_gameplay_state()
 	_configure_auto_next_wave_from_level()
 	_configure_element_td_interest_from_level()
-	has_started_first_wave = false
+	auto_next_wave_service.reset() if auto_next_wave_service else null
 	_stop_auto_next_wave_countdown()
 
 	# Hide old map visual layer — MazeMapRenderer handles lightweight drawing now
@@ -550,15 +550,6 @@ func update_hud() -> void:
 	_refresh_hud_stats()
 	_refresh_start_wave_ui()
 
-func _sync_auto_next_wave_state_from_service() -> void:
-	if auto_next_wave_service == null:
-		return
-	auto_next_wave_enabled = auto_next_wave_service.enabled
-	auto_next_wave_delay_sec = auto_next_wave_service.delay_sec
-	auto_next_wave_remaining = auto_next_wave_service.remaining
-	auto_next_wave_countdown_active = auto_next_wave_service.countdown_active
-	has_started_first_wave = auto_next_wave_service.has_started_first_wave
-
 func _configure_auto_next_wave_from_level() -> void:
 	if auto_next_wave_service == null:
 		auto_next_wave_service = AUTO_NEXT_WAVE_SERVICE_SCRIPT.new()
@@ -566,7 +557,6 @@ func _configure_auto_next_wave_from_level() -> void:
 	if level_manager:
 		level_data = level_manager.level_data
 	auto_next_wave_service.configure_from_level(level_data)
-	_sync_auto_next_wave_state_from_service()
 
 func _configure_element_td_interest_from_level() -> void:
 	# Element TD WC3 baseline is 2% interest every 15 seconds.
@@ -631,13 +621,11 @@ func _maybe_start_auto_next_wave_countdown() -> void:
 		_can_auto_next_wave_countdown(),
 		_is_waiting_for_manual_first_wave()
 	)
-	_sync_auto_next_wave_state_from_service()
 	_refresh_start_wave_ui()
 
 func _stop_auto_next_wave_countdown() -> void:
 	if auto_next_wave_service:
 		auto_next_wave_service.stop_countdown()
-	_sync_auto_next_wave_state_from_service()
 	_refresh_start_wave_ui()
 
 func _update_auto_next_wave_countdown(delta: float) -> void:
@@ -648,7 +636,6 @@ func _update_auto_next_wave_countdown(delta: float) -> void:
 		_can_auto_next_wave_countdown(),
 		get_tree().paused or _has_pending_element_pick() or current_state == GameState.PAUSED
 	))
-	_sync_auto_next_wave_state_from_service()
 	if should_start:
 		_on_start_wave_requested()
 	else:
@@ -1703,7 +1690,7 @@ func _on_start_wave_requested() -> void:
 	if wave_manager == null or not wave_manager.has_next_wave():
 		return
 	_stop_auto_next_wave_countdown()
-	has_started_first_wave = true
+	auto_next_wave_service.mark_first_wave_started() if auto_next_wave_service else null
 	if audio_manager: audio_manager.unlock_audio()
 	wave_manager.start_next_wave()
 	if audio_manager:
