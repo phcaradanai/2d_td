@@ -12,3 +12,6 @@
 
 ## Alias godot
 use /Applications/Godot.app/Contents/MacOS/Godot
+
+## README FIRST
+Before making changes, read docs/MILESTONES.md and docs/AGENT_GUARDRAILS.md first. Follow the completed milestone guardrails and do not break already-stabilized systems.
