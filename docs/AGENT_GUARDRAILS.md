@@ -32,6 +32,7 @@ This is the short version. If anything here conflicts with `docs/MILESTONES.md`,
 - Wrappers must stay **thin** (≤ 8 non-empty lines is the current audit threshold).
 - Prefer `GameplayContext` / explicit dependency dictionaries over loose `owner` / `main` access.
 - Do not create files named `utils.gd`, `helpers.gd`, `controller_utils.gd`, or `main_utils.gd`. Use responsibility-based names.
+- For high-risk `main.gd` changes, prefer adding or running focused extractors/audits first, such as `tools/refactor/extract_main_sections.py` and `tools/refactor/audit_main_tower_upgrade_flow.py`, instead of reviewing the whole file through truncated tool output.
 
 ---
 
@@ -41,6 +42,7 @@ This is the short version. If anything here conflicts with `docs/MILESTONES.md`,
 - **Tower relocation / move does not exist** and must not be added unless a written design decision reverses this (e.g. a new file in `docs/decisions/`).
 - **Basic / starter tower is an early root, not a forced linear funnel.** Do not lock Basic → Basic T2 → Basic T3 before branching.
 - **Six elements** are the long-term foundation. Single, dual, and triple element towers are the long-term tree.
+- **Element tower upgrades must be gated by element level.** Upgrading into a target tower config must pass `element_progression_manager.can_build_tower(target_config)`, not only `tower.can_upgrade()`.
 - **Interest economy stays.** Do not remove it. Do not silently retune it.
 - **Wave pacing** (manual first wave, auto next wave countdown, override) stays.
 - **Enemy roles** (fast, runner, hunter, healer, disruptor, armored, tanky, …) must stay distinct.
@@ -82,6 +84,7 @@ The following items must continue to work end-to-end after any patch. If a patch
 - **Tower selling.**
 - **No tower relocation / move** unless explicitly approved by a new design decision file.
 - **Element pick** (the periodic element-choice flow).
+- **Element tower upgrade gate** (target tower config must require the matching element level; e.g. Light T2 requires Light 2).
 - **Interest upgrade pick** (the alternative to picking an element).
 - **Interest display** (rate, next rate, totals visible in the HUD).
 - **Wave current / next display** (the player can always tell which wave is now and which is coming).
@@ -106,6 +109,7 @@ python3 tools/refactor/audit_main_thin_wrappers.py
 python3 tools/refactor/audit_main_small_split.py
 python3 tools/refactor/audit_controller_stability.py
 python3 tools/refactor/audit_tower_interaction_boundary.py
+python3 tools/refactor/audit_main_tower_upgrade_flow.py
 python3 tools/refactor/audit_hud_presenter_boundary.py
 python3 tools/refactor/audit_hud_status_feedback_boundary.py
 python3 tools/refactor/audit_interest_ui_boundary.py
@@ -122,6 +126,7 @@ python3 tools/refactor/audit_project_guardrails.py
 # - exercise one element pick
 # - verify interest UI updates
 # - sell at least one tower
+# - verify an element tower cannot upgrade beyond the owned element level
 ```
 
 If Godot is not installed in the current environment, **report that the command could not be run** rather than claiming it passed.
@@ -163,6 +168,7 @@ Every change you submit should end with a final report shaped like this. Copy th
 - [ ] Tower selling still works
 - [ ] Tower relocation still intentionally absent
 - [ ] Element pick still works
+- [ ] Element tower upgrade gate still works
 - [ ] Wave start / countdown still works
 - [ ] Manual test notes attached
 ```
