@@ -37,9 +37,7 @@ EXECUTION_PATTERNS = [
 
 SPEND_OR_MUTATE_PATTERNS = [
     re.compile(r"\bspend_gold\s*\("),
-    re.compile(r"\badd_gold\s*\("),
     re.compile(r"\bgold\s*[-+*/]?="),
-    re.compile(r"\bupgrade\s*\("),
 ]
 
 ELEMENT_GATE_PATTERNS = [
@@ -123,12 +121,7 @@ def is_relevant(block: FunctionBlock) -> bool:
 
 
 def is_upgrade_execution(block: FunctionBlock) -> bool:
-    lowered = block.text.lower()
-    if block.contains_any(EXECUTION_PATTERNS):
-        return True
-    if "upgrade" in lowered and block.contains_any(SPEND_OR_MUTATE_PATTERNS):
-        return True
-    return False
+    return block.contains_any(EXECUTION_PATTERNS)
 
 
 def has_element_gate(block: FunctionBlock) -> bool:
