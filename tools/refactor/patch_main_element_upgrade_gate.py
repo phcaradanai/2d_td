@@ -17,15 +17,15 @@ ROOT = Path(__file__).resolve().parents[2]
 MAIN = ROOT / "scripts/main/main.gd"
 
 FUNC_RE = re.compile(r"^func\s+(?P<name>[A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
-EXECUTION_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*(?:selected_tower|tower)\.upgrade\s*\(.*)$)")
-ANY_UPGRADE_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*\.upgrade\s*\(.*)$)")
+EXECUTION_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*(?:selected_tower|tower)\.upgrade\s*\(.*\)\s*$)")
+ANY_UPGRADE_LINE_RE = re.compile(r"(?P<prefix>^(?P<indent>[\t ]*).*\.upgrade\s*\(.*\)\s*$)")
 ELEMENT_GATE_RE = re.compile(
     r"element_progression_manager.*can_build_tower|can_build_tower.*element_progression_manager|"
     r"_config_unlocked_for_upgrade\s*\(|can_upgrade_selected_tower\s*\(|"
     r"is_selected_tower_next_upgrade_element_unlocked\s*\(",
     re.DOTALL,
 )
-SPEND_OR_MUTATE_RE = re.compile(r"spend_gold\s*\(|gold\s*[-+*/]?=|\.upgrade\s*\(")
+SPEND_OR_MUTATE_RE = re.compile(r"\.upgrade\s*\(.*\)\s*$", re.MULTILINE)
 
 GUARD_TEMPLATE = """{indent}# Element TD regression guard: target tower tier must be unlocked by element level.
 {indent}# This intentionally checks the target upgrade config through TowerInteractionController,
@@ -68,8 +68,7 @@ def extract_functions(text: str) -> list[FunctionBlock]:
 
 
 def is_execution_candidate(block: FunctionBlock) -> bool:
-    lowered = block.text.lower()
-    if "upgrade" not in lowered:
+    if "upgrade" not in block.text.lower():
         return False
     if not SPEND_OR_MUTATE_RE.search(block.text):
         return False
