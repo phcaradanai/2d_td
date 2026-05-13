@@ -12,6 +12,7 @@ const AUTO_PLAY_VERIFIER_SCRIPT = preload("res://scripts/debug/auto_play_verifie
 const LEVEL_VALIDATOR_SCRIPT = preload("res://scripts/debug/level_validator.gd")
 const SPAWN_FORMATION_PLANNER_SCRIPT = preload("res://scripts/managers/spawn_formation_planner.gd")
 const ELEMENT_PROGRESSION_MANAGER_SCRIPT = preload("res://scripts/managers/element_progression_manager.gd")
+const AUTO_NEXT_WAVE_SERVICE_SCRIPT = preload("res://scripts/main/auto_next_wave_service.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -93,6 +94,7 @@ var hero_cooldown: float = 0.0
 var hero_active_duration: float = 0.0
 var hero_is_deployed: bool = false
 var element_progression_manager = null
+var auto_next_wave_service: RefCounted = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
 const INTEREST_PICK_ID: String = "__interest__"
@@ -146,6 +148,8 @@ func _ready() -> void:
 
 	_ensure_level_nodes_exist()
 	_ensure_element_progression_manager()
+	if auto_next_wave_service == null:
+		auto_next_wave_service = AUTO_NEXT_WAVE_SERVICE_SCRIPT.new()
 
 	if OS.has_feature("web"):
 		_show_audio_unlock_overlay()
@@ -560,13 +564,23 @@ func update_hud() -> void:
 	_refresh_hud_stats()
 	_refresh_start_wave_ui()
 
+func _sync_auto_next_wave_state_from_service() -> void:
+	if auto_next_wave_service == null:
+		return
+	auto_next_wave_enabled = auto_next_wave_service.enabled
+	auto_next_wave_delay_sec = auto_next_wave_service.delay_sec
+	auto_next_wave_remaining = auto_next_wave_service.remaining
+	auto_next_wave_countdown_active = auto_next_wave_service.countdown_active
+	has_started_first_wave = auto_next_wave_service.has_started_first_wave
+
 func _configure_auto_next_wave_from_level() -> void:
-	auto_next_wave_enabled = true
-	auto_next_wave_delay_sec = 15.0
+	if auto_next_wave_service == null:
+		auto_next_wave_service = AUTO_NEXT_WAVE_SERVICE_SCRIPT.new()
+	var level_data := {}
 	if level_manager:
-		auto_next_wave_enabled = bool(level_manager.level_data.get("auto_next_wave_enabled", true))
-		auto_next_wave_delay_sec = float(level_manager.level_data.get("auto_next_wave_delay_sec", 15.0))
-	auto_next_wave_delay_sec = max(1.0, auto_next_wave_delay_sec)
+		level_data = level_manager.level_data
+	auto_next_wave_service.configure_from_level(level_data)
+	_sync_auto_next_wave_state_from_service()
 
 func _configure_element_td_interest_from_level() -> void:
 	# Element TD WC3 baseline is 2% interest every 15 seconds.
@@ -608,50 +622,48 @@ func _has_pending_element_pick() -> bool:
 	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
 
 func _is_waiting_for_manual_first_wave() -> bool:
-	return not has_started_first_wave and wave_manager != null and wave_manager.get_next_wave_number() == 1 and not wave_manager.is_wave_running
+	if auto_next_wave_service == null or wave_manager == null:
+		return false
+	return auto_next_wave_service.is_waiting_for_manual_first_wave(
+		wave_manager.get_next_wave_number(),
+		wave_manager.is_wave_running
+	)
+
+func _can_auto_next_wave_countdown() -> bool:
+	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
+		return false
+	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
+		return false
+	if _has_pending_element_pick():
+		return false
+	return true
 
 func _maybe_start_auto_next_wave_countdown() -> void:
-	if not auto_next_wave_enabled:
-		_stop_auto_next_wave_countdown()
+	if auto_next_wave_service == null:
 		return
-	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
-		return
-	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
-		_stop_auto_next_wave_countdown()
-		return
-	if _has_pending_element_pick():
-		_stop_auto_next_wave_countdown()
-		return
-	# Element TD-like pacing, but first wave is manual so the player can place opener towers.
-	if _is_waiting_for_manual_first_wave():
-		_stop_auto_next_wave_countdown()
-		return
-	if auto_next_wave_countdown_active:
-		return
-	auto_next_wave_remaining = auto_next_wave_delay_sec
-	auto_next_wave_countdown_active = true
+	auto_next_wave_service.maybe_start_countdown(
+		_can_auto_next_wave_countdown(),
+		_is_waiting_for_manual_first_wave()
+	)
+	_sync_auto_next_wave_state_from_service()
 	_refresh_start_wave_ui()
 
 func _stop_auto_next_wave_countdown() -> void:
-	auto_next_wave_countdown_active = false
-	auto_next_wave_remaining = 0.0
+	if auto_next_wave_service:
+		auto_next_wave_service.stop_countdown()
+	_sync_auto_next_wave_state_from_service()
 	_refresh_start_wave_ui()
 
 func _update_auto_next_wave_countdown(delta: float) -> void:
-	if not auto_next_wave_countdown_active:
+	if auto_next_wave_service == null:
 		return
-	if get_tree().paused or _has_pending_element_pick() or current_state == GameState.PAUSED:
-		_refresh_start_wave_ui()
-		return
-	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
-		_stop_auto_next_wave_countdown()
-		return
-	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
-		_stop_auto_next_wave_countdown()
-		return
-	auto_next_wave_remaining -= delta
-	if auto_next_wave_remaining <= 0.0:
-		auto_next_wave_remaining = 0.0
+	var should_start: bool = bool(auto_next_wave_service.tick(
+		delta,
+		_can_auto_next_wave_countdown(),
+		get_tree().paused or _has_pending_element_pick() or current_state == GameState.PAUSED
+	))
+	_sync_auto_next_wave_state_from_service()
+	if should_start:
 		_on_start_wave_requested()
 	else:
 		_refresh_start_wave_ui()

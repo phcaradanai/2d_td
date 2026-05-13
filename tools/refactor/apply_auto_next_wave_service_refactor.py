@@ -8,7 +8,7 @@ BACKUP = ROOT / "scripts/main/main.gd.stage5h2.bak"
 PRELOAD = 'const AUTO_NEXT_WAVE_SERVICE_SCRIPT = preload("res://scripts/main/auto_next_wave_service.gd")'
 PRELOAD_AFTER = 'const ELEMENT_TD_INTEREST_SERVICE_SCRIPT = preload("res://scripts/main/element_td_interest_service.gd")'
 PRELOAD_FALLBACK = 'const ELEMENT_PROGRESSION_MANAGER_SCRIPT = preload("res://scripts/managers/element_progression_manager.gd")'
-VAR_LINE = 'var auto_next_wave_service: AutoNextWaveService = null'
+VAR_LINE = 'var auto_next_wave_service: RefCounted = null'
 VAR_AFTER = 'var element_td_interest_service: ElementTDInterestService = null'
 VAR_FALLBACK = 'var element_progression_manager = null'
 NEXT_FUNC = "\nfunc "
@@ -50,11 +50,11 @@ BLOCKS = {
 "func _update_auto_next_wave_countdown(delta: float) -> void:": '''func _update_auto_next_wave_countdown(delta: float) -> void:
 	if auto_next_wave_service == null:
 		return
-	var should_start := auto_next_wave_service.tick(
+	var should_start: bool = bool(auto_next_wave_service.tick(
 		delta,
 		_can_auto_next_wave_countdown(),
 		get_tree().paused or _has_pending_element_pick() or current_state == GameState.PAUSED
-	)
+	))
 	_sync_auto_next_wave_state_from_service()
 	if should_start:
 		_on_start_wave_requested()
