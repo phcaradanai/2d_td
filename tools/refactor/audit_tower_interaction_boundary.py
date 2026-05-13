@@ -34,6 +34,10 @@ EXPECTED_CONTROLLER_METHODS = [
     "can_show_selected_tower_info",
     "can_hide_selected_tower_info",
     "get_selected_tower_display_name",
+    "get_selected_tower_next_upgrade_id",
+    "get_selected_tower_next_upgrade_config",
+    "is_selected_tower_next_upgrade_element_unlocked",
+    "get_selected_tower_upgrade_locked_reason",
     "can_upgrade_selected_tower",
     "can_sell_selected_tower",
     "get_selected_tower_sell_value",
@@ -56,6 +60,7 @@ EXPECTED_BINDER_MARKERS = [
     "TOWER_INTERACTION_CONTROLLER_SCRIPT",
     "tower_interaction_controller",
     "get_tower_interaction_controller",
+    "element_progression_manager",
 ]
 
 FUNC_RE = re.compile(r"^func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
@@ -63,6 +68,8 @@ DIRECT_TOWER_INFO_RE = re.compile(r"\bgame_hud\.(show_tower_info|hide_tower_info
 DIRECT_TOWER_STATUS_RE = re.compile(r"\bgame_hud\.set_build_status\s*\((.*(?:Tower|Upgrade|gold|Selected|None).*)")
 TOWER_INFO_METHOD_RE = re.compile(r"func\s+get_selected_tower_info\s*\(\)\s*->\s*Dictionary")
 ACTION_STATE_METHOD_RE = re.compile(r"func\s+get_selected_tower_action_state\s*\(\)\s*->\s*Dictionary")
+ELEMENT_GATE_RE = re.compile(r"element_progression_manager.*can_build_tower|can_build_tower.*element_progression_manager", re.DOTALL)
+LOCKED_REASON_RE = re.compile(r"element_progression_manager.*get_locked_reason|get_locked_reason.*element_progression_manager", re.DOTALL)
 
 
 def read(path: Path) -> str:
@@ -112,6 +119,12 @@ def main() -> int:
     if not ACTION_STATE_METHOD_RE.search(controller_text):
         errors.append("TowerInteractionController get_selected_tower_action_state() must return Dictionary")
 
+    if not ELEMENT_GATE_RE.search(controller_text):
+        errors.append("TowerInteractionController must gate next upgrade config through element_progression_manager.can_build_tower")
+
+    if not LOCKED_REASON_RE.search(controller_text):
+        errors.append("TowerInteractionController must expose locked reason through element_progression_manager.get_locked_reason")
+
     missing_main_markers = [marker for marker in EXPECTED_MAIN_BINDING_MARKERS if marker not in main_text]
     for marker in missing_main_markers:
         warnings.append(f"main.gd has not bound TowerInteractionController yet: {marker}")
@@ -143,6 +156,8 @@ def main() -> int:
     print(f"Controller methods: {len(controller_funcs)}")
     print(f"Tower info helpers present: {all(name in controller_funcs for name in EXPECTED_CONTROLLER_METHODS[-7:])}")
     print(f"Tower action state helper present: {'get_selected_tower_action_state' in controller_funcs}")
+    print(f"Element upgrade gate present: {ELEMENT_GATE_RE.search(controller_text) is not None}")
+    print(f"Element locked reason present: {LOCKED_REASON_RE.search(controller_text) is not None}")
     print(f"Main binding markers present: {len(EXPECTED_MAIN_BINDING_MARKERS) - len(missing_main_markers)}/{len(EXPECTED_MAIN_BINDING_MARKERS)}")
     print(f"Binder tower interaction markers present: {len(EXPECTED_BINDER_MARKERS) - len(missing_binder_markers)}/{len(EXPECTED_BINDER_MARKERS)}")
     print(f"Tower keyword lines in main.gd: {len(keyword_lines)}")
