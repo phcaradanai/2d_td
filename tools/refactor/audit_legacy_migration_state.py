@@ -1,12 +1,16 @@
 #!/usr/bin/env python3
-"""Stage 5J-1: Audit legacy migration state before removing sync variables.
+"""Stage 5M-1: Audit legacy migration state with identifier precision.
 
-The refactor currently keeps some legacy variables in main.gd so older HUD/gameplay
-call sites can keep working while services are introduced. This audit reports
-where those variables and legacy helper functions are still referenced.
+The refactor keeps some migration helpers while services are introduced. This
+audit reports where legacy variables/helper functions are still referenced.
+
+Stage 5M improves precision by matching whole identifiers instead of raw
+substrings, avoiding false positives such as matching element_td_interest_rate
+inside _recalculate_element_td_interest_rate().
 """
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from collections import defaultdict
 
@@ -47,6 +51,7 @@ SERVICE_SYMBOLS = [
 ]
 
 FILE_SUFFIXES = {".gd", ".tscn", ".tres", ".json", ".cfg"}
+IDENTIFIER_CHARS = r"A-Za-z0-9_"
 
 
 def iter_files() -> list[Path]:
@@ -60,8 +65,19 @@ def iter_files() -> list[Path]:
     return sorted(files)
 
 
+def symbol_pattern(symbol: str) -> re.Pattern[str]:
+    # GDScript/Python-style identifiers use letters, digits and underscores.
+    # Negative lookaround is stricter than \b for symbols that can start with _.
+    return re.compile(rf"(?<![{IDENTIFIER_CHARS}]){re.escape(symbol)}(?![{IDENTIFIER_CHARS}])")
+
+
+def has_symbol(symbol: str, line: str) -> bool:
+    return bool(symbol_pattern(symbol).search(line))
+
+
 def scan_symbol(files: list[Path], symbol: str) -> list[tuple[Path, int, str]]:
     matches: list[tuple[Path, int, str]] = []
+    pattern = symbol_pattern(symbol)
     for path in files:
         try:
             lines = path.read_text(errors="replace").splitlines()
@@ -69,20 +85,20 @@ def scan_symbol(files: list[Path], symbol: str) -> list[tuple[Path, int, str]]:
             print(f"WARN: cannot read {path.relative_to(ROOT)}: {exc}")
             continue
         for idx, line in enumerate(lines, start=1):
-            if symbol in line:
+            if pattern.search(line):
                 matches.append((path, idx, line.strip()))
     return matches
 
 
 def classify_line(symbol: str, line: str) -> str:
     stripped = line.strip()
-    if stripped.startswith("var ") and symbol in stripped:
+    if re.match(rf"^var\s+{re.escape(symbol)}(?=\s*[:=])", stripped):
         return "declaration"
-    if stripped.startswith("func ") and symbol in stripped:
+    if re.match(rf"^func\s+{re.escape(symbol)}(?=\s*\()", stripped):
         return "function"
-    if f"{symbol} =" in stripped or f"{symbol}=" in stripped:
+    if re.search(rf"(?<![{IDENTIFIER_CHARS}]){re.escape(symbol)}(?![{IDENTIFIER_CHARS}])\s*=", stripped):
         return "write"
-    if f"{symbol}." in stripped or f"{symbol}(" in stripped:
+    if re.search(rf"(?<![{IDENTIFIER_CHARS}]){re.escape(symbol)}(?![{IDENTIFIER_CHARS}])\s*(\.|\()", stripped):
         return "call/read"
     return "reference"
 
@@ -110,7 +126,8 @@ def main() -> None:
     print_report("Legacy migration symbols", LEGACY_SYMBOLS, files)
     print_report("Service symbols", SERVICE_SYMBOLS, files)
     print("\nNext cleanup rule of thumb:")
-    print("- Do not remove a legacy variable while it still has non-declaration references outside sync helpers.")
+    print("- Treat JSON config key matches as allowed when the service still reads them.")
+    print("- Do not remove a legacy variable while it still has full-identifier references outside sync helpers.")
     print("- Prefer removing one service family's legacy state per commit.")
     print("- Run: godot --headless --path . --quit")
 
