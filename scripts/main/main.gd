@@ -1759,12 +1759,20 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		element_td_interest_service.elapsed = 0.0
 		_sync_interest_state_from_service()
 	else:
-		element_td_interest_elapsed = 0.0
+		if element_td_interest_service:
+			element_td_interest_service.elapsed = 0.0
+			_sync_interest_state_from_service()
+		else:
+			element_td_interest_elapsed = 0.0
 	if element_td_interest_service:
 		element_td_interest_service.disabled_for_wave = false
 		_sync_interest_state_from_service()
 	else:
-		element_td_interest_disabled_for_wave = false
+		if element_td_interest_service:
+			element_td_interest_service.disabled_for_wave = false
+			_sync_interest_state_from_service()
+		else:
+			element_td_interest_disabled_for_wave = false
 	_stop_auto_next_wave_countdown()
 	_clear_route_preview()
 	set_game_phase(GameState.WAVE)
@@ -1780,12 +1788,20 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 		element_td_interest_service.elapsed = 0.0
 		_sync_interest_state_from_service()
 	else:
-		element_td_interest_elapsed = 0.0
+		if element_td_interest_service:
+			element_td_interest_service.elapsed = 0.0
+			_sync_interest_state_from_service()
+		else:
+			element_td_interest_elapsed = 0.0
 	if element_td_interest_service:
 		element_td_interest_service.disabled_for_wave = false
 		_sync_interest_state_from_service()
 	else:
-		element_td_interest_disabled_for_wave = false
+		if element_td_interest_service:
+			element_td_interest_service.disabled_for_wave = false
+			_sync_interest_state_from_service()
+		else:
+			element_td_interest_disabled_for_wave = false
 	set_game_phase(GameState.WAVE_COMPLETE)
 	if game_manager:
 		game_manager.award_wave_completion(reward)
@@ -1827,12 +1843,20 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 		element_td_interest_service.disable_for_current_wave()
 		_sync_interest_state_from_service()
 	else:
-		element_td_interest_disabled_for_wave = true
+		if element_td_interest_service:
+			element_td_interest_service.disable_for_current_wave()
+			_sync_interest_state_from_service()
+		else:
+			element_td_interest_disabled_for_wave = true
 	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
 		_sync_interest_state_from_service()
 	else:
-		element_td_interest_elapsed = 0.0
+		if element_td_interest_service:
+			element_td_interest_service.elapsed = 0.0
+			_sync_interest_state_from_service()
+		else:
+			element_td_interest_elapsed = 0.0
 	if game_manager:
 		game_manager.damage_base(base_damage)
 
