@@ -66,14 +66,29 @@ func refresh_start_wave_button(
 		next_wave_number
 	)
 
+	# Keep both legacy and newer HUD APIs fed. Some GameHUD versions render the
+	# countdown badge/status from dedicated methods instead of the button text.
+	_call_optional("set_start_wave_enabled", [can_start])
+	_call_optional("set_start_wave_text", [text])
+	_call_optional("set_next_wave", [next_wave_number])
+	_call_optional("update_next_wave", [next_wave_number])
+	_call_optional("set_next_wave_number", [next_wave_number])
+	_call_optional("set_start_wave_countdown", [countdown_active, countdown_remaining, next_wave_number])
+	_call_optional("update_start_wave_countdown", [countdown_active, countdown_remaining, next_wave_number])
+	_call_optional("set_auto_next_wave_countdown", [countdown_active, countdown_remaining, next_wave_number])
+	_call_optional("set_auto_next_wave_status", [countdown_active, countdown_remaining, next_wave_number])
+
+	if countdown_active:
+		set_status("Auto next: Wave %d in %.0fs" % [next_wave_number, ceil(countdown_remaining)])
+	elif manual_first_wave:
+		set_status("Ready")
+
 	if hud.has_method("set_start_wave_button"):
 		hud.set_start_wave_button(can_start, text)
 		return
 	if hud.has_method("set_start_wave_button_state"):
 		hud.set_start_wave_button_state(can_start, text)
 		return
-	_call_optional("set_start_wave_enabled", [can_start])
-	_call_optional("set_start_wave_text", [text])
 
 func build_start_wave_button_text(
 	manual_first_wave: bool,
