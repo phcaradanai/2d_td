@@ -12,6 +12,7 @@ const AUTO_PLAY_VERIFIER_SCRIPT = preload("res://scripts/debug/auto_play_verifie
 const LEVEL_VALIDATOR_SCRIPT = preload("res://scripts/debug/level_validator.gd")
 const SPAWN_FORMATION_PLANNER_SCRIPT = preload("res://scripts/managers/spawn_formation_planner.gd")
 const ELEMENT_PROGRESSION_MANAGER_SCRIPT = preload("res://scripts/managers/element_progression_manager.gd")
+const ELEMENT_TD_INTEREST_SERVICE_SCRIPT = preload("res://scripts/main/element_td_interest_service.gd")
 const AUTO_NEXT_WAVE_SERVICE_SCRIPT = preload("res://scripts/main/auto_next_wave_service.gd")
 const HUD_STATE_PRESENTER_SCRIPT = preload("res://scripts/main/hud_state_presenter.gd")
 
@@ -96,6 +97,7 @@ var hero_active_duration: float = 0.0
 var hero_is_deployed: bool = false
 var element_progression_manager = null
 var auto_next_wave_service: RefCounted = null
+var element_td_interest_service: RefCounted = null
 var hud_state_presenter: RefCounted = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
@@ -558,40 +560,47 @@ func _configure_auto_next_wave_from_level() -> void:
 		level_data = level_manager.level_data
 	auto_next_wave_service.configure_from_level(level_data)
 
+func _sync_interest_state_from_service() -> void:
+	if element_td_interest_service == null:
+		return
+	element_td_interest_enabled = bool(element_td_interest_service.enabled)
+	element_td_interest_base_rate = float(element_td_interest_service.base_rate)
+	element_td_interest_rate = float(element_td_interest_service.rate)
+	element_td_interest_upgrade_step = float(element_td_interest_service.upgrade_step)
+	element_td_interest_upgrade_count = int(element_td_interest_service.upgrade_count)
+	element_td_interest_max_upgrades = int(element_td_interest_service.max_upgrades)
+	element_td_interest_interval_sec = float(element_td_interest_service.interval_sec)
+	element_td_interest_elapsed = float(element_td_interest_service.elapsed)
+	element_td_interest_disabled_for_wave = bool(element_td_interest_service.disabled_for_wave)
+
 func _configure_element_td_interest_from_level() -> void:
-	# Element TD WC3 baseline is 2% interest every 15 seconds.
-	# Keep it active-wave-only in this real-time/pauseable clone so players cannot idle in planning.
-	element_td_interest_enabled = true
-	element_td_interest_base_rate = 0.02
-	element_td_interest_upgrade_step = DEFAULT_INTEREST_UPGRADE_STEP
-	element_td_interest_max_upgrades = DEFAULT_MAX_INTEREST_UPGRADES
-	element_td_interest_upgrade_count = 0
-	element_td_interest_interval_sec = 15.0
+	if element_td_interest_service == null:
+		element_td_interest_service = ELEMENT_TD_INTEREST_SERVICE_SCRIPT.new()
+	var level_data := {}
 	if level_manager:
-		element_td_interest_enabled = bool(level_manager.level_data.get("interest_enabled", true))
-		element_td_interest_base_rate = float(level_manager.level_data.get("interest_rate", 0.02))
-		element_td_interest_upgrade_step = float(level_manager.level_data.get("interest_upgrade_step", DEFAULT_INTEREST_UPGRADE_STEP))
-		element_td_interest_max_upgrades = int(level_manager.level_data.get("interest_max_upgrades", DEFAULT_MAX_INTEREST_UPGRADES))
-		element_td_interest_interval_sec = float(level_manager.level_data.get("interest_interval_sec", 15.0))
-	element_td_interest_base_rate = max(0.0, element_td_interest_base_rate)
-	element_td_interest_upgrade_step = max(0.0, element_td_interest_upgrade_step)
-	element_td_interest_max_upgrades = max(0, element_td_interest_max_upgrades)
-	_recalculate_element_td_interest_rate()
-	element_td_interest_interval_sec = max(1.0, element_td_interest_interval_sec)
-	element_td_interest_elapsed = 0.0
-	element_td_interest_disabled_for_wave = false
+		level_data = level_manager.level_data
+	element_td_interest_service.configure_from_level(level_data)
+	_sync_interest_state_from_service()
 
 func _recalculate_element_td_interest_rate() -> void:
-	element_td_interest_rate = element_td_interest_base_rate + float(element_td_interest_upgrade_count) * element_td_interest_upgrade_step
-	element_td_interest_rate = max(0.0, element_td_interest_rate)
+	if element_td_interest_service == null:
+		element_td_interest_service = ELEMENT_TD_INTEREST_SERVICE_SCRIPT.new()
+	element_td_interest_service.recalculate_rate()
+	_sync_interest_state_from_service()
 
 func _format_interest_rate_percent() -> String:
+	if element_td_interest_service:
+		return element_td_interest_service.format_rate_percent()
 	return "%.0f%%" % (element_td_interest_rate * 100.0)
 
 func _format_next_interest_rate_percent() -> String:
+	if element_td_interest_service:
+		return element_td_interest_service.format_next_rate_percent()
 	return "%.0f%%" % ((element_td_interest_rate + element_td_interest_upgrade_step) * 100.0)
 
 func _can_choose_interest_upgrade() -> bool:
+	if element_td_interest_service:
+		return element_td_interest_service.can_choose_upgrade()
 	return element_td_interest_enabled and element_td_interest_upgrade_step > 0.0 and element_td_interest_upgrade_count < element_td_interest_max_upgrades
 
 func _has_pending_element_pick() -> bool:
@@ -642,34 +651,36 @@ func _update_auto_next_wave_countdown(delta: float) -> void:
 		_refresh_start_wave_ui()
 
 func _update_element_td_interest(delta: float) -> void:
-	if not element_td_interest_enabled:
-		return
-	if get_tree().paused or current_state == GameState.PAUSED:
-		return
-	if current_state != GameState.WAVE:
-		return
-	if _has_pending_element_pick():
-		return
-	if element_td_interest_disabled_for_wave:
-		return
-	if wave_manager == null or not wave_manager.is_wave_running:
-		return
-	if game_manager == null or game_manager.is_game_over or game_manager.is_victory:
-		return
-	# Do not tick after the final creep is gone but before wave_complete signal settles.
-	if int(wave_manager.get("active_enemy_count")) <= 0:
+	if element_td_interest_service == null:
 		return
 
-	element_td_interest_elapsed += delta
-	while element_td_interest_elapsed >= element_td_interest_interval_sec:
-		element_td_interest_elapsed -= element_td_interest_interval_sec
-		var interest_gold := int(floor(float(game_manager.gold) * element_td_interest_rate))
-		if interest_gold <= 0:
-			continue
+	var active_enemy_count := 0
+	if wave_manager and wave_manager.has_method("get_active_enemy_count"):
+		active_enemy_count = int(wave_manager.call("get_active_enemy_count"))
+	else:
+		active_enemy_count = get_tree().get_nodes_in_group("enemies").size()
+
+	var current_gold := 0
+	if game_manager:
+		current_gold = int(game_manager.gold)
+
+	var interest_gold: int = int(element_td_interest_service.tick(
+		delta,
+		current_gold,
+		active_enemy_count,
+		current_state == GameState.WAVE and not get_tree().paused
+	))
+
+	_sync_interest_state_from_service()
+
+	if interest_gold <= 0:
+		return
+
+	if game_manager:
 		game_manager.add_gold(interest_gold)
-		if game_hud:
-			game_hud.set_status("Interest +%d" % interest_gold)
-			show_wave_feedback("Interest +%d" % interest_gold, Color(1.0, 0.85, 0.25))
+
+	if game_hud and game_hud.has_method("show_floating_text"):
+		game_hud.show_floating_text("+%d interest" % interest_gold)
 
 func _level_uses_fixed_pathing() -> bool:
 	if level_manager == null:
@@ -827,7 +838,11 @@ func _choose_interest_upgrade_pick() -> void:
 	element_progression_manager.pending_picks = max(0, int(element_progression_manager.pending_picks) - 1)
 	element_td_interest_upgrade_count += 1
 	_recalculate_element_td_interest_rate()
-	element_td_interest_elapsed = 0.0
+	if element_td_interest_service:
+		element_td_interest_service.elapsed = 0.0
+		_sync_interest_state_from_service()
+	else:
+		element_td_interest_elapsed = 0.0
 	if game_hud:
 		game_hud.set_build_status("Interest upgraded to %s" % _format_interest_rate_percent())
 		show_wave_feedback("Interest %s" % _format_interest_rate_percent(), Color(1.0, 0.85, 0.25))
@@ -1740,8 +1755,16 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status(label_text)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
-	element_td_interest_elapsed = 0.0
-	element_td_interest_disabled_for_wave = false
+	if element_td_interest_service:
+		element_td_interest_service.elapsed = 0.0
+		_sync_interest_state_from_service()
+	else:
+		element_td_interest_elapsed = 0.0
+	if element_td_interest_service:
+		element_td_interest_service.disabled_for_wave = false
+		_sync_interest_state_from_service()
+	else:
+		element_td_interest_disabled_for_wave = false
 	_stop_auto_next_wave_countdown()
 	_clear_route_preview()
 	set_game_phase(GameState.WAVE)
@@ -1753,8 +1776,16 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		_refresh_gameplay_hud_state()
 
 func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> void:
-	element_td_interest_elapsed = 0.0
-	element_td_interest_disabled_for_wave = false
+	if element_td_interest_service:
+		element_td_interest_service.elapsed = 0.0
+		_sync_interest_state_from_service()
+	else:
+		element_td_interest_elapsed = 0.0
+	if element_td_interest_service:
+		element_td_interest_service.disabled_for_wave = false
+		_sync_interest_state_from_service()
+	else:
+		element_td_interest_disabled_for_wave = false
 	set_game_phase(GameState.WAVE_COMPLETE)
 	if game_manager:
 		game_manager.award_wave_completion(reward)
@@ -1792,8 +1823,16 @@ func _on_enemy_killed(reward_gold: int) -> void:
 func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 	# Element TD-style leak respawn still lets the creep be killed later,
 	# but interest for this wave stops after a leak to avoid abuse.
-	element_td_interest_disabled_for_wave = true
-	element_td_interest_elapsed = 0.0
+	if element_td_interest_service:
+		element_td_interest_service.disable_for_current_wave()
+		_sync_interest_state_from_service()
+	else:
+		element_td_interest_disabled_for_wave = true
+	if element_td_interest_service:
+		element_td_interest_service.elapsed = 0.0
+		_sync_interest_state_from_service()
+	else:
+		element_td_interest_elapsed = 0.0
 	if game_manager:
 		game_manager.damage_base(base_damage)
 
