@@ -70,3 +70,28 @@ func has_refresh_tower_shop_callback() -> bool:
 
 func has_show_wave_feedback_callback() -> bool:
 	return show_wave_feedback.is_valid()
+
+
+func get_selected_tower_info() -> Dictionary:
+	var tower := get_selected_tower()
+	if tower == null:
+		return {}
+	if not tower.has_method("get_info"):
+		return {}
+	var info = tower.get_info()
+	if info is Dictionary:
+		return info
+	return {}
+
+
+func can_show_selected_tower_info() -> bool:
+	return game_hud != null and game_hud.has_method("show_tower_info") and not get_selected_tower_info().is_empty()
+
+
+func can_hide_selected_tower_info() -> bool:
+	return game_hud != null and game_hud.has_method("hide_tower_info")
+
+
+func get_selected_tower_display_name() -> String:
+	var info := get_selected_tower_info()
+	return str(info.get("name", "Tower")) if not info.is_empty() else "Tower"
