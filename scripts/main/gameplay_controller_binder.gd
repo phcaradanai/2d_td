@@ -88,6 +88,7 @@ func get_tower_interaction_controller(main) -> RefCounted:
 		"game_hud": main.game_hud,
 		"build_manager": main.build_manager,
 		"game_manager": main.game_manager,
+		"element_progression_manager": main.element_progression_manager,
 		"selected_tower": main.selected_tower,
 		"hud_state_presenter": main.hud_state_presenter,
 		"refresh_hud": Callable(main, "update_hud"),
