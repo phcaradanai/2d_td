@@ -732,6 +732,10 @@ func upgrade() -> bool:
 	if next_config.is_empty():
 		push_error("[UPGRADE] Config not found for next_id=%s (current=%s)" % [next_id, upgrade_id])
 		return false
+	if not _is_upgrade_config_unlocked(next_config):
+		if OS.is_debug_build():
+			print("[UPGRADE] blocked by element gate current=%s target=%s" % [upgrade_id, next_id])
+		return false
 
 	if OS.is_debug_build():
 		print("[UPGRADE] current=%s target=%s cost=%d gold_available=%d" % [upgrade_id, next_id, _get_config_upgrade_cost(next_config), _get_current_gold()])
@@ -816,6 +820,22 @@ func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
 
 func _get_build_manager() -> Node:
 	return get_tree().current_scene.get_node_or_null("BuildManager")
+
+
+func _get_element_progression_manager() -> Node:
+	var current_scene := get_tree().current_scene
+	if current_scene == null:
+		return null
+	return current_scene.get_node_or_null("ElementProgressionManager")
+
+
+func _is_upgrade_config_unlocked(next_config: Dictionary) -> bool:
+	if next_config.is_empty():
+		return false
+	var element_manager := _get_element_progression_manager()
+	if element_manager == null or not element_manager.has_method("can_build_tower"):
+		return true
+	return bool(element_manager.call("can_build_tower", next_config))
 
 
 func _get_current_gold() -> int:
