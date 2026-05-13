@@ -56,6 +56,27 @@ func format_rate_percent() -> String:
 func format_next_rate_percent() -> String:
 	return "%.0f%%" % ((rate + upgrade_step) * 100.0)
 
+func get_current_rate_percent_label() -> String:
+	return format_rate_percent()
+
+func get_interval_seconds() -> float:
+	return interval_sec
+
+func estimate_interest_gold(current_gold: int) -> int:
+	if not enabled:
+		return 0
+	return int(floor(float(current_gold) * rate))
+
+func format_status(current_gold: int) -> String:
+	if not enabled:
+		return "Interest: Off"
+	var interval_label: String = str(int(interval_sec)) if is_equal_approx(interval_sec, float(int(interval_sec))) else "%.1f" % interval_sec
+	return "Interest: %s / %ss • +%d" % [
+		get_current_rate_percent_label(),
+		interval_label,
+		estimate_interest_gold(current_gold)
+	]
+
 func reset_wave_state() -> void:
 	elapsed = 0.0
 	disabled_for_wave = false

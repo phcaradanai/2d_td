@@ -259,7 +259,11 @@ func _refresh_start_wave_ui() -> void:
 	var raw_active_wave_number = wave_manager.get("active_wave_number")
 	if raw_active_wave_number != null:
 		active_wave_number = int(raw_active_wave_number)
+	var current_wave: int = int(game_manager.current_wave) if game_manager else active_wave_number
+	var has_next_wave: bool = wave_manager.has_next_wave()
 	var level_cleared: bool = not wave_manager.has_next_wave() and not wave_manager.is_wave_running
+	var gameplay_status: String = _get_top_bar_gameplay_status(countdown_active, countdown_remaining)
+	var interest_status_text: String = _format_interest_status_text()
 	hud_state_presenter.refresh_start_wave_button(
 		can_start,
 		_is_waiting_for_manual_first_wave(),
@@ -271,8 +275,47 @@ func _refresh_start_wave_ui() -> void:
 		wave_manager.is_wave_running,
 		level_cleared,
 		"",
-		active_wave_number
+		active_wave_number,
+		current_wave,
+		has_next_wave,
+		gameplay_status,
+		interest_status_text
 	)
+
+func _get_top_bar_gameplay_status(countdown_active: bool, countdown_remaining: float) -> String:
+	if current_state == GameState.GAME_OVER:
+		return "Defeat"
+	if current_state == GameState.VICTORY:
+		return "Victory"
+	if current_state == GameState.PAUSED or get_tree().paused:
+		return "Paused"
+	if _has_pending_element_pick():
+		return "Choose Element"
+	if wave_manager and wave_manager.is_wave_running:
+		return "In Progress"
+	if countdown_active:
+		return "Auto next in %ds" % int(ceil(max(0.0, countdown_remaining)))
+	if current_state == GameState.WAVE_COMPLETE:
+		return "Wave Complete"
+	return "Ready"
+
+func _format_interest_status_text() -> String:
+	if element_td_interest_service == null:
+		return "Interest: Off"
+	var current_gold := 0
+	if game_manager:
+		current_gold = int(game_manager.gold)
+	if element_td_interest_service.has_method("format_status"):
+		return str(element_td_interest_service.call("format_status", current_gold))
+	if bool(element_td_interest_service.get("enabled")):
+		return "Interest: %s" % _format_interest_rate_percent()
+	return "Interest: Off"
+
+func _refresh_interest_status_ui() -> void:
+	if game_hud == null:
+		return
+	_bind_hud_state_presenter()
+	hud_state_presenter.set_interest_status(_format_interest_status_text())
 
 func _refresh_gameplay_hud_state() -> void:
 	_refresh_start_wave_ui()
@@ -515,6 +558,8 @@ func _update_element_td_interest(delta: float) -> void:
 
 	if game_hud and game_hud.has_method("show_floating_text"):
 		game_hud.show_floating_text("+%d interest" % interest_gold)
+
+	_refresh_interest_status_ui()
 
 func _level_uses_fixed_pathing() -> bool:
 	if level_manager == null:
@@ -763,7 +808,7 @@ func _connect_signals() -> void:
 		wave_manager.base_damaged.connect(_on_base_damaged)
 
 	if game_manager:
-		game_manager.gold_changed.connect(game_hud.set_gold)
+		game_manager.gold_changed.connect(_on_gold_changed)
 		game_manager.lives_changed.connect(game_hud.set_lives)
 		game_manager.wave_changed.connect(game_hud.set_wave)
 		game_manager.game_over.connect(_on_game_over)
@@ -1575,7 +1620,7 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 	if game_manager:
 		game_manager.set_current_wave(wave_number)
 	if game_hud:
-		game_hud.set_status("Wave %d: %s" % [wave_number, wave_name])
+		game_hud.set_status("In Progress")
 		show_wave_feedback("Wave %d: %s" % [wave_number, wave_name], Color(1, 0.8, 0.2))
 		_refresh_gameplay_hud_state()
 
@@ -1594,7 +1639,7 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 	if game_manager:
 		game_manager.award_wave_completion(reward)
 	if game_hud:
-		game_hud.set_status("Wave %d cleared! +%d Gold" % [wave_number, reward])
+		game_hud.set_status("Wave Complete")
 		show_wave_feedback("Wave Cleared! +%d Gold" % reward, Color(0.2, 1.0, 0.4))
 		_refresh_gameplay_hud_state()
 	if audio_manager:
@@ -1623,6 +1668,11 @@ func _on_enemy_killed(reward_gold: int) -> void:
 		game_manager.add_gold(reward_gold)
 	if audio_manager:
 		audio_manager.play_sfx("enemy_die")
+
+func _on_gold_changed(new_gold: int) -> void:
+	if game_hud:
+		game_hud.set_gold(new_gold)
+	_refresh_interest_status_ui()
 
 func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 	# Element TD-style leak respawn still lets the creep be killed later,

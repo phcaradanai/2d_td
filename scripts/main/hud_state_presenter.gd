@@ -25,6 +25,12 @@ func set_status(message: String, color: Color = DEFAULT_STATUS_COLOR) -> void:
 	elif hud.has_method("show_status"):
 		hud.show_status(message, color)
 
+func set_interest_status(message: String) -> void:
+	if hud == null:
+		return
+	if hud.has_method("set_interest_status"):
+		hud.set_interest_status(message)
+
 func set_build_status(message: String) -> void:
 	if hud == null:
 		return
@@ -46,8 +52,11 @@ func refresh_core_stats(gold: int, lives: int, wave_number: int, total_waves: in
 	_call_optional("set_gold", [gold])
 	_call_optional("update_lives", [lives])
 	_call_optional("set_lives", [lives])
-	_call_optional("update_wave", [wave_number, total_waves])
-	_call_optional("set_wave", [wave_number])
+	if hud.has_method("set_current_wave"):
+		hud.set_current_wave(wave_number, total_waves)
+	else:
+		_call_optional("update_wave", [wave_number, total_waves])
+		_call_optional("set_wave", [wave_number])
 
 func refresh_start_wave_button(
 	can_start: bool,
@@ -60,18 +69,43 @@ func refresh_start_wave_button(
 	wave_running: bool = false,
 	level_cleared: bool = false,
 	locked_label: String = "",
-	active_wave_number: int = 0
+	active_wave_number: int = 0,
+	current_wave: int = 0,
+	has_next_wave: bool = true,
+	gameplay_status: String = "",
+	interest_status_text: String = ""
 ) -> void:
 	if hud == null:
 		return
 
+	var explicit_boundary := (
+		hud.has_method("set_current_wave")
+		and hud.has_method("set_next_wave_preview")
+		and hud.has_method("set_gameplay_status")
+		and hud.has_method("set_start_wave_action_state")
+	)
+	if explicit_boundary:
+		hud.set_current_wave(current_wave, total_waves)
+		hud.set_next_wave_preview(next_wave_number, wave_name, has_next_wave)
+		if gameplay_status != "":
+			hud.set_gameplay_status(gameplay_status)
+		if interest_status_text != "" and hud.has_method("set_interest_status"):
+			hud.set_interest_status(interest_status_text)
+		if locked_label != "":
+			_call_optional("set_start_wave_enabled", [false])
+			_call_optional("set_start_wave_text", [locked_label])
+		elif wave_running:
+			hud.set_start_wave_action_state(false, true, false, 0.0, next_wave_number)
+		elif level_cleared or total_waves <= 0 or not has_next_wave:
+			hud.set_start_wave_action_state(false, false, false, 0.0, 0)
+		else:
+			hud.set_start_wave_action_state(can_start, wave_running, countdown_active, countdown_remaining, next_wave_number)
+		return
+
 	if hud.has_method("refresh_start_wave_button"):
-		var hud_wave_number := next_wave_number
-		if wave_running and active_wave_number > 0:
-			hud_wave_number = active_wave_number
 		hud.refresh_start_wave_button(
 			total_waves,
-			hud_wave_number,
+			next_wave_number,
 			wave_name,
 			wave_running,
 			can_start,
@@ -82,7 +116,7 @@ func refresh_start_wave_button(
 			manual_first_wave
 		)
 		if countdown_active:
-			set_status("Auto next: Wave %d in %.0fs" % [next_wave_number, ceil(countdown_remaining)])
+			set_status("Auto next in %.0fs" % ceil(countdown_remaining))
 		elif manual_first_wave:
 			set_status("Ready")
 		return
@@ -107,7 +141,7 @@ func refresh_start_wave_button(
 	_call_optional("set_auto_next_wave_status", [countdown_active, countdown_remaining, next_wave_number])
 
 	if countdown_active:
-		set_status("Auto next: Wave %d in %.0fs" % [next_wave_number, ceil(countdown_remaining)])
+		set_status("Auto next in %.0fs" % ceil(countdown_remaining))
 	elif manual_first_wave:
 		set_status("Ready")
 

@@ -27,6 +27,9 @@ signal back_to_map_requested()
 @onready var settings_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/SettingsButton
 @onready var pause_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/PauseButton
 @onready var restart_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/RestartButton
+var interest_status_label: Label = null
+var start_wave_countdown_badge: Label = null
+var top_bar_total_waves: int = 0
 
 # Sidebar Panels
 @onready var left_sidebar: PanelContainer = $Root/ScreenLayout/MainContent/LeftSidebar
@@ -280,6 +283,9 @@ func _ready() -> void:
 	
 	set_status("Ready")
 	set_build_status("Build: None")
+	_ensure_interest_status_label()
+	_ensure_start_wave_countdown_badge()
+	set_interest_status("Interest: Off")
 	
 	# Top Bar Final Polish
 	gold_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2)) # Gold
@@ -287,6 +293,8 @@ func _ready() -> void:
 	wave_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 	next_wave_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
+	if interest_status_label:
+		interest_status_label.add_theme_color_override("font_color", Color(0.95, 0.86, 0.35))
 	
 	# Align top bar spacing
 	var top_hbox = gold_label.get_parent()
@@ -625,10 +633,37 @@ func set_lives(value: int) -> void:
 		)
 
 func set_wave(value: int) -> void:
+	set_current_wave(value, top_bar_total_waves)
+
+func set_current_wave(current_wave: int, total_waves: int) -> void:
+	top_bar_total_waves = total_waves
 	var old_text = wave_label.text
-	wave_label.text = "Wave: " + str(value)
+	if total_waves > 0:
+		wave_label.text = "Wave: %d/%d" % [current_wave, total_waves]
+	else:
+		wave_label.text = "Wave: %d" % current_wave
 	if old_text != wave_label.text:
 		pulse_label(wave_label)
+
+func set_next_wave_preview(next_wave_number: int, wave_name: String, has_next_wave: bool) -> void:
+	if next_wave_label == null:
+		return
+	if not has_next_wave or next_wave_number <= 0:
+		next_wave_label.text = "Next: None"
+		return
+	if wave_name != "":
+		next_wave_label.text = "Next: Wave %d • %s" % [next_wave_number, wave_name]
+	else:
+		next_wave_label.text = "Next: Wave %d" % next_wave_number
+
+func set_gameplay_status(message: String, color: Color = Color(0.85, 0.95, 1.0)) -> void:
+	set_status(message, color)
+
+func set_interest_status(text: String) -> void:
+	_ensure_interest_status_label()
+	if interest_status_label:
+		interest_status_label.text = text
+		interest_status_label.tooltip_text = text
 
 func set_version(text: String) -> void:
 	if version_label:
@@ -654,6 +689,7 @@ func _configure_start_wave_button_layout() -> void:
 	start_wave_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 	start_wave_button.clip_text = false
 	start_wave_button.add_theme_font_size_override("font_size", 13)
+	_ensure_start_wave_countdown_badge()
 
 func _style_start_wave_button(mode: String) -> void:
 	if start_wave_button == null:
@@ -674,25 +710,112 @@ func _style_start_wave_button(mode: String) -> void:
 
 
 func set_start_wave_enabled(enabled: bool) -> void:
-	if start_wave_button == null: return
+	if start_wave_button == null:
+		return
 	start_wave_button.disabled = not enabled
+
+func set_start_wave_text(text: String) -> void:
+	if start_wave_button == null:
+		return
+	start_wave_button.text = text
+	_set_start_wave_countdown_badge(false, 0)
 
 func update_start_wave_button(next_wave_number: int, total_waves: int, wave_name: String = "") -> void:
 	if next_wave_number <= 0 or next_wave_number > total_waves:
 		start_wave_button.text = "Cleared"
 		start_wave_button.disabled = true
-		if next_wave_label:
-			next_wave_label.text = "All waves cleared"
+		set_next_wave_preview(next_wave_number, wave_name, false)
 		return
 
-	if wave_name != "":
-		start_wave_button.text = "Start %d" % next_wave_number
+	set_start_wave_action_state(true, false, false, 0.0, next_wave_number)
+	set_next_wave_preview(next_wave_number, wave_name, true)
+
+func set_start_wave_action_state(can_start: bool, is_wave_running: bool, countdown_active: bool, countdown_remaining: float, next_wave_number: int) -> void:
+	if start_wave_button == null:
+		return
+	_configure_start_wave_button_layout()
+
+	if is_wave_running:
+		start_wave_button.text = "In Progress"
+		start_wave_button.disabled = true
+		_style_start_wave_button("running")
+		_set_start_wave_countdown_badge(false, 0)
+		return
+
+	if countdown_active:
+		var seconds := int(ceil(max(0.0, countdown_remaining)))
+		start_wave_button.text = "Auto %ds" % seconds
+		start_wave_button.disabled = not can_start
+		if seconds <= 5:
+			_style_start_wave_button("urgent")
+		elif seconds <= 10:
+			_style_start_wave_button("warning")
+		else:
+			_style_start_wave_button("normal")
+		_set_start_wave_countdown_badge(true, seconds)
+		return
+
+	if next_wave_number <= 0:
+		start_wave_button.text = "Cleared"
+		start_wave_button.disabled = true
+		_style_start_wave_button("cleared")
+		_set_start_wave_countdown_badge(false, 0)
+		return
+
+	start_wave_button.text = "Start Wave %d" % next_wave_number
+	start_wave_button.disabled = not can_start
+	_style_start_wave_button("manual" if can_start else "locked")
+	_set_start_wave_countdown_badge(false, 0)
+
+func _ensure_interest_status_label() -> void:
+	if interest_status_label and is_instance_valid(interest_status_label):
+		return
+	var top_hbox = gold_label.get_parent()
+	if not top_hbox is HBoxContainer:
+		return
+	interest_status_label = top_hbox.get_node_or_null("InterestStatusLabel")
+	if interest_status_label == null:
+		interest_status_label = Label.new()
+		interest_status_label.name = "InterestStatusLabel"
+		interest_status_label.text = "Interest: Off"
+		interest_status_label.clip_text = true
+		interest_status_label.custom_minimum_size = Vector2(190, 0)
+		interest_status_label.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		top_hbox.add_child(interest_status_label)
 		if next_wave_label:
-			next_wave_label.text = "Next: %d/%d - %s" % [next_wave_number, total_waves, wave_name]
-	else:
-		start_wave_button.text = "Start %d" % next_wave_number
-		if next_wave_label:
-			next_wave_label.text = "Next: %d/%d" % [next_wave_number, total_waves]
+			top_hbox.move_child(interest_status_label, next_wave_label.get_index() + 1)
+	interest_status_label.add_theme_font_size_override("font_size", 13)
+	interest_status_label.add_theme_color_override("font_color", Color(0.95, 0.86, 0.35))
+
+func _ensure_start_wave_countdown_badge() -> void:
+	if start_wave_button == null:
+		return
+	if start_wave_countdown_badge and is_instance_valid(start_wave_countdown_badge):
+		return
+	start_wave_countdown_badge = start_wave_button.get_node_or_null("StartWaveCountdownBadge")
+	if start_wave_countdown_badge == null:
+		start_wave_countdown_badge = Label.new()
+		start_wave_countdown_badge.name = "StartWaveCountdownBadge"
+		start_wave_countdown_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		start_wave_countdown_badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		start_wave_countdown_badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		start_wave_countdown_badge.add_theme_font_size_override("font_size", 10)
+		start_wave_countdown_badge.add_theme_color_override("font_color", Color(1.0, 0.88, 0.32))
+		start_wave_button.add_child(start_wave_countdown_badge)
+	start_wave_countdown_badge.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+	start_wave_countdown_badge.offset_left = -36.0
+	start_wave_countdown_badge.offset_top = 3.0
+	start_wave_countdown_badge.offset_right = -6.0
+	start_wave_countdown_badge.offset_bottom = 19.0
+	start_wave_countdown_badge.visible = false
+
+func _set_start_wave_countdown_badge(visible: bool, seconds: int) -> void:
+	_ensure_start_wave_countdown_badge()
+	if start_wave_countdown_badge == null:
+		return
+	start_wave_countdown_badge.visible = visible
+	if visible:
+		start_wave_countdown_badge.text = "%ds" % seconds
 
 func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_name: String, wave_running: bool, can_start: bool, level_cleared: bool, locked_label: String = "", countdown_active: bool = false, countdown_remaining: float = 0.0, manual_first_wave: bool = false) -> void:
 	if start_wave_button == null:
@@ -703,63 +826,31 @@ func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_nam
 		start_wave_button.text = "No Waves"
 		start_wave_button.disabled = true
 		_style_start_wave_button("locked")
-		if next_wave_label:
-			next_wave_label.text = "No waves loaded"
+		_set_start_wave_countdown_badge(false, 0)
+		set_next_wave_preview(next_wave_number, wave_name, false)
 		return
 	
 	if locked_label != "":
 		start_wave_button.text = locked_label
 		start_wave_button.disabled = true
 		_style_start_wave_button("locked")
-		if next_wave_label:
-			next_wave_label.text = locked_label
+		_set_start_wave_countdown_badge(false, 0)
 		return
 	
+	if wave_running:
+		set_start_wave_action_state(false, true, false, 0.0, next_wave_number)
+		return
+
 	if level_cleared or next_wave_number <= 0 or next_wave_number > total_waves:
 		start_wave_button.text = "Cleared"
 		start_wave_button.disabled = true
 		_style_start_wave_button("cleared")
-		if next_wave_label:
-			next_wave_label.text = "All waves cleared"
-		return
-	
-	if wave_running:
-		start_wave_button.text = "In Progress"
-		start_wave_button.disabled = true
-		_style_start_wave_button("running")
-		if next_wave_label:
-			next_wave_label.text = "Wave %d/%d active" % [next_wave_number, total_waves]
+		_set_start_wave_countdown_badge(false, 0)
+		set_next_wave_preview(next_wave_number, wave_name, false)
 		return
 
-	start_wave_button.disabled = not can_start
-	var wave_title := "Wave %d" % next_wave_number
-	if wave_name != "":
-		wave_title = "Wave %d: %s" % [next_wave_number, wave_name]
-
-	if manual_first_wave:
-		start_wave_button.text = "START WAVE %d" % next_wave_number
-		_style_start_wave_button("manual")
-		if next_wave_label:
-			next_wave_label.text = "%s — manual start" % wave_title
-		return
-
-	if countdown_active:
-		var seconds := int(ceil(max(0.0, countdown_remaining)))
-		start_wave_button.text = "START %d • %ds" % [next_wave_number, seconds]
-		if seconds <= 5:
-			_style_start_wave_button("urgent")
-		elif seconds <= 10:
-			_style_start_wave_button("warning")
-		else:
-			_style_start_wave_button("normal")
-		if next_wave_label:
-			next_wave_label.text = "%s — auto in %ds" % [wave_title, seconds]
-		return
-
-	start_wave_button.text = "Start %d" % next_wave_number
-	_style_start_wave_button("normal")
-	if next_wave_label:
-		next_wave_label.text = "%s — ready" % wave_title
+	set_next_wave_preview(next_wave_number, wave_name, true)
+	set_start_wave_action_state(can_start or manual_first_wave, wave_running, countdown_active, countdown_remaining, next_wave_number)
 
 func set_paused(paused: bool) -> void:
 	if paused:
