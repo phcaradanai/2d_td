@@ -748,7 +748,8 @@ func _refresh_elemental_shop() -> void:
 	ids = _ensure_starter_towers_in_shop(ids)
 	if build_manager.has_method("set_unlocked_tower_ids"):
 		build_manager.set_unlocked_tower_ids(ids)
-	game_hud.refresh_tower_shop(ids)
+	_bind_hud_state_presenter()
+	hud_state_presenter.refresh_tower_shop(ids)
 	if element_progression_manager and element_progression_manager.has_method("get_element_levels"):
 		game_hud.set_element_levels(element_progression_manager.get_element_levels())
 
