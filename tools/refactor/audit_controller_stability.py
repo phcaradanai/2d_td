@@ -11,6 +11,7 @@ MAIN = ROOT / "scripts/main/main.gd"
 ELEMENTAL = ROOT / "scripts/main/elemental_pick_controller.gd"
 LAYOUT = ROOT / "scripts/main/gameplay_layout_controller.gd"
 WAVE_FLOW = ROOT / "scripts/main/wave_flow_controller.gd"
+TOWER_INTERACTION = ROOT / "scripts/main/tower_interaction_controller.gd"
 
 MOVED_WRAPPERS = [
     "_update_world_layout",
@@ -92,8 +93,13 @@ def main() -> int:
     if "is_bound" not in wave_funcs:
         warnings.append("WaveFlowController does not expose is_bound()")
 
+    tower_text = read(TOWER_INTERACTION)
+    tower_funcs = function_names(tower_text)
+    if "is_bound" not in tower_funcs:
+        warnings.append("TowerInteractionController does not expose is_bound()")
+
     direct_private_calls: list[str] = []
-    for path in [ELEMENTAL, LAYOUT, WAVE_FLOW]:
+    for path in [ELEMENTAL, LAYOUT, WAVE_FLOW, TOWER_INTERACTION]:
         for idx, line in enumerate(read(path).splitlines(), start=1):
             if PRIVATE_MAIN_CALL_RE.search(line):
                 direct_private_calls.append(f"{path.relative_to(ROOT)}:{idx}: {line.strip()}")

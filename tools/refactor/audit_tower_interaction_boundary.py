@@ -9,6 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[2]
 MAIN = ROOT / "scripts/main/main.gd"
 CONTROLLER = ROOT / "scripts/main/tower_interaction_controller.gd"
+BINDER = ROOT / "scripts/main/gameplay_controller_binder.gd"
 
 TOWER_KEYWORDS = [
     "selected_tower",
@@ -33,12 +34,23 @@ EXPECTED_CONTROLLER_METHODS = [
     "can_show_selected_tower_info",
     "can_hide_selected_tower_info",
     "get_selected_tower_display_name",
+    "can_upgrade_selected_tower",
+    "can_sell_selected_tower",
+    "get_selected_tower_sell_value",
+    "get_selected_tower_upgrade_preview",
+    "has_refresh_hud_callback",
+    "has_refresh_tower_shop_callback",
+    "has_show_wave_feedback_callback",
 ]
 
 EXPECTED_MAIN_BINDING_MARKERS = [
-    "TOWER_INTERACTION_CONTROLLER_SCRIPT",
-    "_tower_interaction_controller",
     "_get_tower_interaction_controller",
+]
+
+EXPECTED_BINDER_MARKERS = [
+    "TOWER_INTERACTION_CONTROLLER_SCRIPT",
+    "tower_interaction_controller",
+    "get_tower_interaction_controller",
 ]
 
 FUNC_RE = re.compile(r"^func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
@@ -82,6 +94,7 @@ def main() -> int:
     main_text = read(MAIN)
     controller_text = read(CONTROLLER)
     controller_funcs = function_names(controller_text)
+    binder_text = read(BINDER) if BINDER.exists() else ""
 
     missing_methods = [name for name in EXPECTED_CONTROLLER_METHODS if name not in controller_funcs]
     for name in missing_methods:
@@ -93,6 +106,10 @@ def main() -> int:
     missing_main_markers = [marker for marker in EXPECTED_MAIN_BINDING_MARKERS if marker not in main_text]
     for marker in missing_main_markers:
         warnings.append(f"main.gd has not bound TowerInteractionController yet: {marker}")
+
+    missing_binder_markers = [marker for marker in EXPECTED_BINDER_MARKERS if marker not in binder_text]
+    for marker in missing_binder_markers:
+        warnings.append(f"gameplay_controller_binder.gd is missing tower interaction marker: {marker}")
 
     keyword_lines = lines_matching(
         main_text,
@@ -117,6 +134,7 @@ def main() -> int:
     print(f"Controller methods: {len(controller_funcs)}")
     print(f"Tower info helpers present: {all(name in controller_funcs for name in EXPECTED_CONTROLLER_METHODS[-4:])}")
     print(f"Main binding markers present: {len(EXPECTED_MAIN_BINDING_MARKERS) - len(missing_main_markers)}/{len(EXPECTED_MAIN_BINDING_MARKERS)}")
+    print(f"Binder tower interaction markers present: {len(EXPECTED_BINDER_MARKERS) - len(missing_binder_markers)}/{len(EXPECTED_BINDER_MARKERS)}")
     print(f"Tower keyword lines in main.gd: {len(keyword_lines)}")
     print(f"Direct tower info HUD calls: {len(direct_info_lines)}")
     print(f"Direct tower status HUD calls: {len(direct_status_lines)}")
@@ -140,7 +158,7 @@ def main() -> int:
             print(f"  FAIL: {item}")
         return 1
     print("  PASS: tower interaction controller boundary is ready.")
-    print("  NEXT: bind TowerInteractionController in main.gd, then migrate tower info HUD calls.")
+    print("  NEXT: migrate tower action methods (upgrade, sell, placement) out of main.gd into TowerInteractionController.")
     return 0
 
 

@@ -95,3 +95,47 @@ func can_hide_selected_tower_info() -> bool:
 func get_selected_tower_display_name() -> String:
 	var info := get_selected_tower_info()
 	return str(info.get("name", "Tower")) if not info.is_empty() else "Tower"
+
+
+func can_upgrade_selected_tower() -> bool:
+	var tower := get_selected_tower()
+	if tower == null:
+		return false
+	if not tower.has_method("can_upgrade"):
+		return false
+	return bool(tower.can_upgrade())
+
+
+func can_sell_selected_tower() -> bool:
+	return is_instance_valid(selected_tower)
+
+
+func get_selected_tower_sell_value() -> int:
+	var tower := get_selected_tower()
+	if tower == null:
+		return 0
+	if tower.has_method("get_sell_refund"):
+		return int(tower.get_sell_refund())
+	return 0
+
+
+func get_selected_tower_upgrade_preview() -> Dictionary:
+	var tower := get_selected_tower()
+	if tower == null:
+		return {}
+	if not tower.has_method("can_upgrade") or not tower.can_upgrade():
+		return {}
+	var info := get_selected_tower_info()
+	var cost := 0
+	if tower.has_method("get_upgrade_cost"):
+		cost = int(tower.get_upgrade_cost())
+	var next_ids: Array = []
+	var raw_ids = info.get("next_upgrade_ids", [])
+	if raw_ids is Array:
+		for entry in raw_ids:
+			next_ids.append(str(entry))
+	return {
+		"name": str(info.get("name", "Tower")),
+		"upgrade_cost": cost,
+		"next_upgrade_ids": next_ids,
+	}

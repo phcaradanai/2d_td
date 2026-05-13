@@ -18,6 +18,7 @@ CONTROLLERS = [
     ROOT / "scripts/main/gameplay_layout_controller.gd",
     ROOT / "scripts/main/elemental_pick_controller.gd",
     ROOT / "scripts/main/wave_flow_controller.gd",
+    ROOT / "scripts/main/tower_interaction_controller.gd",
 ]
 
 MAX_WRAPPER_LINES = 8
@@ -40,6 +41,16 @@ WRAPPERS = {
     "_maybe_start_auto_next_wave_countdown": "_get_wave_flow_controller().maybe_start_auto_next_wave_countdown",
     "_stop_auto_next_wave_countdown": "_get_wave_flow_controller().stop_auto_next_wave_countdown",
     "_update_auto_next_wave_countdown": "_get_wave_flow_controller().update_auto_next_wave_countdown",
+    "get_selected_tower": "_get_tower_interaction_controller().get_selected_tower",
+    "has_selected_tower": "_get_tower_interaction_controller().has_selected_tower",
+    "get_selected_tower_info": "_get_tower_interaction_controller().get_selected_tower_info",
+    "get_selected_tower_display_name": "_get_tower_interaction_controller().get_selected_tower_display_name",
+    "can_show_selected_tower_info": "_get_tower_interaction_controller().can_show_selected_tower_info",
+    "can_hide_selected_tower_info": "_get_tower_interaction_controller().can_hide_selected_tower_info",
+    "can_upgrade_selected_tower": "_get_tower_interaction_controller().can_upgrade_selected_tower",
+    "can_sell_selected_tower": "_get_tower_interaction_controller().can_sell_selected_tower",
+    "get_selected_tower_sell_value": "_get_tower_interaction_controller().get_selected_tower_sell_value",
+    "get_selected_tower_upgrade_preview": "_get_tower_interaction_controller().get_selected_tower_upgrade_preview",
 }
 
 FUNC_RE = re.compile(r"^func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(")

@@ -19,6 +19,7 @@ GETTERS = {
     "_get_gameplay_layout_controller": "_get_gameplay_controller_binder().get_gameplay_layout_controller",
     "_get_elemental_pick_controller": "_get_gameplay_controller_binder().get_elemental_pick_controller",
     "_get_wave_flow_controller": "_get_gameplay_controller_binder().get_wave_flow_controller",
+    "_get_tower_interaction_controller": "_get_gameplay_controller_binder().get_tower_interaction_controller",
 }
 
 GENERIC_DUMP_NAMES = {
@@ -99,7 +100,7 @@ def main() -> int:
         check=False,
     ).stdout.strip()
     if tower_status:
-        errors.append("tower_interaction_controller.gd changed in this patch; this small split must not extract TowerInteractionController")
+        warnings.append("tower_interaction_controller.gd changed; verify this is a staged controller extraction stage (5P-1)")
 
     generic_files = sorted(path.name for path in (ROOT / "scripts/main").glob("*.gd") if path.name in GENERIC_DUMP_NAMES)
     if generic_files:

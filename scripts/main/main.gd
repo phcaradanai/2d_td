@@ -204,6 +204,9 @@ func _get_elemental_pick_controller() -> RefCounted:
 func _get_wave_flow_controller() -> RefCounted:
 	return _get_gameplay_controller_binder().get_wave_flow_controller(self)
 
+func _get_tower_interaction_controller() -> RefCounted:
+	return _get_gameplay_controller_binder().get_tower_interaction_controller(self)
+
 func _get_visible_viewport_size_for_layout() -> Vector2:
 	return get_viewport().get_visible_rect().size
 
@@ -528,6 +531,38 @@ func _stop_auto_next_wave_countdown() -> void:
 
 func _update_auto_next_wave_countdown(delta: float) -> void:
 	_get_wave_flow_controller().update_auto_next_wave_countdown(delta)
+
+# --- TowerInteractionController compatibility wrappers (read-only) ---
+
+func get_selected_tower() -> Node2D:
+	return _get_tower_interaction_controller().get_selected_tower()
+
+func has_selected_tower() -> bool:
+	return _get_tower_interaction_controller().has_selected_tower()
+
+func get_selected_tower_info() -> Dictionary:
+	return _get_tower_interaction_controller().get_selected_tower_info()
+
+func get_selected_tower_display_name() -> String:
+	return _get_tower_interaction_controller().get_selected_tower_display_name()
+
+func can_show_selected_tower_info() -> bool:
+	return _get_tower_interaction_controller().can_show_selected_tower_info()
+
+func can_hide_selected_tower_info() -> bool:
+	return _get_tower_interaction_controller().can_hide_selected_tower_info()
+
+func can_upgrade_selected_tower() -> bool:
+	return _get_tower_interaction_controller().can_upgrade_selected_tower()
+
+func can_sell_selected_tower() -> bool:
+	return _get_tower_interaction_controller().can_sell_selected_tower()
+
+func get_selected_tower_sell_value() -> int:
+	return _get_tower_interaction_controller().get_selected_tower_sell_value()
+
+func get_selected_tower_upgrade_preview() -> Dictionary:
+	return _get_tower_interaction_controller().get_selected_tower_upgrade_preview()
 
 func _update_element_td_interest(delta: float) -> void:
 	if element_td_interest_service == null:
@@ -1444,6 +1479,7 @@ func _select_tower(tower: Node2D) -> void:
 
 	if is_instance_valid(tower):
 		selected_tower = tower
+		_get_tower_interaction_controller().set_selected_tower(tower)
 		if selected_tower.has_method("set_selected"):
 			selected_tower.set_selected(true)
 		if game_hud:
@@ -1456,6 +1492,7 @@ func clear_selected_tower() -> void:
 		if selected_tower.has_method("set_selected"):
 			selected_tower.set_selected(false)
 	selected_tower = null
+	_get_tower_interaction_controller().clear_selected_tower()
 	if game_hud:
 		game_hud.hide_tower_info()
 

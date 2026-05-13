@@ -10,7 +10,16 @@
     "allow": [
       "Bash(sed -i '' '/var current_level = level_index + 1/d' scripts/towers/tower.gd)",
       "Bash(sed -i '' 's/level_badge.text = \"Lv\" + str\\(current_level\\)/level_badge.text = \"T\" + str\\(tree_tier\\)/' scripts/towers/tower.gd)",
-      "Bash(python3 -c \"import json; data = json.load\\(open\\('data/towers_tree.json'\\)\\); print\\('Valid JSON. Entries:', len\\(data\\)\\); print\\('Keys:', list\\(data.keys\\(\\)\\)\\)\")"
+      "Bash(python3 -c \"import json; data = json.load\\(open\\('data/towers_tree.json'\\)\\); print\\('Valid JSON. Entries:', len\\(data\\)\\); print\\('Keys:', list\\(data.keys\\(\\)\\)\\)\")",
+      "Bash(git pull *)",
+      "Bash(/Applications/Godot.app/Contents/MacOS/Godot --headless --path . --quit)",
+      "Bash(python3 tools/refactor/audit_main_thin_wrappers.py)",
+      "Bash(python3 tools/refactor/audit_main_small_split.py)",
+      "Bash(python3 tools/refactor/audit_controller_stability.py)",
+      "Bash(python3 tools/refactor/audit_tower_interaction_boundary.py)",
+      "Bash(python3 tools/refactor/audit_project_guardrails.py)",
+      "Bash(echo \"EXIT_CODE=$?\")",
+      "Bash(git add *)"
     ]
   }
 }
