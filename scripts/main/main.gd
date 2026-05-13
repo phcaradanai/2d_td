@@ -13,6 +13,7 @@ const LEVEL_VALIDATOR_SCRIPT = preload("res://scripts/debug/level_validator.gd")
 const SPAWN_FORMATION_PLANNER_SCRIPT = preload("res://scripts/managers/spawn_formation_planner.gd")
 const ELEMENT_PROGRESSION_MANAGER_SCRIPT = preload("res://scripts/managers/element_progression_manager.gd")
 const AUTO_NEXT_WAVE_SERVICE_SCRIPT = preload("res://scripts/main/auto_next_wave_service.gd")
+const HUD_STATE_PRESENTER_SCRIPT = preload("res://scripts/main/hud_state_presenter.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -95,6 +96,7 @@ var hero_active_duration: float = 0.0
 var hero_is_deployed: bool = false
 var element_progression_manager = null
 var auto_next_wave_service: RefCounted = null
+var hud_state_presenter: RefCounted = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
 const INTEREST_PICK_ID: String = "__interest__"
@@ -361,43 +363,27 @@ func _cells_from_level_arrays(raw: Variant) -> Array[Vector2i]:
 			out.append(Vector2i(int(item[0]), int(item[1])))
 	return out
 
+func _bind_hud_state_presenter() -> void:
+	if hud_state_presenter == null:
+		hud_state_presenter = HUD_STATE_PRESENTER_SCRIPT.new()
+	if game_hud:
+		hud_state_presenter.bind(game_hud)
+
 func _refresh_start_wave_ui() -> void:
-	if not game_hud or not wave_manager: return
-
-	var total_waves = wave_manager.get_total_waves()
-	var wave_running = wave_manager.is_wave_running
-	var next_wave_number = wave_manager.get_next_wave_number()
-	var next_wave_name = wave_manager.get_next_wave_name()
-	var level_cleared = total_waves > 0 and not wave_running and not wave_manager.has_next_wave()
-	var can_start = (current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE) and not wave_running and wave_manager.has_next_wave()
-	var locked_label = ""
-
-	if _has_pending_element_pick() and not wave_running and not level_cleared:
-		can_start = false
-		locked_label = "Choose Element"
-
-	match current_state:
-		GameState.GAME_OVER:
-			locked_label = "Game Over"
-		GameState.VICTORY:
-			level_cleared = true
-		GameState.MENU, GameState.LEVEL_SELECT:
-			can_start = false
-
-	var manual_first_wave := _is_waiting_for_manual_first_wave()
-	if game_hud.has_method("refresh_start_wave_button"):
-		game_hud.refresh_start_wave_button(
-			total_waves,
-			next_wave_number,
-			next_wave_name,
-			wave_running,
-			can_start,
-			level_cleared,
-			locked_label,
-			auto_next_wave_countdown_active,
-			auto_next_wave_remaining,
-			manual_first_wave
-		)
+	if game_hud == null or wave_manager == null:
+		return
+	_bind_hud_state_presenter()
+	var can_start := current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE
+	can_start = can_start and wave_manager.has_next_wave()
+	can_start = can_start and not wave_manager.is_wave_running
+	can_start = can_start and not _has_pending_element_pick()
+	hud_state_presenter.refresh_start_wave_button(
+		can_start,
+		_is_waiting_for_manual_first_wave(),
+		auto_next_wave_countdown_active,
+		auto_next_wave_remaining,
+		wave_manager.get_next_wave_number()
+	)
 
 func _refresh_gameplay_hud_state() -> void:
 	_refresh_start_wave_ui()
