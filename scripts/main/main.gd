@@ -15,6 +15,8 @@ const ELEMENT_PROGRESSION_MANAGER_SCRIPT = preload("res://scripts/managers/eleme
 const ELEMENT_TD_INTEREST_SERVICE_SCRIPT = preload("res://scripts/main/element_td_interest_service.gd")
 const AUTO_NEXT_WAVE_SERVICE_SCRIPT = preload("res://scripts/main/auto_next_wave_service.gd")
 const HUD_STATE_PRESENTER_SCRIPT = preload("res://scripts/main/hud_state_presenter.gd")
+const WAVE_PREVIEW_HELPER_SCRIPT = preload("res://scripts/main/wave_preview_helper.gd")
+const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_plan_helper.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -2156,34 +2158,16 @@ func load_waves_config(path: String) -> Array:
 	return json if json is Array else []
 
 func level_id_to_int(level_id_value) -> int:
-	var text = str(level_id_value)
-	if text == "": return 0
-	if text.is_valid_int(): return int(text)
-	var parts = text.split("_")
-	if parts.is_empty(): return 0
-	var suffix = parts[parts.size() - 1]
-	return int(suffix) if suffix.is_valid_int() else 0
+	return WAVE_PREVIEW_HELPER_SCRIPT.level_id_to_int(level_id_value)
 
 func format_level_id(level_id: int) -> String:
-	return "level_%02d" % level_id
+	return WAVE_PREVIEW_HELPER_SCRIPT.format_level_id(level_id)
 
 func normalize_enemy_type(raw: String) -> String:
-	var value = raw.to_lower()
-	match value:
-		"basic", "normal", "grunt": return "Normal"
-		"fast", "runner", "scout": return "Fast"
-		"tank", "heavy", "brute": return "Heavy"
-		"swarm", "small": return "Swarm"
-		"air", "flyer": return "Air"
-		"air_fast", "fast_air", "flyer_fast": return "Fast"
-		"air_basic", "basic_air", "flyer_basic": return "Normal"
-		_: return raw.capitalize()
+	return WAVE_PREVIEW_HELPER_SCRIPT.normalize_enemy_type(raw)
 
 func normalize_enemy_category(raw_category) -> String:
-	var normalized = str(raw_category).strip_edges().to_lower()
-	if VALID_ENEMY_CATEGORIES.has(normalized):
-		return normalized
-	return ENEMY_CATEGORY_LAND
+	return WAVE_PREVIEW_HELPER_SCRIPT.normalize_enemy_category(raw_category)
 
 func get_enemy_type_config(enemy_type: String) -> Dictionary:
 	var path = "res://data/enemies.json"
@@ -2210,117 +2194,17 @@ func resolve_preview_enemy_category(group: Dictionary, enemy_type: String) -> St
 	return ENEMY_CATEGORY_LAND
 
 func format_preview_enemy_label(normalized_type: String, enemy_category: String) -> String:
-	if enemy_category == ENEMY_CATEGORY_AIR and normalized_type != "Air":
-		return "Air " + normalized_type
-	return normalized_type
+	return WAVE_PREVIEW_HELPER_SCRIPT.format_preview_enemy_label(normalized_type, enemy_category)
 
 func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categories: Dictionary = {}) -> Array[String]:
-	var traits: Array[String] = []
-	if total_count == 0: return ["Standard"]
-	
-	if categories.has(ENEMY_CATEGORY_AIR): traits.append("Air")
-	
-	# Majority/Significance checks
-	var has_fast = false
-	var has_heavy = false
-	var has_swarm = false
-	var has_shield = false
-	var has_anti_hero = false
-	
-	for type_name in enemy_counts.keys():
-		var count = enemy_counts[type_name]
-		var ratio = float(count) / total_count
-		
-		if type_name.contains("Fast") and ratio > 0.2: has_fast = true
-		if type_name.contains("Heavy") and ratio > 0.2: has_heavy = true
-		if type_name.contains("Swarm") and ratio > 0.4: has_swarm = true
-		if type_name.contains("Bulwark") or type_name.contains("Shield"): has_shield = true
-		if type_name.contains("Hunter") or type_name.contains("Anti-Hero"): has_anti_hero = true
-		if type_name.contains("Healer"): traits.append("Healing")
-		if type_name.contains("Cloaked") or type_name.contains("Ghost"): traits.append("Stealth")
-		if type_name.contains("Disruptor") or type_name.contains("EMP"): traits.append("Disruption")
-		if type_name.contains("Splitter"): traits.append("Splitting")
-		
-	if has_fast: traits.append("Fast")
-	if has_heavy: traits.append("Heavy")
-	if has_swarm or total_count >= 15: traits.append("Swarm")
-	if has_shield: traits.append("Shield")
-	if has_anti_hero: traits.append("Anti-Hero")
-	
-	if enemy_counts.keys().size() >= 3:
-		traits.append("Mixed")
-	
-	if traits.is_empty():
-		traits.append("Standard")
-		
-	return traits
+	return WAVE_PREVIEW_HELPER_SCRIPT.derive_wave_traits(enemy_counts, total_count, categories)
 
 func recommend_roles_for_wave(traits: Array[String]) -> Array[String]:
-	var roles: Array[String] = []
-
-	# Element TD-style guidance: recommend element roles and combo directions,
-	# not old tower classes such as Basic/Rapid/Cannon/Slow/Guardian.
-	if traits.has("Air"):
-		roles.append("Light/Nature anti-air")
-		roles.append("Dual universal tower")
-
-	if traits.has("Fast"):
-		roles.append("Water slow")
-		roles.append("Light rapid")
-
-	if traits.has("Heavy"):
-		roles.append("Fire splash")
-		roles.append("Earth high damage")
-
-	if traits.has("Shield"):
-		roles.append("Fire + Earth splash")
-		roles.append("Darkness vulnerability")
-
-	if traits.has("Anti-Hero"):
-		roles.append("Light burst")
-		roles.append("Water control")
-
-	if traits.has("Swarm"):
-		roles.append("Fire splash")
-		roles.append("Water + Nature slow field")
-
-	if traits.has("Mixed"):
-		roles.append("Dual element coverage")
-		roles.append("Triple combo tower")
-
-	if traits.has("Stealth"):
-		roles.append("Light reveal damage")
-		roles.append("Darkness chain pressure")
-
-	if traits.has("Healing") or traits.has("Splitting"):
-		roles.append("Light + Darkness chain")
-		roles.append("Earth single-target focus")
-
-	if traits.has("Disruption"):
-		roles.append("Long range element combo")
-		roles.append("Split tower placement")
-
-	if roles.is_empty():
-		roles.append("Starter tower")
-		roles.append("Choose first element")
-
-	var unique: Array[String] = []
-	for r in roles:
-		if not unique.has(r):
-			unique.append(r)
-	return unique
+	return WAVE_PREVIEW_HELPER_SCRIPT.recommend_roles_for_wave(traits)
 
 
 func _get_preview_wave_groups(wave_data: Dictionary) -> Array:
-	if wave_data.has("groups") and wave_data["groups"] is Array:
-		return wave_data["groups"]
-	if wave_data.has("spawns") and wave_data["spawns"] is Array:
-		return wave_data["spawns"]
-	if wave_data.has("enemies") and wave_data["enemies"] is Array:
-		return wave_data["enemies"]
-	if wave_data.has("enemy_type") or wave_data.has("type"):
-		return [wave_data]
-	return []
+	return WAVE_PREVIEW_HELPER_SCRIPT.get_preview_wave_groups(wave_data)
 
 func summarize_wave_for_preview(wave) -> Dictionary:
 	if not (wave is Dictionary):
@@ -2427,14 +2311,7 @@ func _load_enemy_config_for_preview() -> Dictionary:
 	return json.data if error == OK and json.data is Dictionary else {}
 
 func derive_wave_warnings(traits: Array[String]) -> Array[String]:
-	var warnings: Array[String] = []
-	if traits.has("Shield"):
-		warnings.append("Protected units take reduced damage inside the dome.")
-	if traits.has("Anti-Hero"):
-		warnings.append("Hunter targets Guardian directly. Priority target him.")
-	if traits.has("Shield") and traits.has("Anti-Hero"):
-		warnings.append("Danger: Shielded high-threat units detected.")
-	return warnings
+	return WAVE_PREVIEW_HELPER_SCRIPT.derive_wave_warnings(traits)
 
 func _validate_wave_design(wave_data: Dictionary, traits: Array[String], total_count: int) -> void:
 	if not OS.is_debug_build(): return
@@ -2486,17 +2363,7 @@ func get_wave_preview_for_index(level_id: int, wave_index: int) -> Dictionary:
 	return previews[wave_index]
 
 func format_wave_enemy_summary(summary: Dictionary) -> String:
-	var counts = summary.get("enemy_counts", {})
-	if counts.is_empty(): return "Malformed Wave"
-	var parts = []
-	var type_order = ["Normal", "Fast", "Heavy", "Swarm", "Air", "Air Normal", "Air Fast", "Air Heavy", "Air Swarm"]
-	for type_name in type_order:
-		if counts.has(type_name):
-			parts.append("%s x%d" % [type_name, int(counts[type_name])])
-	for type_name in counts.keys():
-		if not type_order.has(str(type_name)):
-			parts.append("%s x%d" % [str(type_name), int(counts[type_name])])
-	return ", ".join(parts)
+	return WAVE_PREVIEW_HELPER_SCRIPT.format_wave_enemy_summary(summary)
 
 func _refresh_hud_wave_intel() -> void:
 	if not game_hud or not wave_manager: return
@@ -3079,124 +2946,25 @@ func auto_play_plan(plan: Dictionary) -> void:
 	auto_play_verifier.start_verification(plan)
 
 func is_plan_valid_for_autoplay(plan: Dictionary) -> bool:
-	if plan.is_empty():
-		return false
-	if not plan.has("level_id"):
-		return false
-	if not plan.has("initial_actions"):
-		return false
-	if not plan.has("wave_actions"):
-		return false
-	if not bool(plan.get("validated", false)):
-		return false
-	if int(plan.get("expected_lives_lost", 999)) != 0:
-		return false
-	if bool(plan.get("covers_all_waves", false)) != true:
-		return false
-	var total_waves: int = _get_plan_total_waves(plan)
-	if total_waves <= 0:
-		return false
-	for wave_num in range(1, total_waves + 1):
-		if not plan.get("wave_actions", {}).has(str(wave_num)):
-			return false
-		var before_actions: Array = get_wave_action_list(plan, wave_num, "before_wave")
-		var after_actions: Array = get_wave_action_list(plan, wave_num, "after_wave")
-		for action in before_actions + after_actions:
-			if not (action is Dictionary):
-				return false
-			var action_type: String = str(action.get("type", ""))
-			if not ["place_tower", "upgrade_tower", "start_wave", "wait_seconds"].has(action_type):
-				return false
-	if total_waves > 1 and not _plan_has_between_wave_non_start_action(plan):
-		print("[AUTO_CLEAR] Planner selected upgrades/builds during search, but final plan contains no between-wave actions.")
-		return false
-	return true
+	return AUTO_CLEAR_PLAN_HELPER_SCRIPT.is_plan_valid_for_autoplay(plan)
 
 func _normalize_auto_clear_plan(plan: Dictionary) -> void:
-	if not plan.has("wave_actions") or not (plan["wave_actions"] is Dictionary):
-		plan["wave_actions"] = {}
-		return
-	var normalized: Dictionary = {}
-	for wave_key in plan["wave_actions"].keys():
-		var wave_data = plan["wave_actions"][wave_key]
-		if wave_data is Dictionary:
-			var wave_dict: Dictionary = wave_data
-			normalized[str(wave_key)] = {
-				"before_wave": wave_dict.get("before_wave", []),
-				"after_wave": wave_dict.get("after_wave", [])
-			}
-		elif wave_data is Array:
-			var before: Array = []
-			var after: Array = []
-			for action in wave_data:
-				if action is Dictionary and str(action.get("timing", "before_wave")) == "after_wave":
-					after.append(action)
-				elif action is Dictionary:
-					before.append(action)
-			normalized[str(wave_key)] = {"before_wave": before, "after_wave": after}
-	plan["wave_actions"] = normalized
+	AUTO_CLEAR_PLAN_HELPER_SCRIPT.normalize_auto_clear_plan(plan)
 
 func get_wave_action_list(plan: Dictionary, wave_number: int, timing: String) -> Array:
-	var wave_key := str(wave_number)
-	var wave_actions: Dictionary = plan.get("wave_actions", {})
-	if not wave_actions.has(wave_key):
-		return []
-	var entry = wave_actions[wave_key]
-	if entry is Dictionary:
-		return entry.get(timing, [])
-	var result: Array = []
-	if entry is Array:
-		for action in entry:
-			if action is Dictionary and str(action.get("timing", "before_wave")) == timing:
-				result.append(action)
-	return result
+	return AUTO_CLEAR_PLAN_HELPER_SCRIPT.get_wave_action_list(plan, wave_number, timing)
 
 func _get_plan_total_waves(plan: Dictionary) -> int:
-	var total_waves: int = 0
-	for wave_key in plan.get("wave_actions", {}).keys():
-		total_waves = max(total_waves, int(str(wave_key)))
-	return total_waves
+	return AUTO_CLEAR_PLAN_HELPER_SCRIPT.get_plan_total_waves(plan)
 
 func _plan_has_between_wave_non_start_action(plan: Dictionary) -> bool:
-	var total_waves: int = _get_plan_total_waves(plan)
-	for wave_num in range(1, total_waves + 1):
-		for action in get_wave_action_list(plan, wave_num, "after_wave"):
-			if action is Dictionary and str(action.get("type", "")) != "start_wave":
-				return true
-		if wave_num > 1:
-			for action in get_wave_action_list(plan, wave_num, "before_wave"):
-				if action is Dictionary and str(action.get("type", "")) != "start_wave":
-					return true
-	return false
+	return AUTO_CLEAR_PLAN_HELPER_SCRIPT.plan_has_between_wave_non_start_action(plan)
 
 func _format_auto_clear_final_plan(plan: Dictionary) -> String:
-	var lines: Array[String] = ["[AUTO_CLEAR] FINAL PLAN:"]
-	lines.append("Initial actions:")
-	for action in plan.get("initial_actions", []):
-		if action is Dictionary:
-			lines.append(" - %s" % _auto_clear_action_text(action))
-	var total_waves: int = _get_plan_total_waves(plan)
-	for wave_num in range(1, total_waves + 1):
-		lines.append("Wave %d before:" % wave_num)
-		for action in get_wave_action_list(plan, wave_num, "before_wave"):
-			if action is Dictionary:
-				lines.append(" - %s" % _auto_clear_action_text(action))
-		lines.append("Wave %d after:" % wave_num)
-		for action in get_wave_action_list(plan, wave_num, "after_wave"):
-			if action is Dictionary:
-				lines.append(" - %s" % _auto_clear_action_text(action))
-	return "\n".join(lines)
+	return AUTO_CLEAR_PLAN_HELPER_SCRIPT.format_auto_clear_final_plan(plan)
 
 func _auto_clear_action_text(action: Dictionary) -> String:
-	match str(action.get("type", "")):
-		"place_tower":
-			return "place %s %s" % [str(action.get("tower_type", "")), str(action.get("cell", []))]
-		"upgrade_tower":
-			return "upgrade %s" % str(action.get("tower_ref", action.get("cell", [])))
-		"start_wave":
-			return "start_wave"
-		_:
-			return str(action)
+	return AUTO_CLEAR_PLAN_HELPER_SCRIPT.auto_clear_action_text(action)
 
 func _retry_auto_clear_after_real_failure(reason: String) -> void:
 	if not auto_clear_active:
