@@ -4,6 +4,9 @@
 Prerequisite: Stage 5K rewire has made ElementTDInterestService the runtime
 source of truth. This script removes the temporary mirror variables and rewires
 remaining reads/writes to the service.
+
+Stage 5L-1B hardens symbol replacement so it does not rewrite legacy symbol
+substrings inside function names such as _recalculate_element_td_interest_rate.
 """
 from __future__ import annotations
 
@@ -208,6 +211,12 @@ def rewrite_remaining_legacy_writes(text: str) -> str:
 	return text
 
 
+def replace_identifier(text: str, old: str, new: str) -> str:
+	# Only replace full identifiers. This prevents rewriting function names such as
+	# _recalculate_element_td_interest_rate into invalid GDScript syntax.
+	return re.sub(rf"(?<![A-Za-z0-9_]){re.escape(old)}(?![A-Za-z0-9_])", new, text)
+
+
 def rewrite_remaining_legacy_reads(text: str) -> str:
 	# These are used mostly in HUD/detail panel arguments. Keep expressions typed.
 	replacements = {
@@ -220,17 +229,19 @@ def rewrite_remaining_legacy_reads(text: str) -> str:
 		"element_td_interest_enabled": "bool(element_td_interest_service.enabled if element_td_interest_service else true)",
 	}
 	for old, new in replacements.items():
-		text = text.replace(old, new)
+		text = replace_identifier(text, old, new)
 	return text
 
 
 def validate_cleanup(text: str) -> None:
-	remaining = [symbol for symbol in LEGACY_SYMBOLS if symbol in text]
+	remaining = [symbol for symbol in LEGACY_SYMBOLS if re.search(rf"(?<![A-Za-z0-9_]){re.escape(symbol)}(?![A-Za-z0-9_])", text)]
 	if remaining:
 		print("Stage 5L cleanup incomplete. Remaining legacy symbols:")
 		for symbol in remaining:
 			print("-", symbol)
 		raise SystemExit(1)
+	if "func _recalculate_float" in text:
+		raise SystemExit("cleanup corrupted _recalculate_element_td_interest_rate")
 	if "element_td_interest_service.apply_upgrade()" not in text:
 		raise SystemExit("interest upgrade path was not rewired to service.apply_upgrade()")
 
