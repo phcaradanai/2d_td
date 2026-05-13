@@ -645,8 +645,26 @@ func get_next_level_data() -> Dictionary:
 	if level_index + 1 < levels.size():
 		return levels[level_index + 1]
 	return {}
+
+
+func get_next_upgrade_id() -> String:
+	if next_upgrade_ids.is_empty():
+		return ""
+	return str(next_upgrade_ids[0])
+
+
+func get_next_upgrade_config() -> Dictionary:
+	var next_id := get_next_upgrade_id()
+	if next_id.is_empty():
+		return {}
+	var bm := _get_build_manager()
+	if bm == null:
+		return {}
+	return bm.towers_config.get(next_id, {})
+
+
 func can_upgrade() -> bool:
-	return not next_upgrade_ids.is_empty()
+	return not get_next_upgrade_id().is_empty()
 
 
 func is_branch_point() -> bool:
@@ -661,12 +679,7 @@ func get_upgrade_cost() -> int:
 		return -1
 	if next_upgrade_ids.size() > 1:
 		return -1
-	var next_id: String = next_upgrade_ids[0]
-	var bm := _get_build_manager()
-	if bm == null:
-		return -1
-	var next_config: Dictionary = bm.towers_config.get(next_id, {})
-	return _get_config_upgrade_cost(next_config)
+	return _get_config_upgrade_cost(get_next_upgrade_config())
 
 
 ## Reads upgrade_cost from a config dict. This is the cost to upgrade INTO
@@ -704,13 +717,11 @@ func upgrade() -> bool:
 	if next_upgrade_ids.is_empty():
 		return false
 
-	var next_id: String = next_upgrade_ids[0]
-	var bm := _get_build_manager()
-	if bm == null:
-		push_error("[UPGRADE] BuildManager not found for tower=%s" % upgrade_id)
+	var next_id := get_next_upgrade_id()
+	if next_id.is_empty():
 		return false
 
-	var next_config: Dictionary = bm.towers_config.get(next_id, {})
+	var next_config := get_next_upgrade_config()
 	if next_config.is_empty():
 		push_error("[UPGRADE] Config not found for next_id=%s (current=%s)" % [next_id, upgrade_id])
 		return false
