@@ -6,6 +6,19 @@ const ELEMENTAL_PICK_CONTROLLER_SCRIPT = preload("res://scripts/main/elemental_p
 const WAVE_FLOW_CONTROLLER_SCRIPT = preload("res://scripts/main/wave_flow_controller.gd")
 const TOWER_INTERACTION_CONTROLLER_SCRIPT = preload("res://scripts/main/tower_interaction_controller.gd")
 
+# Mirror main.gd public constants explicitly inside the binder instead of reading
+# script-local enums/constants through the main instance. This keeps controller
+# binding stable after moving the bind code out of main.gd.
+const STATE_BUILD: int = 2
+const STATE_WAVE_COMPLETE: int = 4
+const STATE_PAUSED: int = 5
+const INTEREST_PICK_ID: String = "__interest__"
+const DEFAULT_INTEREST_UPGRADE_STEP: float = 0.01
+const TOP_BAR_HEIGHT: float = 60.0
+const LEFT_SIDEBAR_WIDTH: float = 200.0
+const RIGHT_SIDEBAR_WIDTH: float = 260.0
+const OUTER_MARGIN: float = 0.0
+
 var gameplay_layout_controller: RefCounted = null
 var elemental_pick_controller: RefCounted = null
 var wave_flow_controller: RefCounted = null
@@ -21,10 +34,10 @@ func get_gameplay_layout_controller(main) -> RefCounted:
 		"background": main.background,
 		"game_hud": main.game_hud,
 		"level_manager": main.level_manager,
-		"top_bar_height": main.TOP_BAR_HEIGHT,
-		"left_sidebar_width": main.LEFT_SIDEBAR_WIDTH,
-		"right_sidebar_width": main.RIGHT_SIDEBAR_WIDTH,
-		"outer_margin": main.OUTER_MARGIN,
+		"top_bar_height": TOP_BAR_HEIGHT,
+		"left_sidebar_width": LEFT_SIDEBAR_WIDTH,
+		"right_sidebar_width": RIGHT_SIDEBAR_WIDTH,
+		"outer_margin": OUTER_MARGIN,
 		"get_view_size": Callable(main, "_get_visible_viewport_size_for_layout"),
 	})
 	return gameplay_layout_controller
@@ -38,8 +51,8 @@ func get_elemental_pick_controller(main) -> RefCounted:
 		"element_progression_manager": main.element_progression_manager,
 		"hud_state_presenter": main.hud_state_presenter,
 		"interest_service": main.element_td_interest_service,
-		"interest_pick_id": main.INTEREST_PICK_ID,
-		"default_interest_upgrade_step": main.DEFAULT_INTEREST_UPGRADE_STEP,
+		"interest_pick_id": INTEREST_PICK_ID,
+		"default_interest_upgrade_step": DEFAULT_INTEREST_UPGRADE_STEP,
 		"refresh_elemental_shop": Callable(main, "_refresh_elemental_shop"),
 		"bind_hud_state_presenter": Callable(main, "_bind_hud_state_presenter"),
 		"set_bound_build_status": Callable(main, "_set_bound_hud_build_status"),
@@ -57,9 +70,9 @@ func get_wave_flow_controller(main) -> RefCounted:
 	wave_flow_controller.bind({
 		"auto_next_wave_service": main.auto_next_wave_service,
 		"wave_manager": main.wave_manager,
-		"build_state": main.GameState.BUILD,
-		"wave_complete_state": main.GameState.WAVE_COMPLETE,
-		"paused_state": main.GameState.PAUSED,
+		"build_state": STATE_BUILD,
+		"wave_complete_state": STATE_WAVE_COMPLETE,
+		"paused_state": STATE_PAUSED,
 		"get_current_state": Callable(main, "_get_current_game_state"),
 		"has_pending_element_pick": Callable(main, "_has_pending_element_pick"),
 		"is_tree_paused": Callable(main, "_is_tree_paused_for_wave_flow"),
