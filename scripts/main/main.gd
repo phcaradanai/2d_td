@@ -17,6 +17,9 @@ const AUTO_NEXT_WAVE_SERVICE_SCRIPT = preload("res://scripts/main/auto_next_wave
 const HUD_STATE_PRESENTER_SCRIPT = preload("res://scripts/main/hud_state_presenter.gd")
 const WAVE_PREVIEW_HELPER_SCRIPT = preload("res://scripts/main/wave_preview_helper.gd")
 const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_plan_helper.gd")
+const GAMEPLAY_LAYOUT_CONTROLLER_SCRIPT = preload("res://scripts/main/gameplay_layout_controller.gd")
+const ELEMENTAL_PICK_CONTROLLER_SCRIPT = preload("res://scripts/main/elemental_pick_controller.gd")
+const WAVE_FLOW_CONTROLLER_SCRIPT = preload("res://scripts/main/wave_flow_controller.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -101,6 +104,9 @@ var element_progression_manager = null
 var auto_next_wave_service: RefCounted = null
 var element_td_interest_service: RefCounted = null
 var hud_state_presenter: RefCounted = null
+var _gameplay_layout_controller: RefCounted = null
+var _elemental_pick_controller: RefCounted = null
+var _wave_flow_controller: RefCounted = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
 const INTEREST_PICK_ID: String = "__interest__"
@@ -188,168 +194,32 @@ func _ready() -> void:
 func _on_viewport_size_changed() -> void:
 	_update_world_layout()
 
+func _get_gameplay_layout_controller() -> RefCounted:
+	if _gameplay_layout_controller == null:
+		_gameplay_layout_controller = GAMEPLAY_LAYOUT_CONTROLLER_SCRIPT.new(self)
+	return _gameplay_layout_controller
+
+func _get_elemental_pick_controller() -> RefCounted:
+	if _elemental_pick_controller == null:
+		_elemental_pick_controller = ELEMENTAL_PICK_CONTROLLER_SCRIPT.new(self)
+	return _elemental_pick_controller
+
+func _get_wave_flow_controller() -> RefCounted:
+	if _wave_flow_controller == null:
+		_wave_flow_controller = WAVE_FLOW_CONTROLLER_SCRIPT.new(self)
+	return _wave_flow_controller
+
 func _update_world_layout() -> void:
-	if not is_instance_valid(world_root): return
-
-	var view_size = get_viewport().get_visible_rect().size
-
-	# 1. Compute playfield rect
-	var playfield_rect = Rect2()
-	if game_hud and game_hud.has_method("get_playfield_rect"):
-		playfield_rect = game_hud.get_playfield_rect()
-		# No outer margin for maximal expansion
-	else:
-		# Fallback to old constants if HUD not ready
-		var playfield_x = LEFT_SIDEBAR_WIDTH + OUTER_MARGIN
-		var playfield_y = TOP_BAR_HEIGHT + OUTER_MARGIN
-		var playfield_w = view_size.x - LEFT_SIDEBAR_WIDTH - RIGHT_SIDEBAR_WIDTH - (OUTER_MARGIN * 2)
-		var playfield_h = view_size.y - TOP_BAR_HEIGHT - (OUTER_MARGIN * 2)
-		playfield_rect = Rect2(playfield_x, playfield_y, playfield_w, playfield_h)
-
-	# 2. Fit Map inside playfield
-	if level_manager and level_manager.level_id != "" and map_root:
-		_fit_map_to_playfield(playfield_rect)
-	
-	if background:
-		background.color = Color.BLACK
-		# Ensure background covers at least the playfield area in screen space
-		# Since we use camera, we'll just make it very large for now
-		background.size = Vector2(8000, 8000)
-		background.position = Vector2(-4000, -4000)
+	_get_gameplay_layout_controller().update_world_layout()
 
 func _fit_map_to_playfield(playfield_rect: Rect2) -> void:
-	if not level_manager or not map_root or not camera: return
-
-	# 1. Calculate map content bounds in world space
-	var content_bounds = _get_map_content_bounds()
-	if content_bounds.size == Vector2.ZERO: return
-	
-	# Add padding
-	var padding = 40.0
-	content_bounds = content_bounds.grow(padding)
-	
-	# 2. Calculate scale to fit bounds into playfield
-	var scale_x = playfield_rect.size.x / content_bounds.size.x
-	var scale_y = playfield_rect.size.y / content_bounds.size.y
-	var fit_zoom = min(scale_x, scale_y)
-	
-	# Maximize scale (allow up to 5x for small maps on large screens)
-	fit_zoom = clamp(fit_zoom, 0.4, 5.0)
-	
-	# 3. Apply to camera
-	camera.zoom = Vector2.ONE * fit_zoom
-	
-	var content_center = content_bounds.get_center()
-	var camera_pos = content_center - (playfield_rect.get_center() / fit_zoom)
-	camera.position = camera_pos
-	
-	if OS.is_debug_build():
-		var window_size = get_viewport().get_visible_rect().size
-		var unused_x = playfield_rect.size.x - (content_bounds.size.x * fit_zoom)
-		var unused_y = playfield_rect.size.y - (content_bounds.size.y * fit_zoom)
-		print("[LAYOUT_DEBUG] window_size=", window_size)
-		print("[LAYOUT_DEBUG] center_frame_rect=", playfield_rect)
-		print("[LAYOUT_DEBUG] content_bounds=", content_bounds)
-		print("[LAYOUT_DEBUG] camera_zoom=", fit_zoom)
-		print("[LAYOUT_DEBUG] camera_position=", camera_pos)
-		print("[LAYOUT_DEBUG] unused_px_h=", unused_x, " unused_px_v=", unused_y)
-
-	# Reset map_root transform (we use camera now)
-	map_root.scale = Vector2.ONE
-	map_root.position = Vector2.ZERO
-	world_root.position = Vector2.ZERO
+	_get_gameplay_layout_controller().fit_map_to_playfield(playfield_rect)
 
 func _get_map_content_bounds() -> Rect2:
-	if not level_manager:
-		return Rect2()
-
-	var gs = level_manager.grid_size
-	var map_w = level_manager.grid_cols * gs
-	var map_h = level_manager.grid_rows * gs
-	var fit_mode := str(level_manager.level_data.get("camera_fit_mode", ""))
-
-	# Optional road-focused framing for polished small maps.
-	if fit_mode == "road_focus":
-		var focus_cells: Array[Vector2i] = []
-		for p_id in level_manager.multi_paths:
-			for cell in level_manager.multi_paths[p_id]:
-				if cell is Vector2i and not focus_cells.has(cell):
-					focus_cells.append(cell)
-		for cell in _cells_from_level_arrays(level_manager.level_data.get("spawn_cells", [])):
-			if not focus_cells.has(cell):
-				focus_cells.append(cell)
-		for cell in _cells_from_level_arrays(level_manager.level_data.get("base_cells", [])):
-			if not focus_cells.has(cell):
-				focus_cells.append(cell)
-		if level_manager.spawn_cell != Vector2i.ZERO and not focus_cells.has(level_manager.spawn_cell):
-			focus_cells.append(level_manager.spawn_cell)
-		if level_manager.base_cell != Vector2i.ZERO and not focus_cells.has(level_manager.base_cell):
-			focus_cells.append(level_manager.base_cell)
-
-		if not focus_cells.is_empty():
-			var min_cell: Vector2i = focus_cells[0]
-			var max_cell: Vector2i = focus_cells[0]
-			for cell in focus_cells:
-				min_cell.x = min(min_cell.x, cell.x)
-				min_cell.y = min(min_cell.y, cell.y)
-				max_cell.x = max(max_cell.x, cell.x)
-				max_cell.y = max(max_cell.y, cell.y)
-
-			var bounds := Rect2(
-				Vector2(min_cell.x * gs, min_cell.y * gs),
-				Vector2((max_cell.x - min_cell.x + 1) * gs, (max_cell.y - min_cell.y + 1) * gs)
-			)
-			var margin_x := float(level_manager.level_data.get("camera_focus_margin_cells_x", 2.0)) * float(gs)
-			var margin_y := float(level_manager.level_data.get("camera_focus_margin_cells_y", 1.5)) * float(gs)
-			bounds = bounds.grow_side(SIDE_LEFT, margin_x)
-			bounds = bounds.grow_side(SIDE_RIGHT, margin_x)
-			bounds = bounds.grow_side(SIDE_TOP, margin_y)
-			bounds = bounds.grow_side(SIDE_BOTTOM, margin_y)
-			return bounds
-
-	var points: Array[Vector2] = []
-
-	# Default full-grid framing.
-	points.append(Vector2.ZERO)
-	points.append(Vector2(map_w, map_h))
-
-	if level_manager.spawn_cell != Vector2i.ZERO:
-		points.append(Vector2(level_manager.spawn_cell) * gs + Vector2(gs, gs) * 0.5)
-	if level_manager.base_cell != Vector2i.ZERO:
-		points.append(Vector2(level_manager.base_cell) * gs + Vector2(gs, gs) * 0.5)
-
-	for cell in level_manager.path_cells:
-		points.append(Vector2(cell) * gs + Vector2(gs, gs) * 0.5)
-
-	for cell in level_manager.buildable_cells:
-		points.append(Vector2(cell) * gs + Vector2(gs, gs) * 0.5)
-
-	if points.is_empty():
-		return Rect2(0, 0, map_w, map_h)
-
-	var min_p = points[0]
-	var max_p = points[0]
-	for p in points:
-		min_p.x = min(min_p.x, p.x)
-		min_p.y = min(min_p.y, p.y)
-		max_p.x = max(max_p.x, p.x)
-		max_p.y = max(max_p.y, p.y)
-
-	var bounds = Rect2(min_p, max_p - min_p)
-	bounds = bounds.grow_side(SIDE_LEFT, 64)
-	bounds = bounds.grow_side(SIDE_RIGHT, 48)
-	bounds = bounds.grow_side(SIDE_TOP, 48)
-	bounds = bounds.grow_side(SIDE_BOTTOM, 48)
-	return bounds
+	return _get_gameplay_layout_controller().get_map_content_bounds()
 
 func _cells_from_level_arrays(raw: Variant) -> Array[Vector2i]:
-	var out: Array[Vector2i] = []
-	if not (raw is Array):
-		return out
-	for item in raw:
-		if item is Array and item.size() >= 2:
-			out.append(Vector2i(int(item[0]), int(item[1])))
-	return out
+	return _get_gameplay_layout_controller().cells_from_level_arrays(raw)
 
 func _bind_hud_state_presenter() -> void:
 	if hud_state_presenter == null:
@@ -564,64 +434,31 @@ func _recalculate_element_td_interest_rate() -> void:
 		element_td_interest_service.recalculate_rate()
 
 func _format_interest_rate_percent() -> String:
-	if element_td_interest_service:
-		return element_td_interest_service.format_rate_percent()
-	return "%.0f%%" % (ElementTDInterestService.DEFAULT_BASE_RATE * 100.0)
+	return _get_elemental_pick_controller().format_interest_rate_percent()
 
 func _format_next_interest_rate_percent() -> String:
-	if element_td_interest_service:
-		return element_td_interest_service.format_next_rate_percent()
-	return "%.0f%%" % ((ElementTDInterestService.DEFAULT_BASE_RATE + DEFAULT_INTEREST_UPGRADE_STEP) * 100.0)
+	return _get_elemental_pick_controller().format_next_interest_rate_percent()
 
 func _can_choose_interest_upgrade() -> bool:
-	return element_td_interest_service != null and element_td_interest_service.can_choose_upgrade()
+	return _get_elemental_pick_controller().can_choose_interest_upgrade()
 
 func _has_pending_element_pick() -> bool:
-	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
+	return _get_elemental_pick_controller().has_pending_element_pick()
 
 func _is_waiting_for_manual_first_wave() -> bool:
-	if auto_next_wave_service == null or wave_manager == null:
-		return false
-	return auto_next_wave_service.is_waiting_for_manual_first_wave(
-		wave_manager.get_next_wave_number(),
-		wave_manager.is_wave_running
-	)
+	return _get_wave_flow_controller().is_waiting_for_manual_first_wave()
 
 func _can_auto_next_wave_countdown() -> bool:
-	if current_state != GameState.BUILD and current_state != GameState.WAVE_COMPLETE:
-		return false
-	if wave_manager == null or wave_manager.is_wave_running or not wave_manager.has_next_wave():
-		return false
-	if _has_pending_element_pick():
-		return false
-	return true
+	return _get_wave_flow_controller().can_auto_next_wave_countdown()
 
 func _maybe_start_auto_next_wave_countdown() -> void:
-	if auto_next_wave_service == null:
-		return
-	auto_next_wave_service.maybe_start_countdown(
-		_can_auto_next_wave_countdown(),
-		_is_waiting_for_manual_first_wave()
-	)
-	_refresh_start_wave_ui()
+	_get_wave_flow_controller().maybe_start_auto_next_wave_countdown()
 
 func _stop_auto_next_wave_countdown() -> void:
-	if auto_next_wave_service:
-		auto_next_wave_service.stop_countdown()
-	_refresh_start_wave_ui()
+	_get_wave_flow_controller().stop_auto_next_wave_countdown()
 
 func _update_auto_next_wave_countdown(delta: float) -> void:
-	if auto_next_wave_service == null:
-		return
-	var should_start: bool = bool(auto_next_wave_service.tick(
-		delta,
-		_can_auto_next_wave_countdown(),
-		get_tree().paused or _has_pending_element_pick() or current_state == GameState.PAUSED
-	))
-	if should_start:
-		_on_start_wave_requested()
-	else:
-		_refresh_start_wave_ui()
+	_get_wave_flow_controller().update_auto_next_wave_countdown(delta)
 
 func _update_element_td_interest(delta: float) -> void:
 	if element_td_interest_service == null:
@@ -788,51 +625,10 @@ func _on_element_levels_changed(levels: Dictionary) -> void:
 	_refresh_elemental_shop()
 
 func _on_element_choice_requested(element_id: String) -> void:
-	if element_progression_manager == null:
-		return
-	if element_id == INTEREST_PICK_ID:
-		_choose_interest_upgrade_pick()
-		return
-	if element_progression_manager.choose_element(element_id):
-		_refresh_elemental_shop()
-		if game_hud:
-			_bind_hud_state_presenter()
-			hud_state_presenter.set_build_status("Element unlocked: %s" % element_progression_manager.get_element_label(element_id))
-			if element_progression_manager.pending_picks > 0:
-				_show_pending_element_choice()
-			else:
-				game_hud.hide_element_choice()
-				_resume_auto_next_wave_after_element_choice()
-	else:
-		if game_hud:
-			_bind_hud_state_presenter()
-			hud_state_presenter.set_build_status("Cannot choose that element")
+	_get_elemental_pick_controller().on_element_choice_requested(element_id)
 
 func _choose_interest_upgrade_pick() -> void:
-	if element_progression_manager == null:
-		return
-	if int(element_progression_manager.pending_picks) <= 0:
-		return
-	if not _can_choose_interest_upgrade():
-		if game_hud:
-			_bind_hud_state_presenter()
-		hud_state_presenter.set_build_status("Interest upgrade is already maxed")
-		return
-	element_progression_manager.pending_picks = max(0, int(element_progression_manager.pending_picks) - 1)
-	if element_td_interest_service:
-		element_td_interest_service.apply_upgrade()
-	_recalculate_element_td_interest_rate()
-	if element_td_interest_service:
-		element_td_interest_service.elapsed = 0.0
-	if game_hud:
-		_bind_hud_state_presenter()
-		hud_state_presenter.set_build_status("Interest upgraded to %s" % _format_interest_rate_percent())
-		show_wave_feedback("Interest %s" % _format_interest_rate_percent(), Color(1.0, 0.85, 0.25))
-		if int(element_progression_manager.pending_picks) > 0:
-			_show_pending_element_choice()
-		else:
-			game_hud.hide_element_choice()
-			_resume_auto_next_wave_after_element_choice()
+	_get_elemental_pick_controller().choose_interest_upgrade_pick()
 
 func _resume_auto_next_wave_after_element_choice() -> void:
 	# Element choices are awarded after wave 5/10/15... and intentionally pause
