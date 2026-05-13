@@ -119,6 +119,33 @@ func get_selected_tower_sell_value() -> int:
 	return 0
 
 
+func get_selected_tower_upgrade_cost() -> int:
+	var tower := get_selected_tower()
+	if tower == null:
+		return 0
+	if tower.has_method("get_upgrade_cost"):
+		return int(tower.get_upgrade_cost())
+	return 0
+
+
+func get_current_gold() -> int:
+	if game_manager == null:
+		return 0
+	return int(game_manager.get("gold"))
+
+
+func can_afford_selected_tower_upgrade() -> bool:
+	if not can_upgrade_selected_tower():
+		return false
+	return get_current_gold() >= get_selected_tower_upgrade_cost()
+
+
+func get_selected_tower_upgrade_missing_gold() -> int:
+	if not can_upgrade_selected_tower():
+		return 0
+	return max(0, get_selected_tower_upgrade_cost() - get_current_gold())
+
+
 func get_selected_tower_upgrade_preview() -> Dictionary:
 	var tower := get_selected_tower()
 	if tower == null:
@@ -126,9 +153,7 @@ func get_selected_tower_upgrade_preview() -> Dictionary:
 	if not tower.has_method("can_upgrade") or not tower.can_upgrade():
 		return {}
 	var info := get_selected_tower_info()
-	var cost := 0
-	if tower.has_method("get_upgrade_cost"):
-		cost = int(tower.get_upgrade_cost())
+	var cost: int = get_selected_tower_upgrade_cost()
 	var next_ids: Array = []
 	var raw_ids = info.get("next_upgrade_ids", [])
 	if raw_ids is Array:
@@ -138,4 +163,30 @@ func get_selected_tower_upgrade_preview() -> Dictionary:
 		"name": str(info.get("name", "Tower")),
 		"upgrade_cost": cost,
 		"next_upgrade_ids": next_ids,
+		"can_afford": get_current_gold() >= cost,
+		"missing_gold": max(0, cost - get_current_gold()),
+	}
+
+
+func get_selected_tower_action_state() -> Dictionary:
+	var tower := get_selected_tower()
+	var info := get_selected_tower_info()
+	var upgrade_cost: int = get_selected_tower_upgrade_cost()
+	var current_gold: int = get_current_gold()
+	var can_upgrade: bool = can_upgrade_selected_tower()
+	var can_afford_upgrade: bool = can_upgrade and current_gold >= upgrade_cost
+	return {
+		"has_selection": tower != null,
+		"name": str(info.get("name", "Tower")) if not info.is_empty() else "Tower",
+		"info": info,
+		"can_show_info": can_show_selected_tower_info(),
+		"can_hide_info": can_hide_selected_tower_info(),
+		"can_sell": can_sell_selected_tower(),
+		"sell_value": get_selected_tower_sell_value(),
+		"can_upgrade": can_upgrade,
+		"upgrade_cost": upgrade_cost,
+		"current_gold": current_gold,
+		"can_afford_upgrade": can_afford_upgrade,
+		"missing_gold": max(0, upgrade_cost - current_gold) if can_upgrade else 0,
+		"upgrade_preview": get_selected_tower_upgrade_preview(),
 	}
