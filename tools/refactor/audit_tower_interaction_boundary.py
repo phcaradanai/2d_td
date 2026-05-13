@@ -29,11 +29,16 @@ EXPECTED_CONTROLLER_METHODS = [
     "set_selected_tower",
     "clear_selected_tower",
     "get_selected_tower",
+    "get_selected_tower_info",
+    "can_show_selected_tower_info",
+    "can_hide_selected_tower_info",
+    "get_selected_tower_display_name",
 ]
 
 FUNC_RE = re.compile(r"^func\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", re.MULTILINE)
 DIRECT_TOWER_INFO_RE = re.compile(r"\bgame_hud\.(show_tower_info|hide_tower_info)\s*\(")
 DIRECT_TOWER_STATUS_RE = re.compile(r"\bgame_hud\.set_build_status\s*\((.*(?:Tower|Upgrade|gold|Selected|None).*)")
+TOWER_INFO_METHOD_RE = re.compile(r"func\s+get_selected_tower_info\s*\(\)\s*->\s*Dictionary")
 
 
 def read(path: Path) -> str:
@@ -76,6 +81,9 @@ def main() -> int:
     for name in missing_methods:
         errors.append(f"TowerInteractionController missing method: {name}")
 
+    if not TOWER_INFO_METHOD_RE.search(controller_text):
+        errors.append("TowerInteractionController get_selected_tower_info() must return Dictionary")
+
     keyword_lines = lines_matching(
         main_text,
         lambda line: any(keyword in line for keyword in TOWER_KEYWORDS),
@@ -97,6 +105,7 @@ def main() -> int:
     print("Tower Interaction Boundary Audit")
     print("================================")
     print(f"Controller methods: {len(controller_funcs)}")
+    print(f"Tower info helpers present: {all(name in controller_funcs for name in EXPECTED_CONTROLLER_METHODS[-4:])}")
     print(f"Tower keyword lines in main.gd: {len(keyword_lines)}")
     print(f"Direct tower info HUD calls: {len(direct_info_lines)}")
     print(f"Direct tower status HUD calls: {len(direct_status_lines)}")
@@ -119,7 +128,7 @@ def main() -> int:
         for item in errors:
             print(f"  FAIL: {item}")
         return 1
-    print("  PASS: tower interaction controller skeleton is present.")
+    print("  PASS: tower interaction controller boundary is ready.")
     print("  NEXT: migrate direct tower info HUD calls first, then upgrade/sell flow.")
     return 0
 
