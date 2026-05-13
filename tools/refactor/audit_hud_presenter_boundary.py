@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-"""Stage 5N-1: review HUDStatePresenter boundary usage.
+"""Stage 5N-4: review HUDStatePresenter boundary usage.
 
-This is intentionally a read-only audit. It helps decide whether hud_state_presenter
-is still an active dependency owned by main.gd, or whether more UI calls should move
-behind HUDStatePresenter in a later cleanup pass.
+This read-only audit helps decide whether hud_state_presenter is still an active
+dependency owned by main.gd, or whether more UI calls should move behind
+HUDStatePresenter in a later cleanup pass.
 """
 from __future__ import annotations
 
@@ -19,6 +19,7 @@ ALLOWED_MAIN_PATTERNS = [
     r"const\s+HUD_STATE_PRESENTER_SCRIPT\b",
     r"var\s+hud_state_presenter\b",
     r"func\s+_bind_hud_state_presenter\b",
+    r"_bind_hud_state_presenter\s*\(\)",
     r"hud_state_presenter\s*==\s*null",
     r"hud_state_presenter\s*=\s*HUD_STATE_PRESENTER_SCRIPT\.new\(\)",
     r"hud_state_presenter\.bind\(game_hud\)",
@@ -26,18 +27,14 @@ ALLOWED_MAIN_PATTERNS = [
 
 EXPECTED_MAIN_PRESENTER_METHODS = {
     "refresh_start_wave_button",
+    "refresh_core_stats",
+    "refresh_tower_shop",
 }
 
 RECOMMENDED_PRESENTER_METHODS = {
     "set_status",
     "show_status",
     "show_wave_feedback",
-    "set_gold",
-    "update_gold",
-    "set_lives",
-    "update_lives",
-    "set_wave",
-    "update_wave",
     "refresh_tower_shop",
     "set_selected_tower",
     "refresh_selected_tower",
@@ -69,7 +66,7 @@ def collect_presenter_lines(lines: list[str]) -> tuple[list[Match], list[Match]]
     allowed: list[Match] = []
     review: list[Match] = []
     for idx, line in enumerate(lines, start=1):
-        if "hud_state_presenter" not in line and "HUD_STATE_PRESENTER_SCRIPT" not in line:
+        if "hud_state_presenter" not in line and "HUD_STATE_PRESENTER_SCRIPT" not in line and "_bind_hud_state_presenter" not in line:
             continue
         call = PRESENTER_CALL_PATTERN.search(line)
         method = call.group(1) if call else ""
