@@ -250,12 +250,28 @@ func _refresh_start_wave_ui() -> void:
 	if auto_next_wave_service:
 		countdown_active = bool(auto_next_wave_service.countdown_active)
 		countdown_remaining = float(auto_next_wave_service.remaining)
+	var next_wave_number: int = wave_manager.get_next_wave_number()
+	var total_waves: int = wave_manager.get_total_waves()
+	var next_wave_name := ""
+	if wave_manager.has_method("get_next_wave_name"):
+		next_wave_name = wave_manager.get_next_wave_name()
+	var active_wave_number: int = 0
+	var raw_active_wave_number = wave_manager.get("active_wave_number")
+	if raw_active_wave_number != null:
+		active_wave_number = int(raw_active_wave_number)
+	var level_cleared: bool = not wave_manager.has_next_wave() and not wave_manager.is_wave_running
 	hud_state_presenter.refresh_start_wave_button(
 		can_start,
 		_is_waiting_for_manual_first_wave(),
 		countdown_active,
 		countdown_remaining,
-		wave_manager.get_next_wave_number()
+		next_wave_number,
+		total_waves,
+		next_wave_name,
+		wave_manager.is_wave_running,
+		level_cleared,
+		"",
+		active_wave_number
 	)
 
 func _refresh_gameplay_hud_state() -> void:

@@ -54,9 +54,37 @@ func refresh_start_wave_button(
 	manual_first_wave: bool,
 	countdown_active: bool,
 	countdown_remaining: float,
-	next_wave_number: int
+	next_wave_number: int,
+	total_waves: int = 0,
+	wave_name: String = "",
+	wave_running: bool = false,
+	level_cleared: bool = false,
+	locked_label: String = "",
+	active_wave_number: int = 0
 ) -> void:
 	if hud == null:
+		return
+
+	if hud.has_method("refresh_start_wave_button"):
+		var hud_wave_number := next_wave_number
+		if wave_running and active_wave_number > 0:
+			hud_wave_number = active_wave_number
+		hud.refresh_start_wave_button(
+			total_waves,
+			hud_wave_number,
+			wave_name,
+			wave_running,
+			can_start,
+			level_cleared,
+			locked_label,
+			countdown_active,
+			countdown_remaining,
+			manual_first_wave
+		)
+		if countdown_active:
+			set_status("Auto next: Wave %d in %.0fs" % [next_wave_number, ceil(countdown_remaining)])
+		elif manual_first_wave:
+			set_status("Ready")
 		return
 
 	var text := build_start_wave_button_text(

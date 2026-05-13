@@ -639,8 +639,9 @@ func set_level_name(text: String) -> void:
 		status_label.text = text
 		status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 
-func set_status(text: String) -> void:
+func set_status(text: String, color: Color = Color(0.85, 0.95, 1.0)) -> void:
 	status_label.text = text
+	status_label.add_theme_color_override("font_color", color)
 
 func set_build_status(text: String) -> void:
 	build_status_label.text = text
