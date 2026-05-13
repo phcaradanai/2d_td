@@ -175,10 +175,12 @@ func _is_wave_realtime_window() -> bool:
 		return false
 	if main == null or get_tree().paused:
 		return false
-	var state := int(main.get("current_state"))
-	if state == GAME_STATE_PAUSED or state == GAME_STATE_GAME_OVER or state == GAME_STATE_VICTORY:
+	var raw_state = main.get("current_state")
+	if raw_state == null or typeof(raw_state) != TYPE_INT:
 		return false
-	return state == GAME_STATE_WAVE
+	if raw_state == GAME_STATE_PAUSED or raw_state == GAME_STATE_GAME_OVER or raw_state == GAME_STATE_VICTORY:
+		return false
+	return raw_state == GAME_STATE_WAVE
 
 func _sync_realtime_hud_controls() -> void:
 	if game_hud == null:

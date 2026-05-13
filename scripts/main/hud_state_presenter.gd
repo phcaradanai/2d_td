@@ -47,7 +47,7 @@ func refresh_core_stats(gold: int, lives: int, wave_number: int, total_waves: in
 	_call_optional("update_lives", [lives])
 	_call_optional("set_lives", [lives])
 	_call_optional("update_wave", [wave_number, total_waves])
-	_call_optional("set_wave", [wave_number, total_waves])
+	_call_optional("set_wave", [wave_number])
 
 func refresh_start_wave_button(
 	can_start: bool,

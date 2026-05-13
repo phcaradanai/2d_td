@@ -794,7 +794,8 @@ func _on_element_choice_requested(element_id: String) -> void:
 	if element_progression_manager.choose_element(element_id):
 		_refresh_elemental_shop()
 		if game_hud:
-			game_hud.set_build_status("Element unlocked: %s" % element_progression_manager.get_element_label(element_id))
+			_bind_hud_state_presenter()
+			hud_state_presenter.set_build_status("Element unlocked: %s" % element_progression_manager.get_element_label(element_id))
 			if element_progression_manager.pending_picks > 0:
 				_show_pending_element_choice()
 			else:
@@ -802,7 +803,8 @@ func _on_element_choice_requested(element_id: String) -> void:
 				_resume_auto_next_wave_after_element_choice()
 	else:
 		if game_hud:
-			game_hud.set_build_status("Cannot choose that element")
+			_bind_hud_state_presenter()
+			hud_state_presenter.set_build_status("Cannot choose that element")
 
 func _choose_interest_upgrade_pick() -> void:
 	if element_progression_manager == null:
@@ -811,7 +813,8 @@ func _choose_interest_upgrade_pick() -> void:
 		return
 	if not _can_choose_interest_upgrade():
 		if game_hud:
-			game_hud.set_build_status("Interest upgrade is already maxed")
+			_bind_hud_state_presenter()
+		hud_state_presenter.set_build_status("Interest upgrade is already maxed")
 		return
 	element_progression_manager.pending_picks = max(0, int(element_progression_manager.pending_picks) - 1)
 	if element_td_interest_service:
@@ -820,7 +823,8 @@ func _choose_interest_upgrade_pick() -> void:
 	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
 	if game_hud:
-		game_hud.set_build_status("Interest upgraded to %s" % _format_interest_rate_percent())
+		_bind_hud_state_presenter()
+		hud_state_presenter.set_build_status("Interest upgraded to %s" % _format_interest_rate_percent())
 		show_wave_feedback("Interest %s" % _format_interest_rate_percent(), Color(1.0, 0.85, 0.25))
 		if int(element_progression_manager.pending_picks) > 0:
 			_show_pending_element_choice()
