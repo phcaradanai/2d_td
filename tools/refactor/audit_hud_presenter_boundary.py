@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Stage 5N-4: review HUDStatePresenter boundary usage.
+"""Stage 5N-10A: review HUDStatePresenter boundary usage.
 
 This read-only audit helps decide whether hud_state_presenter is still an active
 dependency owned by main.gd, or whether more UI calls should move behind
@@ -29,6 +29,7 @@ EXPECTED_MAIN_PRESENTER_METHODS = {
     "refresh_start_wave_button",
     "refresh_core_stats",
     "refresh_tower_shop",
+    "set_build_status",
 }
 
 RECOMMENDED_PRESENTER_METHODS = {
