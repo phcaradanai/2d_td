@@ -1795,9 +1795,9 @@ func shoot() -> void:
 		projectile.scale = Vector2(proj_scale, proj_scale)
 		projectile.modulate = proj_color
 		
-		# VISUAL POLISH: Recoil and Flash
+		# VISUAL POLISH: Recoil + directional contextual VFX
 		play_fire_recoil()
-		spawn_muzzle_flash(proj_color)
+		TowerAttackVFX.spawn_attack_vfx(self, current_target)
 		
 		if audio_manager:
 			audio_manager.play_sfx(sfx_name)
