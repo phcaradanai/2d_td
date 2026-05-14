@@ -756,728 +756,381 @@ func _draw_turret_top() -> void:
 			draw_circle(Vector2.ZERO, blade_size * 0.3, hub_color)
 			_draw_element_core()
 
-		# ===== BATCH 1: NEW SINGLE-ELEMENT TOWER VISUALS =====
-		"light_tower":
-			# Light Tower — prism/lens sniper, gold-white core, photon beam
-			var prism = PackedVector2Array([
-				Vector2(0, -18),
-				Vector2(14, -6),
-				Vector2(18, 0),
-				Vector2(14, 6),
-				Vector2(0, 18),
-				Vector2(-12, 0)
-			])
-			draw_colored_polygon(prism, Color(main_color.r, main_color.g, main_color.b, 0.6))
-			draw_polyline(prism + PackedVector2Array([prism[0]]), main_color.lightened(0.2), 2.0)
-			# Lens aperture at tip
-			draw_circle(Vector2(18, 0), 6, Color(1.0, 0.95, 0.5, 0.7))
-			draw_circle(Vector2(18, 0), 4, Color(1.0, 0.98, 0.7, 0.9))
-			# Prism beam lines
-			for i in range(3):
-				var angle = -PI/2 + i * PI/2
-				var start = Vector2(cos(angle), sin(angle)) * 10
-				var end = Vector2(cos(angle), sin(angle)) * 22
-				draw_line(start, end, Color(main_color.r, main_color.g, main_color.b, 0.5), 1.5)
+		"prism_lens":
+			# Light / Ice / Polar — gold-white prism with lens aperture
+			var prism_pts = PackedVector2Array([Vector2(0,-22),Vector2(14,-8),Vector2(18,6),Vector2(0,14),Vector2(-18,6),Vector2(-14,-8)])
+			draw_colored_polygon(prism_pts, Color(main_color.r,main_color.g,main_color.b,0.45))
+			draw_polyline(prism_pts + PackedVector2Array([prism_pts[0]]), main_color.lightened(0.35), 1.5)
+			# Lens aperture barrel
+			draw_rect(Rect2(0,-4,32+lvl*4,8), main_color.darkened(0.35))
+			draw_rect(Rect2(28+lvl*4,-6,8,12), main_color)
+			draw_circle(Vector2(32+lvl*4,0), 5, Color.BLACK)
+			draw_circle(Vector2(32+lvl*4,0), 3, main_color.lightened(0.5))
+			draw_circle(Vector2.ZERO, 10, Color(main_color.r,main_color.g,main_color.b,0.25))
 			_draw_element_core()
 
-		"darkness_tower":
-			# Darkness Tower — void orb + dark ring, purple-black core
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.4), 2.5)
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.6), 1.0)
-			# Void sphere
-			draw_circle(Vector2.ZERO, 16, Color(0.15, 0.02, 0.25, 0.8))
-			draw_circle(Vector2.ZERO, 14, Color(0.08, 0.01, 0.15, 0.6))
-			# Spiral void effect
+		"void_orb":
+			# Darkness — void orb with shadow rings and inward particles
+			draw_circle(Vector2.ZERO, 20, Color(main_color.r,main_color.g,main_color.b,0.12))
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.5), 2.0)
+			draw_arc(Vector2.ZERO, 12, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.4), 1.5)
+			draw_circle(Vector2.ZERO, 9, Color(0.04,0.0,0.1,1.0))
+			for i in range(6):
+				var a = i * TAU/6.0 + idle_rotation * 0.4
+				draw_line(Vector2(cos(a),sin(a))*16, Vector2(cos(a),sin(a))*11, Color(main_color.r,main_color.g,main_color.b,0.7), 1.5)
+			_draw_element_core()
+
+		"crystal_emitter":
+			# Water — blue crystal with ripple rings
+			draw_arc(Vector2.ZERO, 22, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.18), 1.5)
+			draw_arc(Vector2.ZERO, 15, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.3), 1.5)
+			var cx_pts = PackedVector2Array([Vector2(0,-22),Vector2(10,-8),Vector2(8,12),Vector2(0,18),Vector2(-8,12),Vector2(-10,-8)])
+			draw_colored_polygon(cx_pts, Color(main_color.r,main_color.g,main_color.b,0.55))
+			draw_polyline(cx_pts + PackedVector2Array([cx_pts[0]]), Color(0.7,0.95,1.0,0.9), 1.5)
+			draw_line(Vector2(0,-22), Vector2(0,18), Color(1.0,1.0,1.0,0.18), 1.0)
+			_draw_element_core()
+
+		"furnace":
+			# Fire — furnace body with plasma nozzle
+			draw_rect(Rect2(-16,-16,32,32), main_color.darkened(0.5))
+			draw_rect(Rect2(-12,-12,24,24), Color(0.08,0.02,0.0,1.0))
+			for i in range(3):
+				draw_rect(Rect2(-14,-10+i*8,6,4), Color(1.0,0.3,0.0,0.8))
+			draw_rect(Rect2(0,-7,28+lvl*3,14), main_color)
+			draw_rect(Rect2(20+lvl*3,-9,10,18), main_color.darkened(0.3))
+			draw_circle(Vector2(24+lvl*3,0), 6, Color(1.0,0.6,0.1,0.85))
+			_draw_element_core()
+
+		"bio_vine":
+			# Nature — organic vine-wrapped twin barrel turret
+			var bv_pts = PackedVector2Array([Vector2(-14,-16),Vector2(16,0),Vector2(-14,16),Vector2(-8,0)])
+			draw_colored_polygon(bv_pts, main_color.darkened(0.3))
+			draw_polyline(bv_pts + PackedVector2Array([bv_pts[0]]), main_color, 1.5)
+			draw_rect(Rect2(4,-12,22+lvl*2,6), main_color.darkened(0.2))
+			draw_rect(Rect2(4,6,22+lvl*2,6), main_color.darkened(0.2))
+			for i in range(3):
+				draw_line(Vector2(6+i*7,-12), Vector2(9+i*7,6), Color(main_color.r,main_color.g,main_color.b,0.55), 1.0)
+			var leaf_c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_circle(Vector2(24+lvl*2,-9), 4, leaf_c)
+			draw_circle(Vector2(24+lvl*2,9), 4, leaf_c)
+			_draw_element_core()
+
+		"stone_bastion":
+			# Earth — heavy armored block with amber reactor
+			draw_rect(Rect2(-20,-20,40,40), main_color.darkened(0.4))
+			draw_rect(Rect2(-14,-14,28,28), Color(0.06,0.04,0.02,1.0))
+			draw_line(Vector2(-20,-20), Vector2(-14,-14), main_color.lightened(0.2), 1.0)
+			draw_line(Vector2(20,-20), Vector2(14,-14), main_color.lightened(0.2), 1.0)
+			draw_line(Vector2(-20,20), Vector2(-14,14), main_color.lightened(0.2), 1.0)
+			draw_line(Vector2(20,20), Vector2(14,14), main_color.lightened(0.2), 1.0)
+			draw_rect(Rect2(0,-10,26+lvl*3,20), main_color)
+			draw_rect(Rect2(18+lvl*3,-12,10,24), main_color.darkened(0.3))
+			draw_rect(Rect2(-20,-8,8,16), main_color.darkened(0.2))
+			_draw_element_core()
+
+		"forge_anvil":
+			# Blacksmith (Fire+Earth) — forge anvil silhouette
+			var fa_pts = PackedVector2Array([Vector2(-20,8),Vector2(20,8),Vector2(16,0),Vector2(8,-4),Vector2(8,-16),Vector2(-8,-16),Vector2(-8,-4),Vector2(-16,0)])
+			draw_colored_polygon(fa_pts, main_color.darkened(0.3))
+			draw_polyline(fa_pts + PackedVector2Array([fa_pts[0]]), main_color, 1.5)
+			draw_circle(Vector2.ZERO, 8, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.7))
+			draw_rect(Rect2(8,-5,20+lvl*2,10), main_color.lightened(0.2))
+			for i in range(4):
+				var a = idle_rotation * 1.5 + i * TAU/4.0
+				draw_circle(Vector2(cos(a),sin(a))*(10+randf()*5), 1.5, Color(1.0,0.82,0.2,0.85))
+			_draw_element_core()
+
+		"support_halo":
+			# Support towers (Well / Life / Tidal / Enchantment / Gold) — aura emitter
+			draw_rect(Rect2(-10,-10,20,20), main_color.darkened(0.4))
+			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.65), 2.0)
+			var h2c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_arc(Vector2.ZERO, 14, 0, TAU, 32, Color(h2c.r,h2c.g,h2c.b,0.4), 1.5)
+			for i in range(4):
+				var a = idle_rotation * 0.5 + i * TAU/4.0
+				draw_circle(Vector2(cos(a),sin(a))*20, 3, main_color.lightened(0.35))
+			_draw_element_core()
+
+		"particle_accel":
+			# Quark (Light+Earth) — particle accelerator ring
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, main_color, 3.0)
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, secondary_color if el_colors.size() >= 2 else core_color, 1.5)
+			draw_rect(Rect2(0,-2,38+lvl*5,4), main_color.lightened(0.2))
+			draw_circle(Vector2(36+lvl*5,0), 3, core_color)
+			for i in range(3):
+				var a = idle_rotation * 1.2 + i * TAU/3.0
+				draw_circle(Vector2(cos(a),sin(a))*18, 2, core_color)
+			_draw_element_core()
+
+		"chaos_orb":
+			# Magic (Darkness+Fire) — arcane flame sigil
+			for i in range(6):
+				var a1 = i * TAU/6.0
+				var a2 = (i+2) * TAU/6.0
+				draw_line(Vector2(cos(a1),sin(a1))*16, Vector2(cos(a2),sin(a2))*16, Color(main_color.r,main_color.g,main_color.b,0.65), 1.0)
+			draw_circle(Vector2.ZERO, 12, Color(0.05,0.0,0.08,1.0))
+			draw_circle(Vector2.ZERO, 8, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.9))
+			for i in range(3):
+				var a = idle_rotation * 0.8 + i * TAU/3.0
+				draw_line(Vector2.RIGHT.rotated(a)*8, Vector2.RIGHT.rotated(a+0.35)*16, Color(1.0,0.4,0.0,0.6), 1.5)
+			_draw_element_core()
+
+		"toxin_vial":
+			# Poison (Darkness+Water) — toxin vial emitter
+			var tv_pts = PackedVector2Array([Vector2(-8,-18),Vector2(8,-18),Vector2(10,-8),Vector2(12,12),Vector2(-12,12),Vector2(-10,-8)])
+			draw_colored_polygon(tv_pts, Color(main_color.r,main_color.g,main_color.b,0.4))
+			draw_polyline(tv_pts + PackedVector2Array([tv_pts[0]]), main_color.lightened(0.2), 1.5)
+			var bubble_c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_circle(Vector2(-3,4), 3, bubble_c)
+			draw_circle(Vector2(4,0), 2, bubble_c)
+			draw_rect(Rect2(-3,-24,6,8), main_color)
+			draw_circle(Vector2(0,-22), 2, Color(main_color.r,main_color.g,main_color.b,0.8))
+			_draw_element_core()
+
+		"spore_cap":
+			# Disease / Mushroom — mushroom cap silhouette
+			draw_rect(Rect2(-6,0,12,16), main_color.darkened(0.3))
+			var sc_pts = PackedVector2Array([Vector2(-20,0),Vector2(-14,-12),Vector2(-6,-20),Vector2(0,-22),Vector2(6,-20),Vector2(14,-12),Vector2(20,0)])
+			draw_colored_polygon(sc_pts, main_color)
+			draw_polyline(sc_pts, secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3), 1.5)
+			for i in range(3):
+				var a = -PI/2.0 + (i-1)*0.5
+				draw_circle(Vector2(cos(a),sin(a))*14, 2, Color(1.0,1.0,0.8,0.8))
+			_draw_element_core()
+
+		"heavy_mortar":
+			# Gunpowder (Darkness+Earth) — wide mortar tube
+			draw_rect(Rect2(-14,-18,28,36), main_color.darkened(0.4))
+			draw_rect(Rect2(-10,-14,20,28), Color(0.05,0.04,0.04,1.0))
+			draw_line(Vector2(-14,-18), Vector2(0,-12), main_color.lightened(0.2), 2.0)
+			draw_line(Vector2(-14,18), Vector2(0,12), main_color.lightened(0.2), 2.0)
+			draw_rect(Rect2(0,-12,28+lvl*2,24), main_color)
+			draw_circle(Vector2(26+lvl*2,0), 10, Color(0.07,0.05,0.05,1.0))
+			draw_circle(Vector2(26+lvl*2,0), 6, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.8))
+			_draw_element_core()
+
+		"steam_boiler":
+			# Vapor (Water+Fire) — steam boiler with vents
+			draw_rect(Rect2(-16,-14,32,28), main_color.darkened(0.3))
+			draw_rect(Rect2(-12,-10,24,20), Color(0.04,0.06,0.08,1.0))
+			var vc = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			for i in range(3):
+				draw_rect(Rect2(-10+i*8,-18,4,6), vc)
+				draw_circle(Vector2(-8+i*8,-20), 3, Color(0.88,0.9,1.0,0.65))
+			draw_rect(Rect2(0,-6,24+lvl*2,12), main_color.lightened(0.2))
+			draw_circle(Vector2(-8,0), 5, Color(0.3,0.3,0.3,1.0))
+			draw_arc(Vector2(-8,0), 3, -PI*0.8, -PI*0.8 + PI * (0.5 + 0.5 * sin(idle_rotation * 0.5)), 8, Color(1.0,0.6,0.0,0.9), 2.0)
+			_draw_element_core()
+
+		"hydro_cannon":
+			# Hydro (Water+Earth) — water cannon on stone base
+			var hc_stone = secondary_color if el_colors.size() >= 2 else main_color.darkened(0.4)
+			draw_rect(Rect2(-18,-12,36,24), hc_stone.darkened(0.4))
+			draw_rect(Rect2(-14,-8,28,16), Color(0.05,0.07,0.05,1.0))
+			draw_rect(Rect2(0,-9,30+lvl*3,18), main_color)
+			draw_rect(Rect2(22+lvl*3,-10,10,20), main_color.darkened(0.3))
+			draw_circle(Vector2(28+lvl*3,0), 7, Color(main_color.r,main_color.g,main_color.b,0.9))
+			draw_circle(Vector2(28+lvl*3,0), 3, Color(0.85,0.97,1.0,1.0))
+			_draw_element_core()
+
+		"ember_bloom":
+			# Flame (Fire+Nature) — wildfire bio-core with ember leaves
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * 0.3
+				var ep_pts = PackedVector2Array([Vector2.ZERO, Vector2(cos(a-0.4),sin(a-0.4))*16, Vector2(cos(a),sin(a))*22, Vector2(cos(a+0.4),sin(a+0.4))*16])
+				draw_colored_polygon(ep_pts, Color(main_color.r,main_color.g,main_color.b,0.5))
+			draw_circle(Vector2.ZERO, 10, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.85))
+			draw_circle(Vector2.ZERO, 6, Color(1.0,0.92,0.3,0.9))
+			_draw_element_core()
+
+		"tar_pool":
+			# Muck (Darkness+Water+Earth) — tar/sludge pool emitter
+			draw_rect(Rect2(-18,-8,36,16), main_color.darkened(0.5))
+			draw_arc(Vector2.ZERO, 16, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.6), 3.0)
+			draw_circle(Vector2.ZERO, 12, Color(0.04,0.03,0.07,0.9))
+			draw_rect(Rect2(0,-5,18+lvl*2,10), Color(0.18,0.14,0.22,1.0))
+			var b2c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
+			draw_circle(Vector2(-4,2), 2, Color(b2c.r,b2c.g,b2c.b,0.6))
+			draw_circle(Vector2(5,-3), 2, Color(b2c.r,b2c.g,b2c.b,0.5))
+			_draw_element_core()
+
+		"voodoo_totem":
+			# Voodoo (Darkness+Fire+Nature) — cursed totem pole
+			draw_rect(Rect2(-8,-22,16,44), main_color.darkened(0.3))
+			draw_rect(Rect2(-10,-26,20,16), main_color.darkened(0.2))
+			draw_circle(Vector2(-5,-20), 3, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.9))
+			draw_circle(Vector2(5,-20), 3, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.9))
+			var vtc3 = el_colors[2] if el_colors.size() >= 3 else main_color
+			draw_arc(Vector2.ZERO, 14, 0, TAU, 6, Color(vtc3.r,vtc3.g,vtc3.b,0.7), 1.5)
 			for i in range(2):
-				var spiral_angle = idle_rotation * 0.5 + i * PI
-				var spiral_start = Vector2(cos(spiral_angle), sin(spiral_angle)) * 6
-				var spiral_end = Vector2(cos(spiral_angle), sin(spiral_angle)) * 14
-				draw_line(spiral_start, spiral_end, Color(main_color.r, main_color.g, main_color.b, 0.3), 1.5)
-			# Void core
-			draw_circle(Vector2.ZERO, 6, Color(0.35, 0.08, 0.55, 0.9))
+				var bx = 12 * (1 if i == 0 else -1)
+				draw_line(Vector2(0,-10), Vector2(bx,-18), main_color.lightened(0.3), 2.0)
+				draw_circle(Vector2(bx,-18), 3, Color(1.0,1.0,0.8,0.7))
 			_draw_element_core()
 
-		"water_tower":
-			# Water Tower — blue crystal/drop emitter, ripple/frost ring
-			var crystal = PackedVector2Array([
-				Vector2(0, -20),
-				Vector2(10, -8),
-				Vector2(12, 4),
-				Vector2(6, 14),
-				Vector2(0, 18),
-				Vector2(-6, 14),
-				Vector2(-12, 4),
-				Vector2(-10, -8)
-			])
-			draw_colored_polygon(crystal, Color(main_color.r, main_color.g, main_color.b, 0.5))
-			draw_polyline(crystal + PackedVector2Array([crystal[0]]), Color(0.5, 0.8, 1.0, 0.9), 1.5)
-			# Ripple rings
-			var ripple_count = 3
-			for i in range(ripple_count):
-				var ripple_angle = idle_rotation * 0.3
-				var ripple_radius = 18 + (sin(ripple_angle + i * TAU/ripple_count) * 2.0)
-				draw_arc(Vector2.ZERO, ripple_radius, 0, TAU, 24, Color(main_color.r, main_color.g, main_color.b, 0.3), 1.0)
-			# Frost center glow
-			draw_circle(Vector2.ZERO, 8, Color(main_color.r, main_color.g, main_color.b, 0.4))
+		"dual_nozzle":
+			# Flamethrower (Darkness+Fire+Earth) — heavy dual nozzle
+			draw_rect(Rect2(-16,-18,32,36), main_color.darkened(0.5))
+			draw_rect(Rect2(-10,-12,20,24), Color(0.04,0.02,0.02,1.0))
+			var dn_barrel = secondary_color.darkened(0.2) if el_colors.size() >= 2 else main_color
+			draw_rect(Rect2(0,-14,30+lvl*2,10), dn_barrel)
+			draw_rect(Rect2(0,4,30+lvl*2,10), dn_barrel)
+			draw_circle(Vector2(28+lvl*2,-9), 5, Color(1.0,0.4,0.0,0.9))
+			draw_circle(Vector2(28+lvl*2,9), 5, Color(1.0,0.4,0.0,0.9))
+			var dn_fuel = el_colors[2] if el_colors.size() >= 3 else main_color
+			draw_rect(Rect2(-20,-16,6,32), Color(dn_fuel.r,dn_fuel.g,dn_fuel.b,0.8))
 			_draw_element_core()
 
-		"fire_tower":
-			# Fire Tower — furnace/plasma nozzle, red-orange core
-			draw_rect(Rect2(-10, -10, 24 + lvl * 2, 20), main_color)
-			draw_rect(Rect2(-6, -6, 16 + lvl * 2, 12), Color.BLACK)
-			# Furnace front opening/nozzle
-			var nozzle_width = 12 + lvl
-			var nozzle = PackedVector2Array([
-				Vector2(14 + lvl, -nozzle_width/2),
-				Vector2(24 + lvl * 2, -nozzle_width/2 - 4),
-				Vector2(24 + lvl * 2, nozzle_width/2 + 4),
-				Vector2(14 + lvl, nozzle_width/2)
-			])
-			draw_colored_polygon(nozzle, Color(main_color.r * 1.2, main_color.g * 0.7, main_color.b * 0.3, 0.8))
-			# Heat vent patterns
-			for i in range(2):
-				var vent_y = -8 + i * 16
-				draw_circle(Vector2(0, vent_y), 3, Color(1.0, 0.4, 0.1, 0.6))
-			# Plasma glow
-			draw_circle(Vector2.ZERO, 12, Color(main_color.r, main_color.g, main_color.b, 0.2))
+		"root_cage":
+			# Roots (Darkness+Nature+Earth) — thorn/root cage
+			draw_circle(Vector2.ZERO, 10, Color(0.04,0.07,0.02,1.0))
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * 0.2
+				var rend = Vector2(cos(a),sin(a)) * 22
+				draw_line(Vector2.ZERO, rend, main_color.darkened(0.1), 3.0)
+				draw_line(Vector2.ZERO, rend, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.45), 1.0)
+				var thorn_dir = Vector2(cos(a+PI/2.0),sin(a+PI/2.0))
+				var thorn_base = rend - Vector2(cos(a),sin(a))*5
+				var rc3 = el_colors[2] if el_colors.size() >= 3 else main_color
+				draw_line(thorn_base, thorn_base + thorn_dir*5, Color(rc3.r,rc3.g,rc3.b,0.8), 1.5)
 			_draw_element_core()
 
-		"nature_tower":
-			# Nature Tower — bio-circuit vine turret, green seed core
-			var base_pts = PackedVector2Array([
-				Vector2(-14, 0),
-				Vector2(-8, -12),
-				Vector2(0, -18),
-				Vector2(8, -12),
-				Vector2(14, -6),
-				Vector2(12, 8),
-				Vector2(4, 14),
-				Vector2(-4, 14),
-				Vector2(-12, 8)
-			])
-			draw_colored_polygon(base_pts, main_color)
-			draw_polyline(base_pts + PackedVector2Array([base_pts[0]]), Color(0, 0, 0, 0.5), 1.5)
-			# Vine branches
+		"tri_reactor":
+			# Impulse (Water+Fire+Nature) — unstable tri-core reactor
+			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.4), 3.0)
 			for i in range(3):
-				var vine_angle = idle_rotation * 0.4 + i * TAU/3
-				var vine_start = Vector2(cos(vine_angle), sin(vine_angle)) * 8
-				var vine_end = Vector2(cos(vine_angle), sin(vine_angle)) * 18
-				draw_line(vine_start, vine_end, main_color, 2.0)
-				# Leaf nodes
-				draw_circle(vine_end, 3, Color(main_color.r * 0.8, main_color.g, main_color.b * 0.8, 0.7))
-			# Bio-circuit core glow
-			draw_circle(Vector2.ZERO, 10, Color(main_color.r, main_color.g, main_color.b, 0.2))
+				var a = idle_rotation * 0.6 + i * TAU/3.0
+				var tp = Vector2(cos(a),sin(a)) * 14
+				var tec = el_colors[i % el_colors.size()] if not el_colors.is_empty() else main_color
+				draw_circle(tp, 5, tec)
+				draw_circle(tp, 2.5, tec.lightened(0.5))
+			draw_rect(Rect2(0,-3,30+lvl*4,6), Color(0.8,0.8,0.8,0.7))
 			_draw_element_core()
 
-		"earth_tower":
-			# Earth Tower — blocky armored base, amber stone reactor
-			draw_rect(Rect2(-12, -14, 28, 28), main_color)
-			draw_rect(Rect2(-8, -10, 20, 20), Color.BLACK)
-			# Armor block plates
-			for gx in range(-1, 2):
-				for gy in range(-1, 2):
-					var block_x = gx * 8
-					var block_y = gy * 8
-					if gx != 0 or gy != 0:
-						draw_rect(Rect2(block_x - 3, block_y - 3, 6, 6), Color(main_color.r * 0.7, main_color.g * 0.7, main_color.b * 0.7, 0.6))
-			# Heavy foundation base
-			draw_rect(Rect2(-14, 12, 32, 6), Color(main_color.r * 0.6, main_color.g * 0.6, main_color.b * 0.6))
-			# Stone reactor glow
-			draw_circle(Vector2.ZERO, 11, Color(main_color.r, main_color.g, main_color.b, 0.15))
+		"strike_blades":
+			# Zealot (Water+Fire+Earth) — aggressive blade striker
+			var sb_pts = PackedVector2Array([Vector2(-14,-14),Vector2(18,-6),Vector2(24,0),Vector2(18,6),Vector2(-14,14),Vector2(-6,0)])
+			draw_colored_polygon(sb_pts, main_color.darkened(0.2))
+			draw_polyline(sb_pts + PackedVector2Array([sb_pts[0]]), main_color.lightened(0.2), 1.5)
+			var w2c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
+			draw_colored_polygon(PackedVector2Array([Vector2(-2,-6),Vector2(10,-6),Vector2(14,-14),Vector2(2,-16)]), w2c)
+			draw_colored_polygon(PackedVector2Array([Vector2(-2,6),Vector2(10,6),Vector2(14,14),Vector2(2,16)]), w2c)
 			_draw_element_core()
 
-		# ===== BATCH 2: DUAL-ELEMENT TOWER VISUALS =====
-		"trickery_tower":
-			# Trickery Tower (Light + Darkness) — mirror prism, gold/purple split core
-			var prism_fill := main_color if not el_colors.is_empty() else Color(0.72, 0.42, 1.0)
-			var prism_edge := secondary_color.lightened(0.35) if el_colors.size() >= 2 else Color(0.95, 0.82, 1.0)
-			var prism = PackedVector2Array([Vector2(0, -22), Vector2(18, -4), Vector2(10, 18), Vector2(-10, 18), Vector2(-18, -4)])
-			draw_colored_polygon(prism, Color(prism_fill.r, prism_fill.g, prism_fill.b, 0.55))
-			draw_polyline(prism + PackedVector2Array([prism[0]]), prism_edge, 1.5)
-			# Inner dark circle
-			draw_circle(Vector2.ZERO, 8, Color(0.12, 0.04, 0.2, 0.9))
+		"golem_body":
+			# Flesh Golem (Water+Nature+Earth) — bulky organic golem
+			draw_rect(Rect2(-18,-18,36,36), main_color.darkened(0.3))
+			draw_rect(Rect2(-12,-12,24,24), Color(0.04,0.08,0.05,1.0))
+			var gl_vein = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
+			draw_line(Vector2(-12,-12), Vector2(0,0), Color(gl_vein.r,gl_vein.g,gl_vein.b,0.5), 1.0)
+			draw_line(Vector2(-12,12), Vector2(0,0), Color(gl_vein.r,gl_vein.g,gl_vein.b,0.5), 1.0)
+			draw_rect(Rect2(0,-12,24+lvl*2,24), main_color)
+			var gl_pulse = el_colors[1] if el_colors.size() >= 2 else main_color
+			draw_circle(Vector2(-4,0), 8, Color(gl_pulse.r,gl_pulse.g,gl_pulse.b,0.4))
 			_draw_element_core()
-			# Rotating rays with alternating colors
+
+		"seismic_drill":
+			# Quaker (Fire+Nature+Earth) — seismic drill head
+			draw_rect(Rect2(-14,-12,24,24), main_color.darkened(0.3))
+			var sd_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
 			for i in range(3):
-				var a = idle_rotation * 0.7 + i * TAU / 3.0
-				var ray_color := el_colors[i % el_colors.size()] if el_colors.size() >= 2 else prism_edge
-				draw_line(Vector2.RIGHT.rotated(a) * 12, Vector2.RIGHT.rotated(a) * 22, Color(ray_color.r, ray_color.g, ray_color.b, 0.65), 1.5)
-
-		"blacksmith_tower":
-			# Blacksmith Tower (Fire + Earth) — forge/anvil silhouette, molten sparks
-			# Anvil main body
-			draw_rect(Rect2(-14, -8, 28, 16), main_color)
-			draw_rect(Rect2(-10, -4, 20, 8), Color.BLACK)
-			# Anvil horn (pointed part)
-			var anvil_horn = PackedVector2Array([Vector2(10, -8), Vector2(18, -4), Vector2(18, 4), Vector2(10, 8)])
-			draw_colored_polygon(anvil_horn, secondary_color)
-			# Forge opening in center
-			draw_circle(Vector2(-2, 0), 6, Color(0.1, 0.1, 0.1, 0.9))
-			draw_circle(Vector2(-2, 0), 4, Color(0.3, 0.1, 0.05, 0.7))
-			# Molten sparks (animated)
-			for i in range(3):
-				var spark_angle = idle_rotation * 0.6 + i * TAU / 3
-				var spark_pos = Vector2(cos(spark_angle), sin(spark_angle)) * 12
-				draw_circle(spark_pos, 2, secondary_color)
-			# Buff aura ring (support indicator)
-			draw_arc(Vector2.ZERO, 24, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.15), 1.5)
+				draw_line(Vector2(-8+i*8,-12), Vector2(-8+i*8,12), Color(sd_sec.r,sd_sec.g,sd_sec.b,0.6), 2.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(0,-8),Vector2(30+lvl*3,0),Vector2(0,8)]), main_color.lightened(0.2))
+			var sd3 = el_colors[2] if el_colors.size() >= 3 else main_color
+			draw_circle(Vector2(28+lvl*3,0), 5, Color(sd3.r,sd3.g,sd3.b,0.8))
 			_draw_element_core()
 
-		"electricity_tower":
-			# Electricity Tower (Light + Fire) — tesla prism, electric arcs
-			var prism = PackedVector2Array([
-				Vector2(0, -18), Vector2(14, -6), Vector2(18, 0), Vector2(14, 6), Vector2(0, 18), Vector2(-12, 0)
-			])
-			draw_colored_polygon(prism, Color(main_color.r, main_color.g, main_color.b, 0.5))
-			draw_polyline(prism + PackedVector2Array([prism[0]]), main_color.lightened(0.3), 1.8)
-			# Electric arcs between core and points
-			for i in range(4):
-				var angle = i * PI / 2 + idle_rotation * 0.5
-				var arc_end = Vector2(cos(angle), sin(angle)) * 18
-				draw_line(Vector2.ZERO, arc_end, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.4), 1.0)
-			# Central prism core with arcs
-			draw_circle(Vector2.ZERO, 8, Color(main_color.r, main_color.g, main_color.b, 0.3))
-			_draw_element_core()
-
-		"well_tower":
-			# Well Tower (Water + Nature) — spring/well emitter, blue-green aura
-			# Well structure (circular)
-			draw_circle(Vector2.ZERO, 16, main_color)
-			draw_circle(Vector2.ZERO, 12, Color(0.05, 0.05, 0.1, 0.8))
-			# Well rim rings
-			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, secondary_color, 2.0)
-			draw_arc(Vector2.ZERO, 14, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.3), 1.0)
-			# Water ripples
-			var ripple_count = 2
-			for i in range(ripple_count):
-				var ripple_angle = idle_rotation * 0.4
-				var ripple_radius = 12 + sin(ripple_angle + i * PI) * 3.0
-				draw_arc(Vector2.ZERO, ripple_radius, 0, TAU, 24, Color(main_color.r, main_color.g, main_color.b, 0.25), 1.0)
-			# Support aura (indicates support tower)
-			draw_arc(Vector2.ZERO, 22, 0, TAU, 32, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.2), 2.0)
-			_draw_element_core()
-
-		"ice_tower":
-			# Ice Tower (Light + Water) — frozen prism, frost beam/shard
-			var ice_prism = PackedVector2Array([
-				Vector2(0, -20), Vector2(12, -8), Vector2(14, 4), Vector2(8, 16),
-				Vector2(0, 18), Vector2(-8, 16), Vector2(-14, 4), Vector2(-12, -8)
-			])
-			draw_colored_polygon(ice_prism, Color(main_color.r, main_color.g, main_color.b, 0.4))
-			draw_polyline(ice_prism + PackedVector2Array([ice_prism[0]]), Color(0.7, 0.95, 1.0, 0.8), 1.5)
-			# Frost glow
-			draw_circle(Vector2.ZERO, 10, Color(main_color.r, main_color.g, main_color.b, 0.2))
-			# Icy rays extending
-			for i in range(4):
-				var ray_angle = i * PI / 2
-				draw_line(Vector2.ZERO, Vector2(cos(ray_angle), sin(ray_angle)) * 18, Color(main_color.r, main_color.g, main_color.b, 0.3), 1.0)
-			# Support aura
-			draw_arc(Vector2.ZERO, 22, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.1), 1.5)
-			_draw_element_core()
-
-		"life_tower":
-			# Life Tower (Light + Nature) — life blossom reactor, gold-green healing pulse
-			# Flower petals (6 petals)
+		"solar_bloom":
+			# Nova (Light+Fire+Nature) — solar flower reactor
 			for i in range(6):
-				var petal_angle = i * TAU / 6 + idle_rotation * 0.3
-				var petal_center = Vector2(cos(petal_angle), sin(petal_angle)) * 10
-				draw_circle(petal_center, 6, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.6))
-			# Center blossom core
-			draw_circle(Vector2.ZERO, 9, main_color)
-			draw_circle(Vector2.ZERO, 6, Color(main_color.r * 1.2, main_color.g * 1.2, main_color.b * 0.8, 0.8))
-			# Healing pulse aura (animated)
-			var pulse = 0.5 + sin(idle_rotation * 2.0) * 0.3
-			draw_arc(Vector2.ZERO, 18 + pulse * 2, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2 * pulse), 2.0)
-			# Support indicator - no projectile, just aura
-			draw_circle(Vector2.ZERO, 16, Color(main_color.r, main_color.g, main_color.b, 0.08))
+				var a = i * TAU/6.0 + idle_rotation * 0.2
+				var sol_c = el_colors[i % el_colors.size()] if not el_colors.is_empty() else main_color
+				draw_colored_polygon(PackedVector2Array([Vector2(cos(a-0.35),sin(a-0.35))*6, Vector2(cos(a),sin(a))*20, Vector2(cos(a+0.35),sin(a+0.35))*6]), Color(sol_c.r,sol_c.g,sol_c.b,0.6))
+			draw_circle(Vector2.ZERO, 10, Color(1.0,0.9,0.3,0.9))
+			draw_circle(Vector2.ZERO, 6, Color(1.0,1.0,0.85,1.0))
 			_draw_element_core()
 
-		"quark_tower":
-			# Quark Tower (Light + Earth) — particle accelerator, quantum core
-			# Acceleration rings (3 concentric rings)
-			for i in range(3):
-				var ring_radius = 8 + i * 5
-				draw_arc(Vector2.ZERO, ring_radius, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.5 - i * 0.1), 1.5)
-			# Rotation spokes (4 arms rotating)
+		"gold_refinery":
+			# Gold (Light+Fire+Earth) — midas gold refinery
+			draw_rect(Rect2(-12,0,24,12), Color(0.82,0.68,0.1,1.0))
+			draw_rect(Rect2(-10,-4,20,8), Color(1.0,0.85,0.22,1.0))
+			draw_rect(Rect2(-8,-18,16,20), main_color.darkened(0.2))
+			draw_rect(Rect2(-6,-16,12,16), Color(0.1,0.08,0.02,1.0))
+			draw_rect(Rect2(0,-4,24+lvl*2,8), Color(1.0,0.85,0.1,1.0))
 			for i in range(4):
-				var spoke_angle = i * PI / 2 + idle_rotation * 1.5
-				var spoke_end = Vector2(cos(spoke_angle), sin(spoke_angle)) * 16
-				draw_line(Vector2.ZERO, spoke_end, Color(main_color.r, main_color.g, main_color.b, 0.4), 1.0)
-			# Quantum core (very small bright center)
-			draw_circle(Vector2.ZERO, 3, Color(1.0, 1.0, 1.0, 1.0))
-			draw_circle(Vector2.ZERO, 2, main_color)
+				var a = idle_rotation * 0.8 + i * TAU/4.0
+				draw_circle(Vector2(cos(a),sin(a))*14, 2, Color(1.0,0.9,0.22,0.9))
 			_draw_element_core()
 
-		"magic_tower":
-			# Magic Tower (Darkness + Fire) — arcane flame sigil, red-purple chaos
-			# Arcane sigil (star pattern)
-			var sigil_points = 8
-			var sigil_pts = []
-			for i in range(sigil_points * 2):
-				var angle = float(i) / (sigil_points * 2) * TAU
-				var r = 16 if i % 2 == 0 else 10
-				sigil_pts.append(Vector2(cos(angle), sin(angle)) * r)
-			draw_colored_polygon(PackedVector2Array(sigil_pts), Color(main_color.r, main_color.g, main_color.b, 0.4))
-			draw_polyline(PackedVector2Array(sigil_pts) + PackedVector2Array([Vector2(cos(0), sin(0)) * 16]), main_color.lightened(0.2), 1.5)
-			# Chaos glyph center
-			draw_circle(Vector2.ZERO, 6, Color(main_color.r * 1.2, main_color.g * 0.7, main_color.b * 0.3, 0.7))
-			# Swirling chaos effect
-			for i in range(2):
-				var chaos_angle = idle_rotation * 0.8 + i * PI
-				var chaos_pts = PackedVector2Array()
-				for j in range(3):
-					var off = chaos_angle + j * 0.4
-					chaos_pts.append(Vector2(cos(off), sin(off)) * (8 + j * 2))
-				draw_polyline(chaos_pts, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.3), 1.0)
+		"acid_vat":
+			# Corrosion (Darkness+Water+Fire) — acid reactor
+			draw_rect(Rect2(-14,-10,28,20), main_color.darkened(0.4))
+			draw_rect(Rect2(-10,-6,20,16), Color(0.04,0.06,0.03,1.0))
+			var av_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_arc(Vector2(0,4), 9, 0, TAU, 32, Color(av_sec.r,av_sec.g,av_sec.b,0.7), 2.0)
+			draw_rect(Rect2(0,-6,22+lvl*2,12), main_color.lightened(0.2))
+			draw_circle(Vector2(20+lvl*2,0), 4, Color(0.3,1.0,0.1,0.8))
+			draw_line(Vector2(-8,8), Vector2(-6,14), Color(0.4,1.0,0.2,0.6), 1.5)
+			draw_circle(Vector2(-6,15), 2, Color(0.4,1.0,0.2,0.5))
 			_draw_element_core()
 
-		"poison_tower":
-			# Poison Tower (Darkness + Water) — toxin vial, purple-blue poison droplet
-			# Vial shape
-			draw_rect(Rect2(-6, -12, 12, 22), main_color)
-			draw_circle(Vector2.ZERO, 7, secondary_color)  # Cork top
-			# Liquid inside
-			draw_rect(Rect2(-5, -8, 10, 14), Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.6))
-			# Poison droplets
-			for i in range(3):
-				var drop_angle = idle_rotation * 0.5 + i * TAU / 3
-				var drop_pos = Vector2(cos(drop_angle), sin(drop_angle)) * 12
-				draw_circle(drop_pos, 3, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.7))
+		"void_vortex":
+			# Drowning (Darkness+Water+Nature) — abyssal vortex
+			var vv_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			for i in range(4):
+				var r = 20 - i * 4
+				var col = main_color.lerp(vv_sec, float(i)/3.0)
+				var arc_start = idle_rotation * (0.4 + i * 0.1)
+				draw_arc(Vector2.ZERO, r, arc_start, arc_start + TAU * 0.8, 24, Color(col.r,col.g,col.b,0.4+i*0.08), 2.0 - i * 0.3)
+			draw_circle(Vector2.ZERO, 8, Color(0.02,0.0,0.05,1.0))
+			draw_circle(Vector2.ZERO, 4, Color(0.1,0.05,0.15,1.0))
 			_draw_element_core()
 
-		"disease_tower":
-			# Disease Tower (Darkness + Nature) — plague flower/virus node, spore cloud
-			# Infected flower petals (6 petals, diseased look)
+		"hail_crystal":
+			# Hail (Light+Darkness+Water) — storm ice crystal snowflake
 			for i in range(6):
-				var petal_angle = i * TAU / 6
-				var petal_center = Vector2(cos(petal_angle), sin(petal_angle)) * 12
-				draw_circle(petal_center, 6, Color(main_color.r, main_color.g, main_color.b, 0.5))
-				# Infection spots on petals
-				draw_circle(petal_center + Vector2(2, 2), 2, secondary_color)
-			# Diseased core
-			draw_circle(Vector2.ZERO, 8, Color(main_color.r * 0.8, main_color.g * 0.8, main_color.b, 0.6))
-			# Spore cloud effect (animated)
-			for i in range(4):
-				var spore_angle = idle_rotation * 0.7 + i * TAU / 4
-				var spore_pos = Vector2(cos(spore_angle), sin(spore_angle)) * 14
-				draw_circle(spore_pos, 2, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.3))
+				var a = i * TAU/6.0 + idle_rotation * 0.1
+				draw_line(Vector2.ZERO, Vector2(cos(a),sin(a))*20, main_color, 2.0)
+				var mid = Vector2(cos(a),sin(a)) * 12
+				draw_line(mid, mid + Vector2(cos(a+PI/3.0),sin(a+PI/3.0))*6, main_color.lightened(0.3), 1.0)
+				draw_line(mid, mid + Vector2(cos(a-PI/3.0),sin(a-PI/3.0))*6, main_color.lightened(0.3), 1.0)
+			var hc_sec = secondary_color if el_colors.size() >= 2 else main_color.darkened(0.3)
+			draw_circle(Vector2.ZERO, 6, Color(hc_sec.r,hc_sec.g,hc_sec.b,0.6))
+			draw_circle(Vector2.ZERO, 3, Color(0.9,0.95,1.0,0.9))
 			_draw_element_core()
 
-		"gunpowder_tower":
-			# Gunpowder Tower (Darkness + Earth) — heavy mortar, dark explosive shell
-			# Mortar barrel (short, thick, angled)
-			var mortar_angle = PI / 6  # 30 degree angle
-			var mortar_end = Vector2(cos(mortar_angle), sin(mortar_angle)) * 22
-			draw_line(Vector2.ZERO, mortar_end, main_color, 6.0)
-			# Mortar base (heavy)
-			draw_rect(Rect2(-16, -6, 32, 12), main_color)
-			draw_rect(Rect2(-12, -2, 24, 4), Color(0, 0, 0, 0.5))
-			# Powder keg effect
-			draw_circle(Vector2(-8, 0), 8, Color(main_color.r * 0.7, main_color.g * 0.7, main_color.b * 0.7, 0.5))
-			# Explosive core glow
-			draw_circle(Vector2.ZERO, 9, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.2))
-			_draw_element_core()
-
-		"vapor_tower":
-			# Vapor Tower (Water + Fire) — steam boiler, pressure vents
-			# Boiler main body (rounded rectangle)
-			draw_rect(Rect2(-12, -10, 24, 20), main_color)
-			draw_circle(Vector2(-10, -10), 4, main_color)
-			draw_circle(Vector2(10, -10), 4, main_color)
-			draw_circle(Vector2(-10, 10), 4, main_color)
-			draw_circle(Vector2(10, 10), 4, main_color)
-			# Boiler interior
-			draw_rect(Rect2(-8, -6, 16, 12), Color.BLACK)
-			# Pressure vent ports
-			for i in range(2):
-				var vent_y = -5 + i * 10
-				draw_circle(Vector2(12, vent_y), 3, secondary_color)
-			# Steam puff effect (animated)
-			var steam_count = 3
-			for i in range(steam_count):
-				var steam_angle = idle_rotation * 0.8 + i * TAU / steam_count
-				var steam_pos = Vector2(cos(steam_angle), sin(steam_angle)) * 16
-				draw_circle(steam_pos, 3, Color(main_color.r, main_color.g, main_color.b, 0.3))
-			_draw_element_core()
-
-		"hydro_tower":
-			# Hydro Tower (Water + Earth) — water cannon on stone base, heavy water
-			# Stone base (blocky)
-			draw_rect(Rect2(-14, 4, 28, 14), secondary_color)
-			for gx in range(-1, 2):
-				var block_x = gx * 10
-				draw_rect(Rect2(block_x - 3, 8, 6, 6), Color(secondary_color.r * 0.7, secondary_color.g * 0.7, secondary_color.b * 0.7, 0.5))
-			# Water cannon barrel (thick, angled)
-			var cannon_angle = -PI / 8
-			var cannon_end = Vector2(cos(cannon_angle), sin(cannon_angle)) * 24
-			draw_line(Vector2.ZERO, cannon_end, main_color, 7.0)
-			draw_line(Vector2.ZERO, cannon_end, Color(0, 0, 0, 0.3), 5.0)
-			# Cannon breech
-			draw_circle(Vector2.ZERO, 10, secondary_color)
-			draw_circle(Vector2.ZERO, 7, Color(secondary_color.r * 0.6, secondary_color.g * 0.6, secondary_color.b * 0.6, 0.7))
-			_draw_element_core()
-
-		"flame_tower":
-			# Flame Tower (Fire + Nature) — wildfire bio-core, ember leaves
-			# Flame leaves (organic shape, animated)
-			for i in range(6):
-				var leaf_angle = idle_rotation * 0.5 + i * TAU / 6
-				var leaf_pos = Vector2(cos(leaf_angle), sin(leaf_angle)) * 10
-				# Leaf shape
-				var leaf = PackedVector2Array([
-					leaf_pos + Vector2(-2, -4),
-					leaf_pos + Vector2(2, -4),
-					leaf_pos + Vector2(3, 0),
-					leaf_pos + Vector2(2, 4),
-					leaf_pos + Vector2(-2, 4),
-					leaf_pos + Vector2(-3, 0)
-				])
-				draw_colored_polygon(leaf, main_color)
-			# Central bio-core (burning plant)
-			draw_circle(Vector2.ZERO, 8, Color(main_color.r * 1.2, main_color.g * 0.7, main_color.b * 0.3, 0.8))
-			draw_circle(Vector2.ZERO, 5, secondary_color)
-			# Flame aura
-			draw_arc(Vector2.ZERO, 14, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2), 2.0)
-			_draw_element_core()
-
-		"mushroom_tower":
-			# Mushroom Tower (Nature + Earth) — fungal cap + earth stem, spore AoE
-			# Fungal cap (rounded dome)
-			var cap_color = main_color
-			var stem_color = secondary_color
-			for i in range(12):
-				var angle = float(i) / 12 * PI
-				var x = cos(angle) * 16
-				var y = -sin(angle) * 12
-				if i == 0:
-					draw_line(Vector2(x, y), Vector2(x, y), cap_color, 1.0)
-				else:
-					var prev_angle = float(i - 1) / 12 * PI
-					var prev_x = cos(prev_angle) * 16
-					var prev_y = -sin(prev_angle) * 12
-					draw_line(Vector2(prev_x, prev_y), Vector2(x, y), cap_color, 2.0)
-			# Mushroom cap fill
-			draw_circle(Vector2(0, -6), 14, Color(cap_color.r, cap_color.g, cap_color.b, 0.3))
-			# Stem (blocky earth-like)
-			draw_rect(Rect2(-6, 6, 12, 12), stem_color)
-			draw_rect(Rect2(-4, 8, 8, 8), Color(stem_color.r * 0.7, stem_color.g * 0.7, stem_color.b * 0.7, 0.6))
-			# Spore spots on cap
-			for i in range(4):
-				var spore_angle = idle_rotation * 0.3 + i * TAU / 4
-				var spore_pos = Vector2(cos(spore_angle), sin(spore_angle)) * 10
-				draw_circle(spore_pos, 3, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.5))
-			# Spore cloud aura
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.15), 1.5)
-			_draw_element_core()
-
-		# ===== BATCH 3: TRIPLE-ELEMENT TOWER VISUALS =====
-		"muck_tower":
-			# Muck Tower (Darkness + Water + Earth) — tar/sludge pool, sticky mud blob
-			draw_circle(Vector2.ZERO, 18, Color(0.1, 0.08, 0.05, 0.8))
-			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.4), 2.0)
-			# Mud ripples/bubbles
-			for i in range(4):
-				var bubble_angle = idle_rotation * 0.3 + i * TAU / 4
-				var bubble_pos = Vector2(cos(bubble_angle), sin(bubble_angle)) * 12
-				draw_circle(bubble_pos, 4, Color(main_color.r * 0.6, main_color.g * 0.6, main_color.b * 0.6, 0.5))
-			_draw_element_core()
-
-		"voodoo_tower":
-			# Voodoo Tower (Darkness + Fire + Nature) — cursed totem, red-green-purple hex
-			draw_rect(Rect2(-8, 0, 16, 14), secondary_color)
-			draw_rect(Rect2(-10, -8, 20, 10), main_color)
-			draw_circle(Vector2.ZERO, 10, el_colors[0] if el_colors.size() >= 3 else Color(0.55, 0.12, 0.85))
-			# Hex glyph (animated rotating)
-			for i in range(6):
-				var hex_angle = idle_rotation * 0.5 + i * TAU / 6
-				var hex_point = Vector2(cos(hex_angle), sin(hex_angle)) * 12
-				draw_circle(hex_point, 2, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.6))
-			_draw_element_core()
-
-		"flamethrower_tower":
-			# Flamethrower Tower (Darkness + Fire + Earth) — heavy dual nozzle
-			draw_rect(Rect2(-16, -6, 32, 12), secondary_color)
-			draw_rect(Rect2(-12, -2, 24, 4), Color.BLACK)
-			# Dual nozzles
-			var nozzle1_end = Vector2(cos(-PI/6), sin(-PI/6)) * 20
-			var nozzle2_end = Vector2(cos(PI/6), sin(PI/6)) * 20
-			draw_line(Vector2(-4, -6), nozzle1_end, main_color, 5.0)
-			draw_line(Vector2(-4, 6), nozzle2_end, main_color, 5.0)
-			# Fuel tank
-			draw_circle(Vector2(-10, 0), 6, Color(0.1, 0.1, 0.1, 0.7))
-			_draw_element_core()
-
-		"roots_tower":
-			# Roots Tower (Darkness + Nature + Earth) — thorn/root cage
+		"rail_laser":
+			# Laser (Light+Darkness+Earth) — heavy rail-laser cannon
+			draw_rect(Rect2(-18,-14,32,28), main_color.darkened(0.4))
+			draw_rect(Rect2(-12,-10,20,20), Color(0.05,0.03,0.08,1.0))
+			draw_rect(Rect2(0,-5,44+lvl*5,10), main_color)
 			for i in range(3):
-				var root_angle = idle_rotation * 0.4 + i * TAU / 3
-				var root_length = 16 + sin(root_angle) * 4
-				var root_end = Vector2(cos(root_angle), sin(root_angle)) * root_length
-				draw_line(Vector2.ZERO, root_end, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.6), 2.0)
-				# Thorns along roots
-				for j in range(3):
-					var thorn_pos = root_end * (0.3 + j * 0.3)
-					draw_circle(thorn_pos, 2, main_color)
-			# Cage center
-			draw_circle(Vector2.ZERO, 8, Color(0.15, 0.1, 0.2, 0.6))
+				draw_rect(Rect2(6+i*12,-7,4,14), main_color.lightened(0.3))
+			var rl_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.4)
+			draw_circle(Vector2(42+lvl*5,0), 4, Color(rl_sec.r,rl_sec.g,rl_sec.b,0.8))
+			draw_circle(Vector2(42+lvl*5,0), 2, Color(1.0,1.0,1.0,0.9))
 			_draw_element_core()
 
-		"impulse_tower":
-			# Impulse Tower (Water + Fire + Nature) — unstable tri-core reactor
-			draw_circle(Vector2(-6, 0), 8, Color(el_colors[0].r if el_colors.size() > 0 else 0.15, 0.55, 1.0, 0.3))
-			draw_circle(Vector2(3, -8), 8, Color(1.0, 0.18, 0.08, 0.3))
-			draw_circle(Vector2(3, 8), 8, Color(0.1, 0.78, 0.25, 0.3))
-			# Radial energy lines
-			for i in range(6):
-				var burst_angle = i * TAU / 6
-				draw_line(Vector2.ZERO, Vector2(cos(burst_angle), sin(burst_angle)) * 18, Color(1.0, 0.5, 0.2, 0.5), 1.5)
-			# Pulsing center
-			var pulse = 0.5 + sin(idle_rotation * 3.0) * 0.3
-			draw_arc(Vector2.ZERO, 10 + pulse * 3, 0, TAU, 32, Color(1.0, 0.6, 0.3, pulse * 0.4), 2.0)
+		"void_flower":
+			# Oblivion (Light+Darkness+Nature) — collapsing star/void flower
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * -0.2
+				var pf_col = main_color if i % 2 == 0 else secondary_color
+				draw_colored_polygon(PackedVector2Array([Vector2(cos(a-0.3),sin(a-0.3))*6, Vector2(cos(a),sin(a))*18, Vector2(cos(a+0.3),sin(a+0.3))*6]), Color(pf_col.r,pf_col.g,pf_col.b,0.55))
+			draw_circle(Vector2.ZERO, 10, Color(0.04,0.0,0.1,1.0))
+			draw_circle(Vector2.ZERO, 6, main_color.darkened(0.2))
+			draw_circle(Vector2.ZERO, 3, Color(1.0,1.0,1.0,0.6))
 			_draw_element_core()
 
-		"zealot_tower":
-			# Zealot Tower (Water + Fire + Earth) — aggressive spear/strike tower
-			var spear_top = Vector2(0, -24)
-			var spear_base_left = Vector2(-8, 6)
-			var spear_base_right = Vector2(8, 6)
-			var spear = PackedVector2Array([spear_top, spear_base_right, Vector2(0, 0), spear_base_left])
-			draw_colored_polygon(spear, main_color)
-			draw_polyline(spear + PackedVector2Array([spear_top]), Color(0, 0, 0, 0.5), 1.5)
-			# Strike base
-			draw_rect(Rect2(-10, 6, 20, 10), secondary_color)
-			# Aggressive strike aura
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2), 2.0)
-			_draw_element_core()
-
-		"flesh_golem_tower":
-			# Flesh Golem Tower (Water + Nature + Earth) — bulky living armored
-			draw_circle(Vector2.ZERO, 14, main_color)
-			# Armor plates
-			for plate_angle in [0, PI/2, PI, 3*PI/2]:
-				var plate_pos = Vector2(cos(plate_angle), sin(plate_angle)) * 14
-				draw_circle(plate_pos, 5, secondary_color)
-			# Living tissue glow
-			draw_circle(Vector2.ZERO, 10, Color(main_color.r, main_color.g, main_color.b, 0.2))
-			# Regen pulse aura (animated)
-			var regen_pulse = 0.5 + sin(idle_rotation * 2.0) * 0.3
-			draw_arc(Vector2.ZERO, 18 + regen_pulse * 2, 0, TAU, 32, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.15 * regen_pulse), 2.0)
-			_draw_element_core()
-
-		"quaker_tower":
-			# Quaker Tower (Fire + Nature + Earth) — seismic drill/ground pounder
-			# Drill bit (spiral structure rotating)
-			for i in range(6):
-				var spiral_angle = idle_rotation + i * TAU / 6
-				var spiral_r = 4 + i * 2
-				var spiral_pts = []
-				for j in range(3):
-					var point_angle = spiral_angle + j * PI / 3
-					spiral_pts.append(Vector2(cos(point_angle), sin(point_angle)) * spiral_r)
-				if spiral_pts.size() >= 2:
-					draw_polyline(PackedVector2Array(spiral_pts), main_color, 1.5)
-			# Drill shaft (thick base)
-			draw_rect(Rect2(-6, 4, 12, 16), secondary_color)
-			draw_rect(Rect2(-4, 8, 8, 8), Color(secondary_color.r * 0.7, secondary_color.g * 0.7, secondary_color.b * 0.7, 0.6))
-			# Ground impact aura
-			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.15), 1.5)
-			_draw_element_core()
-
-		"polar_tower":
-			# Polar Tower (Light + Water + Earth) — ice prism cannon
-			var prism_cannon = PackedVector2Array([
-				Vector2(0, -22), Vector2(10, -8), Vector2(12, 8), Vector2(0, 16),
-				Vector2(-12, 8), Vector2(-10, -8)
-			])
-			draw_colored_polygon(prism_cannon, Color(main_color.r, main_color.g, main_color.b, 0.5))
-			draw_polyline(prism_cannon + PackedVector2Array([prism_cannon[0]]), Color(0.7, 0.95, 1.0, 0.9), 2.0)
-			# Cannon aperture
-			draw_circle(Vector2(0, 16), 6, Color(0.9, 0.99, 1.0, 0.8))
-			# Ice crystals forming
-			for i in range(3):
-				var crystal_angle = idle_rotation * 0.5 + i * TAU / 3
-				var crystal_pos = Vector2(cos(crystal_angle), sin(crystal_angle)) * 14
-				draw_circle(crystal_pos, 3, Color(0.7, 0.95, 1.0, 0.5))
-			_draw_element_core()
-
-		"nova_tower":
-			# Nova Tower (Light + Fire + Nature) — solar flower reactor
-			# Solar flower petals (radiating rays)
-			for i in range(8):
-				var petal_angle = i * TAU / 8 + idle_rotation * 0.3
-				var petal_length = 20
-				var petal_end = Vector2(cos(petal_angle), sin(petal_angle)) * petal_length
-				draw_line(Vector2.ZERO, petal_end, main_color, 2.5)
-				# Petal tips glow
-				draw_circle(petal_end, 4, secondary_color)
-			# Central solar core (very bright)
-			draw_circle(Vector2.ZERO, 10, Color(1.0, 0.95, 0.5, 0.9))
-			draw_circle(Vector2.ZERO, 7, Color(1.0, 0.88, 0.1, 1.0))
-			# Solar flare aura (pulsing)
-			var flare_pulse = 0.5 + sin(idle_rotation * 2.0) * 0.3
-			draw_arc(Vector2.ZERO, 16 + flare_pulse * 3, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2 * flare_pulse), 2.5)
-			_draw_element_core()
-
-		"gold_tower":
-			# Gold Tower (Light + Fire + Earth) — gold refinery/midas tower
-			# Refinery structure (industrial looking)
-			draw_rect(Rect2(-12, -8, 24, 16), Color(0.68, 0.42, 0.16, 0.7))
-			draw_rect(Rect2(-8, -4, 16, 8), Color.BLACK)
-			# Refinery vats (circles)
-			draw_circle(Vector2(-6, 0), 5, main_color)
-			draw_circle(Vector2(6, 0), 5, main_color)
-			# Gold glow/coins
+		"storm_turbine":
+			# Windstorm (Light+Water+Fire) — storm turbine with rotating blades
+			draw_circle(Vector2.ZERO, 18, Color(main_color.r,main_color.g,main_color.b,0.18))
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, main_color, 2.0)
 			for i in range(4):
-				var coin_angle = idle_rotation * 0.8 + i * TAU / 4
-				var coin_pos = Vector2(cos(coin_angle), sin(coin_angle)) * 14
-				draw_circle(coin_pos, 3, Color(1.0, 0.88, 0.1, 0.7))
-			# Economy tower glow
-			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2), 2.0)
-			_draw_element_core()
-
-		"enchantment_tower":
-			# Enchantment Tower (Light + Nature + Earth) — sacred enchanted obelisk
-			# Obelisk structure (tall rectangular)
-			draw_rect(Rect2(-6, -16, 12, 24), main_color)
-			draw_rect(Rect2(-4, -12, 8, 20), Color(main_color.r * 0.8, main_color.g * 0.8, main_color.b * 0.8, 0.6))
-			# Enchanted runes (animated)
-			for i in range(3):
-				var rune_angle = idle_rotation * 0.5 + i * TAU / 3
-				var rune_pos = Vector2(cos(rune_angle), sin(rune_angle)) * 12
-				draw_circle(rune_pos, 2, secondary_color)
-			# Support aura (no projectile, just buff)
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2), 2.0)
-			_draw_element_core()
-
-		"corrosion_tower":
-			# Corrosion Tower (Darkness + Water + Fire) — acid reactor
-			# Acid reactor (dripping container)
-			draw_rect(Rect2(-10, -12, 20, 16), main_color)
-			draw_rect(Rect2(-6, -8, 12, 12), Color.BLACK)
-			# Acid drip effect (animated)
-			for i in range(3):
-				var drip_x = -8 + i * 8
-				var drip_y = 4 + sin(idle_rotation * 0.5 + i) * 3
-				draw_circle(Vector2(drip_x, drip_y), 3, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.6))
-			# Corrosive pool glow
-			draw_circle(Vector2.ZERO, 14, Color(main_color.r, main_color.g, main_color.b, 0.15))
-			_draw_element_core()
-
-		"drowning_tower":
-			# Drowning Tower (Darkness + Water + Nature) — abyssal vortex
-			# Vortex spiral (animated rotation)
-			for i in range(4):
-				var spiral_radius = 8 + i * 4
-				var spiral_start = idle_rotation
-				var spiral_end = idle_rotation + TAU / 4
-				draw_arc(Vector2.ZERO, spiral_radius, spiral_start, spiral_end, 16, Color(main_color.r, main_color.g, main_color.b, 0.4 - i * 0.08), 1.5)
-			# Abyssal center (void)
-			draw_circle(Vector2.ZERO, 6, Color(0.05, 0.02, 0.1, 0.8))
-			# Drain aura (support indicator)
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.15), 2.0)
-			_draw_element_core()
-
-		"hail_tower":
-			# Hail Tower (Light + Darkness + Water) — storm ice crystal
-			# Ice crystal (multi-pointed star)
-			var crystal_points = 12
-			var crystal_pts = []
-			for i in range(crystal_points):
-				var angle = i * TAU / crystal_points
-				var r = 10 + (6 if i % 2 == 0 else 8)
-				crystal_pts.append(Vector2(cos(angle), sin(angle)) * r)
-			draw_colored_polygon(PackedVector2Array(crystal_pts), Color(main_color.r, main_color.g, main_color.b, 0.4))
-			draw_polyline(PackedVector2Array(crystal_pts) + PackedVector2Array([crystal_pts[0]]), Color(0.8, 0.95, 1.0, 0.9), 1.5)
-			# Storm glow center
-			draw_circle(Vector2.ZERO, 6, Color(main_color.r, main_color.g, main_color.b, 0.6))
-			# Hail particles (animated)
-			for i in range(4):
-				var hail_angle = idle_rotation * 1.0 + i * TAU / 4
-				var hail_pos = Vector2(cos(hail_angle), sin(hail_angle)) * 14
-				draw_circle(hail_pos, 2, Color(0.8, 0.95, 1.0, 0.7))
-			_draw_element_core()
-
-		"jinx_tower":
-			# Jinx Tower (Light + Darkness + Fire) — unstable curse prism
-			# Chaos prism (unstable geometry)
-			var chaos_prism = PackedVector2Array([
-				Vector2(0, -18), Vector2(14, -4), Vector2(10, 12),
-				Vector2(-6, 14), Vector2(-12, 6), Vector2(-8, -8)
-			])
-			draw_colored_polygon(chaos_prism, Color(main_color.r, main_color.g, main_color.b, 0.5))
-			draw_polyline(chaos_prism + PackedVector2Array([chaos_prism[0]]), Color(0.9, 0.3, 0.8, 0.8), 1.5)
-			# Glitch effect (random offset lines)
-			for i in range(3):
-				var glitch_offset = Vector2(randf_range(-2, 2), randf_range(-2, 2))
-				draw_circle(Vector2(0, 0) + glitch_offset, 3, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.4))
-			# Chaos core
-			draw_circle(Vector2.ZERO, 6, Color(main_color.r * 1.2, main_color.g * 0.6, main_color.b * 0.8, 0.7))
-			_draw_element_core()
-
-		"laser_tower":
-			# Laser Tower (Light + Darkness + Earth) — heavy rail-laser cannon
-			# Heavy rail base
-			draw_rect(Rect2(-14, -8, 28, 16), secondary_color)
-			draw_rect(Rect2(-10, -4, 20, 8), Color.BLACK)
-			# Rail cannon barrel (long and smooth)
-			draw_line(Vector2(-10, 0), Vector2(26, 0), main_color, 5.0)
-			draw_line(Vector2(-10, 0), Vector2(26, 0), Color(0, 0, 0, 0.3), 3.0)
-			# Laser aperture (very bright)
-			draw_circle(Vector2(26, 0), 5, Color(1.0, 1.0, 1.0, 0.9))
-			draw_circle(Vector2(26, 0), 3, main_color)
-			# Rail coils
-			draw_circle(Vector2(-4, -3), 2, Color(main_color.r, main_color.g, main_color.b, 0.5))
-			draw_circle(Vector2(6, 3), 2, Color(main_color.r, main_color.g, main_color.b, 0.5))
-			_draw_element_core()
-
-		"oblivion_tower":
-			# Oblivion Tower (Light + Darkness + Nature) — collapsing star/void flower
-			# Void flower petals (inward curling)
-			for i in range(6):
-				var petal_angle = i * TAU / 6
-				var petal_base = Vector2(cos(petal_angle), sin(petal_angle)) * 14
-				var petal_tip = Vector2(cos(petal_angle), sin(petal_angle)) * 8
-				draw_line(petal_base, petal_tip, main_color, 2.5)
-			# Collapsing star center (void)
-			draw_circle(Vector2.ZERO, 8, Color(0.1, 0.02, 0.15, 0.8))
-			draw_circle(Vector2.ZERO, 5, Color(0.05, 0.01, 0.08, 0.9))
-			# Entropy ring (expanding and fading)
-			var entropy_ring = 12 + sin(idle_rotation * 1.5) * 3
-			draw_arc(Vector2.ZERO, entropy_ring, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2 - abs(sin(idle_rotation * 1.5)) * 0.1), 1.5)
-			_draw_element_core()
-
-		"windstorm_tower":
-			# Windstorm Tower (Light + Water + Fire) — storm turbine
-			# Turbine blades (3 rotating)
-			for i in range(3):
-				var blade_angle = idle_rotation * 2.0 + i * TAU / 3
-				var blade_vector = Vector2(cos(blade_angle), sin(blade_angle))
-				var blade_start = blade_vector * 4
-				var blade_end = blade_vector * 18
-				draw_line(blade_start, blade_end, main_color, 3.0)
-				# Blade tips
-				draw_circle(blade_end, 3, secondary_color)
-			# Turbine hub (center)
-			draw_circle(Vector2.ZERO, 6, Color(main_color.r * 0.8, main_color.g * 0.8, main_color.b * 0.8, 0.7))
-			# Wind gust aura (animated)
-			var gust_radius = 16 + sin(idle_rotation) * 2
-			draw_arc(Vector2.ZERO, gust_radius, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.15), 2.0)
-			_draw_element_core()
-
-		"tidal_tower":
-			# Tidal Tower (Light + Water + Nature) — wave shrine
-			# Shrine structure (temple-like)
-			draw_rect(Rect2(-12, -8, 24, 18), main_color)
-			draw_circle(Vector2(-6, -8), 4, main_color)
-			draw_circle(Vector2(6, -8), 4, main_color)
-			# Wave crest on top
-			var wave_pts = PackedVector2Array([
-				Vector2(-10, -10), Vector2(-6, -16), Vector2(0, -12), Vector2(6, -16), Vector2(10, -10)
-			])
-			draw_colored_polygon(wave_pts, secondary_color)
-			# Tidal flow aura (support indicator)
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(secondary_color.r, secondary_color.g, secondary_color.b, 0.2), 2.0)
-			# Triple core for triple elements
+				var a = i * TAU/4.0 + idle_rotation * 1.2
+				var st_c = el_colors[i % el_colors.size()] if not el_colors.is_empty() else main_color
+				draw_colored_polygon(PackedVector2Array([Vector2(cos(a)*4,sin(a)*4), Vector2(cos(a+0.4)*16,sin(a+0.4)*16), Vector2(cos(a+0.6)*18,sin(a+0.6)*18), Vector2(cos(a+0.15)*4,sin(a+0.15)*4)]), Color(st_c.r,st_c.g,st_c.b,0.75))
+			draw_circle(Vector2.ZERO, 5, main_color.darkened(0.3))
 			_draw_element_core()
 
 	# Level Indicators (small white dots)
