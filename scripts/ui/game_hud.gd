@@ -851,7 +851,7 @@ func show_element_choice(levels: Dictionary, pending_picks: int = 1, interest_ra
 		"interest_max_upgrades": interest_max_upgrades,
 	}
 	if _em_picks_label:
-		_em_picks_label.text = "Choose %d element%s to continue" % [pending_picks, "" if pending_picks == 1 else "s"]
+		_em_picks_label.text = "Choose one element to continue"
 	if _em_close_btn:
 		_em_close_btn.visible = pending_picks <= 0
 		_em_close_btn.disabled = pending_picks > 0
@@ -873,7 +873,7 @@ func show_element_choice(levels: Dictionary, pending_picks: int = 1, interest_ra
 func hide_element_choice(force: bool = false) -> void:
 	if _em_pick_required() and not force:
 		if _em_picks_label:
-			_em_picks_label.text = "Choose %d element%s to continue" % [int(_em_data.get("pending_picks", 1)), "" if int(_em_data.get("pending_picks", 1)) == 1 else "s"]
+			_em_picks_label.text = "Choose one element to continue"
 		return
 	_hide_element_choice_now()
 
@@ -1049,7 +1049,7 @@ func _ensure_element_modal() -> void:
 	var t1 := _em_lbl("CHOOSE ELEMENT", 22, Color(0.6, 0.9, 1.0))
 	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	head_col.add_child(t1)
-	var t2 := _em_lbl("Choose an element unlock or the Interest Bonus. A pending pick is required before the next wave.", 12, Color(0.42, 0.62, 0.78))
+	var t2 := _em_lbl("Choose one element to unlock new towers before the next wave.", 12, Color(0.42, 0.62, 0.78))
 	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	head_col.add_child(t2)
 
@@ -1308,12 +1308,7 @@ func _em_rebuild_center(element_id: String) -> void:
 	desc_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_col.add_child(desc_l)
 
-	if element_id != "__interest__":
-		var cv := int(levels.get(element_id, 0))
-		var lv_l := _em_lbl("Level  %d  →  %d" % [cv, min(cv+1,3)], 12, Color(0.45,0.88,0.55))
-		lv_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		name_col.add_child(lv_l)
-	else:
+	if element_id == "__interest__":
 		var ir_l := _em_lbl("Interest  %s  →  %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")], 12, Color(0.95,0.82,0.3))
 		ir_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		name_col.add_child(ir_l)
@@ -1327,14 +1322,13 @@ func _em_rebuild_center(element_id: String) -> void:
 	for at in meta_d.get("attack_types", []):
 		flow.add_child(_em_chip(at, el_col))
 
-	# Towers unlocked
+	# Unlock preview
 	if element_id != "__interest__":
-		_em_center_col.add_child(_em_sec_hdr("TOWERS UNLOCKED"))
-		_em_build_tower_cards(element_id, el_col)
-
-	# Implemented effect
-	_em_center_col.add_child(_em_sec_hdr("IMPLEMENTED EFFECT"))
-	_em_build_bonus_section(element_id, el_col)
+		_em_center_col.add_child(_em_sec_hdr("UNLOCK PREVIEW"))
+		_em_build_unlock_preview(element_id, el_col)
+	else:
+		_em_center_col.add_child(_em_sec_hdr("ECONOMY PREVIEW"))
+		_em_build_economy_preview()
 
 	# Strengths & use case
 	_em_center_col.add_child(_em_sec_hdr("STRENGTHS & USE CASE"))
@@ -1367,49 +1361,59 @@ func _em_rebuild_center(element_id: String) -> void:
 	bottom_pad.custom_minimum_size.y = 12
 	_em_center_col.add_child(bottom_pad)
 
-func _em_build_tower_cards(element_id: String, el_col: Color) -> void:
-	var singles: Array = []
-	var dual_n   := 0
-	var triple_n := 0
-	for tid in tower_catalog:
-		var cfg: Dictionary = tower_catalog[tid]
-		if not bool(cfg.get("build_entry", false)):
-			continue
-		var elems: Array = cfg.get("elements", [])
-		if not elems.has(element_id):
-			continue
-		var ct := str(cfg.get("combo_type",""))
-		if ct in ["single","pure"]:
-			singles.append(cfg)
-		elif ct == "dual":
-			dual_n += 1
-		elif ct == "triple":
-			triple_n += 1
-
+func _em_build_unlock_preview(element_id: String, el_col: Color) -> void:
+	var preview := _em_get_unlock_preview_for_element(element_id)
 	var wrap := VBoxContainer.new()
-	wrap.add_theme_constant_override("separation", 5)
+	wrap.add_theme_constant_override("separation", 8)
 	_em_center_col.add_child(wrap)
 
-	for cfg in singles:
-		wrap.add_child(_em_make_tower_card(cfg, el_col))
+	var unlocked_now: Array = []
+	unlocked_now.append_array(preview.get("single_element", []))
+	unlocked_now.append_array(preview.get("dual_element", []))
+	unlocked_now.append_array(preview.get("triple_element", []))
 
-	if dual_n > 0 or triple_n > 0:
-		var combo_p := PanelContainer.new()
-		combo_p.add_theme_stylebox_override("panel", _em_sb(Color(el_col.r,el_col.g,el_col.b,0.07), Color(el_col.r,el_col.g,el_col.b,0.28), 1.0, 4.0))
-		wrap.add_child(combo_p)
-		var cm := MarginContainer.new()
-		for sd in ["left","right","top","bottom"]:
-			cm.add_theme_constant_override("margin_"+sd, 7)
-		combo_p.add_child(cm)
-		var parts: Array[String] = []
-		if dual_n > 0:   parts.append("%d dual-element towers" % dual_n)
-		if triple_n > 0: parts.append("%d triple-element towers" % triple_n)
-		var cl := _em_lbl("Also enables: " + "  +  ".join(parts), 11, Color(el_col.r,el_col.g,el_col.b,0.88))
-		cl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		cm.add_child(cl)
+	var now_title := _em_lbl("Unlocked Now", 13, Color(0.78,0.92,1.0))
+	now_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	wrap.add_child(now_title)
+	if unlocked_now.is_empty():
+		var none := _em_lbl("No new tower unlocks at this level.", 12, Color(0.62,0.70,0.80))
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		wrap.add_child(none)
+	else:
+		var grid := GridContainer.new()
+		grid.columns = 2
+		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		grid.add_theme_constant_override("h_separation", 8)
+		grid.add_theme_constant_override("v_separation", 8)
+		wrap.add_child(grid)
+		for cfg in unlocked_now:
+			grid.add_child(_em_make_tower_card(cfg, el_col))
+
+	var future: Array = preview.get("enables_later", [])
+	if not future.is_empty():
+		wrap.add_child(_em_sec_hdr("ENABLES LATER"))
+		var flow := HFlowContainer.new()
+		flow.add_theme_constant_override("h_separation", 6)
+		flow.add_theme_constant_override("v_separation", 6)
+		wrap.add_child(flow)
+		var max_items: int = mini(future.size(), 10)
+		for i in range(max_items):
+			flow.add_child(_em_chip(str(future[i]), Color(el_col.r, el_col.g, el_col.b, 0.88)))
+		if future.size() > max_items:
+			flow.add_child(_em_chip("+%d more" % (future.size() - max_items), Color(0.55,0.70,0.82)))
+
+func _em_build_economy_preview() -> void:
+	var bv := VBoxContainer.new()
+	bv.add_theme_constant_override("separation", 6)
+	_em_center_col.add_child(bv)
+	_em_bonus_row(bv, "Interest", _em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%"), Color(0.95,0.82,0.3))
+	_em_bonus_row(bv, "Applies", "Every 15s", "", Color(0.6,0.8,1.0))
+	_em_bonus_row(bv, "Tower unlocks", "No tower unlock", "", Color(0.62,0.72,0.84))
+	_em_bonus_row(bv, "Timing", "Best if chosen early", "", Color(0.88,0.76,0.38))
 
 func _em_make_tower_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
 	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	card.add_theme_stylebox_override("panel", _em_sb(Color(0.07,0.09,0.14), Color(el_col.r,el_col.g,el_col.b,0.3), 1.0, 5.0))
 	var mg := MarginContainer.new()
 	for sd in ["left","right","top","bottom"]:
@@ -1424,15 +1428,14 @@ func _em_make_tower_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
 	info.add_theme_constant_override("separation", 3)
 	row.add_child(info)
 
-	info.add_child(_em_lbl(str(cfg.get("display_name", cfg.get("name","Tower"))), 13, Color(0.9,0.92,1.0)))
+	var tower_name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name","Tower"))))
+	info.add_child(_em_lbl(tower_name, 13, Color(0.9,0.92,1.0)))
 	var elems: Array = cfg.get("elements",[])
 	if not elems.is_empty():
-		var el_row := HBoxContainer.new()
-		el_row.add_theme_constant_override("separation", 4)
-		info.add_child(el_row)
-		el_row.add_child(_em_lbl("Elements:", 11, Color(0.5,0.6,0.72)))
-		for el in elems:
-			el_row.add_child(_em_chip(_element_label(str(el)), _get_element_ui_color(str(el))))
+		var combo := _format_element_combo_label(elems)
+		var combo_l := _em_lbl(combo, 11, Color(0.58,0.78,0.94))
+		combo_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		info.add_child(combo_l)
 
 	var tags_v := VBoxContainer.new()
 	tags_v.add_theme_constant_override("separation", 3)
@@ -1453,26 +1456,8 @@ func _em_attack_label(at: String) -> String:
 		"chain":  return "Chain Lightning"
 		"aura":   return "Aura / Debuff"
 		"support_aura": return "Support Aura"
+		"clone_support": return "Clone Support"
 		_: return at.capitalize() if not at.is_empty() else "N/A"
-
-func _em_build_bonus_section(element_id: String, el_col: Color) -> void:
-	var levels: Dictionary = _em_data.get("levels", {})
-	var bv := VBoxContainer.new()
-	bv.add_theme_constant_override("separation", 5)
-	_em_center_col.add_child(bv)
-	if element_id == "__interest__":
-		var ir  : String = _em_data.get("interest_rate","2%")
-		var nr  : String = _em_data.get("next_interest_rate","3%")
-		var ic  := int(_em_data.get("interest_upgrade_count",0))
-		var im  := int(_em_data.get("interest_max_upgrades",5))
-		_em_bonus_row(bv,"Interest Rate", ir, nr, Color(0.95,0.82,0.3))
-		_em_bonus_row(bv,"Upgrades Used", "%d / %d" % [ic, im], "", Color(0.6,0.8,1.0))
-		_em_bonus_row(bv,"Tick Interval",  "Every 15s",  "", Color(0.6,0.8,1.0))
-	else:
-		var cv := int(levels.get(element_id, 0))
-		_em_bonus_row(bv, "%s Level" % _element_label(element_id), "Lv.%d" % cv, "Lv.%d" % min(cv + 1, 3), el_col)
-		_em_bonus_row(bv, "Interest", _em_data.get("interest_rate","2%"), "unchanged", Color(0.95,0.82,0.3))
-		_em_bonus_row(bv, "Runtime tower stats", "unchanged", "", Color(0.62,0.72,0.84))
 
 func _em_bonus_row(parent: VBoxContainer, lbl_text: String, cur: String, nxt: String, vc: Color) -> void:
 	var row := HBoxContainer.new()
@@ -1485,6 +1470,89 @@ func _em_bonus_row(parent: VBoxContainer, lbl_text: String, cur: String, nxt: St
 	row.add_child(n)
 	var v_text := ("%s  →  %s" % [cur, nxt]) if not nxt.is_empty() else cur
 	row.add_child(_em_lbl(v_text, 12, vc))
+
+func _em_get_unlock_preview_for_element(element_id: String) -> Dictionary:
+	var current_levels: Dictionary = _em_data.get("levels", {}).duplicate(true)
+	var preview_levels := current_levels.duplicate(true)
+	preview_levels[element_id] = min(int(preview_levels.get(element_id, 0)) + 1, 3)
+
+	var current_unlocked := _em_get_unlocked_towers_for_levels(current_levels)
+	var preview_unlocked := _em_get_unlocked_towers_for_levels(preview_levels)
+	var out := {
+		"single_element": [],
+		"dual_element": [],
+		"triple_element": [],
+		"enables_later": _em_get_future_combo_labels(element_id, preview_levels),
+	}
+
+	for tower_id in preview_unlocked.keys():
+		if current_unlocked.has(tower_id):
+			continue
+		var cfg: Dictionary = preview_unlocked[tower_id]
+		var combo_type := str(cfg.get("combo_type", "single"))
+		if combo_type == "dual":
+			out["dual_element"].append(cfg)
+		elif combo_type == "triple":
+			out["triple_element"].append(cfg)
+		else:
+			out["single_element"].append(cfg)
+
+	for key in ["single_element", "dual_element", "triple_element"]:
+		out[key].sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return int(a.get("shop_order", 9999)) < int(b.get("shop_order", 9999))
+		)
+	return out
+
+func _em_get_unlocked_towers_for_levels(levels: Dictionary) -> Dictionary:
+	var unlocked := {}
+	for tower_id in tower_catalog.keys():
+		var cfg: Dictionary = tower_catalog[tower_id]
+		if not bool(cfg.get("build_entry", false)):
+			continue
+		if _em_can_build_tower_for_levels(cfg, levels):
+			unlocked[str(tower_id)] = cfg
+	return unlocked
+
+func _em_can_build_tower_for_levels(cfg: Dictionary, levels: Dictionary) -> bool:
+	var combo_type := str(cfg.get("combo_type", "neutral"))
+	if combo_type == "neutral":
+		return true
+	var elements: Array = cfg.get("elements", [])
+	if elements.is_empty():
+		return true
+	var required_level := int(cfg.get("required_element_level", 1))
+	for raw_element in elements:
+		if int(levels.get(str(raw_element), 0)) < required_level:
+			return false
+	return true
+
+func _em_get_future_combo_labels(element_id: String, preview_levels: Dictionary) -> Array:
+	var labels: Array[String] = []
+	for tower_id in tower_catalog.keys():
+		var cfg: Dictionary = tower_catalog[tower_id]
+		if not bool(cfg.get("build_entry", false)):
+			continue
+		var combo_type := str(cfg.get("combo_type", ""))
+		if combo_type != "dual" and combo_type != "triple":
+			continue
+		var elements: Array = cfg.get("elements", [])
+		if not elements.has(element_id):
+			continue
+		if _em_can_build_tower_for_levels(cfg, preview_levels):
+			continue
+		var label := _format_element_combo_label(elements)
+		if not labels.has(label):
+			labels.append(label)
+	labels.sort()
+	return labels
+
+func _format_element_combo_label(elements: Array) -> String:
+	if elements.is_empty():
+		return "Neutral"
+	var parts: Array[String] = []
+	for raw in elements:
+		parts.append(_element_label(str(raw)))
+	return " + ".join(parts)
 
 # Rebuild right summary column.
 func _em_rebuild_right(element_id: String) -> void:
@@ -1499,39 +1567,17 @@ func _em_rebuild_right(element_id: String) -> void:
 	var is_max  := element_id != "__interest__" and int(levels.get(element_id,0)) >= 3
 	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
-	# Cost
-	_em_right_col.add_child(_em_sec_hdr("COST TO UNLOCK"))
-	var cost_p := PanelContainer.new()
-	cost_p.add_theme_stylebox_override("panel", _em_sb(Color(el_col.r,el_col.g,el_col.b,0.1), Color(el_col.r,el_col.g,el_col.b,0.38), 1.5, 6.0))
-	_em_right_col.add_child(cost_p)
-	var cm := MarginContainer.new()
-	for sd in ["left","right","top","bottom"]:
-		cm.add_theme_constant_override("margin_"+sd, 12)
-	cost_p.add_child(cm)
-	var cost_row := HBoxContainer.new()
-	cost_row.add_theme_constant_override("separation", 8)
-	cm.add_child(cost_row)
-	var coin_l := _em_lbl("◎", 22, Color(1.0,0.82,0.22))
-	coin_l.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-	cost_row.add_child(coin_l)
-	cost_row.add_child(_em_lbl("1 PICK", 20, Color(1.0,0.9,0.6)))
-
-	# What you get
-	_em_right_col.add_child(_em_sec_hdr("WHAT YOU GET"))
+	_em_right_col.add_child(_em_sec_hdr("YOU WILL UNLOCK"))
 	var get_v := VBoxContainer.new()
 	get_v.add_theme_constant_override("separation", 5)
 	_em_right_col.add_child(get_v)
 	var items: Array[String]
 	if element_id == "__interest__":
-		items = ["Increase passive interest rate","Gold ticks every 15 seconds","Compounds across all waves"]
+		items = ["Interest %s → %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")], "No tower unlock"]
 	else:
-		var cv := int(levels.get(element_id, 0))
-		items = [
-			"Unlock %s element towers" % _element_label(element_id),
-			"Raise %s to Lv.%d" % [_element_label(element_id), cv+1],
-			"Enable new tower combinations",
-			"Interest remains unchanged",
-		]
+		items = _em_get_unlock_summary_names(element_id)
+		if items.is_empty():
+			items = ["No new tower unlocks"]
 	for item in items:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
@@ -1543,25 +1589,6 @@ func _em_rebuild_right(element_id: String) -> void:
 		il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		il.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(il)
-
-	# Current effect
-	_em_right_col.add_child(_em_sec_hdr("CURRENT EFFECT"))
-	var eff_p := PanelContainer.new()
-	eff_p.add_theme_stylebox_override("panel", _em_sb(Color(0.05,0.07,0.12), Color(0.22,0.4,0.62,0.32), 1.0, 5.0))
-	_em_right_col.add_child(eff_p)
-	var em2 := MarginContainer.new()
-	for sd in ["left","right","top","bottom"]:
-		em2.add_theme_constant_override("margin_"+sd, 10)
-	eff_p.add_child(em2)
-	var eff_v := VBoxContainer.new()
-	eff_v.add_theme_constant_override("separation", 4)
-	em2.add_child(eff_v)
-	if element_id == "__interest__":
-		_em_eff_row(eff_v, "Interest:", _em_data.get("interest_rate","2%"), "→ " + _em_data.get("next_interest_rate","3%"))
-	else:
-		_em_eff_row(eff_v, "Interest:", _em_data.get("interest_rate","2%"), "unchanged")
-		var cv2 := int(levels.get(element_id, 0))
-		_em_eff_row(eff_v, _element_label(element_id)+":", "Lv.%d" % cv2, "→ Lv.%d" % min(cv2+1,3))
 
 	# Push confirm to bottom
 	var push := Control.new()
@@ -1597,18 +1624,18 @@ func _em_rebuild_right(element_id: String) -> void:
 		_em_confirm_btn.add_theme_color_override("font_disabled_color", Color(0.35,0.4,0.5))
 	_em_right_col.add_child(_em_confirm_btn)
 
-func _em_eff_row(parent: VBoxContainer, lbl: String, cur: String, after: String) -> void:
-	var row := HBoxContainer.new()
-	parent.add_child(row)
-	var l := _em_lbl(lbl, 12, Color(0.58,0.68,0.8))
-	l.custom_minimum_size.x = 90
-	row.add_child(l)
-	row.add_child(_em_lbl(cur, 12, Color(0.85,0.92,1.0)))
-	if not after.is_empty():
-		var after_color := Color(0.35,0.96,0.56)
-		if after == "unchanged":
-			after_color = Color(0.82,0.76,0.58)
-		row.add_child(_em_lbl("  " + after, 12, after_color))
+func _em_get_unlock_summary_names(element_id: String) -> Array[String]:
+	var preview := _em_get_unlock_preview_for_element(element_id)
+	var all: Array = []
+	all.append_array(preview.get("single_element", []))
+	all.append_array(preview.get("dual_element", []))
+	all.append_array(preview.get("triple_element", []))
+	var names: Array[String] = []
+	for cfg in all:
+		var name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name", "Tower"))))
+		if not names.has(name):
+			names.append(name)
+	return names
 
 func _em_option_type(element_id: String) -> String:
 	return "interest" if element_id == "__interest__" else "element"
