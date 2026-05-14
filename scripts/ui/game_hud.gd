@@ -162,6 +162,7 @@ var tower_shop_scroll: ScrollContainer = null
 var tower_shop_list: VBoxContainer = null
 var dynamic_tower_buttons: Dictionary = {} # id: Button
 var element_status_label: Label = null
+var element_hint_label: Label = null
 var element_choice_panel: PanelContainer = null
 var element_choice_list: VBoxContainer = null
 var current_element_levels: Dictionary = {}
@@ -400,7 +401,10 @@ func _update_tower_affordability(current_gold: int) -> void:
 		if btn.disabled:
 			continue  # Skip locked towers; they keep their gray state.
 		var cost: int = int(tower_prices.get(tower_id, 50))
-		btn.modulate = Color(1, 1, 1, 1) if current_gold >= cost else Color(1, 0.4, 0.4, 0.8)
+		btn.modulate = Color(1, 1, 1, 1)
+		var cost_label := btn.get_node_or_null("Row/CostLabel")
+		if cost_label is Label:
+			cost_label.add_theme_color_override("font_color", SHOP_GOLD_COLOR if current_gold >= cost else Color(1.0, 0.48, 0.42, 0.95))
 
 func refresh_tower_shop(tower_ids: Array[String]) -> void:
 	_ensure_elemental_shop_ui()
@@ -448,27 +452,26 @@ func refresh_tower_shop(tower_ids: Array[String]) -> void:
 
 	for section_key in section_order:
 		var entries: Array = sections.get(section_key, [])
-		if entries.is_empty():
+		var visible_entries := _get_tower_section_visible_entries(section_key, entries, unlocked_set)
+		var show_hint := _should_show_section_unlock_hint(section_key, entries, visible_entries)
+		if visible_entries.is_empty() and not show_hint:
 			continue
 
-		# Section header
-		var header := Label.new()
-		header.name = "SectionHeader_%s" % section_key
-		header.text = section_labels.get(section_key, section_key.to_upper())
-		header.add_theme_font_size_override("font_size", 12)
-		header.add_theme_color_override("font_color", SHOP_HEADER_COLOR)
-		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		header.custom_minimum_size.y = 24
-		tower_shop_list.add_child(header)
+		_add_tower_section_header(section_key, str(section_labels.get(section_key, section_key.to_upper())))
 
-		for entry in entries:
+		for entry in visible_entries:
 			var tower_id: String = entry["id"]
 			var cfg: Dictionary = entry["cfg"]
 			var is_unlocked: bool = unlocked_set.has(tower_id)
 			_add_tower_shop_button(tower_id, cfg, is_unlocked)
 
+		if show_hint:
+			_add_tower_section_hint(_get_section_unlock_hint(section_key, visible_entries.is_empty()))
+
 	if element_status_label:
 		element_status_label.text = _format_element_levels(current_element_levels)
+	if element_hint_label:
+		element_hint_label.text = "Pick elements to unlock towers"
 
 	_update_tower_affordability(_get_current_gold_for_hud())
 	if tower_shop_scroll:
@@ -476,29 +479,16 @@ func refresh_tower_shop(tower_ids: Array[String]) -> void:
 
 func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool) -> void:
 	var cost: int = int(tower_prices.get(tower_id, cfg.get("cost", 50)))
-	var btn_container := HBoxContainer.new()
-	btn_container.name = "TowerRow_%s" % tower_id
-	btn_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-
-	# Compact element badge, e.g. L, D, or L+D.
 	var el_array: Array = cfg.get("elements", [])
-	if not el_array.is_empty():
-		btn_container.add_child(_create_element_badge(el_array, is_unlocked))
-		var spacer := Control.new()
-		spacer.custom_minimum_size = Vector2(6, 0)
-		btn_container.add_child(spacer)
-
-	# Tower button
 	var btn := Button.new()
 	btn.name = "TowerButton_%s" % tower_id
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.focus_mode = Control.FOCUS_NONE
-	btn.clip_text = true
-	btn.custom_minimum_size.y = 38
-	btn.add_theme_font_size_override("font_size", 12)
+	btn.clip_text = false
+	btn.custom_minimum_size.y = 46
+	btn.text = ""
 	var display_name: String = str(cfg.get("display_name", cfg.get("name", tower_id)))
 	display_name = _compact_tower_display_name(display_name)
-	btn.text = _format_tower_row_text(display_name, cost, el_array, is_unlocked)
 
 	if is_unlocked:
 		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
@@ -509,15 +499,129 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 		btn.disabled = true
 		btn.tooltip_text = _build_locked_tooltip(tower_id, cfg, cost)
 	_style_tower_shop_button(btn, is_unlocked)
+	_populate_tower_row_button(btn, display_name, cost, el_array, is_unlocked)
 
-	btn_container.add_child(btn)
-	tower_shop_list.add_child(btn_container)
+	tower_shop_list.add_child(btn)
 	dynamic_tower_buttons[tower_id] = btn
 
-func _format_tower_row_text(display_name: String, cost: int, elements: Array, is_unlocked: bool) -> String:
-	if is_unlocked or elements.size() <= 1:
-		return "%s  $%d" % [display_name, cost]
-	return "%s  req %s" % [display_name, _elements_short(elements)]
+func _populate_tower_row_button(btn: Button, display_name: String, cost: int, elements: Array, is_unlocked: bool) -> void:
+	var row := HBoxContainer.new()
+	row.name = "Row"
+	row.set_anchors_preset(Control.PRESET_FULL_RECT)
+	row.offset_left = 8
+	row.offset_top = 4
+	row.offset_right = -8
+	row.offset_bottom = -4
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 8)
+	btn.add_child(row)
+
+	var badge := _create_element_badge(elements, is_unlocked)
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(badge)
+
+	var name_label := Label.new()
+	name_label.name = "NameLabel"
+	name_label.text = display_name
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_label.clip_text = true
+	name_label.add_theme_font_size_override("font_size", 15)
+	name_label.add_theme_color_override("font_color", SHOP_ENABLED_TEXT_COLOR if is_unlocked else SHOP_LOCKED_TEXT_COLOR)
+	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(name_label)
+
+	var cost_label := Label.new()
+	cost_label.name = "CostLabel"
+	cost_label.text = _format_tower_cost(cost) if is_unlocked else _format_tower_requirement(elements)
+	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	cost_label.custom_minimum_size.x = 60 if is_unlocked else 112
+	cost_label.add_theme_font_size_override("font_size", 14 if is_unlocked else 12)
+	cost_label.add_theme_color_override("font_color", SHOP_GOLD_COLOR if is_unlocked else SHOP_LOCKED_TEXT_COLOR)
+	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(cost_label)
+
+func _format_tower_cost(cost: int) -> String:
+	if cost < 0:
+		return "—"
+	return "$%d" % cost
+
+func _format_tower_requirement(elements: Array) -> String:
+	if elements.is_empty():
+		return "Locked"
+	if elements.size() == 1:
+		return "Requires %s" % _element_label(str(elements[0]))
+	return "Requires %s" % _elements_short(elements).replace("+", " + ")
+
+func _add_tower_section_header(section_key: String, label_text: String) -> void:
+	var header := HBoxContainer.new()
+	header.name = "SectionHeader_%s" % section_key
+	header.custom_minimum_size.y = 28
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.add_theme_constant_override("separation", 8)
+	tower_shop_list.add_child(header)
+
+	var mark := Label.new()
+	mark.text = ">"
+	mark.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mark.add_theme_font_size_override("font_size", 14)
+	mark.add_theme_color_override("font_color", Color(0.38, 0.96, 1.0, 0.95))
+	header.add_child(mark)
+
+	var title := Label.new()
+	title.text = label_text
+	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 15)
+	title.add_theme_color_override("font_color", Color(0.48, 0.96, 1.0, 1.0))
+	header.add_child(title)
+
+func _add_tower_section_hint(text: String) -> void:
+	var panel := PanelContainer.new()
+	panel.name = "SectionHint"
+	panel.custom_minimum_size.y = 44
+	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.035, 0.052, 0.075, 0.80)
+	style.border_color = Color(0.20, 0.36, 0.48, 0.58)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(4)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 7
+	style.content_margin_bottom = 7
+	panel.add_theme_stylebox_override("panel", style)
+	tower_shop_list.add_child(panel)
+
+	var label := Label.new()
+	label.text = text
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.58, 0.68, 0.78, 0.95))
+	panel.add_child(label)
+
+func _get_tower_section_visible_entries(section_key: String, entries: Array, unlocked_set: Dictionary) -> Array:
+	if section_key == "neutral" or section_key == "single":
+		return entries
+	var visible: Array = []
+	for entry in entries:
+		if unlocked_set.has(str(entry["id"])):
+			visible.append(entry)
+	return visible
+
+func _should_show_section_unlock_hint(section_key: String, entries: Array, visible_entries: Array) -> bool:
+	if section_key == "dual" or section_key == "triple":
+		return not entries.is_empty() and visible_entries.size() < entries.size()
+	return false
+
+func _get_section_unlock_hint(section_key: String, is_empty_section: bool) -> String:
+	if section_key == "dual":
+		return "Unlock 2 elements to reveal dual towers" if is_empty_section else "Unlock 2 elements to reveal more dual towers"
+	if section_key == "triple":
+		return "Unlock 3 elements to reveal triple element towers" if is_empty_section else "Unlock 3 elements to reveal more triple towers"
+	return "Unlock more elements to reveal towers"
 
 func _style_tower_shop_button(btn: Button, is_unlocked: bool) -> void:
 	var normal := StyleBoxFlat.new()
@@ -637,6 +741,8 @@ func set_element_levels(levels: Dictionary) -> void:
 	current_element_levels = levels.duplicate(true)
 	if element_status_label:
 		element_status_label.text = _format_element_levels(current_element_levels)
+	if element_hint_label:
+		element_hint_label.text = "Pick elements to unlock towers"
 
 func show_element_choice(levels: Dictionary, pending_picks: int = 1, interest_rate_label: String = "2%", next_interest_rate_label: String = "3%", can_upgrade_interest: bool = true, interest_upgrade_count: int = 0, interest_max_upgrades: int = 5) -> void:
 	_ensure_element_choice_ui()
@@ -690,28 +796,55 @@ func _ensure_elemental_shop_ui() -> void:
 		return
 	_hide_static_tower_buttons()
 
+	var old_spacer := container.get_node_or_null("Spacer")
+	if old_spacer is Control:
+		old_spacer.hide()
+		old_spacer.custom_minimum_size = Vector2.ZERO
+		old_spacer.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
 	element_status_label = Label.new()
 	element_status_label.name = "ElementStatusLabel"
 	element_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	element_status_label.text = "Elements: none"
-	element_status_label.add_theme_color_override("font_color", Color(0.58, 0.92, 1.0))
-	element_status_label.add_theme_font_size_override("font_size", 14)
+	element_status_label.text = "Elements: None"
+	element_status_label.add_theme_color_override("font_color", Color(0.58, 0.94, 1.0))
+	element_status_label.add_theme_font_size_override("font_size", 16)
 	container.add_child(element_status_label)
 	container.move_child(element_status_label, basic_tower_button.get_index())
 
+	element_hint_label = Label.new()
+	element_hint_label.name = "ElementHintLabel"
+	element_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	element_hint_label.text = "Pick elements to unlock towers"
+	element_hint_label.add_theme_color_override("font_color", Color(0.45, 0.82, 0.94, 0.92))
+	element_hint_label.add_theme_font_size_override("font_size", 12)
+	container.add_child(element_hint_label)
+	container.move_child(element_hint_label, element_status_label.get_index() + 1)
+
 	tower_shop_scroll = ScrollContainer.new()
 	tower_shop_scroll.name = "ElementalTowerShopScroll"
-	tower_shop_scroll.custom_minimum_size = Vector2(0, 360)
+	tower_shop_scroll.custom_minimum_size = Vector2(0, 260)
 	tower_shop_scroll.size_flags_horizontal = Control.SIZE_FILL
 	tower_shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	tower_shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	container.add_child(tower_shop_scroll)
-	container.move_child(tower_shop_scroll, element_status_label.get_index() + 1)
+	container.move_child(tower_shop_scroll, element_hint_label.get_index() + 1)
 
 	tower_shop_list = VBoxContainer.new()
 	tower_shop_list.name = "ElementalTowerShopList"
 	tower_shop_list.size_flags_horizontal = Control.SIZE_FILL
-	tower_shop_list.add_theme_constant_override("separation", 4)
+	tower_shop_list.add_theme_constant_override("separation", 6)
 	tower_shop_scroll.add_child(tower_shop_list)
+
+	var bottom_separator := ColorRect.new()
+	bottom_separator.name = "TowerPanelBottomSeparator"
+	bottom_separator.custom_minimum_size.y = 1
+	bottom_separator.color = Color(0.30, 0.82, 1.0, 0.42)
+	container.add_child(bottom_separator)
+	container.move_child(bottom_separator, build_status_label.get_index())
+
+	build_status_label.add_theme_color_override("font_color", Color(0.82, 0.92, 1.0, 0.96))
+	build_status_label.add_theme_font_size_override("font_size", 12)
+	cancel_build_button.custom_minimum_size.y = 44
 
 func _ensure_element_choice_ui() -> void:
 	if element_choice_panel != null and is_instance_valid(element_choice_panel):
@@ -793,7 +926,7 @@ func _format_element_levels(levels: Dictionary) -> String:
 		if level > 0:
 			parts.append("%s%d" % [_element_label(element_id).substr(0, 1), level])
 	if parts.is_empty():
-		return "Pick an element to unlock towers"
+		return "Elements: None"
 	return "Elements: " + " ".join(parts)
 
 func _element_label(element_id: String) -> String:
