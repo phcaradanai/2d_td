@@ -19,6 +19,10 @@ run/main_scene="res://scenes/main/Main.tscn"
 config/features=PackedStringArray("4.6", "Forward Plus")
 run/max_fps=60
 
+[autoload]
+
+PerformanceBudget="*res://scripts/core/performance_budget.gd"
+
 [display]
 
 window/size/viewport_width=1920

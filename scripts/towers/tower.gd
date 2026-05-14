@@ -1921,7 +1921,15 @@ func find_target() -> Node2D:
 
 func get_enemies_in_range() -> Array:
 	_enemies_in_range_cache.clear()
-	var all_enemies = get_tree().get_nodes_in_group("enemies")
+	# Use PerformanceBudget's frame-cached list — one group query per frame shared
+	# across all towers, instead of one per tower per scan interval.
+	var all_enemies: Array
+	if has_node("/root/PerformanceBudget"):
+		var pb := get_node("/root/PerformanceBudget")
+		all_enemies = pb.get_enemies()
+		pb.register_target_check()
+	else:
+		all_enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in all_enemies:
 		if is_valid_target(enemy):
 			_enemies_in_range_cache.append(enemy)
