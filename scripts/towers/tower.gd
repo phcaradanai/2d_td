@@ -1758,23 +1758,19 @@ func shoot() -> void:
 
 		match visual_type:
 			# ── Heavy / Cannon class ──────────────────────────────────────
-			"cannon", "heavy_mortar", "hydro_cannon", "golem_body",
-			"stone_bastion", "dual_nozzle", "forge_anvil":
+			"cannon", "heavy_mortar", "hydro_cannon", "golem_body", "stone_bastion", "dual_nozzle", "forge_anvil":
 				proj_scale = 1.6
 				sfx_name   = "tower_shoot_cannon"
 			# ── Rapid / Bolt class ───────────────────────────────────────
-			"rapid", "bio_vine", "ember_bloom", "strike_blades",
-			"storm_turbine", "tri_reactor":
+			"rapid", "bio_vine", "ember_bloom", "strike_blades", "storm_turbine", "tri_reactor":
 				proj_scale = 0.7
 				sfx_name   = "tower_shoot_rapid"
 			# ── Slow / Control class ─────────────────────────────────────
-			"slow", "crystal_emitter", "hail_crystal", "void_vortex",
-			"acid_vat", "tar_pool", "steam_boiler":
+			"slow", "crystal_emitter", "hail_crystal", "void_vortex", "acid_vat", "tar_pool", "steam_boiler":
 				proj_scale = 1.05
 				sfx_name   = "tower_shoot_slow"
 			# ── Precision / Sniper class ─────────────────────────────────
-			"sniper", "prism_lens", "rail_laser", "particle_accel",
-			"gold_refinery", "solar_bloom":
+			"sniper", "prism_lens", "rail_laser", "particle_accel", "gold_refinery", "solar_bloom":
 				proj_scale = 0.8
 				sfx_name   = "tower_shoot_sniper"
 			# ── Chain / Lightning class ──────────────────────────────────
@@ -1782,8 +1778,7 @@ func shoot() -> void:
 				proj_scale = 1.0
 				sfx_name   = "tower_shoot_slow"
 			# ── Toxic / Spore / DoT class (small, dark pulse) ────────────
-			"spore_cap", "toxin_vial", "voodoo_totem", "root_cage",
-			"void_flower", "void_orb", "chaos_orb":
+			"spore_cap", "toxin_vial", "voodoo_totem", "root_cage", "void_flower", "void_orb", "chaos_orb":
 				proj_scale = 0.7
 				sfx_name   = "tower_shoot_rapid"
 			# ── Seismic / Earth impact class ─────────────────────────────
@@ -1950,23 +1945,18 @@ func spawn_muzzle_flash(color: Color) -> void:
 		if flash.has_method("setup"):
 			var flash_scale: float
 			match visual_type:
-				"cannon", "heavy_mortar", "hydro_cannon", "dual_nozzle",
-				"forge_anvil", "seismic_drill":
+				"cannon", "heavy_mortar", "hydro_cannon", "dual_nozzle", "forge_anvil", "seismic_drill":
 					flash_scale = 1.5
-				"rapid", "bio_vine", "ember_bloom", "strike_blades",
-				"storm_turbine", "tri_reactor":
+				"rapid", "bio_vine", "ember_bloom", "strike_blades", "storm_turbine", "tri_reactor":
 					flash_scale = 0.55
-				"sniper", "prism_lens", "rail_laser", "particle_accel",
-				"gold_refinery", "solar_bloom":
+				"sniper", "prism_lens", "rail_laser", "particle_accel", "gold_refinery", "solar_bloom":
 					flash_scale = 0.9
 				"lightning":
 					flash_scale = 1.3
 				"slow", "crystal_emitter", "hail_crystal":
 					flash_scale = 0.85
 				# Toxic / DoT / void: small muted pulse only
-				"spore_cap", "toxin_vial", "voodoo_totem", "root_cage",
-				"void_flower", "void_orb", "chaos_orb", "void_vortex",
-				"acid_vat", "tar_pool":
+				"spore_cap", "toxin_vial", "voodoo_totem", "root_cage","void_flower", "void_orb", "chaos_orb", "void_vortex", "acid_vat", "tar_pool":
 					flash_scale = 0.45
 				"stone_bastion", "golem_body":
 					flash_scale = 1.2
