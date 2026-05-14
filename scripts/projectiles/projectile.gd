@@ -164,9 +164,17 @@ func _draw() -> void:
 		return
 
 	if PERFORMANCE_MODE:
-		var perf_color := Color(0.3, 1.0, 0.6, 1.0) if speed > 550 else Color(0.3, 0.7, 1.0, 1.0)
-		if attack_type == "splash": perf_color = Color(1.0, 0.5, 0.2, 1.0)
-		elif attack_type == "slow": perf_color = Color(0.7, 0.5, 1.0, 1.0)
+		# Use tower element color (set via modulate in tower.shoot()) when available;
+		# fall back to attack_type defaults for neutral / legacy towers.
+		var mod := modulate
+		var is_default_white := mod.r >= 0.95 and mod.g >= 0.95 and mod.b >= 0.95
+		var perf_color: Color
+		if is_default_white:
+			if attack_type == "splash":   perf_color = Color(1.0, 0.5, 0.2, 1.0)
+			elif attack_type == "slow":   perf_color = Color(0.7, 0.5, 1.0, 1.0)
+			else: perf_color = Color(0.3, 1.0, 0.6, 1.0) if speed > 550 else Color(0.3, 0.7, 1.0, 1.0)
+		else:
+			perf_color = Color(mod.r, mod.g, mod.b, 1.0)
 		draw_circle(Vector2.ZERO, 4.0, perf_color)
 		return
 
@@ -238,7 +246,9 @@ func hit_target() -> void:
 			_apply_damage_amp_to_enemy(target)
 			# STANDARD: Use captured hit point and current pos for angle
 			var impact_angle = (hit_global - global_position).angle()
-			_spawn_impact_effect(hit_global, Color.WHITE, impact_angle)
+			# Use tower element color (modulate) for the impact spark color.
+			var impact_col := Color(modulate.r, modulate.g, modulate.b, 1.0)
+			_spawn_impact_effect(hit_global, impact_col, impact_angle)
 			
 			if attack_type == "chain" and chain_jumps > 0:
 				_handle_chain_jump(hit_global)
@@ -327,7 +337,14 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 			get_tree().current_scene.add_child(effect)
 			effect.global_position = hit_pos
 		
-		var effect_color = Color(1, 0.5, 0.2) if attack_type == "splash" else Color(0.4, 0.8, 1.0)
+		# Element-tinted splash ring: prefer modulate color, fall back to attack-type defaults.
+		var mod := modulate
+		var is_default_white := mod.r >= 0.95 and mod.g >= 0.95 and mod.b >= 0.95
+		var effect_color: Color
+		if is_default_white:
+			effect_color = Color(1.0, 0.5, 0.2) if attack_type == "splash" else Color(0.4, 0.8, 1.0)
+		else:
+			effect_color = Color(mod.r, mod.g, mod.b, 0.85)
 		if effect.has_method("setup"):
 			effect.setup(effect_radius, effect_color)
 		

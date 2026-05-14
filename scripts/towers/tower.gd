@@ -1685,31 +1685,47 @@ func shoot() -> void:
 		
 		pass # shoot debug removed for performance
 		
-		# Configure projectile based on tower type
-		var proj_scale = 1.0
-		var proj_color = Color(1, 1, 1, 1)
-		var sfx_name = "tower_shoot_basic"
-		
-		if visual_type == "rapid":
-			proj_scale = 0.7
-			proj_color = Color(0.5, 1.0, 0.7, 1.0)
-			sfx_name = "tower_shoot_rapid"
-		elif visual_type == "cannon":
-			proj_scale = 1.8
-			proj_color = Color(1.0, 0.5, 0.5, 1.0)
-			sfx_name = "tower_shoot_cannon"
-		elif visual_type == "slow":
-			proj_scale = 1.1
-			proj_color = Color(0.4, 0.8, 1.0, 1.0) # Cyan
-			sfx_name = "tower_shoot_slow"
-		elif visual_type == "sniper":
-			proj_scale = 0.9
-			proj_color = Color(1.0, 0.9, 0.4, 1.0)
-			sfx_name = "tower_shoot_sniper"
-		elif visual_type == "lightning":
-			proj_scale = 1.0
-			proj_color = Color(0.5, 0.8, 1.0, 1.0)
-			sfx_name = "tower_shoot_slow"
+		# Configure projectile — color always derived from element identity,
+		# visual_type only drives scale/SFX category.
+		var proj_scale := 1.0
+		var sfx_name := "tower_shoot_basic"
+		var tower_col := _get_tower_color()           # element-aware color
+		var proj_color := Color(tower_col.r, tower_col.g, tower_col.b, 1.0)
+
+		match visual_type:
+			# ── Heavy / Cannon class ──────────────────────────────────────
+			"cannon", "heavy_mortar", "hydro_cannon", "golem_body",
+			"stone_bastion", "dual_nozzle", "forge_anvil":
+				proj_scale = 1.6
+				sfx_name   = "tower_shoot_cannon"
+			# ── Rapid / Bolt class ───────────────────────────────────────
+			"rapid", "bio_vine", "ember_bloom", "strike_blades",
+			"storm_turbine", "tri_reactor":
+				proj_scale = 0.7
+				sfx_name   = "tower_shoot_rapid"
+			# ── Slow / Control class ─────────────────────────────────────
+			"slow", "crystal_emitter", "hail_crystal", "void_vortex",
+			"acid_vat", "tar_pool", "steam_boiler":
+				proj_scale = 1.05
+				sfx_name   = "tower_shoot_slow"
+			# ── Precision / Sniper class ─────────────────────────────────
+			"sniper", "prism_lens", "rail_laser", "particle_accel",
+			"gold_refinery", "solar_bloom":
+				proj_scale = 0.8
+				sfx_name   = "tower_shoot_sniper"
+			# ── Chain / Lightning class ──────────────────────────────────
+			"lightning":
+				proj_scale = 1.0
+				sfx_name   = "tower_shoot_slow"
+			# ── Toxic / Spore / DoT class (small, dark pulse) ────────────
+			"spore_cap", "toxin_vial", "voodoo_totem", "root_cage",
+			"void_flower", "void_orb", "chaos_orb":
+				proj_scale = 0.7
+				sfx_name   = "tower_shoot_rapid"
+			# ── Seismic / Earth impact class ─────────────────────────────
+			"seismic_drill":
+				proj_scale = 1.4
+				sfx_name   = "tower_shoot_cannon"
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
 		projectile.setup(current_target, int(round(get_effective_damage())), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories, tower_id)
@@ -1820,11 +1836,32 @@ func spawn_muzzle_flash(color: Color) -> void:
 		flash.global_rotation = turret_pivot.global_rotation if turret_pivot else global_rotation
 		
 		if flash.has_method("setup"):
-			var flash_scale = 1.0
-			if visual_type == "cannon": flash_scale = 1.6
-			elif visual_type == "rapid": flash_scale = 0.6
-			elif visual_type == "sniper": flash_scale = 1.2
-			elif visual_type == "lightning": flash_scale = 1.4
+			var flash_scale: float
+			match visual_type:
+				"cannon", "heavy_mortar", "hydro_cannon", "dual_nozzle",
+				"forge_anvil", "seismic_drill":
+					flash_scale = 1.5
+				"rapid", "bio_vine", "ember_bloom", "strike_blades",
+				"storm_turbine", "tri_reactor":
+					flash_scale = 0.55
+				"sniper", "prism_lens", "rail_laser", "particle_accel",
+				"gold_refinery", "solar_bloom":
+					flash_scale = 0.9
+				"lightning":
+					flash_scale = 1.3
+				"slow", "crystal_emitter", "hail_crystal":
+					flash_scale = 0.85
+				# Toxic / DoT / void: small muted pulse only
+				"spore_cap", "toxin_vial", "voodoo_totem", "root_cage",
+				"void_flower", "void_orb", "chaos_orb", "void_vortex",
+				"acid_vat", "tar_pool":
+					flash_scale = 0.45
+				"stone_bastion", "golem_body":
+					flash_scale = 1.2
+				"steam_boiler", "furnace":
+					flash_scale = 1.1
+				_:
+					flash_scale = 0.85
 			flash.setup(color, flash_scale)
 
 func update_target() -> void:
