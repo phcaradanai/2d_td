@@ -1,6 +1,6 @@
 extends Node2D
 
-const PERFORMANCE_MODE := true  # Disables projectile trail and impact effects for 60 FPS
+const PERFORMANCE_MODE := true  # Keeps trails/splash heavy FX off; compact impacts are quality-gated.
 const ELEMENTAL_DEBUG_FLOATING_TEXT := true
 const ELEMENTAL_DEBUG_FLOATING_TEXT_META := "elemental_debug_floating_text_enabled"
 const ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META := "elemental_debug_floating_text_last_msec"
@@ -71,6 +71,10 @@ var source_id: String = ""
 var attack_elements_override: Array[String] = []
 var vulnerability_percent: float = 0.0
 var vulnerability_duration: float = 0.0
+var last_known_target_pos: Vector2 = Vector2.ZERO
+var vfx_core_color: Color = Color(0.75, 0.9, 1.0, 1.0)
+var vfx_glow_color: Color = Color(0.25, 0.85, 1.0, 0.75)
+var vfx_accent_color: Color = Color.WHITE
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
@@ -94,6 +98,9 @@ func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_
 	attack_elements_override = _normalize_element_array(p_attack_elements)
 	vulnerability_percent = maxf(0.0, p_vulnerability_percent)
 	vulnerability_duration = maxf(0.0, p_vulnerability_duration)
+	_refresh_vfx_palette()
+	if target != null and is_instance_valid(target):
+		last_known_target_pos = _get_hit_anchor_global_position(target)
 	
 	# Density Control: Shorten trail for fast/rapid projectiles to avoid clutter
 	if p_speed > 600:
@@ -115,23 +122,31 @@ func _process(delta: float) -> void:
 	if game_manager != null and game_manager.is_paused:
 		return
 		
-	if target == null or not is_instance_valid(target):
+	var has_live_target := target != null and is_instance_valid(target)
+	if has_live_target:
+		last_known_target_pos = _get_hit_anchor_global_position(target)
+	elif last_known_target_pos == Vector2.ZERO:
 		queue_free()
 		return
 		
-	var target_pos := target.global_position
-	if target.has_method("get_hit_origin"):
-		target_pos = target.get_hit_origin()
+	var target_pos := last_known_target_pos
 		
 	var to_target := target_pos - global_position
 	var distance := to_target.length()
 	
 	# STANDARD: Use global distance for hit detection
 	if distance < 10.0:
-		hit_target()
+		global_position = target_pos
+		if has_live_target:
+			hit_target()
+		else:
+			_spawn_dissipate_effect()
+			queue_free()
 		return
-		
-	global_position += to_target.normalized() * speed * delta
+
+	var direction := to_target.normalized()
+	rotation = direction.angle()
+	global_position += direction * speed * delta
 
 	if not PERFORMANCE_MODE:
 		_update_trail()
@@ -142,7 +157,7 @@ func _process(delta: float) -> void:
 
 func _update_trail() -> void:
 	# Avoid adding points if we're already at the target or dead
-	if not is_instance_valid(target) or global_position.distance_to(target.global_position) < 5.0:
+	if not is_instance_valid(target) or global_position.distance_to(_get_hit_anchor_global_position(target)) < 5.0:
 		return
 		
 	if trail_points.is_empty():
@@ -194,22 +209,15 @@ func _draw() -> void:
 			draw_line(p1, p2, seg_color, 2.0 * alpha, true)
 
 	# 2. Face movement direction
-	var rot = 0.0
-	if is_instance_valid(target):
-		rot = (target.global_position - global_position).angle()
+	draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	
-	draw_set_transform(Vector2.ZERO, rot, Vector2.ONE)
-	
-	var color = Color(0.3, 0.8, 1.0, 1.0) # Default cyan
+	var color = vfx_core_color
 	
 	if attack_type == "splash": # Cannon
-		color = Color(1.0, 0.5, 0.2, 1.0)
 		_draw_shell(color)
 	elif attack_type == "slow": # Slow
-		color = Color(0.7, 0.5, 1.0, 1.0)
 		_draw_bolt(color, 12.0)
 	else: # Basic / Rapid
-		color = Color(0.3, 1.0, 0.6, 1.0) if speed > 550 else Color(0.3, 0.7, 1.0, 1.0)
 		_draw_bolt(color, 10.0)
 
 func _draw_bolt(color: Color, length: float) -> void:
@@ -217,21 +225,108 @@ func _draw_bolt(color: Color, length: float) -> void:
 	draw_colored_polygon(pts, color)
 	draw_polyline(pts + [pts[0]], Color.WHITE, 1.0)
 	# Glow
-	draw_line(Vector2(-length, 0), Vector2(length, 0), Color(color.r, color.g, color.b, 0.4), 4.0)
+	draw_line(Vector2(-length, 0), Vector2(length, 0), Color(vfx_glow_color.r, vfx_glow_color.g, vfx_glow_color.b, 0.4), 4.0)
 
 func _draw_shell(color: Color) -> void:
 	draw_circle(Vector2.ZERO, 5, color)
-	draw_arc(Vector2.ZERO, 5, 0, TAU, 16, Color.WHITE, 1.5)
+	draw_arc(Vector2.ZERO, 5, 0, TAU, 16, vfx_glow_color, 1.5)
 	# Trail tail
-	draw_line(Vector2(-8, 0), Vector2(-2, 0), color, 3.0)
+	draw_line(Vector2(-10, 0), Vector2(-2, 0), vfx_accent_color, 3.0)
+
+func _draw_performance_projectile() -> void:
+	if _is_flamethrower_projectile():
+		_draw_flame_stream()
+	elif _is_beam_projectile():
+		_draw_beam_sliver()
+	elif attack_type == "splash":
+		_draw_shell(vfx_core_color)
+	elif attack_type == "slow":
+		_draw_elemental_droplet()
+	else:
+		var length := 12.0 if speed > 550 else 10.0
+		_draw_bolt(vfx_core_color, length)
+
+func _draw_elemental_droplet() -> void:
+	var pts = [Vector2(8, 0), Vector2(-5, -4), Vector2(-8, 0), Vector2(-5, 4)]
+	draw_colored_polygon(pts, vfx_core_color)
+	draw_polyline(pts + [pts[0]], vfx_glow_color, 1.0)
+	draw_circle(Vector2(-2, 0), 2.5, Color.WHITE)
+
+func _draw_flame_stream() -> void:
+	var flame_len := 20.0
+	var outer := PackedVector2Array([Vector2(-5, -5), Vector2(flame_len, -2), Vector2(flame_len + 8, 0), Vector2(flame_len, 2), Vector2(-5, 5)])
+	draw_colored_polygon(outer, Color(vfx_glow_color.r, vfx_glow_color.g, vfx_glow_color.b, 0.55))
+	var inner := PackedVector2Array([Vector2(-3, -3), Vector2(flame_len * 0.75, -1), Vector2(flame_len + 3, 0), Vector2(flame_len * 0.75, 1), Vector2(-3, 3)])
+	draw_colored_polygon(inner, vfx_core_color)
+	draw_circle(Vector2(flame_len * 0.55, 0), 2.5, vfx_accent_color)
+
+func _draw_beam_sliver() -> void:
+	draw_line(Vector2(-12, 0), Vector2(16, 0), vfx_glow_color, 4.0, true)
+	draw_line(Vector2(-10, 0), Vector2(18, 0), Color.WHITE, 1.5, true)
+	draw_circle(Vector2(18, 0), 2.0, vfx_core_color)
+
+func _get_hit_anchor_global_position(node: Variant) -> Vector2:
+	if node != null and is_instance_valid(node):
+		if node.has_method("get_hit_anchor_global_position"):
+			return node.get_hit_anchor_global_position()
+		if node.has_method("get_hit_origin"):
+			return node.get_hit_origin()
+		if node.has_method("get_aim_point"):
+			return node.get_aim_point()
+		if node is Node2D:
+			return node.global_position
+	return global_position
+
+func _refresh_vfx_palette() -> void:
+	var attack_elements := _get_attack_elements_from_source()
+	if _is_flamethrower_projectile():
+		vfx_core_color = _get_element_vfx_color("fire")
+		vfx_glow_color = _get_element_vfx_color("darkness")
+		vfx_accent_color = _get_element_vfx_color("earth").lightened(0.25)
+		return
+	if attack_elements.is_empty():
+		vfx_core_color = Color(0.78, 0.9, 1.0, 1.0)
+		vfx_glow_color = Color(0.28, 0.8, 1.0, 0.85)
+		vfx_accent_color = Color(0.9, 0.96, 1.0, 1.0)
+		if attack_type == "splash":
+			vfx_core_color = Color(1.0, 0.55, 0.24, 1.0)
+			vfx_glow_color = Color(1.0, 0.28, 0.08, 0.85)
+			vfx_accent_color = Color(1.0, 0.85, 0.45, 1.0)
+		return
+
+	vfx_core_color = _get_element_vfx_color(attack_elements[0])
+	vfx_glow_color = vfx_core_color.lightened(0.25)
+	vfx_accent_color = Color.WHITE
+	if attack_elements.size() >= 2:
+		vfx_glow_color = _get_element_vfx_color(attack_elements[1])
+	if attack_elements.size() >= 3:
+		vfx_accent_color = _get_element_vfx_color(attack_elements[2]).lightened(0.2)
+
+func _get_element_vfx_color(element_id: String) -> Color:
+	match _normalize_element_id(element_id):
+		"light": return Color(1.0, 0.88, 0.18, 1.0)
+		"darkness": return Color(0.52, 0.16, 0.9, 1.0)
+		"water": return Color(0.16, 0.78, 1.0, 1.0)
+		"fire": return Color(1.0, 0.26, 0.06, 1.0)
+		"nature": return Color(0.22, 0.95, 0.34, 1.0)
+		"earth": return Color(0.86, 0.53, 0.2, 1.0)
+		_: return Color(0.78, 0.9, 1.0, 1.0)
+
+func _is_flamethrower_projectile() -> bool:
+	return source_id.to_lower().begins_with("flamethrower")
+
+func _is_beam_projectile() -> bool:
+	var normalized_source := source_id.to_lower()
+	return normalized_source.find("laser") >= 0 or normalized_source.find("rail") >= 0
+
+func _spawn_dissipate_effect() -> void:
+	if _allow_impact_fx():
+		_spawn_impact_effect(global_position, Color(vfx_core_color.r, vfx_core_color.g, vfx_core_color.b, 0.55), rotation)
 
 func hit_target() -> void:
 	var hit_global = global_position
 	if is_instance_valid(target):
-		if target.has_method("get_hit_origin"):
-			hit_global = target.get_hit_origin()
-		else:
-			hit_global = target.global_position
+		hit_global = _get_hit_anchor_global_position(target)
 		
 	pass # hit captured
 
@@ -266,7 +361,7 @@ func _handle_chain_jump(hit_pos: Vector2) -> void:
 		arc.set_script(load("res://scripts/effects/lightning_arc.gd"))
 		get_parent().add_child(arc)
 		arc.global_position = hit_pos
-		arc.setup(hit_pos, next_target.global_position, Color(0.5, 0.8, 1.0))
+		arc.setup(hit_pos, _get_hit_anchor_global_position(next_target), vfx_core_color)
 		
 		var next_proj = duplicate()
 		get_parent().add_child(next_proj)
@@ -285,7 +380,7 @@ func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 			if chained_enemies.has(enemy): continue
 			if not can_affect_enemy(enemy): continue
 			
-			var dist = hit_pos.distance_to(enemy.global_position)
+			var dist = hit_pos.distance_to(_get_hit_anchor_global_position(enemy))
 			if dist < min_dist:
 				min_dist = dist
 				best_target = enemy
@@ -293,7 +388,8 @@ func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 	return best_target
 
 func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
-	if PERFORMANCE_MODE: return
+	if not _allow_impact_fx():
+		return
 	if impact_effect_scene:
 		var effect = impact_effect_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
@@ -312,19 +408,23 @@ func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angl
 		effect.rotation = hit_angle
 		
 		if effect.has_method("setup"):
-			effect.setup(color, scale_val)
+			effect.setup(color, scale_val, attack_type, vfx_glow_color, vfx_accent_color)
+
+func _allow_impact_fx() -> bool:
+	var pb := get_node_or_null("/root/PerformanceBudget")
+	if pb != null and pb.has_method("get_quality_name"):
+		return str(pb.get_quality_name()) != "LOW"
+	return not PERFORMANCE_MODE
 
 func apply_area_effect(hit_pos: Vector2) -> void:
 	if attack_type == "splash":
 		if audio_manager:
 			audio_manager.play_sfx("splash_hit")
-		# Screen shake for cannon
-		var main = get_tree().current_scene
-		if main and main.has_method("shake_camera"):
-			main.shake_camera(8.0, 0.2)
 	elif attack_type == "slow":
 		if audio_manager:
 			audio_manager.play_sfx("projectile_hit")
+
+	_spawn_impact_effect(hit_pos, vfx_core_color, rotation)
 
 	# Spawn visual effect at hit position
 	if not PERFORMANCE_MODE and splash_effect_scene:
@@ -356,11 +456,7 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 				continue
 			
 			# Precision: Use hit center or aim point if available
-			var enemy_pos = enemy.global_position
-			if enemy.has_method("get_hit_origin"):
-				enemy_pos = enemy.get_hit_origin()
-			elif enemy.has_method("get_aim_point"):
-				enemy_pos = enemy.get_aim_point()
+			var enemy_pos = _get_hit_anchor_global_position(enemy)
 			
 			# STANDARD: Use global distance check for area damage/slow
 			var dist = hit_pos.distance_to(enemy_pos)
@@ -710,9 +806,7 @@ func _draw_lightning_projectile() -> void:
 	# Create 3-4 jagged points backward
 	var back_dir = Vector2.LEFT
 	if is_instance_valid(target):
-		var target_pos = target.global_position
-		if target.has_method("get_hit_origin"):
-			target_pos = target.get_hit_origin()
+		var target_pos = _get_hit_anchor_global_position(target)
 		back_dir = (global_position - target_pos).normalized()
 	
 	for i in range(1, 4):
@@ -721,6 +815,6 @@ func _draw_lightning_projectile() -> void:
 		var offset = perp * randf_range(-6.0, 6.0)
 		pts.append(base + offset)
 	
-	draw_polyline(pts, Color(0.5, 0.8, 1.0, 0.8), 3.0, true)
+	draw_polyline(pts, Color(vfx_glow_color.r, vfx_glow_color.g, vfx_glow_color.b, 0.8), 3.0, true)
 	draw_polyline(pts, Color.WHITE, 1.0, true)
-	draw_circle(Vector2.ZERO, 3.0, Color.WHITE)
+	draw_circle(Vector2.ZERO, 3.0, vfx_core_color)

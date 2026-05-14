@@ -130,11 +130,17 @@ func set_build_status(message: String) -> void:
 func has_pending_element_pick() -> bool:
 	return element_progression_manager != null and element_progression_manager.has_method("has_pending_pick") and element_progression_manager.has_pending_pick()
 
-func on_element_choice_requested(element_id: String) -> void:
+func on_element_choice_requested(option: Variant) -> void:
 	if element_progression_manager == null:
 		return
-	if element_id == interest_pick_id:
+	var pick_option := _normalize_pick_option(option)
+	var option_type := str(pick_option.get("option_type", "element"))
+	var element_id := str(pick_option.get("element_id", ""))
+	if option_type == "interest":
 		choose_interest_upgrade_pick()
+		return
+	if option_type != "element" or element_id.is_empty():
+		_callv(set_bound_build_status, ["Cannot choose that option"])
 		return
 	if element_progression_manager.choose_element(element_id):
 		_callv(refresh_elemental_shop)
@@ -150,6 +156,24 @@ func on_element_choice_requested(element_id: String) -> void:
 		if game_hud:
 			_callv(bind_hud_state_presenter)
 			_callv(set_bound_build_status, ["Cannot choose that element"])
+
+func _normalize_pick_option(option: Variant) -> Dictionary:
+	if option is Dictionary:
+		var option_type := str(option.get("option_type", "element"))
+		return {
+			"option_type": option_type,
+			"element_id": str(option.get("element_id", "")),
+		}
+	var element_id := str(option)
+	if element_id == interest_pick_id:
+		return {
+			"option_type": "interest",
+			"element_id": "",
+		}
+	return {
+		"option_type": "element",
+		"element_id": element_id,
+	}
 
 func choose_interest_upgrade_pick() -> void:
 	if element_progression_manager == null:

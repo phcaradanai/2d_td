@@ -31,6 +31,15 @@ const ECONOMY_KILL_LIFE_COUNTER_REQUIRED := {
 }
 var economy_life_kill_counters: Dictionary = {}
 
+func get_economy_life_kill_progress(source_id: String) -> int:
+	return int(economy_life_kill_counters.get(source_id, 0))
+
+func get_economy_life_kill_required(source_id: String) -> int:
+	return int(ECONOMY_KILL_LIFE_COUNTER_REQUIRED.get(source_id, 0))
+
+func get_economy_gold_bonus_percent(source_id: String) -> float:
+	return float(ECONOMY_KILL_GOLD_BONUS_PERCENT.get(source_id, 0.0))
+
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
 const VALID_ENEMY_CATEGORIES := [ENEMY_CATEGORY_LAND, ENEMY_CATEGORY_AIR]
