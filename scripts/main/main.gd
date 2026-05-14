@@ -220,7 +220,7 @@ func _set_bound_hud_build_status(message: String) -> void:
 	hud_state_presenter.set_build_status(message)
 
 func _hide_element_choice() -> void:
-	game_hud.hide_element_choice()
+	game_hud.hide_element_choice(true)
 
 func _update_world_layout() -> void:
 	_get_gameplay_layout_controller().update_world_layout()
@@ -267,6 +267,7 @@ func _refresh_start_wave_ui() -> void:
 	var level_cleared: bool = not wave_manager.has_next_wave() and not wave_manager.is_wave_running
 	var gameplay_status: String = _get_top_bar_gameplay_status(countdown_active, countdown_remaining)
 	var interest_status_text: String = _format_interest_status_text()
+	var locked_label := "Choose Element First" if _has_pending_element_pick() else ""
 	hud_state_presenter.refresh_start_wave_button(
 		can_start,
 		_is_waiting_for_manual_first_wave(),
@@ -277,7 +278,7 @@ func _refresh_start_wave_ui() -> void:
 		next_wave_name,
 		wave_manager.is_wave_running,
 		level_cleared,
-		"",
+		locked_label,
 		active_wave_number,
 		current_wave,
 		has_next_wave,
@@ -730,8 +731,8 @@ func _on_element_levels_changed(levels: Dictionary) -> void:
 		game_hud.set_element_levels(levels)
 	_refresh_elemental_shop()
 
-func _on_element_choice_requested(element_id: String) -> void:
-	_get_elemental_pick_controller().on_element_choice_requested(element_id)
+func _on_element_choice_requested(option: Variant) -> void:
+	_get_elemental_pick_controller().on_element_choice_requested(option)
 
 func _choose_interest_upgrade_pick() -> void:
 	_get_elemental_pick_controller().choose_interest_upgrade_pick()
@@ -924,6 +925,11 @@ func _unhandled_input(event: InputEvent) -> void:
 
 	if event is InputEventKey and event.pressed:
 		if event.keycode == KEY_ESCAPE:
+			if _has_pending_element_pick():
+				_show_pending_element_choice()
+				_refresh_start_wave_ui()
+				get_viewport().set_input_as_handled()
+				return
 			if build_manager and build_manager.has_selected_tower():
 				build_manager.clear_selected_tower()
 			elif selected_tower:
@@ -1608,6 +1614,8 @@ func _on_start_wave_requested() -> void:
 	if _has_pending_element_pick():
 		if game_hud:
 			game_hud.set_build_status("Choose an element before starting the next wave")
+		_show_pending_element_choice()
+		_refresh_start_wave_ui()
 		return
 	if wave_manager == null or not wave_manager.has_next_wave():
 		return
@@ -2060,7 +2068,7 @@ func _sandbox_add_element(element_id: String, amount: int = 1) -> void:
 		element_progression_manager.grant_pick(1)
 		element_progression_manager.choose_element(element_id)
 	if game_hud:
-		game_hud.hide_element_choice()
+		game_hud.hide_element_choice(true)
 	_refresh_elemental_shop()
 	_refresh_start_wave_ui()
 
@@ -2074,7 +2082,7 @@ func _sandbox_set_all_elements(target_level: int) -> void:
 			element_progression_manager.choose_element(eid)
 			levels = element_progression_manager.get_element_levels()
 	if game_hud:
-		game_hud.hide_element_choice()
+		game_hud.hide_element_choice(true)
 	_refresh_elemental_shop()
 	_refresh_start_wave_ui()
 
