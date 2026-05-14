@@ -49,6 +49,10 @@ var combo_type: String = "neutral"
 var elements: Array[String] = []
 var required_element_level: int = 0
 
+## When true, skips all gameplay logic (targeting, shooting, manager access).
+## Only renders the tower visual model and idle animation.
+var preview_mode: bool = false
+
 const TOWER_SELL_REFUND_RATE := 0.7
 
 @export var use_external_sprite: bool = false
@@ -204,6 +208,35 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 		support_limit = int(config.get("support_limit", 4))
 		_update_range_collision()
 	
+	_ensure_sprite_node()
+	apply_level_visuals()
+
+## Minimal setup for catalog/debug preview. Configures visual identity and
+## stats without registering into gameplay systems.
+func setup_preview(p_config: Dictionary) -> void:
+	preview_mode = true
+	config = p_config
+	tower_id = config.get("id", "")
+	upgrade_id = tower_id
+	display_name = config.get("name", config.get("display_name", "Unknown Tower"))
+	visual_type = config.get("visual_type", "basic")
+	attack_type = config.get("attack_type", "single")
+	description = config.get("description", "")
+	cost = config.get("cost", 0)
+	tree_tier = config.get("tier", 1)
+	combo_type = str(config.get("combo_type", "neutral"))
+	elements = _extract_string_array(config.get("elements", []))
+	required_element_level = int(config.get("required_element_level", 0))
+
+	if config.has("levels") and config["levels"].size() > 0:
+		damage = config["levels"][0].get("damage", 10.0)
+		attack_range = config["levels"][0].get("range", 160.0)
+		fire_rate = config["levels"][0].get("fire_rate", 1.0)
+	else:
+		damage = config.get("damage", 10.0)
+		attack_range = config.get("range", 160.0)
+		fire_rate = config.get("fire_rate", 1.0)
+
 	_ensure_sprite_node()
 	apply_level_visuals()
 
@@ -1078,7 +1111,12 @@ func set_projectile_container(container: Node2D) -> void:
 
 func _ready() -> void:
 	_disable_control_mouse_filter(self)
-	
+
+	if preview_mode:
+		apply_level_visuals()
+		queue_redraw()
+		return
+
 	if click_area:
 		click_area.input_pickable = true
 		click_area.input_event.connect(_on_click_area_input_event)
@@ -1086,7 +1124,7 @@ func _ready() -> void:
 		var shape = click_area.get_node_or_null("CollisionShape2D")
 		if shape and shape.shape is RectangleShape2D:
 			shape.shape.size = Vector2(60, 60)
-	
+
 	apply_level_visuals()
 	queue_redraw()
 
@@ -1123,6 +1161,13 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
+	if preview_mode:
+		idle_rotation += delta * 4.0
+		if turret_pivot:
+			turret_pivot.rotation += delta * 0.5
+		queue_redraw()
+		return
+
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
 		return
 
