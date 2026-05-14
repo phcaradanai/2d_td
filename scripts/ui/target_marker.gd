@@ -9,24 +9,30 @@ extends Node2D
 
 var time: float = 0.0
 
+# Throttle: redraw at 20 Hz instead of 60 Hz. The ring is small and subtle;
+# 20 FPS is indistinguishable from 60 FPS at gameplay scale.
+var _redraw_timer: float = 0.0
+const REDRAW_INTERVAL := 0.05  # 20 Hz
+
 func _process(delta: float) -> void:
 	time += delta
 	rotation += rotation_speed * delta
-	queue_redraw()
+	_redraw_timer += delta
+	if _redraw_timer >= REDRAW_INTERVAL:
+		_redraw_timer -= REDRAW_INTERVAL
+		queue_redraw()
 
 func _draw() -> void:
 	var current_radius = radius * (1.0 + sin(time * pulse_speed) * pulse_magnitude)
-	
-	# Draw outer ring
+
+	# Outer ring
 	draw_arc(Vector2.ZERO, current_radius, 0, TAU, 32, color, thickness)
-	
-	# Draw crosshair ticks
+
+	# Crosshair ticks
 	for i in range(4):
 		var angle = i * PI / 2
 		var dir = Vector2.from_angle(angle)
-		var start = dir * (current_radius - 8)
-		var end = dir * (current_radius + 4)
-		draw_line(start, end, color, thickness)
-	
-	# Draw inner circle/dot
+		draw_line(dir * (current_radius - 8), dir * (current_radius + 4), color, thickness)
+
+	# Inner dot
 	draw_circle(Vector2.ZERO, 2.0, color)

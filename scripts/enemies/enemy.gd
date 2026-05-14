@@ -89,6 +89,13 @@ var swarm_pack_check_timer: float = 0.0
 const PERFORMANCE_VISUAL_MODE := true   # Simplified silhouette rendering for 60 FPS
 const ENEMY_VISUAL_REDRAW_INTERVAL := 0.125  # 8 FPS visual update (was 1/30 = 30 FPS)
 
+# Shield and disrupt aura scan intervals — prevent O(n) group walks every frame.
+# 0.25 s matches human-visible refresh; gameplay feel is unchanged.
+const SHIELD_AURA_INTERVAL := 0.25
+const DISRUPT_AURA_INTERVAL := 0.25
+var _shield_aura_timer: float = 0.0
+var _disrupt_aura_timer: float = 0.0
+
 const COLOR_BODY = Color(0.08, 0.08, 0.12) # Dark Gunmetal
 const COLOR_NEON_BASIC = Color(0.2, 0.8, 1.0) # Electric Cyan
 const COLOR_NEON_FAST = Color(0.0, 1.0, 0.7) # Teal/Green
@@ -1850,17 +1857,28 @@ func _process(delta: float) -> void:
 		skill_timer -= delta
 		match skill_id:
 			"shield_aura":
-				_process_shield_aura()
+				# Interval-gated: was scanning ALL enemies every frame (O(n) per bulwark).
+				_shield_aura_timer -= delta
+				if _shield_aura_timer <= 0.0:
+					_shield_aura_timer = SHIELD_AURA_INTERVAL
+					_process_shield_aura()
 			"healer":
 				if skill_timer <= 0:
 					_process_healer_aura()
 					skill_timer = skill_params.get("interval", 1.0)
 			"disrupt_aura":
-				_process_disrupt_aura()
-		
+				# Interval-gated: was scanning ALL towers every frame (O(m) per disruptor).
+				_disrupt_aura_timer -= delta
+				if _disrupt_aura_timer <= 0.0:
+					_disrupt_aura_timer = DISRUPT_AURA_INTERVAL
+					_process_disrupt_aura()
+
 	# Archetype Logic (Legacy)
 	if is_bulwark and skill_id == "":
-		_process_shield_aura()
+		_shield_aura_timer -= delta
+		if _shield_aura_timer <= 0.0:
+			_shield_aura_timer = SHIELD_AURA_INTERVAL
+			_process_shield_aura()
 		
 	if is_runner:
 		_process_runner_role(delta)
@@ -1931,7 +1949,8 @@ func _try_runner_hit_dash() -> void:
 func _process_shield_aura() -> void:
 	var radius = float(skill_params.get("radius", shield_radius))
 	var reduction = _get_skill_reduction()
-	var enemies = get_tree().get_nodes_in_group("enemies")
+	var pb: Node = get_node_or_null("/root/PerformanceBudget")
+	var enemies: Array = pb.get_enemies() if pb else get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if enemy != self and is_instance_valid(enemy) and enemy.has_method("apply_shield"):
 			if enemy.has_method("is_alive") and not enemy.is_alive():
@@ -1946,7 +1965,8 @@ func _get_skill_reduction() -> float:
 func _process_healer_aura() -> void:
 	var radius = float(skill_params.get("radius", 100.0))
 	var amount = float(skill_params.get("heal_amount", 5.0))
-	var enemies = get_tree().get_nodes_in_group("enemies")
+	var pb: Node = get_node_or_null("/root/PerformanceBudget")
+	var enemies: Array = pb.get_enemies() if pb else get_tree().get_nodes_in_group("enemies")
 	var healed_targets: Array = []
 	for enemy in enemies:
 		if enemy != self and is_instance_valid(enemy) and enemy.has_method("heal"):

@@ -1,5 +1,10 @@
 extends Camera2D
 
+## Screen shake is disabled by default.
+## Set SCREEN_SHAKE_ENABLED = true here (or via a Settings node) to re-enable.
+## Readability during heavy combat takes priority over camera impact effects.
+const SCREEN_SHAKE_ENABLED := false
+
 var shake_strength: float = 0.0
 var shake_decay: float = 5.0
 var original_offset: Vector2
@@ -8,11 +13,12 @@ func _ready() -> void:
 	original_offset = offset
 
 func _process(delta: float) -> void:
-	# Note: Camera shake usually shouldn't pause if the game is paused 
-	# but since we trigger it on gameplay events, it naturally won't increment if events don't happen.
-	# However, if it's already shaking and we pause, we might want it to stop or continue.
-	# The requirement says "Manual pause compatible".
-	
+	if not SCREEN_SHAKE_ENABLED:
+		# Keep offset locked — no drift after enabling/disabling mid-session
+		if offset != original_offset:
+			offset = original_offset
+		return
+
 	var game_manager = get_tree().current_scene.get_node_or_null("GameManager")
 	if game_manager and game_manager.is_paused:
 		return
@@ -26,7 +32,9 @@ func _process(delta: float) -> void:
 	else:
 		offset = original_offset
 
+## No-op when SCREEN_SHAKE_ENABLED = false.
 func shake(strength: float, duration_factor: float = 1.0) -> void:
+	if not SCREEN_SHAKE_ENABLED:
+		return
 	shake_strength = strength
-	# Duration is implicitly handled by decay
 	shake_decay = 5.0 / duration_factor

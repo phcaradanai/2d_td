@@ -91,10 +91,77 @@ func _ready() -> void:
 	_update_layout()
 	DEBUG_ACCESS_SCRIPT.apply_balance_tool_gate(self)
 	get_viewport().size_changed.connect(_update_layout)
+	_setup_perf_overlay()
+
+## ── Performance Overlay (PERF-1) ──────────────────────────────────────────
+## Toggle with F3. Updates every 0.5 s to avoid string-alloc pressure.
+var _perf_overlay: Label = null
+var _perf_overlay_visible: bool = false
+var _perf_update_timer: float = 0.0
+const PERF_UPDATE_INTERVAL := 0.5
+
+func _setup_perf_overlay() -> void:
+	_perf_overlay = Label.new()
+	_perf_overlay.name = "PerfOverlay"
+	_perf_overlay.position = Vector2(12, 12)
+	_perf_overlay.add_theme_color_override("font_color", Color(0.0, 1.0, 0.7))
+	_perf_overlay.add_theme_font_size_override("font_size", 13)
+	_perf_overlay.z_index = 200
+	_perf_overlay.visible = false
+	add_child(_perf_overlay)
+
+func _toggle_perf_overlay() -> void:
+	_perf_overlay_visible = not _perf_overlay_visible
+	if _perf_overlay:
+		_perf_overlay.visible = _perf_overlay_visible
+	if _perf_overlay_visible:
+		_refresh_perf_overlay()
+
+func _refresh_perf_overlay() -> void:
+	if not _perf_overlay or not _perf_overlay_visible:
+		return
+	var pb: Node = get_node_or_null("/root/PerformanceBudget")
+	var fps_val := Engine.get_frames_per_second()
+	var enemy_n := get_tree().get_nodes_in_group("enemies").size()
+	var tower_n := get_tree().get_nodes_in_group("placed_towers").size()
+	var proj_n  := 0
+	if projectile_container:
+		proj_n = projectile_container.get_child_count()
+	var fx_n := 0
+	var effects_c := get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if effects_c:
+		fx_n = effects_c.get_child_count()
+	var tgt_checks := 0
+	var quality_str := "N/A"
+	if pb:
+		tgt_checks  = pb.target_checks_per_second
+		quality_str = pb.get_quality_name()
+	_perf_overlay.text = (
+		"[F3] PERF MONITOR\n"
+		+ "FPS:        %d\n" % fps_val
+		+ "Enemies:    %d\n" % enemy_n
+		+ "Towers:     %d\n" % tower_n
+		+ "Bullets:    %d\n" % proj_n
+		+ "Active FX:  %d\n" % fx_n
+		+ "Tgt chk/s:  %d\n" % tgt_checks
+		+ "FX quality: %s" % quality_str
+	)
+
+func _process_perf_overlay(delta: float) -> void:
+	if not _perf_overlay_visible:
+		return
+	_perf_update_timer += delta
+	if _perf_update_timer >= PERF_UPDATE_INTERVAL:
+		_perf_update_timer = 0.0
+		_refresh_perf_overlay()
+
+## ── End Performance Overlay ────────────────────────────────────────────────
 
 func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.is_echo():
 		match event.keycode:
+			KEY_F3:
+				_toggle_perf_overlay()
 			KEY_F9:
 				if DEBUG_ACCESS_SCRIPT.block_balance_tool("Verify Current Board hotkey"):
 					return
@@ -922,7 +989,8 @@ func _update_layout() -> void:
 		top
 	)
 
-func _process(_delta: float) -> void:
+func _process(delta: float) -> void:
+	_process_perf_overlay(delta)
 	if not visible: return
 	_update_info()
 
