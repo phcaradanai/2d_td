@@ -9,18 +9,21 @@ class_name MazeMapRenderer
 const BG_COLOR             := Color(0.055, 0.065, 0.095, 1.0)
 const GRID_COLOR           := Color(0.12, 0.14, 0.18, 0.28)
 const BUILDABLE_TINT       := Color(0.08, 0.105, 0.135, 1.0)
+const BOARD_HALO           := Color(0.05, 0.28, 0.38, 0.12)
+const BOARD_BACKING        := Color(0.012, 0.025, 0.040, 0.82)
+const BOARD_FRAME          := Color(0.12, 0.54, 0.72, 0.34)
 const ROAD_PANEL           := Color(0.105, 0.125, 0.155, 1.0)
 const ROAD_PANEL_ALT       := Color(0.075, 0.095, 0.125, 1.0)
 const ROAD_EDGE_DARK       := Color(0.015, 0.02, 0.03, 0.95)
-const ROAD_EDGE_CYAN       := Color(0.12, 0.72, 0.95, 0.72)
-const ROAD_CENTER_GLOW     := Color(0.12, 0.82, 1.0, 0.42)
-const ROAD_CENTER_LINE     := Color(0.56, 0.92, 1.0, 0.62)
-const ROAD_CORNER_GLOW     := Color(0.2, 0.95, 1.0, 0.18)
+const ROAD_EDGE_CYAN       := Color(0.12, 0.66, 0.90, 0.58)
+const ROAD_CENTER_GLOW     := Color(0.12, 0.78, 1.0, 0.30)
+const ROAD_CENTER_LINE     := Color(0.56, 0.92, 1.0, 0.48)
+const ROAD_CORNER_GLOW     := Color(0.2, 0.95, 1.0, 0.12)
 const SPAWN_COLOR          := Color(0.3,  0.95, 0.45, 0.95)
 const CORE_COLOR           := Color(1.0,  0.22, 0.12, 0.95)
-const GUIDELINE_COLOR      := Color(1.0, 0.54, 0.12, 0.88)
-const GUIDELINE_SHADOW     := Color(0.0, 0.0, 0.0, 0.62)
-const PATH_DOT_COLOR       := Color(0.16, 0.92, 1.0, 0.82)
+const GUIDELINE_COLOR      := Color(1.0, 0.58, 0.18, 0.74)
+const GUIDELINE_SHADOW     := Color(0.0, 0.0, 0.0, 0.50)
+const PATH_DOT_COLOR       := Color(0.16, 0.88, 1.0, 0.54)
 
 # ------------------------------------------------------------------ state
 var _grid_origin: Vector2 = Vector2.ZERO
@@ -193,7 +196,13 @@ func _draw() -> void:
 func _draw_background() -> void:
 	var tw: float = float(_grid_cols) * _grid_size
 	var th: float = float(_grid_rows) * _grid_size
-	draw_rect(Rect2(_grid_origin, Vector2(tw, th)), BG_COLOR)
+	var board_rect := Rect2(_grid_origin, Vector2(tw, th))
+	var pad := _grid_size * 0.55
+	draw_rect(board_rect.grow(pad * 1.35), Color(0.0, 0.0, 0.0, 0.28), true)
+	draw_rect(board_rect.grow(pad), BOARD_BACKING, true)
+	draw_rect(board_rect.grow(pad), BOARD_HALO, false, 3.0)
+	draw_rect(board_rect.grow(6.0), BOARD_FRAME, false, 2.0)
+	draw_rect(board_rect, BG_COLOR)
 
 	# subtle playable-area tint inside each cell so road tiles stand out clearly
 	for x in range(_grid_cols):
@@ -228,7 +237,7 @@ func _draw_road_tiles() -> void:
 
 		draw_rect(outer, ROAD_EDGE_DARK, true)
 		draw_rect(inner, ROAD_PANEL if i % 2 == 0 else ROAD_PANEL_ALT, true)
-		draw_rect(inner, ROAD_EDGE_CYAN, false, 1.5)
+		draw_rect(inner, ROAD_EDGE_CYAN, false, 1.2)
 		draw_rect(core, ROAD_CORNER_GLOW, true)
 
 	# Continuous route strip: makes the enemy lane read as one road, not isolated squares.
@@ -236,13 +245,13 @@ func _draw_road_tiles() -> void:
 	if pts.size() >= 2:
 		draw_polyline(pts, ROAD_EDGE_DARK, _grid_size * 0.42, false)
 		draw_polyline(pts, ROAD_PANEL, _grid_size * 0.34, false)
-		draw_polyline(pts, ROAD_CENTER_GLOW, _grid_size * 0.11, false)
-		draw_polyline(pts, ROAD_CENTER_LINE, 2.0, false)
+		draw_polyline(pts, ROAD_CENTER_GLOW, _grid_size * 0.10, false)
+		draw_polyline(pts, ROAD_CENTER_LINE, 1.6, false)
 
 	# Small cyan nodes at each cell center increase readability for fixed-path tests.
 	for cell in _road_cells:
 		var c := _cell_center(cell)
-		draw_circle(c, _grid_size * 0.055, PATH_DOT_COLOR)
+		draw_circle(c, _grid_size * 0.042, PATH_DOT_COLOR)
 
 
 func _draw_spawn_cells() -> void:
@@ -254,8 +263,11 @@ func _draw_spawn_cells() -> void:
 	for cell in _spawn_cells:
 		var center: Vector2 = _cell_center(cell) + Vector2(0.0, -_grid_size * 0.08)
 
-		# glow plate under spawn marker
-		draw_circle(_cell_center(cell), _grid_size * 0.38, Color(SPAWN_COLOR.r, SPAWN_COLOR.g, SPAWN_COLOR.b, 0.12))
+		var portal_center := _cell_center(cell)
+		draw_circle(portal_center, _grid_size * 0.48, Color(SPAWN_COLOR.r, SPAWN_COLOR.g, SPAWN_COLOR.b, 0.09))
+		draw_circle(portal_center, _grid_size * 0.36, Color(SPAWN_COLOR.r, SPAWN_COLOR.g, SPAWN_COLOR.b, 0.07))
+		draw_arc(portal_center, _grid_size * 0.38, -PI * 0.15, PI * 1.15, 28, Color(0.72, 1.0, 0.80, 0.58), 1.6)
+		draw_arc(portal_center, _grid_size * 0.28, PI * 0.85, PI * 2.10, 28, Color(0.18, 0.95, 0.52, 0.42), 1.2)
 
 		var pts := PackedVector2Array([
 			center + Vector2(0.0, -half),
@@ -263,7 +275,7 @@ func _draw_spawn_cells() -> void:
 			center + Vector2( half * 0.866, half * 0.5),
 		])
 		draw_colored_polygon(pts, SPAWN_COLOR)
-		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color(0.75, 1.0, 0.82, 0.88), 1.4, true)
+		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color(0.75, 1.0, 0.82, 0.88), 1.6, true)
 
 		var label_rect := Rect2(
 			center.x - _grid_size * 0.5,
@@ -284,8 +296,11 @@ func _draw_base_cells() -> void:
 	for cell in _base_cells:
 		var center: Vector2 = _cell_center(cell) + Vector2(0.0, -_grid_size * 0.08)
 
-		# glow plate under core marker
-		draw_circle(_cell_center(cell), _grid_size * 0.40, Color(CORE_COLOR.r, CORE_COLOR.g, CORE_COLOR.b, 0.14))
+		var core_center := _cell_center(cell)
+		draw_circle(core_center, _grid_size * 0.52, Color(CORE_COLOR.r, CORE_COLOR.g, CORE_COLOR.b, 0.11))
+		draw_circle(core_center, _grid_size * 0.38, Color(CORE_COLOR.r, CORE_COLOR.g, CORE_COLOR.b, 0.08))
+		draw_arc(core_center, _grid_size * 0.40, -PI * 0.25, PI * 1.25, 30, Color(1.0, 0.62, 0.45, 0.56), 1.7)
+		draw_arc(core_center, _grid_size * 0.28, PI * 0.80, PI * 2.05, 30, Color(1.0, 0.28, 0.16, 0.44), 1.2)
 
 		var pts := PackedVector2Array([
 			center + Vector2(0.0, -half),
@@ -294,7 +309,7 @@ func _draw_base_cells() -> void:
 			center + Vector2(-half, 0.0),
 		])
 		draw_colored_polygon(pts, CORE_COLOR)
-		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]), Color(1.0, 0.72, 0.64, 0.88), 1.4, true)
+		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]), Color(1.0, 0.72, 0.64, 0.90), 1.8, true)
 
 		var label_rect := Rect2(
 			center.x - _grid_size * 0.5,
@@ -345,7 +360,8 @@ func _draw_chevron(at: Vector2, dir: Vector2, size: float) -> void:
 	var shadow_tip := tip + Vector2(0, 2)
 	var shadow_left := left + Vector2(0, 2)
 	var shadow_right := right + Vector2(0, 2)
-	draw_line(shadow_left, shadow_tip, GUIDELINE_SHADOW, 3.2)
-	draw_line(shadow_right, shadow_tip, GUIDELINE_SHADOW, 3.2)
-	draw_line(left, tip, GUIDELINE_COLOR, 2.4)
-	draw_line(right, tip, GUIDELINE_COLOR, 2.4)
+	draw_line(shadow_left, shadow_tip, GUIDELINE_SHADOW, 2.8)
+	draw_line(shadow_right, shadow_tip, GUIDELINE_SHADOW, 2.8)
+	draw_line(back, tip, Color(0.25, 0.09, 0.02, 0.42), 2.0)
+	draw_line(left, tip, GUIDELINE_COLOR, 2.0)
+	draw_line(right, tip, GUIDELINE_COLOR, 2.0)
