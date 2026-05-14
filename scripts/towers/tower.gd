@@ -1833,12 +1833,54 @@ func _perform_aura_attack() -> void:
 		effect.global_position = global_position
 		if effect.has_method("setup"):
 			effect.setup(tower_color, attack_range)
+	elif visual_type in ["support_halo", "void_orb", "ember_bloom", "root_cage",
+			"voodoo_totem", "chaos_orb", "void_vortex", "void_flower",
+			"spore_cap", "toxin_vial", "bio_vine", "storm_turbine"]:
+		# These aura types must NOT use a giant scaled muzzle flash.
+		# Spawn a contextual directional VFX toward the nearest enemy instead.
+		var _av_script = load("res://scripts/effects/attack_vfx.gd")
+		if _av_script and not enemies.is_empty():
+			# Pick nearest valid enemy as direction anchor
+			var _nearest: Node2D = null
+			var _nd := INF
+			for _en in enemies:
+				if is_instance_valid(_en):
+					var _d := global_position.distance_squared_to(_en.global_position)
+					if _d < _nd:
+						_nd = _d
+						_nearest = _en
+			if _nearest != null:
+				var vtype_to_vfx := {
+					"support_halo": "magic_enchant",
+					"void_orb": "shadow_lash",
+					"ember_bloom": "flame_cone",
+					"root_cage": "nature_vine",
+					"voodoo_totem": "void_rift",
+					"chaos_orb": "void_rift",
+					"void_vortex": "void_rift",
+					"void_flower": "void_rift",
+					"spore_cap": "spore_puff",
+					"toxin_vial": "poison_spray",
+					"bio_vine": "nature_vine",
+					"storm_turbine": "chain_lightning",
+				}
+				var av_type: String = vtype_to_vfx.get(visual_type, "magic_enchant")
+				var av_node: Node2D = Node2D.new()
+				av_node.set_script(_av_script)
+				container.add_child(av_node)
+				av_node.setup(av_type, get_muzzle_global_position(),
+						get_target_hit_anchor_global_position(_nearest), tower_color)
 	elif muzzle_flash_scene:
 		var flash = muzzle_flash_scene.instantiate()
 		container.add_child(flash)
 		flash.global_position = get_muzzle_global_position()
 		if flash.has_method("setup"):
-			var aura_flash_scale := 1.15 if aura_vfx_type == "void_bloom" or aura_vfx_type == "toxic_bloom" else attack_range / 30.0
+			# Cap scale — attack_range / 30 was producing scale ~4-5 for wide-range aura towers
+			var aura_flash_scale: float
+			if aura_vfx_type == "void_bloom" or aura_vfx_type == "toxic_bloom":
+				aura_flash_scale = 1.15
+			else:
+				aura_flash_scale = minf(attack_range / 30.0, 1.0)
 			flash.setup(tower_color, aura_flash_scale, aura_vfx_type, secondary_color)
 
 	for enemy in enemies:
