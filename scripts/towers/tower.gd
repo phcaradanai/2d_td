@@ -832,9 +832,17 @@ func _get_element_progression_manager() -> Node:
 func _is_upgrade_config_unlocked(next_config: Dictionary) -> bool:
 	if next_config.is_empty():
 		return false
+
+	var combo_type := str(next_config.get("combo_type", "neutral"))
+	var raw_elements = next_config.get("elements", [])
+	var requires_elements : bool = combo_type != "neutral" and raw_elements is Array and not raw_elements.is_empty()
+
 	var element_manager := _get_element_progression_manager()
 	if element_manager == null or not element_manager.has_method("can_build_tower"):
-		return true
+		if OS.is_debug_build() and requires_elements:
+			print("[UPGRADE] blocked: ElementProgressionManager unavailable for target=%s" % str(next_config.get("id", "")))
+		return not requires_elements
+
 	return bool(element_manager.call("can_build_tower", next_config))
 
 

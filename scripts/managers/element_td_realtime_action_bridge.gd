@@ -24,6 +24,7 @@ var main: Node = null
 var game_manager: Node = null
 var build_manager: Node = null
 var game_hud: Node = null
+var element_progression_manager: Node = null
 var tower_container: Node2D = null
 var selected_tower: Node2D = null
 var _handling_hud_action: bool = false
@@ -37,6 +38,7 @@ func _ready() -> void:
 	game_manager = main.get_node_or_null("GameManager")
 	build_manager = main.get_node_or_null("BuildManager")
 	game_hud = main.get_node_or_null("GameHUD")
+	element_progression_manager = main.get_node_or_null("ElementProgressionManager")
 	tower_container = main.get_node_or_null("WorldRoot/MapRoot/TowerContainer") as Node2D
 	set_process(true)
 	set_process_unhandled_input(true)
@@ -406,7 +408,7 @@ func _try_upgrade_selected_tower() -> bool:
 		_set_status("Upgrade config missing: %s" % upgrade_id)
 		return false
 	if not _is_upgrade_unlocked(tower, upgrade_id, upgrade_config):
-		_set_status("Need matching upgrade path for %s" % _format_tower_id(upgrade_id))
+		_set_status(_get_upgrade_locked_reason(upgrade_config))
 		return false
 	var cost := int(upgrade_config.get("upgrade_cost", upgrade_config.get("cost", 0)))
 	if game_manager == null or not game_manager.has_method("spend_gold"):
@@ -457,18 +459,61 @@ func _get_tower_config(tower_id: String) -> Dictionary:
 func _is_upgrade_unlocked(tower: Node2D, upgrade_id: String, upgrade_config: Dictionary) -> bool:
 	# BuildManager.is_tower_unlocked() is a shop/build-entry filter. Upgrade targets
 	# such as light_t2 have build_entry=false, so using the shop filter here blocks
-	# a valid tower upgrade during WAVE. For upgrades, trust the current tower's
-	# next_upgrade_ids as the authoritative path gate, then keep a conservative
-	# fallback for legacy/direct unlocks.
+	# a valid tower upgrade during WAVE. For upgrades, first trust the current
+	# tower's next_upgrade_ids as the path gate, then ALWAYS apply the element
+	# level gate from ElementProgressionManager before spending gold / mutating.
+	var path_allows_upgrade := false
 	if tower != null:
 		var raw_upgrades = tower.get("next_upgrade_ids")
 		if raw_upgrades is Array:
 			for raw in raw_upgrades:
 				if str(raw) == upgrade_id:
-					return true
-	if build_manager != null and build_manager.has_method("is_tower_unlocked"):
-		return bool(build_manager.call("is_tower_unlocked", upgrade_id))
-	return int(upgrade_config.get("required_element_level", 0)) <= 0
+					path_allows_upgrade = true
+					break
+	if not path_allows_upgrade and build_manager != null and build_manager.has_method("is_tower_unlocked"):
+		path_allows_upgrade = bool(build_manager.call("is_tower_unlocked", upgrade_id))
+	if not path_allows_upgrade:
+		path_allows_upgrade = int(upgrade_config.get("required_element_level", 0)) <= 0
+	if not path_allows_upgrade:
+		return false
+	return _is_upgrade_config_element_unlocked(upgrade_config)
+
+
+func _is_upgrade_config_element_unlocked(upgrade_config: Dictionary) -> bool:
+	if upgrade_config.is_empty():
+		return false
+	var combo_type := str(upgrade_config.get("combo_type", "neutral"))
+	var raw_elements = upgrade_config.get("elements", [])
+	var requires_elements : bool = combo_type != "neutral" and raw_elements is Array and not raw_elements.is_empty()
+	var manager := _get_element_progression_manager()
+	if manager == null:
+		return not requires_elements
+	if not manager.has_method("can_build_tower"):
+		return not requires_elements
+	return bool(manager.call("can_build_tower", upgrade_config))
+
+
+func _get_element_progression_manager() -> Node:
+	if element_progression_manager != null and is_instance_valid(element_progression_manager):
+		return element_progression_manager
+	if main != null:
+		element_progression_manager = main.get_node_or_null("ElementProgressionManager")
+	return element_progression_manager
+
+
+func _get_upgrade_locked_reason(upgrade_config: Dictionary) -> String:
+	if upgrade_config.is_empty():
+		return "Upgrade unavailable"
+	var manager := _get_element_progression_manager()
+	if manager != null and manager.has_method("get_locked_reason"):
+		var reason := str(manager.call("get_locked_reason", upgrade_config))
+		if not reason.is_empty():
+			return reason
+	var combo_type := str(upgrade_config.get("combo_type", "neutral"))
+	var raw_elements = upgrade_config.get("elements", [])
+	if combo_type != "neutral" and raw_elements is Array and not raw_elements.is_empty():
+		return "Required elements are not unlocked"
+	return "Need matching upgrade path for %s" % _format_tower_id(str(upgrade_config.get("id", "")))
 
 func _apply_upgrade_config_to_tower(tower: Node2D, upgrade_config: Dictionary, upgrade_cost: int) -> void:
 	var previous_invested := _get_tower_invested_gold(tower)
