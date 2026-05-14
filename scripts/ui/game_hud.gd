@@ -167,6 +167,10 @@ var element_choice_list: VBoxContainer = null
 var current_element_levels: Dictionary = {}
 
 const RESULT_PANEL_SCENE = preload("res://scenes/ui/ResultPanel.tscn")
+const SHOP_LOCKED_TEXT_COLOR := Color(0.62, 0.70, 0.78, 0.96)
+const SHOP_ENABLED_TEXT_COLOR := Color(0.90, 0.96, 1.0, 1.0)
+const SHOP_HEADER_COLOR := Color(0.64, 0.86, 0.98, 0.95)
+const SHOP_GOLD_COLOR := Color(1.0, 0.80, 0.22, 1.0)
 var result_panel: Control = null
 
 func _ready() -> void:
@@ -288,8 +292,10 @@ func _ready() -> void:
 	set_interest_status("Interest: Off")
 	
 	# Top Bar Final Polish
-	gold_label.add_theme_color_override("font_color", Color(1.0, 0.8, 0.2)) # Gold
-	lives_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0)) # Core integrity (Cyan)
+	gold_label.add_theme_color_override("font_color", SHOP_GOLD_COLOR)
+	gold_label.add_theme_font_size_override("font_size", 15)
+	lives_label.add_theme_color_override("font_color", Color(1.0, 0.50, 0.34))
+	lives_label.add_theme_font_size_override("font_size", 15)
 	wave_label.add_theme_color_override("font_color", Color(0.8, 0.8, 0.8))
 	status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
 	next_wave_label.add_theme_color_override("font_color", Color(0.6, 0.6, 0.6))
@@ -317,9 +323,9 @@ func update_layout_for_viewport() -> void:
 	
 	if left_sidebar:
 		if view_size.x < 1200:
-			left_sidebar.custom_minimum_size.x = 250
+			left_sidebar.custom_minimum_size.x = 265
 		else:
-			left_sidebar.custom_minimum_size.x = 290
+			left_sidebar.custom_minimum_size.x = 310
 			
 	if right_sidebar_container:
 		if view_size.x < 1200:
@@ -338,7 +344,7 @@ func get_playfield_rect() -> Rect2:
 	
 	# Fallback if HUD not ready or zero-sized
 	var view_size = get_viewport().get_visible_rect().size
-	var left_w = 250
+	var left_w = 265
 	if left_sidebar and left_sidebar.custom_minimum_size.x > 0:
 		left_w = left_sidebar.custom_minimum_size.x
 		
@@ -381,6 +387,7 @@ func set_audio_settings_ui(settings: Dictionary) -> void:
 func set_gold(value: int) -> void:
 	var old_text = gold_label.text
 	gold_label.text = "CREDITS: " + str(value)
+	gold_label.add_theme_color_override("font_color", SHOP_GOLD_COLOR)
 	if old_text != gold_label.text:
 		pulse_label(gold_label)
 	_update_tower_affordability(value)
@@ -448,10 +455,10 @@ func refresh_tower_shop(tower_ids: Array[String]) -> void:
 		var header := Label.new()
 		header.name = "SectionHeader_%s" % section_key
 		header.text = section_labels.get(section_key, section_key.to_upper())
-		header.add_theme_font_size_override("font_size", 11)
-		header.add_theme_color_override("font_color", Color(0.56, 0.78, 0.9, 0.86))
+		header.add_theme_font_size_override("font_size", 12)
+		header.add_theme_color_override("font_color", SHOP_HEADER_COLOR)
 		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-		header.custom_minimum_size.y = 20
+		header.custom_minimum_size.y = 24
 		tower_shop_list.add_child(header)
 
 		for entry in entries:
@@ -464,12 +471,14 @@ func refresh_tower_shop(tower_ids: Array[String]) -> void:
 		element_status_label.text = _format_element_levels(current_element_levels)
 
 	_update_tower_affordability(_get_current_gold_for_hud())
+	if tower_shop_scroll:
+		tower_shop_scroll.set_deferred("scroll_vertical", 0)
 
 func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool) -> void:
 	var cost: int = int(tower_prices.get(tower_id, cfg.get("cost", 50)))
 	var btn_container := HBoxContainer.new()
 	btn_container.name = "TowerRow_%s" % tower_id
-	btn_container.size_flags_horizontal = Control.SIZE_FILL
+	btn_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 
 	# Compact element badge, e.g. L, D, or L+D.
 	var el_array: Array = cfg.get("elements", [])
@@ -485,11 +494,11 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.clip_text = true
-	btn.custom_minimum_size.y = 34
+	btn.custom_minimum_size.y = 38
 	btn.add_theme_font_size_override("font_size", 12)
 	var display_name: String = str(cfg.get("display_name", cfg.get("name", tower_id)))
 	display_name = _compact_tower_display_name(display_name)
-	btn.text = "%s  $%d" % [display_name, cost]
+	btn.text = _format_tower_row_text(display_name, cost, el_array, is_unlocked)
 
 	if is_unlocked:
 		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
@@ -498,12 +507,45 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 		btn.pressed.connect(func(): _on_tower_btn_pressed(captured_tower_id, captured_button))
 	else:
 		btn.disabled = true
-		btn.modulate = Color(0.5, 0.5, 0.55, 0.7)
 		btn.tooltip_text = _build_locked_tooltip(tower_id, cfg, cost)
+	_style_tower_shop_button(btn, is_unlocked)
 
 	btn_container.add_child(btn)
 	tower_shop_list.add_child(btn_container)
 	dynamic_tower_buttons[tower_id] = btn
+
+func _format_tower_row_text(display_name: String, cost: int, elements: Array, is_unlocked: bool) -> String:
+	if is_unlocked or elements.size() <= 1:
+		return "%s  $%d" % [display_name, cost]
+	return "%s  req %s" % [display_name, _elements_short(elements)]
+
+func _style_tower_shop_button(btn: Button, is_unlocked: bool) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.045, 0.080, 0.130, 0.98) if is_unlocked else Color(0.040, 0.050, 0.070, 0.94)
+	normal.border_color = Color(0.25, 0.62, 0.82, 0.70) if is_unlocked else Color(0.22, 0.30, 0.38, 0.70)
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(3)
+	normal.content_margin_left = 8
+	normal.content_margin_right = 8
+	btn.add_theme_stylebox_override("normal", normal)
+
+	var hover := normal.duplicate()
+	hover.bg_color = Color(0.065, 0.15, 0.22, 1.0)
+	hover.border_color = Color(0.45, 0.90, 1.0, 0.90)
+	btn.add_theme_stylebox_override("hover", hover)
+
+	var pressed := normal.duplicate()
+	pressed.bg_color = Color(0.020, 0.050, 0.090, 1.0)
+	btn.add_theme_stylebox_override("pressed", pressed)
+
+	var disabled := normal.duplicate()
+	disabled.bg_color = Color(0.034, 0.042, 0.058, 0.98)
+	disabled.border_color = Color(0.22, 0.30, 0.38, 0.62)
+	btn.add_theme_stylebox_override("disabled", disabled)
+
+	btn.add_theme_color_override("font_color", SHOP_ENABLED_TEXT_COLOR)
+	btn.add_theme_color_override("font_hover_color", Color(0.72, 0.96, 1.0))
+	btn.add_theme_color_override("font_disabled_color", SHOP_LOCKED_TEXT_COLOR)
 
 func _build_locked_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> String:
 	var desc: String = str(cfg.get("description", ""))
@@ -525,7 +567,7 @@ func _create_element_badge(raw_elements: Array, is_unlocked: bool) -> Label:
 	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	badge.add_theme_font_size_override("font_size", 10)
-	badge.add_theme_color_override("font_color", Color(0.08, 0.1, 0.12) if is_unlocked else Color(0.62, 0.64, 0.68))
+	badge.add_theme_color_override("font_color", Color(0.06, 0.08, 0.10) if is_unlocked else Color(0.70, 0.74, 0.80))
 
 	var badge_style := StyleBoxFlat.new()
 	badge_style.bg_color = _element_badge_color(raw_elements, is_unlocked)
@@ -548,7 +590,7 @@ func _create_element_badge(raw_elements: Array, is_unlocked: bool) -> Label:
 
 func _element_badge_color(raw_elements: Array, is_unlocked: bool) -> Color:
 	if not is_unlocked:
-		return Color(0.22, 0.23, 0.25, 0.92)
+		return Color(0.25, 0.28, 0.33, 0.96)
 	if raw_elements.is_empty():
 		return Color(0.56, 0.62, 0.7, 0.9)
 	var red := 0.0
@@ -652,7 +694,8 @@ func _ensure_elemental_shop_ui() -> void:
 	element_status_label.name = "ElementStatusLabel"
 	element_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	element_status_label.text = "Elements: none"
-	element_status_label.add_theme_color_override("font_color", Color(0.45, 0.9, 1.0))
+	element_status_label.add_theme_color_override("font_color", Color(0.58, 0.92, 1.0))
+	element_status_label.add_theme_font_size_override("font_size", 14)
 	container.add_child(element_status_label)
 	container.move_child(element_status_label, basic_tower_button.get_index())
 
@@ -667,7 +710,7 @@ func _ensure_elemental_shop_ui() -> void:
 	tower_shop_list = VBoxContainer.new()
 	tower_shop_list.name = "ElementalTowerShopList"
 	tower_shop_list.size_flags_horizontal = Control.SIZE_FILL
-	tower_shop_list.add_theme_constant_override("separation", 2)
+	tower_shop_list.add_theme_constant_override("separation", 4)
 	tower_shop_scroll.add_child(tower_shop_list)
 
 func _ensure_element_choice_ui() -> void:
@@ -748,10 +791,10 @@ func _format_element_levels(levels: Dictionary) -> String:
 	for element_id in ["light", "darkness", "water", "fire", "nature", "earth"]:
 		var level: int = int(levels.get(element_id, 0))
 		if level > 0:
-			parts.append("%s %d" % [_element_label(element_id).substr(0, 1), level])
+			parts.append("%s%d" % [_element_label(element_id).substr(0, 1), level])
 	if parts.is_empty():
 		return "Pick an element to unlock towers"
-	return " ".join(parts)
+	return "Elements: " + " ".join(parts)
 
 func _element_label(element_id: String) -> String:
 	match element_id:
@@ -784,7 +827,7 @@ func _get_current_gold_for_hud() -> int:
 func set_lives(value: int) -> void:
 	var old_text = lives_label.text
 	lives_label.text = "CORE: " + str(value)
-	lives_label.add_theme_color_override("font_color", Color(0.4, 0.9, 1.0) if value >= 5 else Color(1, 0.3, 0.3))
+	lives_label.add_theme_color_override("font_color", Color(1.0, 0.50, 0.34) if value >= 5 else Color(1, 0.3, 0.3))
 	if old_text != lives_label.text:
 		pulse_label(lives_label, 1.2 if value < 5 else 1.1)
 		
@@ -843,10 +886,23 @@ func set_level_name(text: String) -> void:
 
 func set_status(text: String, color: Color = Color(0.85, 0.95, 1.0)) -> void:
 	status_label.text = text
-	status_label.add_theme_color_override("font_color", color)
+	var state_color := color
+	var lower_text := text.to_lower()
+	if lower_text.find("ready") >= 0 or lower_text.find("planning") >= 0:
+		state_color = Color(0.64, 0.95, 1.0)
+	elif lower_text.find("progress") >= 0 or lower_text.find("running") >= 0:
+		state_color = Color(0.48, 1.0, 0.66)
+	elif lower_text.find("complete") >= 0:
+		state_color = Color(1.0, 0.82, 0.28)
+	elif lower_text.find("choose") >= 0 or lower_text.find("warning") >= 0:
+		state_color = Color(1.0, 0.74, 0.28)
+	status_label.add_theme_color_override("font_color", state_color)
+	status_label.add_theme_font_size_override("font_size", 15)
 
 func set_build_status(text: String) -> void:
 	build_status_label.text = text
+	build_status_label.add_theme_color_override("font_color", Color(0.82, 0.90, 0.96))
+	build_status_label.add_theme_font_size_override("font_size", 12)
 	cancel_build_button.visible = (text != "Build: None")
 
 func _configure_start_wave_button_layout() -> void:
@@ -861,19 +917,55 @@ func _configure_start_wave_button_layout() -> void:
 func _style_start_wave_button(mode: String) -> void:
 	if start_wave_button == null:
 		return
-	start_wave_button.custom_minimum_size = Vector2(150, 42)
+	start_wave_button.custom_minimum_size = Vector2(164, 42)
 	var font_color := Color(0.86, 0.96, 1.0)
+	var bg_color := Color(0.035, 0.13, 0.22, 1.0)
+	var border_color := Color(0.33, 0.82, 1.0, 0.88)
 	match mode:
-		"urgent": font_color = Color(1.0, 0.35, 0.2)
-		"warning": font_color = Color(1.0, 0.78, 0.25)
-		"manual": font_color = Color(0.55, 0.95, 1.0)
-		"running": font_color = Color(0.62, 0.68, 0.72)
-		"locked": font_color = Color(0.95, 0.45, 0.45)
-		"cleared": font_color = Color(0.4, 1.0, 0.55)
+		"urgent":
+			font_color = Color(1.0, 0.35, 0.2)
+			border_color = Color(1.0, 0.42, 0.22, 0.9)
+		"warning":
+			font_color = Color(1.0, 0.78, 0.25)
+			border_color = Color(1.0, 0.78, 0.25, 0.9)
+		"manual":
+			font_color = Color(0.70, 0.98, 1.0)
+			bg_color = Color(0.045, 0.17, 0.27, 1.0)
+		"running":
+			font_color = Color(0.58, 0.74, 0.82)
+			bg_color = Color(0.035, 0.050, 0.070, 1.0)
+			border_color = Color(0.22, 0.34, 0.44, 0.72)
+		"locked":
+			font_color = Color(0.95, 0.45, 0.45)
+			bg_color = Color(0.060, 0.045, 0.050, 1.0)
+			border_color = Color(0.70, 0.24, 0.22, 0.72)
+		"cleared":
+			font_color = Color(0.4, 1.0, 0.55)
+			border_color = Color(0.4, 1.0, 0.55, 0.75)
 		_: font_color = Color(0.86, 0.96, 1.0)
+
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = bg_color
+	normal.border_color = border_color
+	normal.set_border_width_all(1)
+	normal.set_corner_radius_all(3)
+	normal.content_margin_left = 12
+	normal.content_margin_right = 12
+	start_wave_button.add_theme_stylebox_override("normal", normal)
+
+	var hover := normal.duplicate()
+	hover.bg_color = bg_color.lightened(0.22)
+	hover.border_color = border_color.lightened(0.18)
+	start_wave_button.add_theme_stylebox_override("hover", hover)
+
+	var disabled := normal.duplicate()
+	disabled.bg_color = Color(0.030, 0.040, 0.055, 1.0)
+	start_wave_button.add_theme_stylebox_override("disabled", disabled)
+
 	start_wave_button.add_theme_color_override("font_color", font_color)
 	start_wave_button.add_theme_color_override("font_hover_color", font_color.lightened(0.15))
 	start_wave_button.add_theme_color_override("font_pressed_color", Color.WHITE)
+	start_wave_button.add_theme_color_override("font_disabled_color", font_color)
 
 
 func set_start_wave_enabled(enabled: bool) -> void:
@@ -903,7 +995,8 @@ func set_start_wave_action_state(can_start: bool, is_wave_running: bool, countdo
 	_configure_start_wave_button_layout()
 
 	if is_wave_running:
-		start_wave_button.text = "In Progress"
+		start_wave_button.text = "Wave Running"
+		start_wave_button.tooltip_text = "In Progress"
 		start_wave_button.disabled = true
 		_style_start_wave_button("running")
 		_set_start_wave_countdown_badge(false, 0)
@@ -912,6 +1005,7 @@ func set_start_wave_action_state(can_start: bool, is_wave_running: bool, countdo
 	if countdown_active:
 		var seconds := int(ceil(max(0.0, countdown_remaining)))
 		start_wave_button.text = "Auto %ds" % seconds
+		start_wave_button.tooltip_text = "Click to start the next wave now"
 		start_wave_button.disabled = not can_start
 		if seconds <= 5:
 			_style_start_wave_button("urgent")
@@ -924,12 +1018,14 @@ func set_start_wave_action_state(can_start: bool, is_wave_running: bool, countdo
 
 	if next_wave_number <= 0:
 		start_wave_button.text = "Cleared"
+		start_wave_button.tooltip_text = "All waves cleared"
 		start_wave_button.disabled = true
 		_style_start_wave_button("cleared")
 		_set_start_wave_countdown_badge(false, 0)
 		return
 
 	start_wave_button.text = "Start Wave %d" % next_wave_number
+	start_wave_button.tooltip_text = "Start the next wave"
 	start_wave_button.disabled = not can_start
 	_style_start_wave_button("manual" if can_start else "locked")
 	_set_start_wave_countdown_badge(false, 0)
@@ -1465,7 +1561,7 @@ func _setup_right_sidebar_layout() -> void:
 	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ns_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	ns_label.add_theme_font_size_override("font_size", 13)
-	ns_label.add_theme_color_override("font_color", Color(0.5, 0.6, 0.7))
+	ns_label.add_theme_color_override("font_color", Color(0.60, 0.72, 0.82))
 	no_selection_panel.add_child(ns_label)
 
 	# 3. Setup Wave Intel Panel
@@ -1477,7 +1573,8 @@ func _setup_right_sidebar_layout() -> void:
 	container.add_child(wave_intel_panel)
 	
 	var style_intel = style_detail.duplicate()
-	style_intel.bg_color = Color(0.02, 0.03, 0.06, 0.85)
+	style_intel.bg_color = Color(0.018, 0.030, 0.055, 0.92)
+	style_intel.border_color = Color(0.20, 0.62, 0.82, 0.78)
 	wave_intel_panel.add_theme_stylebox_override("panel", style_intel)
 	
 	var margin = MarginContainer.new()
@@ -1489,7 +1586,7 @@ func _setup_right_sidebar_layout() -> void:
 	wave_intel_panel.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 6) # Tighter spacing
+	vbox.add_theme_constant_override("separation", 7)
 	vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	margin.add_child(vbox)
 	
@@ -1498,19 +1595,19 @@ func _setup_right_sidebar_layout() -> void:
 	header.add_theme_constant_override("separation", 1)
 	vbox.add_child(header)
 	
-	var title = _create_wave_intel_label("WAVE INTEL", 15, Color(0.7, 0.9, 1.0))
+	var title = _create_wave_intel_label("WAVE INTEL", 16, Color(0.70, 0.94, 1.0))
 	header.add_child(title)
 	
-	wave_intel_current_label = _create_wave_intel_label("", 13, Color(0.9, 0.95, 1.0))
+	wave_intel_current_label = _create_wave_intel_label("", 14, Color(0.92, 0.97, 1.0))
 	header.add_child(wave_intel_current_label)
 	
-	wave_intel_name_label = _create_wave_intel_label("", 12, Color(0.6, 0.8, 1.0))
+	wave_intel_name_label = _create_wave_intel_label("", 12, Color(0.62, 0.82, 1.0))
 	header.add_child(wave_intel_name_label)
 	
-	wave_intel_status_label = _create_wave_intel_label("", 11, Color(0.9, 0.8, 0.4))
+	wave_intel_status_label = _create_wave_intel_label("", 12, Color(0.9, 0.8, 0.4))
 	header.add_child(wave_intel_status_label)
 	
-	wave_intel_reward_label = _create_wave_intel_label("", 11, Color(1.0, 0.8, 0.2))
+	wave_intel_reward_label = _create_wave_intel_label("", 12, SHOP_GOLD_COLOR)
 	header.add_child(wave_intel_reward_label)
 	
 	vbox.add_child(_create_wave_intel_separator())
@@ -1528,13 +1625,13 @@ func _setup_right_sidebar_layout() -> void:
 	body.mouse_filter = Control.MOUSE_FILTER_PASS
 	scroll.add_child(body)
 	
-	wave_intel_section_label = _create_wave_intel_label("Upcoming", 11, Color(0.5, 0.7, 0.9))
+	wave_intel_section_label = _create_wave_intel_label("Upcoming", 12, Color(0.58, 0.78, 0.96))
 	body.add_child(wave_intel_section_label)
 	
-	wave_intel_main_summary_label = _create_wave_intel_richtext(13, Color(1, 1, 1))
+	wave_intel_main_summary_label = _create_wave_intel_richtext(13, Color(0.94, 0.98, 1.0))
 	body.add_child(wave_intel_main_summary_label)
 	
-	wave_intel_next_title_label = _create_wave_intel_label("Next", 10, Color(0.5, 0.7, 0.9))
+	wave_intel_next_title_label = _create_wave_intel_label("Next", 11, Color(0.55, 0.74, 0.92))
 	body.add_child(wave_intel_next_title_label)
 	
 	wave_intel_next_summary_label = _create_wave_intel_richtext(12, Color(0.8, 0.8, 0.8))
@@ -1542,19 +1639,19 @@ func _setup_right_sidebar_layout() -> void:
 	
 	body.add_child(_create_wave_intel_separator())
 	
-	var threats_title = _create_wave_intel_label("Threats", 10, Color(0.5, 0.7, 0.9))
-	body.add_child(threats_title)
+	wave_intel_threats_title_label = _create_wave_intel_label("Threats", 11, Color(0.62, 0.78, 0.94))
+	body.add_child(wave_intel_threats_title_label)
 	
-	wave_intel_threats_label = _create_wave_intel_richtext(12, Color(1, 0.6, 0.4))
+	wave_intel_threats_label = _create_wave_intel_richtext(12, Color(1.0, 0.68, 0.46))
 	body.add_child(wave_intel_threats_label)
 	
-	var suggested_title = _create_wave_intel_label("Recommended", 10, Color(0.5, 0.7, 0.9))
-	body.add_child(suggested_title)
+	wave_intel_suggested_title_label = _create_wave_intel_label("Recommended", 11, Color(0.62, 0.78, 0.94))
+	body.add_child(wave_intel_suggested_title_label)
 	
-	wave_intel_suggested_label = _create_wave_intel_richtext(12, Color(0.5, 0.9, 1.0))
+	wave_intel_suggested_label = _create_wave_intel_richtext(12, Color(0.58, 0.88, 0.98))
 	body.add_child(wave_intel_suggested_label)
 	
-	wave_intel_warnings_label = _create_wave_intel_label("", 10, Color(1, 0.4, 0.4))
+	wave_intel_warnings_label = _create_wave_intel_label("", 11, Color(1.0, 0.50, 0.42))
 	wave_intel_warnings_label.visible = false
 	body.add_child(wave_intel_warnings_label)
 
@@ -1736,9 +1833,9 @@ func _format_wave_formation_lines(preview: Dictionary) -> String:
 	var notes: Array = preview.get("formation_notes", [])
 	var lines := []
 	if not formations.is_empty():
-		lines.append("[color=#8fd3ff]Formation:[/color] " + " | ".join(formations))
+		lines.append("[color=#8fd3ff]Formation[/color]  " + " | ".join(formations))
 	if not notes.is_empty():
-		lines.append("[color=#ffd36e]Tactic:[/color] " + " | ".join(notes))
+		lines.append("[color=#ffd36e]Tactic[/color]  " + " | ".join(notes))
 	return "\n".join(lines)
 
 func _format_counts(counts: Dictionary) -> String:
@@ -1747,17 +1844,19 @@ func _format_counts(counts: Dictionary) -> String:
 	for type_name in type_order:
 		if counts.has(type_name):
 			var tooltip = enemy_role_tooltips.get(type_name, "")
+			var label := "[color=#f1f7ff]%s x%d[/color]" % [type_name, int(counts[type_name])]
 			if tooltip != "":
-				parts.append("[hint=%s]%s[/hint] x%d" % [tooltip, type_name, int(counts[type_name])])
+				parts.append("[hint=%s]%s[/hint]" % [tooltip, label])
 			else:
-				parts.append("%s x%d" % [type_name, int(counts[type_name])])
+				parts.append(label)
 	for type_name in counts.keys():
 		if not type_order.has(str(type_name)):
 			var tooltip = enemy_role_tooltips.get(str(type_name), "")
+			var label := "[color=#f1f7ff]%s x%d[/color]" % [str(type_name), int(counts[type_name])]
 			if tooltip != "":
-				parts.append("[hint=%s]%s[/hint] x%d" % [tooltip, str(type_name), int(counts[type_name])])
+				parts.append("[hint=%s]%s[/hint]" % [tooltip, label])
 			else:
-				parts.append("%s x%d" % [str(type_name), int(counts[type_name])])
+				parts.append(label)
 	return ", ".join(parts)
 
 func _format_wave_intel_list(values: Array, fallback: String) -> String:
