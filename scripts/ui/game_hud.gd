@@ -333,6 +333,7 @@ func update_layout_for_viewport() -> void:
 			right_sidebar_container.custom_minimum_size.x = 220
 		else:
 			right_sidebar_container.custom_minimum_size.x = 240
+	_sync_tower_shop_list_width()
 
 	if OS.is_debug_build():
 		print("[HUD_LAYOUT] screen_size=", view_size, " playfield=", get_playfield_rect())
@@ -487,8 +488,7 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 	btn.clip_text = false
 	btn.custom_minimum_size.y = 46
 	btn.text = ""
-	var display_name: String = str(cfg.get("display_name", cfg.get("name", tower_id)))
-	display_name = _compact_tower_display_name(display_name)
+	var display_name := _get_tower_shop_display_name(tower_id, cfg)
 
 	if is_unlocked:
 		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
@@ -522,7 +522,7 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 
 	var name_label := Label.new()
 	name_label.name = "NameLabel"
-	name_label.text = display_name
+	name_label.text = display_name if is_unlocked else _format_tower_requirement(elements)
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_label.clip_text = true
@@ -533,14 +533,26 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 
 	var cost_label := Label.new()
 	cost_label.name = "CostLabel"
-	cost_label.text = _format_tower_cost(cost) if is_unlocked else _format_tower_requirement(elements)
+	cost_label.text = _format_tower_cost(cost) if is_unlocked else "LOCK"
 	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	cost_label.custom_minimum_size.x = 60 if is_unlocked else 112
+	cost_label.custom_minimum_size.x = 62 if is_unlocked else 46
 	cost_label.add_theme_font_size_override("font_size", 14 if is_unlocked else 12)
 	cost_label.add_theme_color_override("font_color", SHOP_GOLD_COLOR if is_unlocked else SHOP_LOCKED_TEXT_COLOR)
 	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_child(cost_label)
+
+func _get_tower_shop_display_name(tower_id: String, cfg: Dictionary) -> String:
+	var raw_name := str(cfg.get("display_name", cfg.get("name", tower_id)))
+	var compact := _compact_tower_display_name(raw_name)
+	var normalized_id := tower_id.to_lower()
+	if normalized_id.contains("arrow"):
+		return "Arrow"
+	if normalized_id.contains("cannon"):
+		return "Cannon"
+	if compact.is_empty() or compact == "/" or compact == "(":
+		return tower_id.capitalize().replace("_", " ")
+	return compact
 
 func _format_tower_cost(cost: int) -> String:
 	if cost < 0:
@@ -823,7 +835,7 @@ func _ensure_elemental_shop_ui() -> void:
 	tower_shop_scroll = ScrollContainer.new()
 	tower_shop_scroll.name = "ElementalTowerShopScroll"
 	tower_shop_scroll.custom_minimum_size = Vector2(0, 260)
-	tower_shop_scroll.size_flags_horizontal = Control.SIZE_FILL
+	tower_shop_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tower_shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tower_shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	container.add_child(tower_shop_scroll)
@@ -831,9 +843,10 @@ func _ensure_elemental_shop_ui() -> void:
 
 	tower_shop_list = VBoxContainer.new()
 	tower_shop_list.name = "ElementalTowerShopList"
-	tower_shop_list.size_flags_horizontal = Control.SIZE_FILL
+	tower_shop_list.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	tower_shop_list.add_theme_constant_override("separation", 6)
 	tower_shop_scroll.add_child(tower_shop_list)
+	_sync_tower_shop_list_width()
 
 	var bottom_separator := ColorRect.new()
 	bottom_separator.name = "TowerPanelBottomSeparator"
@@ -845,6 +858,15 @@ func _ensure_elemental_shop_ui() -> void:
 	build_status_label.add_theme_color_override("font_color", Color(0.82, 0.92, 1.0, 0.96))
 	build_status_label.add_theme_font_size_override("font_size", 12)
 	cancel_build_button.custom_minimum_size.y = 44
+
+func _sync_tower_shop_list_width() -> void:
+	if tower_shop_list == null or not is_instance_valid(tower_shop_list):
+		return
+	var sidebar_width := 310.0
+	if left_sidebar:
+		sidebar_width = left_sidebar.size.x if left_sidebar.size.x > 0.0 else left_sidebar.custom_minimum_size.x
+	var content_width: float = max(210.0, sidebar_width - 42.0)
+	tower_shop_list.custom_minimum_size.x = content_width
 
 func _ensure_element_choice_ui() -> void:
 	if element_choice_panel != null and is_instance_valid(element_choice_panel):
