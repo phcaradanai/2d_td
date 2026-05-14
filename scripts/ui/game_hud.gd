@@ -317,9 +317,9 @@ func update_layout_for_viewport() -> void:
 	
 	if left_sidebar:
 		if view_size.x < 1200:
-			left_sidebar.custom_minimum_size.x = 180
+			left_sidebar.custom_minimum_size.x = 250
 		else:
-			left_sidebar.custom_minimum_size.x = 210
+			left_sidebar.custom_minimum_size.x = 290
 			
 	if right_sidebar_container:
 		if view_size.x < 1200:
@@ -338,7 +338,7 @@ func get_playfield_rect() -> Rect2:
 	
 	# Fallback if HUD not ready or zero-sized
 	var view_size = get_viewport().get_visible_rect().size
-	var left_w = 180
+	var left_w = 250
 	if left_sidebar and left_sidebar.custom_minimum_size.x > 0:
 		left_w = left_sidebar.custom_minimum_size.x
 		
@@ -390,40 +390,196 @@ func _update_tower_affordability(current_gold: int) -> void:
 		var btn: Button = dynamic_tower_buttons[tower_id]
 		if btn == null or not is_instance_valid(btn):
 			continue
+		if btn.disabled:
+			continue  # Skip locked towers; they keep their gray state.
 		var cost: int = int(tower_prices.get(tower_id, 50))
-		var cfg: Dictionary = tower_catalog.get(tower_id, {})
 		btn.modulate = Color(1, 1, 1, 1) if current_gold >= cost else Color(1, 0.4, 0.4, 0.8)
-		btn.text = "%s  $%d" % [_format_tower_button_name(tower_id, cfg), cost]
-		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
 
 func refresh_tower_shop(tower_ids: Array[String]) -> void:
 	_ensure_elemental_shop_ui()
 	_hide_static_tower_buttons()
 	_clear_dynamic_tower_buttons()
 
-	var ids: Array[String] = tower_ids.duplicate()
-	if ids.is_empty():
-		ids = ["basic_tower_t1"]
+	var unlocked_set: Dictionary = {}
+	for tid in tower_ids:
+		unlocked_set[tid] = true
 
-	for tower_id in ids:
-		var cfg: Dictionary = tower_catalog.get(tower_id, {})
-		var btn := Button.new()
-		btn.name = "TowerButton_%s" % tower_id
-		btn.size_flags_horizontal = Control.SIZE_FILL
-		btn.focus_mode = Control.FOCUS_NONE
-		var cost: int = int(tower_prices.get(tower_id, cfg.get("cost", 50)))
-		btn.text = "%s  $%d" % [_format_tower_button_name(tower_id, cfg), cost]
-		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
-		var captured_tower_id: String = tower_id
-		var captured_button: Button = btn
-		btn.pressed.connect(func(): _on_tower_btn_pressed(captured_tower_id, captured_button))
-		tower_shop_list.add_child(btn)
-		dynamic_tower_buttons[tower_id] = btn
+	# Collect all build_entry towers from catalog, grouped by combo_type
+	var sections: Dictionary = {
+		"neutral": [],
+		"single": [],
+		"dual": [],
+		"triple": [],
+		"pure": [],
+		"periodic": [],
+	}
+	for tower_id in tower_catalog.keys():
+		var cfg: Dictionary = tower_catalog[tower_id]
+		if not bool(cfg.get("build_entry", false)):
+			continue
+		var combo: String = str(cfg.get("combo_type", "neutral"))
+		if not sections.has(combo):
+			sections[combo] = []
+		sections[combo].append({"id": str(tower_id), "cfg": cfg})
+
+	# Sort each section by shop_order
+	for key in sections:
+		sections[key].sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+			return int(a["cfg"].get("shop_order", 9999)) < int(b["cfg"].get("shop_order", 9999))
+		)
+
+	# Section display config
+	var section_order: Array[String] = ["neutral", "single", "dual", "triple", "pure", "periodic"]
+	var section_labels: Dictionary = {
+		"neutral": "Neutral",
+		"single": "Single Element",
+		"dual": "Dual Element",
+		"triple": "Triple Element",
+		"pure": "Pure",
+		"periodic": "Periodic",
+	}
+
+	for section_key in section_order:
+		var entries: Array = sections.get(section_key, [])
+		if entries.is_empty():
+			continue
+
+		# Section header
+		var header := Label.new()
+		header.name = "SectionHeader_%s" % section_key
+		header.text = section_labels.get(section_key, section_key.to_upper())
+		header.add_theme_font_size_override("font_size", 11)
+		header.add_theme_color_override("font_color", Color(0.56, 0.78, 0.9, 0.86))
+		header.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		header.custom_minimum_size.y = 20
+		tower_shop_list.add_child(header)
+
+		for entry in entries:
+			var tower_id: String = entry["id"]
+			var cfg: Dictionary = entry["cfg"]
+			var is_unlocked: bool = unlocked_set.has(tower_id)
+			_add_tower_shop_button(tower_id, cfg, is_unlocked)
 
 	if element_status_label:
 		element_status_label.text = _format_element_levels(current_element_levels)
 
 	_update_tower_affordability(_get_current_gold_for_hud())
+
+func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool) -> void:
+	var cost: int = int(tower_prices.get(tower_id, cfg.get("cost", 50)))
+	var btn_container := HBoxContainer.new()
+	btn_container.name = "TowerRow_%s" % tower_id
+	btn_container.size_flags_horizontal = Control.SIZE_FILL
+
+	# Compact element badge, e.g. L, D, or L+D.
+	var el_array: Array = cfg.get("elements", [])
+	if not el_array.is_empty():
+		btn_container.add_child(_create_element_badge(el_array, is_unlocked))
+		var spacer := Control.new()
+		spacer.custom_minimum_size = Vector2(6, 0)
+		btn_container.add_child(spacer)
+
+	# Tower button
+	var btn := Button.new()
+	btn.name = "TowerButton_%s" % tower_id
+	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	btn.focus_mode = Control.FOCUS_NONE
+	btn.clip_text = true
+	btn.custom_minimum_size.y = 34
+	btn.add_theme_font_size_override("font_size", 12)
+	var display_name: String = str(cfg.get("display_name", cfg.get("name", tower_id)))
+	display_name = _compact_tower_display_name(display_name)
+	btn.text = "%s  $%d" % [display_name, cost]
+
+	if is_unlocked:
+		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
+		var captured_tower_id: String = tower_id
+		var captured_button: Button = btn
+		btn.pressed.connect(func(): _on_tower_btn_pressed(captured_tower_id, captured_button))
+	else:
+		btn.disabled = true
+		btn.modulate = Color(0.5, 0.5, 0.55, 0.7)
+		btn.tooltip_text = _build_locked_tooltip(tower_id, cfg, cost)
+
+	btn_container.add_child(btn)
+	tower_shop_list.add_child(btn_container)
+	dynamic_tower_buttons[tower_id] = btn
+
+func _build_locked_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> String:
+	var desc: String = str(cfg.get("description", ""))
+	var elements_text: String = _elements_full(cfg.get("elements", []))
+	var required_lvl: int = int(cfg.get("required_element_level", 1))
+	var missing_parts: Array[String] = []
+	for raw_el in cfg.get("elements", []):
+		var el_id: String = str(raw_el)
+		var owned: int = int(current_element_levels.get(el_id, 0))
+		if owned < required_lvl:
+			missing_parts.append("%s Lv.%d" % [_element_label(el_id), required_lvl])
+	var lock_reason: String = "Requires: " + ", ".join(missing_parts) if not missing_parts.is_empty() else "Locked"
+	return "%s\n\nElements: %s\n%s\nCost: %d Credits" % [desc, elements_text, lock_reason, cost]
+
+func _create_element_badge(raw_elements: Array, is_unlocked: bool) -> Label:
+	var badge := Label.new()
+	badge.text = _elements_short(raw_elements)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	badge.add_theme_font_size_override("font_size", 10)
+	badge.add_theme_color_override("font_color", Color(0.08, 0.1, 0.12) if is_unlocked else Color(0.62, 0.64, 0.68))
+
+	var badge_style := StyleBoxFlat.new()
+	badge_style.bg_color = _element_badge_color(raw_elements, is_unlocked)
+	badge_style.corner_radius_top_left = 3
+	badge_style.corner_radius_top_right = 3
+	badge_style.corner_radius_bottom_left = 3
+	badge_style.corner_radius_bottom_right = 3
+	badge_style.content_margin_left = 4
+	badge_style.content_margin_right = 4
+	badge.add_theme_stylebox_override("normal", badge_style)
+
+	var badge_width := 28
+	if raw_elements.size() == 2:
+		badge_width = 44
+	elif raw_elements.size() >= 3:
+		badge_width = 56
+	badge.custom_minimum_size = Vector2(badge_width, 22)
+	badge.tooltip_text = _elements_full(raw_elements)
+	return badge
+
+func _element_badge_color(raw_elements: Array, is_unlocked: bool) -> Color:
+	if not is_unlocked:
+		return Color(0.22, 0.23, 0.25, 0.92)
+	if raw_elements.is_empty():
+		return Color(0.56, 0.62, 0.7, 0.9)
+	var red := 0.0
+	var green := 0.0
+	var blue := 0.0
+	for raw in raw_elements:
+		var color := _get_element_ui_color(str(raw))
+		red += color.r
+		green += color.g
+		blue += color.b
+	var count := float(raw_elements.size())
+	var mixed := Color(red / count, green / count, blue / count, 0.92)
+	return mixed.lightened(0.18)
+
+func _compact_tower_display_name(display_name: String) -> String:
+	var compact := display_name
+	compact = compact.replace("Neutral ", "")
+	compact = compact.replace(" Tower III", "")
+	compact = compact.replace(" Tower II", "")
+	compact = compact.replace(" Tower I", "")
+	compact = compact.replace(" Tower 3", "")
+	compact = compact.replace(" Tower 2", "")
+	compact = compact.replace(" Tower 1", "")
+	compact = compact.replace(" Tower", "")
+	compact = compact.replace(" III", "")
+	compact = compact.replace(" II", "")
+	compact = compact.replace(" I", "")
+	compact = compact.replace(" 3", "")
+	compact = compact.replace(" 2", "")
+	compact = compact.replace(" 1", "")
+	return compact.strip_edges()
 
 func set_tower_catalog(catalog: Dictionary) -> void:
 	tower_catalog = catalog.duplicate(true)
@@ -511,6 +667,7 @@ func _ensure_elemental_shop_ui() -> void:
 	tower_shop_list = VBoxContainer.new()
 	tower_shop_list.name = "ElementalTowerShopList"
 	tower_shop_list.size_flags_horizontal = Control.SIZE_FILL
+	tower_shop_list.add_theme_constant_override("separation", 2)
 	tower_shop_scroll.add_child(tower_shop_list)
 
 func _ensure_element_choice_ui() -> void:
@@ -591,10 +748,10 @@ func _format_element_levels(levels: Dictionary) -> String:
 	for element_id in ["light", "darkness", "water", "fire", "nature", "earth"]:
 		var level: int = int(levels.get(element_id, 0))
 		if level > 0:
-			parts.append("%s%d" % [_element_label(element_id).substr(0, 1), level])
+			parts.append("%s %d" % [_element_label(element_id).substr(0, 1), level])
 	if parts.is_empty():
-		return "Elements: choose one to unlock towers"
-	return "Elements: " + "  ".join(parts)
+		return "Pick an element to unlock towers"
+	return " ".join(parts)
 
 func _element_label(element_id: String) -> String:
 	match element_id:
@@ -605,6 +762,16 @@ func _element_label(element_id: String) -> String:
 		"nature": return "Nature"
 		"earth": return "Earth"
 		_: return element_id.capitalize()
+
+func _get_element_ui_color(element_id: String) -> Color:
+	match element_id:
+		"light": return Color(1.0, 0.88, 0.1)
+		"darkness": return Color(0.55, 0.12, 0.85)
+		"water": return Color(0.15, 0.55, 1.0)
+		"fire": return Color(1.0, 0.18, 0.08)
+		"nature": return Color(0.1, 0.78, 0.25)
+		"earth": return Color(0.68, 0.42, 0.16)
+		_: return Color.WHITE
 
 func _get_current_gold_for_hud() -> int:
 	var scene := get_tree().current_scene

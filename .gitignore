@@ -1,7 +1,7 @@
 # Godot-specific ignores
 .godot/
 *.import
-.claude
+.claude/
 
 # OS-specific ignores
 .DS_Store

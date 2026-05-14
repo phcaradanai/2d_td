@@ -78,19 +78,41 @@ func load_towers_config() -> void:
 
 func _inject_element_td_combo_towers() -> void:
 	# Element TD WC3-like tower availability is combination-based.
-	# The authored JSON contains starter/single/pure towers. This generated
-	# layer fills temporary dual/triple combo families until the final authored
-	# Element TD catalog replaces it.
+	# The authored JSON contains the full Element TD catalog (all 15 dual +
+	# 20 triple combos). This generated layer only fills gaps for any combo
+	# that doesn't have an authored tower yet — acting as a safety net.
 	for i in range(ELEMENT_TD_ELEMENTS.size()):
 		for j in range(i + 1, ELEMENT_TD_ELEMENTS.size()):
 			var elements := [ELEMENT_TD_ELEMENTS[i], ELEMENT_TD_ELEMENTS[j]]
+			if _has_authored_combo(elements, "dual"):
+				continue
 			_inject_combo_family(elements, "dual", 260 + (i * 10) + j)
 
 	for i in range(ELEMENT_TD_ELEMENTS.size()):
 		for j in range(i + 1, ELEMENT_TD_ELEMENTS.size()):
 			for k in range(j + 1, ELEMENT_TD_ELEMENTS.size()):
 				var elements := [ELEMENT_TD_ELEMENTS[i], ELEMENT_TD_ELEMENTS[j], ELEMENT_TD_ELEMENTS[k]]
+				if _has_authored_combo(elements, "triple"):
+					continue
 				_inject_combo_family(elements, "triple", 520 + (i * 100) + (j * 10) + k)
+
+func _has_authored_combo(target_elements: Array, combo_type: String) -> bool:
+	# Check if any tower already in towers_config has exactly the same element
+	# set and combo_type. This prevents generating duplicates of authored towers
+	# (e.g. generating dual_light_darkness when trickery already exists).
+	var target_set: Array = target_elements.duplicate()
+	target_set.sort()
+	for tower_id in towers_config:
+		var cfg: Dictionary = towers_config[tower_id]
+		if str(cfg.get("combo_type", "")) != combo_type:
+			continue
+		if int(cfg.get("tier", 1)) != 1:
+			continue  # Only need to check t1 entries
+		var cfg_elements: Array = cfg.get("elements", []).duplicate()
+		cfg_elements.sort()
+		if cfg_elements == target_set:
+			return true
+	return false
 
 func _inject_combo_family(elements: Array, combo_type: String, shop_order: int) -> void:
 	var family_id := "%s_%s" % [combo_type, _combo_slug(elements)]

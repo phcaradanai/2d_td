@@ -19,7 +19,9 @@
       "Bash(python3 tools/refactor/audit_tower_interaction_boundary.py)",
       "Bash(python3 tools/refactor/audit_project_guardrails.py)",
       "Bash(echo \"EXIT_CODE=$?\")",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(git push *)"
     ]
   }
 }

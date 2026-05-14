@@ -398,13 +398,24 @@ func _ensure_aim_visual() -> void:
 
 func _get_element_color(element_id: String) -> Color:
 	match element_id:
-		"light": return Color(1.0, 0.9, 0.35)
-		"darkness": return Color(0.55, 0.25, 1.0)
-		"water": return Color(0.35, 0.85, 1.0)
-		"fire": return Color(1.0, 0.32, 0.12)
-		"nature": return Color(0.25, 1.0, 0.45)
-		"earth": return Color(0.95, 0.65, 0.28)
+		"light": return Color(1.0, 0.88, 0.1)      # Bright yellow — แสง
+		"darkness": return Color(0.55, 0.12, 0.85)  # Deep purple — มืด
+		"water": return Color(0.15, 0.55, 1.0)      # Clear blue — น้ำ
+		"fire": return Color(1.0, 0.18, 0.08)       # Strong red — ไฟ
+		"nature": return Color(0.1, 0.78, 0.25)     # Vivid green — ธรรมชาติ
+		"earth": return Color(0.68, 0.42, 0.16)     # Warm brown — ดิน
 		_: return Color.WHITE
+
+func _get_all_element_colors() -> Array[Color]:
+	var colors: Array[Color] = []
+	for e in elements:
+		colors.append(_get_element_color(e))
+	return colors
+
+func _get_secondary_element_color() -> Color:
+	if elements.size() >= 2:
+		return _get_element_color(elements[1])
+	return _get_tower_color()
 
 func _get_tower_color() -> Color:
 	if not elements.is_empty():
@@ -470,127 +481,205 @@ func _draw() -> void:
 
 func _draw_base_plate() -> void:
 	var lvl = tree_tier
-	var base_color = Color(0.08, 0.12, 0.18, 1.0)
-	var accent_color = Color(0.2, 0.6, 1.0, 0.4)
-	if not elements.is_empty():
-		var ec := _get_tower_color()
-		accent_color = Color(ec.r, ec.g, ec.b, 0.48)
-	
-	match visual_type:
-		"cannon":
-			base_color = Color(0.12, 0.08, 0.08, 1.0)
-			accent_color = Color(1.0, 0.3, 0.1, 0.4)
-		"slow":
-			base_color = Color(0.08, 0.12, 0.15, 1.0)
-			accent_color = Color(0.6, 0.9, 1.0, 0.4)
-		"rapid":
-			base_color = Color(0.05, 0.12, 0.1, 1.0)
-			accent_color = Color(0.0, 1.0, 0.7, 0.4)
-	if not elements.is_empty():
-		var element_accent := _get_tower_color()
-		accent_color = Color(element_accent.r, element_accent.g, element_accent.b, 0.5)
+	var base_color = Color(0.06, 0.08, 0.12, 1.0)
+	var el_colors := _get_all_element_colors()
+	var accent_color: Color
+
+	# Tint base background slightly toward primary element
+	if not el_colors.is_empty():
+		accent_color = Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.55)
+		base_color = base_color.lerp(el_colors[0], 0.08)
+	else:
+		accent_color = Color(0.35, 0.55, 0.7, 0.35)
 
 	# Main Base Rect
 	draw_rect(Rect2(-24, -24, 48, 48), base_color)
-	draw_rect(Rect2(-24, -24, 48, 48), accent_color, false, 1.0)
-	
-	# Corner Ticks
+
+	# Element-colored border segments
+	# Each element gets an equal portion of the border perimeter
+	var border_w := 1.5 if lvl < 3 else 2.0
+	if el_colors.is_empty():
+		# Neutral: single muted border
+		draw_rect(Rect2(-24, -24, 48, 48), accent_color, false, border_w)
+	elif el_colors.size() == 1:
+		# Single element: full border in element color
+		var c := Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.7)
+		draw_rect(Rect2(-24, -24, 48, 48), c, false, border_w)
+	elif el_colors.size() == 2:
+		# Dual element: top+right = element1, bottom+left = element2
+		var c0 := Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.75)
+		var c1 := Color(el_colors[1].r, el_colors[1].g, el_colors[1].b, 0.75)
+		draw_line(Vector2(-24, -24), Vector2(24, -24), c0, border_w)  # top
+		draw_line(Vector2(24, -24), Vector2(24, 24), c0, border_w)    # right
+		draw_line(Vector2(24, 24), Vector2(-24, 24), c1, border_w)    # bottom
+		draw_line(Vector2(-24, 24), Vector2(-24, -24), c1, border_w)  # left
+	else:
+		# Triple+ element: distribute segments around the border
+		var c0 := Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.75)
+		var c1 := Color(el_colors[1].r, el_colors[1].g, el_colors[1].b, 0.75)
+		var c2 := Color(el_colors[2].r, el_colors[2].g, el_colors[2].b, 0.75)
+		draw_line(Vector2(-24, -24), Vector2(24, -24), c0, border_w)  # top = el1
+		draw_line(Vector2(24, -24), Vector2(24, 24), c1, border_w)    # right = el2
+		draw_line(Vector2(24, 24), Vector2(-24, 24), c2, border_w)    # bottom = el3
+		# left side: blend of el1+el3
+		var c_left := c0.lerp(c2, 0.5)
+		draw_line(Vector2(-24, 24), Vector2(-24, -24), c_left, border_w)
+
+	# Corner Ticks — colored per element
 	var s = 6.0
 	var p = 22.0
-	draw_line(Vector2(-p, -p), Vector2(-p+s, -p), accent_color)
-	draw_line(Vector2(-p, -p), Vector2(-p, -p+s), accent_color)
-	draw_line(Vector2(p, -p), Vector2(p-s, -p), accent_color)
-	draw_line(Vector2(p, -p), Vector2(p, -p+s), accent_color)
-	
-	# Level Details
+	var tick_color := accent_color if el_colors.is_empty() else Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.6)
+	var tick_color2 := tick_color
+	if el_colors.size() >= 2:
+		tick_color2 = Color(el_colors[1].r, el_colors[1].g, el_colors[1].b, 0.6)
+	# Top-left & top-right: primary element
+	draw_line(Vector2(-p, -p), Vector2(-p+s, -p), tick_color)
+	draw_line(Vector2(-p, -p), Vector2(-p, -p+s), tick_color)
+	draw_line(Vector2(p, -p), Vector2(p-s, -p), tick_color)
+	draw_line(Vector2(p, -p), Vector2(p, -p+s), tick_color)
+	# Bottom-left & bottom-right: secondary element (or same)
+	draw_line(Vector2(-p, p), Vector2(-p+s, p), tick_color2)
+	draw_line(Vector2(-p, p), Vector2(-p, p-s), tick_color2)
+	draw_line(Vector2(p, p), Vector2(p-s, p), tick_color2)
+	draw_line(Vector2(p, p), Vector2(p, p-s), tick_color2)
+
+	# Level Details — tier 2+ inner rect tinted toward element
 	if lvl >= 2:
-		draw_rect(Rect2(-18, -18, 36, 36), Color(accent_color.r, accent_color.g, accent_color.b, 0.15))
+		var inner_tint := Color(accent_color.r, accent_color.g, accent_color.b, 0.12)
+		if not el_colors.is_empty():
+			inner_tint = Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.12)
+		draw_rect(Rect2(-18, -18, 36, 36), inner_tint)
 	if lvl >= 3:
-		draw_arc(Vector2.ZERO, 20, 0, TAU, 32, accent_color, 1.5)
+		var ring_color := accent_color
+		if not el_colors.is_empty():
+			ring_color = Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.35)
+		draw_arc(Vector2.ZERO, 20, 0, TAU, 32, ring_color, 1.5)
+
+func _draw_element_core() -> void:
+	# Draw small element-colored dots in the center of the turret as a visual landmark.
+	# 1 element → 1 dot, 2 → 2 dots side-by-side, 3 → triangle of 3 dots.
+	var el_colors := _get_all_element_colors()
+	if el_colors.is_empty():
+		return
+
+	var core_r := 3.5  # radius of each core dot
+	var glow_r := 5.5  # outer glow ring
+
+	if el_colors.size() == 1:
+		# Single element: one bright core
+		draw_circle(Vector2.ZERO, glow_r, Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.35))
+		draw_circle(Vector2.ZERO, core_r, el_colors[0])
+		draw_circle(Vector2.ZERO, 1.5, el_colors[0].lightened(0.6))
+	elif el_colors.size() == 2:
+		# Dual element: two dots side by side
+		var offset_x := 4.5
+		for i in range(2):
+			var pos := Vector2(-offset_x + i * offset_x * 2, 0)
+			draw_circle(pos, glow_r - 1.0, Color(el_colors[i].r, el_colors[i].g, el_colors[i].b, 0.3))
+			draw_circle(pos, core_r - 0.5, el_colors[i])
+			draw_circle(pos, 1.2, el_colors[i].lightened(0.55))
+	else:
+		# Triple element: three dots in triangle formation
+		var tri_r := 5.0  # distance from center to each dot
+		for i in range(mini(el_colors.size(), 3)):
+			var angle := -PI / 2.0 + i * TAU / 3.0  # start from top
+			var pos := Vector2(cos(angle), sin(angle)) * tri_r
+			draw_circle(pos, glow_r - 1.5, Color(el_colors[i].r, el_colors[i].g, el_colors[i].b, 0.3))
+			draw_circle(pos, core_r - 1.0, el_colors[i])
+			draw_circle(pos, 1.0, el_colors[i].lightened(0.5))
 
 func _draw_turret_top() -> void:
 	var lvl = tree_tier
-	var main_color = Color(0.3, 0.8, 1.0, 1.0)
-	var core_color = Color(0.6, 0.9, 1.0, 1.0)
-	if not elements.is_empty():
-		main_color = _get_tower_color()
+	var el_colors := _get_all_element_colors()
+	# Determine main_color and secondary accent from elements
+	var main_color: Color
+	var secondary_color: Color
+	var core_color: Color
+	if not el_colors.is_empty():
+		main_color = el_colors[0]
+		secondary_color = el_colors[1] if el_colors.size() >= 2 else el_colors[0].lightened(0.3)
 		core_color = main_color.lightened(0.45)
+	else:
+		# Neutral towers: muted gray-cyan
+		main_color = Color(0.45, 0.55, 0.6, 1.0)
+		secondary_color = Color(0.55, 0.65, 0.7, 1.0)
+		core_color = Color(0.7, 0.8, 0.85, 1.0)
 	var size = 20.0
-	
+
 	match visual_type:
 		"basic":
-			# Barrel
+			# Simple cannon — neutral starter tower
 			draw_rect(Rect2(0, -6, 26 + lvl * 4, 12), main_color)
-			draw_rect(Rect2(2, -4, 22 + lvl * 4, 8), Color(0,0,0,0.5))
-			# Core
+			draw_rect(Rect2(2, -4, 22 + lvl * 4, 8), Color(0, 0, 0, 0.5))
 			draw_circle(Vector2.ZERO, 15, main_color)
 			draw_circle(Vector2.ZERO, 10, Color.BLACK)
-			draw_circle(Vector2.ZERO, 6, core_color)
-			
+			# Element core replaces old static core
+			if el_colors.is_empty():
+				draw_circle(Vector2.ZERO, 6, core_color)
+			else:
+				_draw_element_core()
+
 		"rapid":
-			if elements.is_empty():
-				main_color = Color(0.3, 1.0, 0.6, 1.0)
-				core_color = Color(0.7, 1.0, 0.8, 1.0)
-			# Twin Barrels
-			draw_rect(Rect2(4, -10, 20 + lvl * 2, 6), main_color)
-			draw_rect(Rect2(4, 4, 20 + lvl * 2, 6), main_color)
-			# Arrow body
+			# Twin-barrel rapid fire — arrow silhouette
+			# Barrel accents use secondary element color for dual towers
+			var barrel_color := main_color
+			if el_colors.size() >= 2:
+				barrel_color = secondary_color
+			draw_rect(Rect2(4, -10, 20 + lvl * 2, 6), barrel_color)
+			draw_rect(Rect2(4, 4, 20 + lvl * 2, 6), barrel_color)
+			# Arrow body in primary element color
 			var pts = PackedVector2Array([Vector2(-14, -16), Vector2(16, 0), Vector2(-14, 16), Vector2(-8, 0)])
 			draw_colored_polygon(pts, main_color)
-			draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0)
-			draw_circle(Vector2(-2, 0), 4, core_color)
-			
+			draw_polyline(pts + PackedVector2Array([pts[0]]), Color(0, 0, 0, 0.6), 1.0)
+			_draw_element_core()
+
 		"cannon":
-			if elements.is_empty():
-				main_color = Color(1.0, 0.5, 0.2, 1.0)
-				core_color = Color(1.0, 0.8, 0.6, 1.0)
-			# Heavy Barrel
+			# Heavy cannon — splash damage
+			# Barrel in primary, side plates in secondary
+			var plate_color := secondary_color if el_colors.size() >= 2 else core_color
 			draw_rect(Rect2(-6, -14, 32 + lvl * 4, 28), main_color)
 			draw_rect(Rect2(-2, -10, 26 + lvl * 4, 20), Color.BLACK)
-			# Plates
 			draw_rect(Rect2(-14, -16, 14, 32), main_color)
-			draw_rect(Rect2(-10, -12, 6, 24), core_color)
-			
+			draw_rect(Rect2(-10, -12, 6, 24), plate_color)
+			_draw_element_core()
+
 		"slow":
-			if elements.is_empty():
-				main_color = Color(0.6, 0.9, 1.0, 1.0)
-				core_color = Color(0.9, 1.0, 1.0, 1.0)
-			# Shard
-			var pts = PackedVector2Array([Vector2(0, -20 - lvl*2), Vector2(16, 0), Vector2(0, 20 + lvl*2), Vector2(-16, 0)])
+			# Diamond shard — slow/freeze
+			# Shard outline uses secondary color for dual
+			var outline_color := Color.WHITE
+			if el_colors.size() >= 2:
+				outline_color = secondary_color.lightened(0.3)
+			var pts = PackedVector2Array([Vector2(0, -20 - lvl * 2), Vector2(16, 0), Vector2(0, 20 + lvl * 2), Vector2(-16, 0)])
 			draw_colored_polygon(pts, main_color)
-			draw_polyline(pts + PackedVector2Array([pts[0]]), Color.WHITE, 1.5)
-			# Crystal Core
-			draw_rect(Rect2(-6, -6, 12, 12), core_color)
+			draw_polyline(pts + PackedVector2Array([pts[0]]), outline_color, 1.5)
 			# Aura ring
 			draw_arc(Vector2.ZERO, 22, 0, TAU, 32, Color(main_color.r, main_color.g, main_color.b, 0.2), 2.0)
-			
+			_draw_element_core()
+
 		"sniper":
-			if elements.is_empty():
-				main_color = Color(0.1, 0.6, 1.0, 1.0)
-				core_color = Color(0.6, 0.9, 1.0, 1.0)
-			# Long thin barrel
+			# Long rifle — precision single-target
+			var barrel_accent := secondary_color if el_colors.size() >= 2 else main_color
 			draw_rect(Rect2(0, -4, 40 + lvl * 6, 8), main_color)
-			draw_rect(Rect2(36 + lvl * 6, -5, 6, 10), Color.BLACK)
-			# Sleek Body
+			# Muzzle cap in secondary color
+			draw_rect(Rect2(36 + lvl * 6, -5, 6, 10), barrel_accent.darkened(0.5))
+			# Sleek body
 			var pts = PackedVector2Array([Vector2(-18, -12), Vector2(12, -8), Vector2(12, 8), Vector2(-18, 12)])
 			draw_colored_polygon(pts, main_color)
-			draw_polyline(pts + PackedVector2Array([pts[0]]), Color.BLACK, 1.0)
-			draw_circle(Vector2(-4, 0), 5, core_color)
-			
+			draw_polyline(pts + PackedVector2Array([pts[0]]), Color(0, 0, 0, 0.6), 1.0)
+			_draw_element_core()
+
 		"lightning":
-			if elements.is_empty():
-				main_color = Color(0.5, 0.4, 1.0, 1.0)
-				core_color = Color(0.8, 0.7, 1.0, 1.0)
-			# Tesla Coil look
+			# Tesla coil — chain attack
+			# Coil body uses primary, spike tips use secondary
+			var spike_tip_color := secondary_color if el_colors.size() >= 2 else core_color
 			draw_circle(Vector2.ZERO, 16, main_color)
-			draw_arc(Vector2.ZERO, 16, 0, TAU, 32, Color.WHITE, 1.5)
+			draw_arc(Vector2.ZERO, 16, 0, TAU, 32, main_color.lightened(0.4), 1.5)
 			# Spikes
 			for i in range(4):
-				var a = i * PI/2 + (idle_rotation * 0.3)
+				var a = i * PI / 2 + (idle_rotation * 0.3)
 				draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * 24, main_color, 3.0)
-				draw_circle(Vector2(cos(a), sin(a)) * 24, 4, core_color)
-			
-			# Electrical Crackle (Jagged lines around tower)
+				draw_circle(Vector2(cos(a), sin(a)) * 24, 4, spike_tip_color)
+			# Electrical crackle
 			for i in range(2):
 				var crackle_pts = PackedVector2Array()
 				var start_a = randf() * TAU
@@ -599,38 +688,50 @@ func _draw_turret_top() -> void:
 				crackle_pts.append(Vector2.RIGHT.rotated(start_a + 0.2) * dist)
 				crackle_pts.append(Vector2.RIGHT.rotated(start_a - 0.2) * (dist + 5))
 				draw_polyline(crackle_pts, core_color, 1.0)
-				
+			_draw_element_core()
+
 		"trickery":
-			# Hologram prism. This is a support tower, not a direct attack.
-			main_color = Color(0.72, 0.42, 1.0, 1.0)
-			core_color = Color(0.95, 0.82, 1.0, 1.0)
+			# Hologram prism — support/clone tower (Light + Darkness)
+			# Uses both element colors: Light=yellow for outer, Darkness=purple for inner
+			var prism_fill := main_color if not el_colors.is_empty() else Color(0.72, 0.42, 1.0)
+			var prism_edge := secondary_color.lightened(0.35) if el_colors.size() >= 2 else Color(0.95, 0.82, 1.0)
 			var prism = PackedVector2Array([Vector2(0, -22), Vector2(18, -4), Vector2(10, 18), Vector2(-10, 18), Vector2(-18, -4)])
-			draw_colored_polygon(prism, Color(main_color.r, main_color.g, main_color.b, 0.55))
-			draw_polyline(prism + PackedVector2Array([prism[0]]), core_color, 1.5)
-			draw_circle(Vector2.ZERO, 8, Color(0.15, 0.05, 0.25, 0.9))
-			draw_circle(Vector2.ZERO, 4 + sin(idle_rotation) * 1.5, core_color)
+			draw_colored_polygon(prism, Color(prism_fill.r, prism_fill.g, prism_fill.b, 0.55))
+			draw_polyline(prism + PackedVector2Array([prism[0]]), prism_edge, 1.5)
+			# Inner dark circle + pulsing core
+			draw_circle(Vector2.ZERO, 8, Color(0.12, 0.04, 0.2, 0.9))
+			_draw_element_core()
+			# Rotating rays
 			for i in range(3):
 				var a = idle_rotation * 0.7 + i * TAU / 3.0
-				draw_line(Vector2.RIGHT.rotated(a) * 12, Vector2.RIGHT.rotated(a) * 22, Color(0.9, 0.7, 1.0, 0.65), 1.5)
+				var ray_color := prism_edge
+				if el_colors.size() >= 2:
+					ray_color = el_colors[i % el_colors.size()].lightened(0.2)
+				draw_line(Vector2.RIGHT.rotated(a) * 12, Vector2.RIGHT.rotated(a) * 22, Color(ray_color.r, ray_color.g, ray_color.b, 0.65), 1.5)
 
 		"sawblade":
+			# Rotating saw — aura damage
 			var blade_size = size + lvl * 2.0
-			# Base
-			draw_circle(Vector2.ZERO, blade_size * 0.7, Color(0.3, 0.3, 0.3))
-			# Saw blade
+			# Hub
+			draw_circle(Vector2.ZERO, blade_size * 0.7, Color(0.25, 0.25, 0.25))
+			# Saw blade teeth in primary element color
+			var blade_color := main_color
 			var teeth = 12
 			var pts = []
 			for i in range(teeth * 2):
 				var angle = (float(i) / (teeth * 2)) * TAU + idle_rotation
 				var r = blade_size * (1.0 if i % 2 == 0 else 0.7)
 				pts.append(Vector2.RIGHT.rotated(angle) * r)
-			draw_colored_polygon(PackedVector2Array(pts), Color(0.9, 0.1, 0.1))
-			draw_circle(Vector2.ZERO, blade_size * 0.3, Color(0.5, 0.5, 0.5))
-			
-	# Level Indicators (Glow dots)
+			draw_colored_polygon(PackedVector2Array(pts), blade_color)
+			# Center hub with secondary accent
+			var hub_color := secondary_color.darkened(0.2) if el_colors.size() >= 2 else Color(0.45, 0.45, 0.45)
+			draw_circle(Vector2.ZERO, blade_size * 0.3, hub_color)
+			_draw_element_core()
+
+	# Level Indicators (small white dots)
 	for i in range(lvl):
-		var offset = -12 + i * 8
-		draw_circle(Vector2(offset, 0), 2, Color.WHITE)
+		var dot_offset = -12 + i * 8
+		draw_circle(Vector2(dot_offset, 0), 2, Color.WHITE)
 
 func _update_range_collision() -> void:
 	if collision_shape and collision_shape.shape is CircleShape2D:
