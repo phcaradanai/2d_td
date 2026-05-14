@@ -80,7 +80,10 @@ var _stale_fire_rate_keys: Array = []
 var debug_draw_target_line: bool = false
 
 # Aim Visuals
-@export var show_aim_indicator: bool = true
+## Aim line + target-marker crosshair on creeps.
+## Off by default — reduces visual clutter and avoids per-frame Line2D / marker redraws.
+## Flip to true in the inspector (per-tower) or via a debug flag to re-enable.
+@export var show_aim_indicator: bool = false
 var aim_visual: Node2D = null
 var aim_line: Line2D = null
 var target_marker: Node2D = null
@@ -355,10 +358,13 @@ func _fit_sprite_to_size(p_sprite: Sprite2D, target_size: float) -> void:
 	queue_redraw()
 
 func _ensure_aim_visual() -> void:
+	# Skip node creation entirely when aim indicator is off.
+	# _update_aim_indicator() also early-exits, so no Line2D / TargetMarker overhead.
 	if not show_aim_indicator:
-		if aim_visual: aim_visual.visible = false
+		if aim_visual and aim_visual.visible:
+			aim_visual.visible = false
 		return
-		
+
 	if aim_visual == null:
 		aim_visual = Node2D.new()
 		aim_visual.name = "AimVisual"
