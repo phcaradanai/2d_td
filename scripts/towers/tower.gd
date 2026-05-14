@@ -728,6 +728,383 @@ func _draw_turret_top() -> void:
 			draw_circle(Vector2.ZERO, blade_size * 0.3, hub_color)
 			_draw_element_core()
 
+		"prism_lens":
+			# Light / Ice / Polar — gold-white prism with lens aperture
+			var prism_pts = PackedVector2Array([Vector2(0,-22),Vector2(14,-8),Vector2(18,6),Vector2(0,14),Vector2(-18,6),Vector2(-14,-8)])
+			draw_colored_polygon(prism_pts, Color(main_color.r,main_color.g,main_color.b,0.45))
+			draw_polyline(prism_pts + PackedVector2Array([prism_pts[0]]), main_color.lightened(0.35), 1.5)
+			# Lens aperture barrel
+			draw_rect(Rect2(0,-4,32+lvl*4,8), main_color.darkened(0.35))
+			draw_rect(Rect2(28+lvl*4,-6,8,12), main_color)
+			draw_circle(Vector2(32+lvl*4,0), 5, Color.BLACK)
+			draw_circle(Vector2(32+lvl*4,0), 3, main_color.lightened(0.5))
+			draw_circle(Vector2.ZERO, 10, Color(main_color.r,main_color.g,main_color.b,0.25))
+			_draw_element_core()
+
+		"void_orb":
+			# Darkness — void orb with shadow rings and inward particles
+			draw_circle(Vector2.ZERO, 20, Color(main_color.r,main_color.g,main_color.b,0.12))
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.5), 2.0)
+			draw_arc(Vector2.ZERO, 12, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.4), 1.5)
+			draw_circle(Vector2.ZERO, 9, Color(0.04,0.0,0.1,1.0))
+			for i in range(6):
+				var a = i * TAU/6.0 + idle_rotation * 0.4
+				draw_line(Vector2(cos(a),sin(a))*16, Vector2(cos(a),sin(a))*11, Color(main_color.r,main_color.g,main_color.b,0.7), 1.5)
+			_draw_element_core()
+
+		"crystal_emitter":
+			# Water — blue crystal with ripple rings
+			draw_arc(Vector2.ZERO, 22, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.18), 1.5)
+			draw_arc(Vector2.ZERO, 15, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.3), 1.5)
+			var cx_pts = PackedVector2Array([Vector2(0,-22),Vector2(10,-8),Vector2(8,12),Vector2(0,18),Vector2(-8,12),Vector2(-10,-8)])
+			draw_colored_polygon(cx_pts, Color(main_color.r,main_color.g,main_color.b,0.55))
+			draw_polyline(cx_pts + PackedVector2Array([cx_pts[0]]), Color(0.7,0.95,1.0,0.9), 1.5)
+			draw_line(Vector2(0,-22), Vector2(0,18), Color(1.0,1.0,1.0,0.18), 1.0)
+			_draw_element_core()
+
+		"furnace":
+			# Fire — furnace body with plasma nozzle
+			draw_rect(Rect2(-16,-16,32,32), main_color.darkened(0.5))
+			draw_rect(Rect2(-12,-12,24,24), Color(0.08,0.02,0.0,1.0))
+			for i in range(3):
+				draw_rect(Rect2(-14,-10+i*8,6,4), Color(1.0,0.3,0.0,0.8))
+			draw_rect(Rect2(0,-7,28+lvl*3,14), main_color)
+			draw_rect(Rect2(20+lvl*3,-9,10,18), main_color.darkened(0.3))
+			draw_circle(Vector2(24+lvl*3,0), 6, Color(1.0,0.6,0.1,0.85))
+			_draw_element_core()
+
+		"bio_vine":
+			# Nature — organic vine-wrapped twin barrel turret
+			var bv_pts = PackedVector2Array([Vector2(-14,-16),Vector2(16,0),Vector2(-14,16),Vector2(-8,0)])
+			draw_colored_polygon(bv_pts, main_color.darkened(0.3))
+			draw_polyline(bv_pts + PackedVector2Array([bv_pts[0]]), main_color, 1.5)
+			draw_rect(Rect2(4,-12,22+lvl*2,6), main_color.darkened(0.2))
+			draw_rect(Rect2(4,6,22+lvl*2,6), main_color.darkened(0.2))
+			for i in range(3):
+				draw_line(Vector2(6+i*7,-12), Vector2(9+i*7,6), Color(main_color.r,main_color.g,main_color.b,0.55), 1.0)
+			var leaf_c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_circle(Vector2(24+lvl*2,-9), 4, leaf_c)
+			draw_circle(Vector2(24+lvl*2,9), 4, leaf_c)
+			_draw_element_core()
+
+		"stone_bastion":
+			# Earth — heavy armored block with amber reactor
+			draw_rect(Rect2(-20,-20,40,40), main_color.darkened(0.4))
+			draw_rect(Rect2(-14,-14,28,28), Color(0.06,0.04,0.02,1.0))
+			draw_line(Vector2(-20,-20), Vector2(-14,-14), main_color.lightened(0.2), 1.0)
+			draw_line(Vector2(20,-20), Vector2(14,-14), main_color.lightened(0.2), 1.0)
+			draw_line(Vector2(-20,20), Vector2(-14,14), main_color.lightened(0.2), 1.0)
+			draw_line(Vector2(20,20), Vector2(14,14), main_color.lightened(0.2), 1.0)
+			draw_rect(Rect2(0,-10,26+lvl*3,20), main_color)
+			draw_rect(Rect2(18+lvl*3,-12,10,24), main_color.darkened(0.3))
+			draw_rect(Rect2(-20,-8,8,16), main_color.darkened(0.2))
+			_draw_element_core()
+
+		"forge_anvil":
+			# Blacksmith (Fire+Earth) — forge anvil silhouette
+			var fa_pts = PackedVector2Array([Vector2(-20,8),Vector2(20,8),Vector2(16,0),Vector2(8,-4),Vector2(8,-16),Vector2(-8,-16),Vector2(-8,-4),Vector2(-16,0)])
+			draw_colored_polygon(fa_pts, main_color.darkened(0.3))
+			draw_polyline(fa_pts + PackedVector2Array([fa_pts[0]]), main_color, 1.5)
+			draw_circle(Vector2.ZERO, 8, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.7))
+			draw_rect(Rect2(8,-5,20+lvl*2,10), main_color.lightened(0.2))
+			for i in range(4):
+				var a = idle_rotation * 1.5 + i * TAU/4.0
+				draw_circle(Vector2(cos(a),sin(a))*(10+randf()*5), 1.5, Color(1.0,0.82,0.2,0.85))
+			_draw_element_core()
+
+		"support_halo":
+			# Support towers (Well / Life / Tidal / Enchantment / Gold) — aura emitter
+			draw_rect(Rect2(-10,-10,20,20), main_color.darkened(0.4))
+			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.65), 2.0)
+			var h2c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_arc(Vector2.ZERO, 14, 0, TAU, 32, Color(h2c.r,h2c.g,h2c.b,0.4), 1.5)
+			for i in range(4):
+				var a = idle_rotation * 0.5 + i * TAU/4.0
+				draw_circle(Vector2(cos(a),sin(a))*20, 3, main_color.lightened(0.35))
+			_draw_element_core()
+
+		"particle_accel":
+			# Quark (Light+Earth) — particle accelerator ring
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, main_color, 3.0)
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, secondary_color if el_colors.size() >= 2 else core_color, 1.5)
+			draw_rect(Rect2(0,-2,38+lvl*5,4), main_color.lightened(0.2))
+			draw_circle(Vector2(36+lvl*5,0), 3, core_color)
+			for i in range(3):
+				var a = idle_rotation * 1.2 + i * TAU/3.0
+				draw_circle(Vector2(cos(a),sin(a))*18, 2, core_color)
+			_draw_element_core()
+
+		"chaos_orb":
+			# Magic (Darkness+Fire) — arcane flame sigil
+			for i in range(6):
+				var a1 = i * TAU/6.0
+				var a2 = (i+2) * TAU/6.0
+				draw_line(Vector2(cos(a1),sin(a1))*16, Vector2(cos(a2),sin(a2))*16, Color(main_color.r,main_color.g,main_color.b,0.65), 1.0)
+			draw_circle(Vector2.ZERO, 12, Color(0.05,0.0,0.08,1.0))
+			draw_circle(Vector2.ZERO, 8, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.9))
+			for i in range(3):
+				var a = idle_rotation * 0.8 + i * TAU/3.0
+				draw_line(Vector2.RIGHT.rotated(a)*8, Vector2.RIGHT.rotated(a+0.35)*16, Color(1.0,0.4,0.0,0.6), 1.5)
+			_draw_element_core()
+
+		"toxin_vial":
+			# Poison (Darkness+Water) — toxin vial emitter
+			var tv_pts = PackedVector2Array([Vector2(-8,-18),Vector2(8,-18),Vector2(10,-8),Vector2(12,12),Vector2(-12,12),Vector2(-10,-8)])
+			draw_colored_polygon(tv_pts, Color(main_color.r,main_color.g,main_color.b,0.4))
+			draw_polyline(tv_pts + PackedVector2Array([tv_pts[0]]), main_color.lightened(0.2), 1.5)
+			var bubble_c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_circle(Vector2(-3,4), 3, bubble_c)
+			draw_circle(Vector2(4,0), 2, bubble_c)
+			draw_rect(Rect2(-3,-24,6,8), main_color)
+			draw_circle(Vector2(0,-22), 2, Color(main_color.r,main_color.g,main_color.b,0.8))
+			_draw_element_core()
+
+		"spore_cap":
+			# Disease / Mushroom — mushroom cap silhouette
+			draw_rect(Rect2(-6,0,12,16), main_color.darkened(0.3))
+			var sc_pts = PackedVector2Array([Vector2(-20,0),Vector2(-14,-12),Vector2(-6,-20),Vector2(0,-22),Vector2(6,-20),Vector2(14,-12),Vector2(20,0)])
+			draw_colored_polygon(sc_pts, main_color)
+			draw_polyline(sc_pts, secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3), 1.5)
+			for i in range(3):
+				var a = -PI/2.0 + (i-1)*0.5
+				draw_circle(Vector2(cos(a),sin(a))*14, 2, Color(1.0,1.0,0.8,0.8))
+			_draw_element_core()
+
+		"heavy_mortar":
+			# Gunpowder (Darkness+Earth) — wide mortar tube
+			draw_rect(Rect2(-14,-18,28,36), main_color.darkened(0.4))
+			draw_rect(Rect2(-10,-14,20,28), Color(0.05,0.04,0.04,1.0))
+			draw_line(Vector2(-14,-18), Vector2(0,-12), main_color.lightened(0.2), 2.0)
+			draw_line(Vector2(-14,18), Vector2(0,12), main_color.lightened(0.2), 2.0)
+			draw_rect(Rect2(0,-12,28+lvl*2,24), main_color)
+			draw_circle(Vector2(26+lvl*2,0), 10, Color(0.07,0.05,0.05,1.0))
+			draw_circle(Vector2(26+lvl*2,0), 6, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.8))
+			_draw_element_core()
+
+		"steam_boiler":
+			# Vapor (Water+Fire) — steam boiler with vents
+			draw_rect(Rect2(-16,-14,32,28), main_color.darkened(0.3))
+			draw_rect(Rect2(-12,-10,24,20), Color(0.04,0.06,0.08,1.0))
+			var vc = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			for i in range(3):
+				draw_rect(Rect2(-10+i*8,-18,4,6), vc)
+				draw_circle(Vector2(-8+i*8,-20), 3, Color(0.88,0.9,1.0,0.65))
+			draw_rect(Rect2(0,-6,24+lvl*2,12), main_color.lightened(0.2))
+			draw_circle(Vector2(-8,0), 5, Color(0.3,0.3,0.3,1.0))
+			draw_arc(Vector2(-8,0), 3, -PI*0.8, -PI*0.8 + PI * (0.5 + 0.5 * sin(idle_rotation * 0.5)), 8, Color(1.0,0.6,0.0,0.9), 2.0)
+			_draw_element_core()
+
+		"hydro_cannon":
+			# Hydro (Water+Earth) — water cannon on stone base
+			var hc_stone = secondary_color if el_colors.size() >= 2 else main_color.darkened(0.4)
+			draw_rect(Rect2(-18,-12,36,24), hc_stone.darkened(0.4))
+			draw_rect(Rect2(-14,-8,28,16), Color(0.05,0.07,0.05,1.0))
+			draw_rect(Rect2(0,-9,30+lvl*3,18), main_color)
+			draw_rect(Rect2(22+lvl*3,-10,10,20), main_color.darkened(0.3))
+			draw_circle(Vector2(28+lvl*3,0), 7, Color(main_color.r,main_color.g,main_color.b,0.9))
+			draw_circle(Vector2(28+lvl*3,0), 3, Color(0.85,0.97,1.0,1.0))
+			_draw_element_core()
+
+		"ember_bloom":
+			# Flame (Fire+Nature) — wildfire bio-core with ember leaves
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * 0.3
+				var ep_pts = PackedVector2Array([Vector2.ZERO, Vector2(cos(a-0.4),sin(a-0.4))*16, Vector2(cos(a),sin(a))*22, Vector2(cos(a+0.4),sin(a+0.4))*16])
+				draw_colored_polygon(ep_pts, Color(main_color.r,main_color.g,main_color.b,0.5))
+			draw_circle(Vector2.ZERO, 10, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.85))
+			draw_circle(Vector2.ZERO, 6, Color(1.0,0.92,0.3,0.9))
+			_draw_element_core()
+
+		"tar_pool":
+			# Muck (Darkness+Water+Earth) — tar/sludge pool emitter
+			draw_rect(Rect2(-18,-8,36,16), main_color.darkened(0.5))
+			draw_arc(Vector2.ZERO, 16, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.6), 3.0)
+			draw_circle(Vector2.ZERO, 12, Color(0.04,0.03,0.07,0.9))
+			draw_rect(Rect2(0,-5,18+lvl*2,10), Color(0.18,0.14,0.22,1.0))
+			var b2c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
+			draw_circle(Vector2(-4,2), 2, Color(b2c.r,b2c.g,b2c.b,0.6))
+			draw_circle(Vector2(5,-3), 2, Color(b2c.r,b2c.g,b2c.b,0.5))
+			_draw_element_core()
+
+		"voodoo_totem":
+			# Voodoo (Darkness+Fire+Nature) — cursed totem pole
+			draw_rect(Rect2(-8,-22,16,44), main_color.darkened(0.3))
+			draw_rect(Rect2(-10,-26,20,16), main_color.darkened(0.2))
+			draw_circle(Vector2(-5,-20), 3, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.9))
+			draw_circle(Vector2(5,-20), 3, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.9))
+			var vtc3 = el_colors[2] if el_colors.size() >= 3 else main_color
+			draw_arc(Vector2.ZERO, 14, 0, TAU, 6, Color(vtc3.r,vtc3.g,vtc3.b,0.7), 1.5)
+			for i in range(2):
+				var bx = 12 * (1 if i == 0 else -1)
+				draw_line(Vector2(0,-10), Vector2(bx,-18), main_color.lightened(0.3), 2.0)
+				draw_circle(Vector2(bx,-18), 3, Color(1.0,1.0,0.8,0.7))
+			_draw_element_core()
+
+		"dual_nozzle":
+			# Flamethrower (Darkness+Fire+Earth) — heavy dual nozzle
+			draw_rect(Rect2(-16,-18,32,36), main_color.darkened(0.5))
+			draw_rect(Rect2(-10,-12,20,24), Color(0.04,0.02,0.02,1.0))
+			var dn_barrel = secondary_color.darkened(0.2) if el_colors.size() >= 2 else main_color
+			draw_rect(Rect2(0,-14,30+lvl*2,10), dn_barrel)
+			draw_rect(Rect2(0,4,30+lvl*2,10), dn_barrel)
+			draw_circle(Vector2(28+lvl*2,-9), 5, Color(1.0,0.4,0.0,0.9))
+			draw_circle(Vector2(28+lvl*2,9), 5, Color(1.0,0.4,0.0,0.9))
+			var dn_fuel = el_colors[2] if el_colors.size() >= 3 else main_color
+			draw_rect(Rect2(-20,-16,6,32), Color(dn_fuel.r,dn_fuel.g,dn_fuel.b,0.8))
+			_draw_element_core()
+
+		"root_cage":
+			# Roots (Darkness+Nature+Earth) — thorn/root cage
+			draw_circle(Vector2.ZERO, 10, Color(0.04,0.07,0.02,1.0))
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * 0.2
+				var rend = Vector2(cos(a),sin(a)) * 22
+				draw_line(Vector2.ZERO, rend, main_color.darkened(0.1), 3.0)
+				draw_line(Vector2.ZERO, rend, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.45), 1.0)
+				var thorn_dir = Vector2(cos(a+PI/2.0),sin(a+PI/2.0))
+				var thorn_base = rend - Vector2(cos(a),sin(a))*5
+				var rc3 = el_colors[2] if el_colors.size() >= 3 else main_color
+				draw_line(thorn_base, thorn_base + thorn_dir*5, Color(rc3.r,rc3.g,rc3.b,0.8), 1.5)
+			_draw_element_core()
+
+		"tri_reactor":
+			# Impulse (Water+Fire+Nature) — unstable tri-core reactor
+			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.4), 3.0)
+			for i in range(3):
+				var a = idle_rotation * 0.6 + i * TAU/3.0
+				var tp = Vector2(cos(a),sin(a)) * 14
+				var tec = el_colors[i % el_colors.size()] if not el_colors.is_empty() else main_color
+				draw_circle(tp, 5, tec)
+				draw_circle(tp, 2.5, tec.lightened(0.5))
+			draw_rect(Rect2(0,-3,30+lvl*4,6), Color(0.8,0.8,0.8,0.7))
+			_draw_element_core()
+
+		"strike_blades":
+			# Zealot (Water+Fire+Earth) — aggressive blade striker
+			var sb_pts = PackedVector2Array([Vector2(-14,-14),Vector2(18,-6),Vector2(24,0),Vector2(18,6),Vector2(-14,14),Vector2(-6,0)])
+			draw_colored_polygon(sb_pts, main_color.darkened(0.2))
+			draw_polyline(sb_pts + PackedVector2Array([sb_pts[0]]), main_color.lightened(0.2), 1.5)
+			var w2c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
+			draw_colored_polygon(PackedVector2Array([Vector2(-2,-6),Vector2(10,-6),Vector2(14,-14),Vector2(2,-16)]), w2c)
+			draw_colored_polygon(PackedVector2Array([Vector2(-2,6),Vector2(10,6),Vector2(14,14),Vector2(2,16)]), w2c)
+			_draw_element_core()
+
+		"golem_body":
+			# Flesh Golem (Water+Nature+Earth) — bulky organic golem
+			draw_rect(Rect2(-18,-18,36,36), main_color.darkened(0.3))
+			draw_rect(Rect2(-12,-12,24,24), Color(0.04,0.08,0.05,1.0))
+			var gl_vein = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
+			draw_line(Vector2(-12,-12), Vector2(0,0), Color(gl_vein.r,gl_vein.g,gl_vein.b,0.5), 1.0)
+			draw_line(Vector2(-12,12), Vector2(0,0), Color(gl_vein.r,gl_vein.g,gl_vein.b,0.5), 1.0)
+			draw_rect(Rect2(0,-12,24+lvl*2,24), main_color)
+			var gl_pulse = el_colors[1] if el_colors.size() >= 2 else main_color
+			draw_circle(Vector2(-4,0), 8, Color(gl_pulse.r,gl_pulse.g,gl_pulse.b,0.4))
+			_draw_element_core()
+
+		"seismic_drill":
+			# Quaker (Fire+Nature+Earth) — seismic drill head
+			draw_rect(Rect2(-14,-12,24,24), main_color.darkened(0.3))
+			var sd_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)
+			for i in range(3):
+				draw_line(Vector2(-8+i*8,-12), Vector2(-8+i*8,12), Color(sd_sec.r,sd_sec.g,sd_sec.b,0.6), 2.0)
+			draw_colored_polygon(PackedVector2Array([Vector2(0,-8),Vector2(30+lvl*3,0),Vector2(0,8)]), main_color.lightened(0.2))
+			var sd3 = el_colors[2] if el_colors.size() >= 3 else main_color
+			draw_circle(Vector2(28+lvl*3,0), 5, Color(sd3.r,sd3.g,sd3.b,0.8))
+			_draw_element_core()
+
+		"solar_bloom":
+			# Nova (Light+Fire+Nature) — solar flower reactor
+			for i in range(6):
+				var a = i * TAU/6.0 + idle_rotation * 0.2
+				var sol_c = el_colors[i % el_colors.size()] if not el_colors.is_empty() else main_color
+				draw_colored_polygon(PackedVector2Array([Vector2(cos(a-0.35),sin(a-0.35))*6, Vector2(cos(a),sin(a))*20, Vector2(cos(a+0.35),sin(a+0.35))*6]), Color(sol_c.r,sol_c.g,sol_c.b,0.6))
+			draw_circle(Vector2.ZERO, 10, Color(1.0,0.9,0.3,0.9))
+			draw_circle(Vector2.ZERO, 6, Color(1.0,1.0,0.85,1.0))
+			_draw_element_core()
+
+		"gold_refinery":
+			# Gold (Light+Fire+Earth) — midas gold refinery
+			draw_rect(Rect2(-12,0,24,12), Color(0.82,0.68,0.1,1.0))
+			draw_rect(Rect2(-10,-4,20,8), Color(1.0,0.85,0.22,1.0))
+			draw_rect(Rect2(-8,-18,16,20), main_color.darkened(0.2))
+			draw_rect(Rect2(-6,-16,12,16), Color(0.1,0.08,0.02,1.0))
+			draw_rect(Rect2(0,-4,24+lvl*2,8), Color(1.0,0.85,0.1,1.0))
+			for i in range(4):
+				var a = idle_rotation * 0.8 + i * TAU/4.0
+				draw_circle(Vector2(cos(a),sin(a))*14, 2, Color(1.0,0.9,0.22,0.9))
+			_draw_element_core()
+
+		"acid_vat":
+			# Corrosion (Darkness+Water+Fire) — acid reactor
+			draw_rect(Rect2(-14,-10,28,20), main_color.darkened(0.4))
+			draw_rect(Rect2(-10,-6,20,16), Color(0.04,0.06,0.03,1.0))
+			var av_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			draw_arc(Vector2(0,4), 9, 0, TAU, 32, Color(av_sec.r,av_sec.g,av_sec.b,0.7), 2.0)
+			draw_rect(Rect2(0,-6,22+lvl*2,12), main_color.lightened(0.2))
+			draw_circle(Vector2(20+lvl*2,0), 4, Color(0.3,1.0,0.1,0.8))
+			draw_line(Vector2(-8,8), Vector2(-6,14), Color(0.4,1.0,0.2,0.6), 1.5)
+			draw_circle(Vector2(-6,15), 2, Color(0.4,1.0,0.2,0.5))
+			_draw_element_core()
+
+		"void_vortex":
+			# Drowning (Darkness+Water+Nature) — abyssal vortex
+			var vv_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
+			for i in range(4):
+				var r = 20 - i * 4
+				var col = main_color.lerp(vv_sec, float(i)/3.0)
+				var arc_start = idle_rotation * (0.4 + i * 0.1)
+				draw_arc(Vector2.ZERO, r, arc_start, arc_start + TAU * 0.8, 24, Color(col.r,col.g,col.b,0.4+i*0.08), 2.0 - i * 0.3)
+			draw_circle(Vector2.ZERO, 8, Color(0.02,0.0,0.05,1.0))
+			draw_circle(Vector2.ZERO, 4, Color(0.1,0.05,0.15,1.0))
+			_draw_element_core()
+
+		"hail_crystal":
+			# Hail (Light+Darkness+Water) — storm ice crystal snowflake
+			for i in range(6):
+				var a = i * TAU/6.0 + idle_rotation * 0.1
+				draw_line(Vector2.ZERO, Vector2(cos(a),sin(a))*20, main_color, 2.0)
+				var mid = Vector2(cos(a),sin(a)) * 12
+				draw_line(mid, mid + Vector2(cos(a+PI/3.0),sin(a+PI/3.0))*6, main_color.lightened(0.3), 1.0)
+				draw_line(mid, mid + Vector2(cos(a-PI/3.0),sin(a-PI/3.0))*6, main_color.lightened(0.3), 1.0)
+			var hc_sec = secondary_color if el_colors.size() >= 2 else main_color.darkened(0.3)
+			draw_circle(Vector2.ZERO, 6, Color(hc_sec.r,hc_sec.g,hc_sec.b,0.6))
+			draw_circle(Vector2.ZERO, 3, Color(0.9,0.95,1.0,0.9))
+			_draw_element_core()
+
+		"rail_laser":
+			# Laser (Light+Darkness+Earth) — heavy rail-laser cannon
+			draw_rect(Rect2(-18,-14,32,28), main_color.darkened(0.4))
+			draw_rect(Rect2(-12,-10,20,20), Color(0.05,0.03,0.08,1.0))
+			draw_rect(Rect2(0,-5,44+lvl*5,10), main_color)
+			for i in range(3):
+				draw_rect(Rect2(6+i*12,-7,4,14), main_color.lightened(0.3))
+			var rl_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.4)
+			draw_circle(Vector2(42+lvl*5,0), 4, Color(rl_sec.r,rl_sec.g,rl_sec.b,0.8))
+			draw_circle(Vector2(42+lvl*5,0), 2, Color(1.0,1.0,1.0,0.9))
+			_draw_element_core()
+
+		"void_flower":
+			# Oblivion (Light+Darkness+Nature) — collapsing star/void flower
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * -0.2
+				var pf_col = main_color if i % 2 == 0 else secondary_color
+				draw_colored_polygon(PackedVector2Array([Vector2(cos(a-0.3),sin(a-0.3))*6, Vector2(cos(a),sin(a))*18, Vector2(cos(a+0.3),sin(a+0.3))*6]), Color(pf_col.r,pf_col.g,pf_col.b,0.55))
+			draw_circle(Vector2.ZERO, 10, Color(0.04,0.0,0.1,1.0))
+			draw_circle(Vector2.ZERO, 6, main_color.darkened(0.2))
+			draw_circle(Vector2.ZERO, 3, Color(1.0,1.0,1.0,0.6))
+			_draw_element_core()
+
+		"storm_turbine":
+			# Windstorm (Light+Water+Fire) — storm turbine with rotating blades
+			draw_circle(Vector2.ZERO, 18, Color(main_color.r,main_color.g,main_color.b,0.18))
+			draw_arc(Vector2.ZERO, 18, 0, TAU, 32, main_color, 2.0)
+			for i in range(4):
+				var a = i * TAU/4.0 + idle_rotation * 1.2
+				var st_c = el_colors[i % el_colors.size()] if not el_colors.is_empty() else main_color
+				draw_colored_polygon(PackedVector2Array([Vector2(cos(a)*4,sin(a)*4), Vector2(cos(a+0.4)*16,sin(a+0.4)*16), Vector2(cos(a+0.6)*18,sin(a+0.6)*18), Vector2(cos(a+0.15)*4,sin(a+0.15)*4)]), Color(st_c.r,st_c.g,st_c.b,0.75))
+			draw_circle(Vector2.ZERO, 5, main_color.darkened(0.3))
+			_draw_element_core()
+
 	# Level Indicators (small white dots)
 	for i in range(lvl):
 		var dot_offset = -12 + i * 8
