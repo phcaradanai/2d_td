@@ -52,7 +52,7 @@
 	"upgrade_cost": 0,
 	"description": "Photon precision burst",
 	"projectile_speed": 780,
-	"visual_type": "sniper",
+	"visual_type": "light_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -87,7 +87,7 @@
 	"upgrade_cost": 90,
 	"description": "Photon precision burst",
 	"projectile_speed": 780,
-	"visual_type": "sniper",
+	"visual_type": "light_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -122,7 +122,7 @@
 	"upgrade_cost": 170,
 	"description": "Photon precision burst",
 	"projectile_speed": 780,
-	"visual_type": "sniper",
+	"visual_type": "light_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -155,7 +155,7 @@
 	"upgrade_cost": 520,
 	"description": "Photon precision burst",
 	"projectile_speed": 780,
-	"visual_type": "sniper",
+	"visual_type": "light_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -190,7 +190,7 @@
 	"upgrade_cost": 0,
 	"description": "Void damage amplifier",
 	"projectile_speed": 500,
-	"visual_type": "sawblade",
+	"visual_type": "darkness_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -228,7 +228,7 @@
 	"upgrade_cost": 90,
 	"description": "Void damage amplifier",
 	"projectile_speed": 500,
-	"visual_type": "sawblade",
+	"visual_type": "darkness_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -266,7 +266,7 @@
 	"upgrade_cost": 170,
 	"description": "Void damage amplifier",
 	"projectile_speed": 500,
-	"visual_type": "sawblade",
+	"visual_type": "darkness_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -302,7 +302,7 @@
 	"upgrade_cost": 520,
 	"description": "Void damage amplifier",
 	"projectile_speed": 500,
-	"visual_type": "sawblade",
+	"visual_type": "darkness_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -340,7 +340,7 @@
 	"upgrade_cost": 0,
 	"description": "Cryo control",
 	"projectile_speed": 520,
-	"visual_type": "slow",
+	"visual_type": "water_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -381,7 +381,7 @@
 	"upgrade_cost": 90,
 	"description": "Cryo control",
 	"projectile_speed": 520,
-	"visual_type": "slow",
+	"visual_type": "water_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -422,7 +422,7 @@
 	"upgrade_cost": 170,
 	"description": "Cryo control",
 	"projectile_speed": 520,
-	"visual_type": "slow",
+	"visual_type": "water_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -461,7 +461,7 @@
 	"upgrade_cost": 520,
 	"description": "Cryo control",
 	"projectile_speed": 520,
-	"visual_type": "slow",
+	"visual_type": "water_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -502,7 +502,7 @@
 	"upgrade_cost": 0,
 	"description": "Plasma splash burn",
 	"projectile_speed": 470,
-	"visual_type": "cannon",
+	"visual_type": "fire_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -538,7 +538,7 @@
 	"upgrade_cost": 90,
 	"description": "Plasma splash burn",
 	"projectile_speed": 470,
-	"visual_type": "cannon",
+	"visual_type": "fire_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -574,7 +574,7 @@
 	"upgrade_cost": 170,
 	"description": "Plasma splash burn",
 	"projectile_speed": 470,
-	"visual_type": "cannon",
+	"visual_type": "fire_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -608,7 +608,7 @@
 	"upgrade_cost": 520,
 	"description": "Plasma splash burn",
 	"projectile_speed": 470,
-	"visual_type": "cannon",
+	"visual_type": "fire_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -644,7 +644,7 @@
 	"upgrade_cost": 0,
 	"description": "Bio-circuit rapid fire",
 	"projectile_speed": 720,
-	"visual_type": "rapid",
+	"visual_type": "nature_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -679,7 +679,7 @@
 	"upgrade_cost": 90,
 	"description": "Bio-circuit rapid fire",
 	"projectile_speed": 720,
-	"visual_type": "rapid",
+	"visual_type": "nature_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -714,7 +714,7 @@
 	"upgrade_cost": 170,
 	"description": "Bio-circuit rapid fire",
 	"projectile_speed": 720,
-	"visual_type": "rapid",
+	"visual_type": "nature_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -747,7 +747,7 @@
 	"upgrade_cost": 520,
 	"description": "Bio-circuit rapid fire",
 	"projectile_speed": 720,
-	"visual_type": "rapid",
+	"visual_type": "nature_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -782,7 +782,7 @@
 	"upgrade_cost": 0,
 	"description": "Seismic heavy impact",
 	"projectile_speed": 430,
-	"visual_type": "cannon",
+	"visual_type": "earth_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -818,7 +818,7 @@
 	"upgrade_cost": 90,
 	"description": "Seismic heavy impact",
 	"projectile_speed": 430,
-	"visual_type": "cannon",
+	"visual_type": "earth_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -854,7 +854,7 @@
 	"upgrade_cost": 170,
 	"description": "Seismic heavy impact",
 	"projectile_speed": 430,
-	"visual_type": "cannon",
+	"visual_type": "earth_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -888,7 +888,7 @@
 	"upgrade_cost": 520,
 	"description": "Seismic heavy impact",
 	"projectile_speed": 430,
-	"visual_type": "cannon",
+	"visual_type": "earth_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -925,7 +925,7 @@
 	"upgrade_cost": 0,
 	"description": "Illusionist: projects a hologram clone of a nearby tower that mimics its attacks.",
 	"projectile_speed": 560,
-	"visual_type": "trickery",
+	"visual_type": "trickery_tower",
 	"attack_type": "clone_support",
 	"target_categories": [
 	  "land",
@@ -968,7 +968,7 @@
 	"upgrade_cost": 180,
 	"description": "Illusionist: projects a hologram clone of a nearby tower that mimics its attacks.",
 	"projectile_speed": 560,
-	"visual_type": "trickery",
+	"visual_type": "trickery_tower",
 	"attack_type": "clone_support",
 	"target_categories": [
 	  "land",
@@ -1009,7 +1009,7 @@
 	"upgrade_cost": 330,
 	"description": "Illusionist: projects a hologram clone of a nearby tower that mimics its attacks.",
 	"projectile_speed": 560,
-	"visual_type": "trickery",
+	"visual_type": "trickery_tower",
 	"attack_type": "clone_support",
 	"target_categories": [
 	  "land",
@@ -1052,7 +1052,7 @@
 	"upgrade_cost": 0,
 	"description": "Frost shard: piercing ice that slows enemy movement speed.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "ice_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -1094,7 +1094,7 @@
 	"upgrade_cost": 180,
 	"description": "Frost shard: piercing ice that slows enemy movement speed.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "ice_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -1134,7 +1134,7 @@
 	"upgrade_cost": 330,
 	"description": "Frost shard: piercing ice that slows enemy movement speed.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "ice_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -1176,7 +1176,7 @@
 	"upgrade_cost": 0,
 	"description": "Chain lightning: bolt bounces between enemies, spreading electric shock.",
 	"projectile_speed": 560,
-	"visual_type": "lightning",
+	"visual_type": "electricity_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -1218,7 +1218,7 @@
 	"upgrade_cost": 180,
 	"description": "Chain lightning: bolt bounces between enemies, spreading electric shock.",
 	"projectile_speed": 560,
-	"visual_type": "lightning",
+	"visual_type": "electricity_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -1258,7 +1258,7 @@
 	"upgrade_cost": 330,
 	"description": "Chain lightning: bolt bounces between enemies, spreading electric shock.",
 	"projectile_speed": 560,
-	"visual_type": "lightning",
+	"visual_type": "electricity_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -1300,7 +1300,7 @@
 	"upgrade_cost": 0,
 	"description": "Life economy tower: gains +1 life after 6 kills by this tower.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "life_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -1339,7 +1339,7 @@
 	"upgrade_cost": 180,
 	"description": "Life economy tower: gains +1 life after 4 kills by this tower.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "life_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -1376,7 +1376,7 @@
 	"upgrade_cost": 330,
 	"description": "Life economy tower: gains +1 life after 2 kills by this tower.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "life_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -1415,7 +1415,7 @@
 	"upgrade_cost": 0,
 	"description": "Periodic burst: fires rarely but deals devastating single-target damage.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "quark_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -1451,7 +1451,7 @@
 	"upgrade_cost": 180,
 	"description": "Periodic burst: fires rarely but deals devastating single-target damage.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "quark_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -1485,7 +1485,7 @@
 	"upgrade_cost": 330,
 	"description": "Periodic burst: fires rarely but deals devastating single-target damage.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "quark_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -1521,7 +1521,7 @@
 	"upgrade_cost": 0,
 	"description": "Toxic venom: poisons enemies, slowing and draining their health over time.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "poison_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -1562,7 +1562,7 @@
 	"upgrade_cost": 180,
 	"description": "Toxic venom: poisons enemies, slowing and draining their health over time.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "poison_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -1601,7 +1601,7 @@
 	"upgrade_cost": 330,
 	"description": "Toxic venom: poisons enemies, slowing and draining their health over time.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "poison_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -1642,7 +1642,7 @@
 	"upgrade_cost": 0,
 	"description": "Arcane explosion: dark fire AoE splash that damages groups.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "magic_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -1680,7 +1680,7 @@
 	"upgrade_cost": 180,
 	"description": "Arcane explosion: dark fire AoE splash that damages groups.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "magic_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -1716,7 +1716,7 @@
 	"upgrade_cost": 330,
 	"description": "Arcane explosion: dark fire AoE splash that damages groups.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "magic_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -1754,7 +1754,7 @@
 	"upgrade_cost": 0,
 	"description": "Plague aura: sickens nearby enemies, reducing their resilience to damage.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "disease_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -1793,7 +1793,7 @@
 	"upgrade_cost": 180,
 	"description": "Plague aura: sickens nearby enemies, reducing their resilience to damage.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "disease_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -1830,7 +1830,7 @@
 	"upgrade_cost": 330,
 	"description": "Plague aura: sickens nearby enemies, reducing their resilience to damage.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "disease_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -1869,7 +1869,7 @@
 	"upgrade_cost": 0,
 	"description": "Heavy ordnance: massive explosive shells with wide splash damage.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "gunpowder_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -1906,7 +1906,7 @@
 	"upgrade_cost": 180,
 	"description": "Heavy ordnance: massive explosive shells with wide splash damage.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "gunpowder_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -1941,7 +1941,7 @@
 	"upgrade_cost": 330,
 	"description": "Heavy ordnance: massive explosive shells with wide splash damage.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "gunpowder_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -1978,7 +1978,7 @@
 	"upgrade_cost": 0,
 	"description": "Steam blast: splash damage that scalds and briefly slows enemies.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "vapor_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -2020,7 +2020,7 @@
 	"upgrade_cost": 180,
 	"description": "Steam blast: splash damage that scalds and briefly slows enemies.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "vapor_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -2060,7 +2060,7 @@
 	"upgrade_cost": 330,
 	"description": "Steam blast: splash damage that scalds and briefly slows enemies.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "vapor_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -2102,7 +2102,7 @@
 	"upgrade_cost": 0,
 	"description": "Wellspring aura: empowers nearby towers, boosting their attack effectiveness.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "well_tower",
 	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
@@ -2142,7 +2142,7 @@
 	"upgrade_cost": 180,
 	"description": "Wellspring aura: empowers nearby towers, boosting their attack effectiveness.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "well_tower",
 	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
@@ -2180,7 +2180,7 @@
 	"upgrade_cost": 330,
 	"description": "Wellspring aura: empowers nearby towers, boosting their attack effectiveness.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "well_tower",
 	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
@@ -2220,7 +2220,7 @@
 	"upgrade_cost": 0,
 	"description": "Tidal impact: heavy water splash that drenches and slows enemies.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "hydro_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -2261,7 +2261,7 @@
 	"upgrade_cost": 180,
 	"description": "Tidal impact: heavy water splash that drenches and slows enemies.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "hydro_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -2300,7 +2300,7 @@
 	"upgrade_cost": 330,
 	"description": "Tidal impact: heavy water splash that drenches and slows enemies.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "hydro_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -2341,7 +2341,7 @@
 	"upgrade_cost": 0,
 	"description": "Inferno aura: burns all nearby enemies and amplifies damage taken.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "flame_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -2380,7 +2380,7 @@
 	"upgrade_cost": 180,
 	"description": "Inferno aura: burns all nearby enemies and amplifies damage taken.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "flame_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -2417,7 +2417,7 @@
 	"upgrade_cost": 330,
 	"description": "Inferno aura: burns all nearby enemies and amplifies damage taken.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "flame_tower",
 	"attack_type": "aura",
 	"target_categories": [
       "land"
@@ -2456,7 +2456,7 @@
 	"upgrade_cost": 0,
 	"description": "Forge aura: tempers nearby towers, increasing their damage output.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "blacksmith_tower",
 	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
@@ -2497,7 +2497,7 @@
 	"upgrade_cost": 180,
 	"description": "Forge aura: tempers nearby towers, increasing their damage output.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "blacksmith_tower",
 	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
@@ -2536,7 +2536,7 @@
 	"upgrade_cost": 330,
 	"description": "Forge aura: tempers nearby towers, increasing their damage output.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "blacksmith_tower",
 	"attack_type": "support_aura",
 	"target_categories": [
 	  "land",
@@ -2577,7 +2577,7 @@
 	"upgrade_cost": 0,
 	"description": "Spore volley: rapid-fire fungal projectiles that burst on impact.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "mushroom_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -2614,7 +2614,7 @@
 	"upgrade_cost": 180,
 	"description": "Spore volley: rapid-fire fungal projectiles that burst on impact.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "mushroom_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -2649,7 +2649,7 @@
 	"upgrade_cost": 330,
 	"description": "Spore volley: rapid-fire fungal projectiles that burst on impact.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "mushroom_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -2687,7 +2687,7 @@
 	"upgrade_cost": 0,
 	"description": "Frozen shards chain between enemies, slowing and damaging groups.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "hail_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -2730,7 +2730,7 @@
 	"upgrade_cost": 360,
 	"description": "Frozen shards chain between enemies, slowing and damaging groups.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "hail_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -2771,7 +2771,7 @@
 	"upgrade_cost": 640,
 	"description": "Frozen shards chain between enemies, slowing and damaging groups.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "hail_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -2814,7 +2814,7 @@
 	"upgrade_cost": 0,
 	"description": "Cursed lightning: chain bolts that hex enemies, amplifying all damage taken.",
 	"projectile_speed": 560,
-	"visual_type": "lightning",
+	"visual_type": "jinx_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -2857,7 +2857,7 @@
 	"upgrade_cost": 360,
 	"description": "Cursed lightning: chain bolts that hex enemies, amplifying all damage taken.",
 	"projectile_speed": 560,
-	"visual_type": "lightning",
+	"visual_type": "jinx_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -2898,7 +2898,7 @@
 	"upgrade_cost": 640,
 	"description": "Cursed lightning: chain bolts that hex enemies, amplifying all damage taken.",
 	"projectile_speed": 560,
-	"visual_type": "lightning",
+	"visual_type": "jinx_tower",
 	"attack_type": "chain",
 	"target_categories": [
 	  "land",
@@ -2941,7 +2941,7 @@
 	"upgrade_cost": 0,
 	"description": "Void aura: erases enemy defenses and drains vitality from nearby foes.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "oblivion_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -2982,7 +2982,7 @@
 	"upgrade_cost": 360,
 	"description": "Void aura: erases enemy defenses and drains vitality from nearby foes.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "oblivion_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -3021,7 +3021,7 @@
 	"upgrade_cost": 640,
 	"description": "Void aura: erases enemy defenses and drains vitality from nearby foes.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "oblivion_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -3062,7 +3062,7 @@
 	"upgrade_cost": 0,
 	"description": "Focused beam: precision strike that pierces through magical and physical armor.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "laser_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -3099,7 +3099,7 @@
 	"upgrade_cost": 360,
 	"description": "Focused beam: precision strike that pierces through magical and physical armor.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "laser_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -3134,7 +3134,7 @@
 	"upgrade_cost": 640,
 	"description": "Focused beam: precision strike that pierces through magical and physical armor.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "laser_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -3171,7 +3171,7 @@
 	"upgrade_cost": 0,
 	"description": "Howling gale: freezing winds slow and batter enemies in a wide area.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "windstorm_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3214,7 +3214,7 @@
 	"upgrade_cost": 360,
 	"description": "Howling gale: freezing winds slow and batter enemies in a wide area.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "windstorm_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3255,7 +3255,7 @@
 	"upgrade_cost": 640,
 	"description": "Howling gale: freezing winds slow and batter enemies in a wide area.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "windstorm_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3298,7 +3298,7 @@
 	"upgrade_cost": 0,
 	"description": "Surging wave: splash of enchanted water that slows and damages groups.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "tidal_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -3337,7 +3337,7 @@
 	"upgrade_cost": 360,
 	"description": "Surging wave: splash of enchanted water that slows and damages groups.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "tidal_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -3374,7 +3374,7 @@
 	"upgrade_cost": 640,
 	"description": "Surging wave: splash of enchanted water that slows and damages groups.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "tidal_tower",
 	"attack_type": "splash",
 	"target_categories": [
 	  "land",
@@ -3413,7 +3413,7 @@
 	"upgrade_cost": 0,
 	"description": "Arctic freeze: deep frost that massively slows enemies in range.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "polar_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3456,7 +3456,7 @@
 	"upgrade_cost": 360,
 	"description": "Arctic freeze: deep frost that massively slows enemies in range.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "polar_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3497,7 +3497,7 @@
 	"upgrade_cost": 640,
 	"description": "Arctic freeze: deep frost that massively slows enemies in range.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "polar_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3540,7 +3540,7 @@
 	"upgrade_cost": 0,
 	"description": "Solar flare: searing blast that burns and slows enemies on impact.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "nova_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3583,7 +3583,7 @@
 	"upgrade_cost": 360,
 	"description": "Solar flare: searing blast that burns and slows enemies on impact.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "nova_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3624,7 +3624,7 @@
 	"upgrade_cost": 640,
 	"description": "Solar flare: searing blast that burns and slows enemies on impact.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "nova_tower",
 	"attack_type": "slow",
 	"target_categories": [
 	  "land",
@@ -3667,7 +3667,7 @@
 	"upgrade_cost": 0,
 	"description": "Gold economy tower: earns +20% bonus bounty on kills by this tower.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "gold_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -3707,7 +3707,7 @@
 	"upgrade_cost": 360,
 	"description": "Gold economy tower: earns +30% bonus bounty on kills by this tower.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "gold_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -3745,7 +3745,7 @@
 	"upgrade_cost": 640,
 	"description": "Gold economy tower: earns +40% bonus bounty on kills by this tower.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "gold_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -3785,7 +3785,7 @@
 	"upgrade_cost": 0,
 	"description": "Nature's ward: aura that curses enemies, making them vulnerable to all attacks.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "enchantment_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -3826,7 +3826,7 @@
 	"upgrade_cost": 360,
 	"description": "Nature's ward: aura that curses enemies, making them vulnerable to all attacks.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "enchantment_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -3865,7 +3865,7 @@
 	"upgrade_cost": 640,
 	"description": "Nature's ward: aura that curses enemies, making them vulnerable to all attacks.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "enchantment_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -3906,7 +3906,7 @@
 	"upgrade_cost": 0,
 	"description": "Acid mist: corrosive cloud that melts enemy armor and slows movement.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "corrosion_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -3948,7 +3948,7 @@
 	"upgrade_cost": 360,
 	"description": "Acid mist: corrosive cloud that melts enemy armor and slows movement.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "corrosion_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -3988,7 +3988,7 @@
 	"upgrade_cost": 640,
 	"description": "Acid mist: corrosive cloud that melts enemy armor and slows movement.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "corrosion_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -4030,7 +4030,7 @@
 	"upgrade_cost": 0,
 	"description": "Abyssal grasp: dark waters drag enemies down, dealing heavy single-target damage.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "drowning_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4067,7 +4067,7 @@
 	"upgrade_cost": 360,
 	"description": "Abyssal grasp: dark waters drag enemies down, dealing heavy single-target damage.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "drowning_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4102,7 +4102,7 @@
 	"upgrade_cost": 640,
 	"description": "Abyssal grasp: dark waters drag enemies down, dealing heavy single-target damage.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "drowning_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4139,7 +4139,7 @@
 	"upgrade_cost": 0,
 	"description": "Quagmire: thick sludge massively slows and poisons trapped enemies.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "muck_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -4181,7 +4181,7 @@
 	"upgrade_cost": 360,
 	"description": "Quagmire: thick sludge massively slows and poisons trapped enemies.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "muck_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -4221,7 +4221,7 @@
 	"upgrade_cost": 640,
 	"description": "Quagmire: thick sludge massively slows and poisons trapped enemies.",
 	"projectile_speed": 560,
-	"visual_type": "slow",
+	"visual_type": "muck_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -4263,7 +4263,7 @@
 	"upgrade_cost": 0,
 	"description": "Dark ritual: cursed aura that drains life and amplifies damage on nearby enemies.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "voodoo_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -4304,7 +4304,7 @@
 	"upgrade_cost": 360,
 	"description": "Dark ritual: cursed aura that drains life and amplifies damage on nearby enemies.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "voodoo_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -4343,7 +4343,7 @@
 	"upgrade_cost": 640,
 	"description": "Dark ritual: cursed aura that drains life and amplifies damage on nearby enemies.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "voodoo_tower",
 	"attack_type": "aura",
 	"target_categories": [
 	  "land",
@@ -4384,7 +4384,7 @@
 	"upgrade_cost": 0,
 	"description": "Hellfire barrage: rapid explosive shells fueled by dark flame.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "flamethrower_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -4422,7 +4422,7 @@
 	"upgrade_cost": 360,
 	"description": "Hellfire barrage: rapid explosive shells fueled by dark flame.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "flamethrower_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -4458,7 +4458,7 @@
 	"upgrade_cost": 640,
 	"description": "Hellfire barrage: rapid explosive shells fueled by dark flame.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "flamethrower_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -4496,7 +4496,7 @@
 	"upgrade_cost": 0,
 	"description": "Entangling roots: thorny vines slow and poison enemies caught in range.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "roots_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -4538,7 +4538,7 @@
 	"upgrade_cost": 360,
 	"description": "Entangling roots: thorny vines slow and poison enemies caught in range.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "roots_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -4578,7 +4578,7 @@
 	"upgrade_cost": 640,
 	"description": "Entangling roots: thorny vines slow and poison enemies caught in range.",
 	"projectile_speed": 560,
-	"visual_type": "sawblade",
+	"visual_type": "roots_tower",
 	"attack_type": "slow",
 	"target_categories": [
       "land"
@@ -4620,7 +4620,7 @@
 	"upgrade_cost": 0,
 	"description": "Elemental cannon: precision strike combining water, fire, and nature energy.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "impulse_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4657,7 +4657,7 @@
 	"upgrade_cost": 360,
 	"description": "Elemental cannon: precision strike combining water, fire, and nature energy.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "impulse_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4692,7 +4692,7 @@
 	"upgrade_cost": 640,
 	"description": "Elemental cannon: precision strike combining water, fire, and nature energy.",
 	"projectile_speed": 560,
-	"visual_type": "sniper",
+	"visual_type": "impulse_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4729,7 +4729,7 @@
 	"upgrade_cost": 0,
 	"description": "Templar assault: rapid sacred strikes infused with elemental fury.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "zealot_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4766,7 +4766,7 @@
 	"upgrade_cost": 360,
 	"description": "Templar assault: rapid sacred strikes infused with elemental fury.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "zealot_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4801,7 +4801,7 @@
 	"upgrade_cost": 640,
 	"description": "Templar assault: rapid sacred strikes infused with elemental fury.",
 	"projectile_speed": 560,
-	"visual_type": "rapid",
+	"visual_type": "zealot_tower",
 	"attack_type": "single",
 	"target_categories": [
 	  "land",
@@ -4838,7 +4838,7 @@
 	"upgrade_cost": 0,
 	"description": "Primal slam: massive elemental golem that pounds groups with earth and water.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "flesh_golem_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -4876,7 +4876,7 @@
 	"upgrade_cost": 360,
 	"description": "Primal slam: massive elemental golem that pounds groups with earth and water.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "flesh_golem_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -4912,7 +4912,7 @@
 	"upgrade_cost": 640,
 	"description": "Primal slam: massive elemental golem that pounds groups with earth and water.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "flesh_golem_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -4950,7 +4950,7 @@
 	"upgrade_cost": 0,
 	"description": "Seismic slam: massive ground-pound that damages all enemies in a wide radius.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "quaker_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -4988,7 +4988,7 @@
 	"upgrade_cost": 360,
 	"description": "Seismic slam: massive ground-pound that damages all enemies in a wide radius.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "quaker_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
@@ -5024,7 +5024,7 @@
 	"upgrade_cost": 640,
 	"description": "Seismic slam: massive ground-pound that damages all enemies in a wide radius.",
 	"projectile_speed": 560,
-	"visual_type": "cannon",
+	"visual_type": "quaker_tower",
 	"attack_type": "splash",
 	"target_categories": [
       "land"
