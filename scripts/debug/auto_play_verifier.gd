@@ -335,6 +335,10 @@ func _upgrade_structured(a: Dictionary, required: bool) -> Dictionary:
 		
 	if tower.has_method("can_upgrade") and not tower.can_upgrade():
 		return {"status": "skipped" if not required else "failed", "reason": "Tower at max level or cannot upgrade"}
+
+	var upgrade_gate := _get_auto_upgrade_gate_result(tower)
+	if not bool(upgrade_gate.get("allowed", false)):
+		return {"status": "skipped" if not required else "failed", "reason": str(upgrade_gate.get("reason", "Upgrade locked"))}
 		
 	var cost = tower.get_upgrade_cost()
 	if game_manager.gold < cost:
@@ -348,6 +352,54 @@ func _upgrade_structured(a: Dictionary, required: bool) -> Dictionary:
 		return {"status": "success"}
 		
 	return {"status": "failed", "reason": "Spend gold failed unexpectedly for upgrade"}
+
+func _get_auto_upgrade_gate_result(tower: Node) -> Dictionary:
+	# UPGRADE_GATE_APPROVED: debug auto-play must use the same element gate
+	# before spending gold, otherwise a blocked tower.upgrade() can consume gold.
+	var next_config: Dictionary = _get_next_upgrade_config_for_auto_gate(tower)
+	if next_config.is_empty():
+		return {"allowed": false, "reason": "Upgrade config missing"}
+	var combo_type: String = str(next_config.get("combo_type", "neutral"))
+	var raw_elements = next_config.get("elements", [])
+	var target_elements: Array = []
+	if raw_elements is Array:
+		target_elements = raw_elements
+	var requires_elements: bool = combo_type != "neutral" and not target_elements.is_empty()
+	var element_manager: Node = null
+	if main != null:
+		element_manager = main.get_node_or_null("ElementProgressionManager")
+	if element_manager == null or not element_manager.has_method("can_build_tower"):
+		return {"allowed": not requires_elements, "reason": "Element progression gate unavailable"}
+	var allowed: bool = bool(element_manager.call("can_build_tower", next_config))
+	if allowed:
+		return {"allowed": true, "reason": ""}
+	if element_manager.has_method("get_locked_reason"):
+		var reason: String = str(element_manager.call("get_locked_reason", next_config))
+		if not reason.is_empty():
+			return {"allowed": false, "reason": reason}
+	return {"allowed": false, "reason": "Required elements are not unlocked"}
+
+
+func _get_next_upgrade_config_for_auto_gate(tower: Node) -> Dictionary:
+	if tower == null:
+		return {}
+	if tower.has_method("get_next_upgrade_config"):
+		var next_config = tower.call("get_next_upgrade_config")
+		if next_config is Dictionary:
+			return (next_config as Dictionary)
+	var raw_upgrades = tower.get("next_upgrade_ids")
+	if not (raw_upgrades is Array) or raw_upgrades.is_empty():
+		return {}
+	var next_id: String = str(raw_upgrades[0])
+	if build_manager == null or next_id.is_empty():
+		return {}
+	var merged = build_manager.get("towers_config")
+	if merged is Dictionary and merged.has(next_id):
+		return (merged[next_id] as Dictionary)
+	var tree = build_manager.get("towers_tree_config")
+	if tree is Dictionary and tree.has(next_id):
+		return (tree[next_id] as Dictionary)
+	return {}
 
 func _try_fallback_for_unaffordable_action(failed_action: Dictionary) -> void:
 	_log("[AUTO_CLEAR] Searching for affordable fallback...")
