@@ -1,64 +1,68 @@
-[gd_scene format=3]
+[gd_scene format=3 uid="uid://d2rohwoemml8r"]
 
-[ext_resource type="Script" path="res://scripts/debug/tower_catalog.gd" id="1"]
+[ext_resource type="Script" uid="uid://bwc5sibp6s4ji" path="res://scripts/debug/tower_catalog.gd" id="1"]
 
-[node name="TowerCatalog" type="Control"]
+[node name="TowerCatalog" type="Control" unique_id=1296542573]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 script = ExtResource("1")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="ColorRect" parent="." unique_id=246085783]
 layout_mode = 0
 offset_right = 1920.0
 offset_bottom = 1080.0
 color = Color(0.02, 0.03, 0.06, 1)
 
-[node name="RootMargin" type="MarginContainer" parent="."]
+[node name="RootMargin" type="MarginContainer" parent="." unique_id=2123320041]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 16
 theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 16
 
-[node name="MainVBox" type="VBoxContainer" parent="RootMargin"]
+[node name="MainVBox" type="VBoxContainer" parent="RootMargin" unique_id=1905082595]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Header" type="HBoxContainer" parent="RootMargin/MainVBox"]
+[node name="Header" type="HBoxContainer" parent="RootMargin/MainVBox" unique_id=1922751304]
 layout_mode = 2
 
-[node name="HeaderLeft" type="VBoxContainer" parent="RootMargin/MainVBox/Header"]
+[node name="HeaderLeft" type="VBoxContainer" parent="RootMargin/MainVBox/Header" unique_id=1172875218]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="TitleLabel" type="Label" parent="RootMargin/MainVBox/Header/HeaderLeft"]
+[node name="TitleLabel" type="Label" parent="RootMargin/MainVBox/Header/HeaderLeft" unique_id=1219213645]
 layout_mode = 2
-text = "Tower Catalog"
-theme_override_font_sizes/font_size = 28
 theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "Tower Catalog"
 
-[node name="SubtitleLabel" type="Label" parent="RootMargin/MainVBox/Header/HeaderLeft"]
+[node name="SubtitleLabel" type="Label" parent="RootMargin/MainVBox/Header/HeaderLeft" unique_id=304172565]
 layout_mode = 2
-text = "Debug preview for tower models, roles, and element identity"
-theme_override_font_sizes/font_size = 14
 theme_override_colors/font_color = Color(0.4, 0.65, 0.75, 1)
+theme_override_font_sizes/font_size = 14
+text = "Debug preview for tower models, roles, and element identity"
 
-[node name="PreviewOnlyLabel" type="Label" parent="RootMargin/MainVBox/Header"]
+[node name="PreviewOnlyLabel" type="Label" parent="RootMargin/MainVBox/Header" unique_id=1321395903]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.55, 0.25, 1)
+theme_override_font_sizes/font_size = 12
 text = "Preview only — not gameplay simulation"
 horizontal_alignment = 2
-theme_override_font_sizes/font_size = 12
-theme_override_colors/font_color = Color(0.65, 0.55, 0.25, 1)
 
-[node name="ScrollContainer" type="ScrollContainer" parent="RootMargin/MainVBox"]
+[node name="ScrollContainer" type="ScrollContainer" parent="RootMargin/MainVBox" unique_id=865161609]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ContentVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ScrollContainer"]
+[node name="ContentVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ScrollContainer" unique_id=1735917624]
 layout_mode = 2
 theme_override_constants/separation = 16

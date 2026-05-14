@@ -1144,7 +1144,7 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68, 0.5, 1.0)
 	var cur_lv  := int(levels.get(element_id, 0)) if element_id != "__interest__" else -1
 	var is_max  := element_id != "__interest__" and cur_lv >= 3
-	var is_lock := element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
+	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(0, 58)
@@ -1201,8 +1201,8 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 	var sub_l := Label.new()
 	sub_l.add_theme_font_size_override("font_size", 11)
 	if element_id == "__interest__":
-		var ir := _em_data.get("interest_rate","2%")
-		var nr := _em_data.get("next_interest_rate","3%")
+		var ir : String = _em_data.get("interest_rate","2%")
+		var nr : String = _em_data.get("next_interest_rate","3%")
 		if is_lock:
 			sub_l.text = "Max upgrades reached"
 			sub_l.add_theme_color_override("font_color", Color(0.45,0.45,0.45))
@@ -1258,7 +1258,7 @@ func _em_rebuild_center(element_id: String) -> void:
 
 	var levels: Dictionary = _em_data.get("levels", {})
 	var el_col  := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68,0.5,1.0)
-	var meta_d  := ELEMENT_UI_META.get(element_id, {})
+	var meta_d  : Dictionary = ELEMENT_UI_META.get(element_id, {})
 
 	# Header row: large icon + name
 	var hdr := HBoxContainer.new()
@@ -1441,8 +1441,8 @@ func _em_build_bonus_section(element_id: String, el_col: Color) -> void:
 	bv.add_theme_constant_override("separation", 5)
 	_em_center_col.add_child(bv)
 	if element_id == "__interest__":
-		var ir  := _em_data.get("interest_rate","2%")
-		var nr  := _em_data.get("next_interest_rate","3%")
+		var ir  : String = _em_data.get("interest_rate","2%")
+		var nr  : String = _em_data.get("next_interest_rate","3%")
 		var ic  := int(_em_data.get("interest_upgrade_count",0))
 		var im  := int(_em_data.get("interest_max_upgrades",5))
 		_em_bonus_row(bv,"Interest Rate", ir, nr, Color(0.95,0.82,0.3))
@@ -1480,7 +1480,7 @@ func _em_rebuild_right(element_id: String) -> void:
 	var levels : Dictionary = _em_data.get("levels", {})
 	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68,0.5,1.0)
 	var is_max  := element_id != "__interest__" and int(levels.get(element_id,0)) >= 3
-	var is_lock := element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
+	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
 	# Cost
 	_em_right_col.add_child(_em_sec_hdr("COST TO UNLOCK"))
