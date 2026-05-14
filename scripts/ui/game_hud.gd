@@ -167,6 +167,86 @@ var element_choice_panel: PanelContainer = null
 var element_choice_list: VBoxContainer = null
 var current_element_levels: Dictionary = {}
 
+## ── Element Modal (UI-ELEMENT-1) ────────────────────────────────────────────
+## Display-only metadata — never used for any gameplay calculation.
+const ELEMENT_UI_META := {
+	"light": {
+		"description": "The power of radiance and purification. Precise and far-reaching.",
+		"attack_types": ["Single Target", "Precision Beam", "Long Range"],
+		"strengths": ["Highest range tier", "Reliable single-target DPS", "Hits Air"],
+		"weaknesses": ["No native AoE", "Costly dual combos"],
+		"best_against": "High-HP targets, fast flyers, armored units",
+		"recommended": "Long-range precision — effective from wave 1.",
+		"icon": "✦",
+	},
+	"darkness": {
+		"description": "Void entropy that weakens and debuffs anything caught in its field.",
+		"attack_types": ["Aura / Debuff", "Vulnerability AoE", "DoT"],
+		"strengths": ["Amplifies all other towers", "Strong AoE debuffs", "Scales late"],
+		"weaknesses": ["Ground only", "Low raw damage alone"],
+		"best_against": "Tanky groups, armored enemies, clustered waves",
+		"recommended": "Pair with any damage element for massive synergy.",
+		"icon": "☽",
+	},
+	"water": {
+		"description": "Ice and tidal force that freezes enemies in their path.",
+		"attack_types": ["Slow / Control", "AoE Freeze", "Zone Denial"],
+		"strengths": ["Best crowd control", "Effective vs all speeds", "Hits Air"],
+		"weaknesses": ["Lower direct damage", "Relies on other DPS towers"],
+		"best_against": "Fast enemies, boss rushes, air units",
+		"recommended": "Always strong — pairs with every damage element.",
+		"icon": "❋",
+	},
+	"fire": {
+		"description": "Explosive plasma that burns everything in a radius.",
+		"attack_types": ["AoE Splash", "Cannon Burst", "Ground Only"],
+		"strengths": ["Heavy splash damage", "Melts groups fast"],
+		"weaknesses": ["Ground only", "Slow fire rate", "High build cost"],
+		"best_against": "Grouped ground enemies, tanky clumps",
+		"recommended": "Place at chokepoints and path bends.",
+		"icon": "⬡",
+	},
+	"nature": {
+		"description": "Rapid bio-circuit energy and spreading vine spores.",
+		"attack_types": ["Rapid Fire", "Multi-Shot", "Spore DoT"],
+		"strengths": ["Fastest attack speed", "Hits Air", "Spore debuffs"],
+		"weaknesses": ["Lower damage per hit", "Short-medium range"],
+		"best_against": "Swarm waves, fast enemies, healers",
+		"recommended": "Consistent DPS filler — never wasted.",
+		"icon": "✿",
+	},
+	"earth": {
+		"description": "Seismic armored stone that crushes the heaviest targets.",
+		"attack_types": ["Single Target", "Heavy Cannon", "Seismic AoE"],
+		"strengths": ["Highest raw damage", "Hard-hitting shots"],
+		"weaknesses": ["Ground only", "Slowest attack rate"],
+		"best_against": "Tanks, bosses, high-HP priority targets",
+		"recommended": "Mid-to-late game when HP pools scale.",
+		"icon": "◆",
+	},
+	"__interest__": {
+		"description": "Invest your pick in passive gold generation instead of combat power.",
+		"attack_types": ["Economy", "Passive Gold / 15s"],
+		"strengths": ["Compounds across all future waves", "No tower slot needed"],
+		"weaknesses": ["No combat benefit", "Weaker value late game"],
+		"best_against": "Economy strategy, first few picks",
+		"recommended": "Strongest when chosen early — compounding adds up fast.",
+		"icon": "◈",
+	},
+}
+
+## Modal nodes
+var _em_overlay: Control = null
+var _em_panel: PanelContainer = null
+var _em_selected: String = ""
+var _em_data: Dictionary = {}
+var _em_card_nodes: Dictionary = {}
+var _em_card_container: VBoxContainer = null
+var _em_center_col: VBoxContainer = null
+var _em_right_col: VBoxContainer = null
+var _em_confirm_btn: Button = null
+var _em_picks_label: Label = null
+
 const RESULT_PANEL_SCENE = preload("res://scenes/ui/ResultPanel.tscn")
 const SHOP_LOCKED_TEXT_COLOR := Color(0.62, 0.70, 0.78, 0.96)
 const SHOP_ENABLED_TEXT_COLOR := Color(0.90, 0.96, 1.0, 1.0)
@@ -187,7 +267,7 @@ func _ready() -> void:
 	
 	_setup_right_sidebar_layout()
 	_ensure_elemental_shop_ui()
-	_ensure_element_choice_ui()
+	_ensure_element_modal()
 	
 	# Instantiate Result Panel
 	result_panel = RESULT_PANEL_SCENE.instantiate()
@@ -757,46 +837,37 @@ func set_element_levels(levels: Dictionary) -> void:
 		element_hint_label.text = "Pick elements to unlock towers"
 
 func show_element_choice(levels: Dictionary, pending_picks: int = 1, interest_rate_label: String = "2%", next_interest_rate_label: String = "3%", can_upgrade_interest: bool = true, interest_upgrade_count: int = 0, interest_max_upgrades: int = 5) -> void:
-	_ensure_element_choice_ui()
+	_ensure_element_modal()
 	set_element_levels(levels)
-	if element_choice_panel == null or element_choice_list == null:
-		return
-	for child in element_choice_list.get_children():
-		child.queue_free()
-
-	var title := Label.new()
-	title.text = "Choose Element  (%d pick%s)" % [pending_picks, "s" if pending_picks != 1 else ""]
-	title.add_theme_color_override("font_color", Color(0.4, 0.95, 1.0))
-	element_choice_list.add_child(title)
-
-	for element_id in ["light", "darkness", "water", "fire", "nature", "earth"]:
-		var level: int = int(levels.get(element_id, 0))
-		var btn := Button.new()
-		btn.size_flags_horizontal = Control.SIZE_FILL
-		btn.text = "%s  Lv.%d → Lv.%d" % [_element_label(element_id), level, min(level + 1, 3)]
-		btn.disabled = level >= 3
-		btn.tooltip_text = "Unlock or upgrade %s element. Dual/Triple towers open automatically from combinations." % _element_label(element_id)
-		var captured_element_id: String = element_id
-		btn.pressed.connect(func(): element_choice_requested.emit(captured_element_id))
-		element_choice_list.add_child(btn)
-
-	var divider := HSeparator.new()
-	element_choice_list.add_child(divider)
-
-	var interest_btn := Button.new()
-	interest_btn.size_flags_horizontal = Control.SIZE_FILL
-	interest_btn.text = "Interest  %s → %s" % [interest_rate_label, next_interest_rate_label]
-	interest_btn.disabled = not can_upgrade_interest
-	if interest_max_upgrades > 0:
-		interest_btn.tooltip_text = "Spend this pick to increase Element TD interest instead of unlocking an element. Upgrade %d/%d." % [interest_upgrade_count, interest_max_upgrades]
-	else:
-		interest_btn.tooltip_text = "Interest upgrades are disabled for this level."
-	interest_btn.pressed.connect(func(): element_choice_requested.emit("__interest__"))
-	element_choice_list.add_child(interest_btn)
-
-	element_choice_panel.show()
+	_em_data = {
+		"levels": levels,
+		"pending_picks": pending_picks,
+		"interest_rate": interest_rate_label,
+		"next_interest_rate": next_interest_rate_label,
+		"can_upgrade_interest": can_upgrade_interest,
+		"interest_upgrade_count": interest_upgrade_count,
+		"interest_max_upgrades": interest_max_upgrades,
+	}
+	if _em_picks_label:
+		_em_picks_label.text = "%d Pick%s Remaining" % [pending_picks, "s" if pending_picks != 1 else ""]
+	_em_rebuild_cards()
+	# Auto-select first unlockable option
+	var first_id := ""
+	for eid in ["light", "darkness", "water", "fire", "nature", "earth"]:
+		if int(levels.get(eid, 0)) < 3:
+			first_id = eid
+			break
+	if first_id.is_empty() and can_upgrade_interest:
+		first_id = "__interest__"
+	if first_id.is_empty():
+		first_id = "light"
+	_em_select(first_id)
+	if _em_overlay:
+		_em_overlay.visible = true
 
 func hide_element_choice() -> void:
+	if _em_overlay:
+		_em_overlay.visible = false
 	if element_choice_panel:
 		element_choice_panel.hide()
 
@@ -868,33 +939,653 @@ func _sync_tower_shop_list_width() -> void:
 	var content_width: float = max(210.0, sidebar_width - 42.0)
 	tower_shop_list.custom_minimum_size.x = content_width
 
-func _ensure_element_choice_ui() -> void:
-	if element_choice_panel != null and is_instance_valid(element_choice_panel):
+## ── Element Modal builder (UI-ELEMENT-1) ─────────────────────────────────────
+## Built once; show/hide by toggling _em_overlay.visible.
+
+func _em_sb(fill: Color, border: Color = Color.TRANSPARENT, bw: float = 1.5, r: float = 6.0) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = fill
+	s.border_color = border
+	s.set_border_width_all(int(bw))
+	s.set_corner_radius_all(int(r))
+	return s
+
+func _em_lbl(text: String, sz: int, col: Color) -> Label:
+	var l := Label.new()
+	l.text = text
+	l.add_theme_font_size_override("font_size", sz)
+	l.add_theme_color_override("font_color", col)
+	l.size_flags_horizontal = Control.SIZE_FILL
+	return l
+
+func _em_sec_hdr(text: String) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	for _i in range(2):
+		var bar := Panel.new()
+		bar.custom_minimum_size = Vector2(16, 2)
+		bar.add_theme_stylebox_override("panel", _em_sb(Color(0.25, 0.55, 0.9, 0.45)))
+		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(bar)
+		if _i == 0:
+			var lbl := _em_lbl("  %s  " % text, 11, Color(0.45, 0.78, 1.0, 0.85))
+			lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+			row.add_child(lbl)
+	return row
+
+func _em_chip(text: String, col: Color) -> PanelContainer:
+	var chip := PanelContainer.new()
+	chip.add_theme_stylebox_override("panel", _em_sb(Color(col.r, col.g, col.b, 0.18), Color(col.r, col.g, col.b, 0.65), 1.0, 4.0))
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 11)
+	lbl.add_theme_color_override("font_color", col.lightened(0.25))
+	chip.add_child(lbl)
+	return chip
+
+func _ensure_element_modal() -> void:
+	if _em_overlay != null and is_instance_valid(_em_overlay):
 		return
 	if root == null:
 		return
-	element_choice_panel = PanelContainer.new()
-	element_choice_panel.name = "ElementChoicePanel"
-	element_choice_panel.visible = false
-	element_choice_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	element_choice_panel.set_anchors_preset(Control.PRESET_CENTER_RIGHT)
-	element_choice_panel.offset_left = -310
-	element_choice_panel.offset_top = -170
-	element_choice_panel.offset_right = -20
-	element_choice_panel.offset_bottom = 170
-	root.add_child(element_choice_panel)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left", 12)
-	margin.add_theme_constant_override("margin_right", 12)
-	margin.add_theme_constant_override("margin_top", 12)
-	margin.add_theme_constant_override("margin_bottom", 12)
-	element_choice_panel.add_child(margin)
+	# Full-screen dim
+	_em_overlay = Control.new()
+	_em_overlay.name = "ElementModalOverlay"
+	_em_overlay.set_anchors_preset(Control.PRESET_FULL_RECT)
+	_em_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
+	_em_overlay.visible = false
+	_em_overlay.z_index = 150
+	root.add_child(_em_overlay)
 
-	element_choice_list = VBoxContainer.new()
-	element_choice_list.name = "ElementChoiceList"
-	element_choice_list.size_flags_horizontal = Control.SIZE_FILL
-	margin.add_child(element_choice_list)
+	var dim := ColorRect.new()
+	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	dim.color = Color(0.0, 0.02, 0.05, 0.82)
+	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_em_overlay.add_child(dim)
+
+	# Centered modal card
+	_em_panel = PanelContainer.new()
+	_em_panel.name = "ElementModalPanel"
+	_em_panel.set_anchors_preset(Control.PRESET_CENTER)
+	_em_panel.custom_minimum_size = Vector2(1380, 760)
+	_em_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
+	_em_panel.grow_vertical   = Control.GROW_DIRECTION_BOTH
+	_em_panel.add_theme_stylebox_override("panel", _em_sb(Color(0.04, 0.055, 0.09, 0.98), Color(0.25, 0.62, 1.0, 0.55), 2.0, 10.0))
+	_em_overlay.add_child(_em_panel)
+
+	var outer := MarginContainer.new()
+	for s in ["left","right","top","bottom"]:
+		outer.add_theme_constant_override("margin_"+s, 22)
+	_em_panel.add_child(outer)
+
+	var main_v := VBoxContainer.new()
+	main_v.add_theme_constant_override("separation", 12)
+	outer.add_child(main_v)
+
+	# Title row
+	var title_row := HBoxContainer.new()
+	title_row.add_theme_constant_override("separation", 12)
+	main_v.add_child(title_row)
+
+	var head_col := VBoxContainer.new()
+	head_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	head_col.add_theme_constant_override("separation", 3)
+	title_row.add_child(head_col)
+	var t1 := _em_lbl("CHOOSE ELEMENT", 22, Color(0.6, 0.9, 1.0))
+	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	head_col.add_child(t1)
+	var t2 := _em_lbl("Select an element to unlock new towers and bonuses", 12, Color(0.42, 0.62, 0.78))
+	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	head_col.add_child(t2)
+
+	_em_picks_label = Label.new()
+	_em_picks_label.add_theme_font_size_override("font_size", 13)
+	_em_picks_label.add_theme_color_override("font_color", Color(0.95, 0.78, 0.22))
+	_em_picks_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_row.add_child(_em_picks_label)
+
+	var x_btn := Button.new()
+	x_btn.text = "✕"
+	x_btn.custom_minimum_size = Vector2(38, 38)
+	x_btn.add_theme_font_size_override("font_size", 16)
+	x_btn.add_theme_color_override("font_color", Color(0.75, 0.85, 1.0))
+	x_btn.add_theme_stylebox_override("normal", _em_sb(Color(0.1, 0.15, 0.24), Color(0.22, 0.38, 0.65, 0.5)))
+	x_btn.add_theme_stylebox_override("hover",  _em_sb(Color(0.18, 0.22, 0.36), Color(0.45, 0.6, 1.0, 0.8)))
+	x_btn.pressed.connect(hide_element_choice)
+	title_row.add_child(x_btn)
+
+	var hdiv := HSeparator.new()
+	hdiv.add_theme_color_override("color", Color(0.2, 0.48, 0.82, 0.4))
+	main_v.add_child(hdiv)
+
+	# 3-column body
+	var cols := HBoxContainer.new()
+	cols.add_theme_constant_override("separation", 0)
+	cols.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	main_v.add_child(cols)
+
+	# ── Left column (element list) ──
+	var left_scroll := ScrollContainer.new()
+	left_scroll.custom_minimum_size.x = 252
+	left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	cols.add_child(left_scroll)
+
+	var left_v := VBoxContainer.new()
+	left_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_v.add_theme_constant_override("separation", 5)
+	left_scroll.add_child(left_v)
+
+	var left_hdr := _em_lbl("◆  ELEMENTS", 11, Color(0.4, 0.68, 1.0, 0.7))
+	left_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	left_v.add_child(left_hdr)
+	var left_gap := Control.new()
+	left_gap.custom_minimum_size.y = 2
+	left_v.add_child(left_gap)
+
+	_em_card_container = VBoxContainer.new()
+	_em_card_container.add_theme_constant_override("separation", 5)
+	_em_card_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	left_v.add_child(_em_card_container)
+
+	# ── VSep ──
+	var vs1 := VSeparator.new()
+	vs1.add_theme_color_override("color", Color(0.2, 0.48, 0.82, 0.3))
+	vs1.custom_minimum_size.x = 14
+	cols.add_child(vs1)
+
+	# ── Center column (details) ──
+	var ctr_scroll := ScrollContainer.new()
+	ctr_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	ctr_scroll.size_flags_vertical   = Control.SIZE_EXPAND_FILL
+	ctr_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	cols.add_child(ctr_scroll)
+
+	_em_center_col = VBoxContainer.new()
+	_em_center_col.name = "EmCenterCol"
+	_em_center_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	_em_center_col.add_theme_constant_override("separation", 10)
+	ctr_scroll.add_child(_em_center_col)
+
+	# ── VSep ──
+	var vs2 := VSeparator.new()
+	vs2.add_theme_color_override("color", Color(0.2, 0.48, 0.82, 0.3))
+	vs2.custom_minimum_size.x = 14
+	cols.add_child(vs2)
+
+	# ── Right column (summary) ──
+	_em_right_col = VBoxContainer.new()
+	_em_right_col.name = "EmRightCol"
+	_em_right_col.custom_minimum_size.x = 276
+	_em_right_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_em_right_col.add_theme_constant_override("separation", 10)
+	cols.add_child(_em_right_col)
+
+# Rebuild left-column element cards from current _em_data.
+func _em_rebuild_cards() -> void:
+	if not is_instance_valid(_em_card_container):
+		return
+	for c in _em_card_container.get_children():
+		c.queue_free()
+	_em_card_nodes.clear()
+
+	var levels: Dictionary = _em_data.get("levels", {})
+	var all_ids := ["light","darkness","water","fire","nature","earth","__interest__"]
+	for element_id in all_ids:
+		if element_id == "__interest__":
+			var sp := Control.new()
+			sp.custom_minimum_size.y = 4
+			_em_card_container.add_child(sp)
+		var card := _em_make_card(element_id, levels)
+		_em_card_container.add_child(card)
+		_em_card_nodes[element_id] = card
+
+func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
+	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68, 0.5, 1.0)
+	var cur_lv  := int(levels.get(element_id, 0)) if element_id != "__interest__" else -1
+	var is_max  := element_id != "__interest__" and cur_lv >= 3
+	var is_lock := element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
+
+	var card := PanelContainer.new()
+	card.custom_minimum_size = Vector2(0, 58)
+	card.size_flags_horizontal = Control.SIZE_FILL
+
+	var s_normal := _em_sb(Color(0.07,0.09,0.14),   Color(0.2,0.32,0.52,0.5),  1.5, 6.0)
+	var s_hover  := _em_sb(Color(0.10,0.13,0.20),   Color(el_col.r,el_col.g,el_col.b,0.7), 1.5, 6.0)
+	var s_lock   := _em_sb(Color(0.05,0.06,0.09,0.7),Color(0.15,0.22,0.32,0.3), 1.0, 6.0)
+	card.add_theme_stylebox_override("panel", s_lock if (is_max or is_lock) else s_normal)
+	card.set_meta("s_normal", s_normal)
+	card.set_meta("s_hover",  s_hover)
+	card.set_meta("s_lock",   s_lock)
+	card.set_meta("el_col",   el_col)
+	card.set_meta("el_id",    element_id)
+	card.set_meta("is_max",   is_max)
+	card.set_meta("is_lock",  is_lock)
+
+	var mg := MarginContainer.new()
+	for sd in ["left","right","top","bottom"]:
+		mg.add_theme_constant_override("margin_"+sd, 8)
+	card.add_child(mg)
+
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	mg.add_child(row)
+
+	# Icon badge
+	var icon_p := PanelContainer.new()
+	icon_p.custom_minimum_size = Vector2(36, 36)
+	var ic_dim := Color(el_col.r, el_col.g, el_col.b, 0.2 if (is_max or is_lock) else 0.32)
+	var ic_brd := Color(el_col.r, el_col.g, el_col.b, 0.45 if not (is_max or is_lock) else 0.2)
+	icon_p.add_theme_stylebox_override("panel", _em_sb(ic_dim, ic_brd, 1.5, 18.0))
+	row.add_child(icon_p)
+	var icon_l := Label.new()
+	icon_l.text = ELEMENT_UI_META.get(element_id, {}).get("icon", "?")
+	icon_l.add_theme_font_size_override("font_size", 15)
+	icon_l.add_theme_color_override("font_color", el_col if not (is_max or is_lock) else el_col.darkened(0.45))
+	icon_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	icon_l.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	icon_p.add_child(icon_l)
+
+	# Text
+	var txt_v := VBoxContainer.new()
+	txt_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	txt_v.add_theme_constant_override("separation", 2)
+	row.add_child(txt_v)
+
+	var name_l := Label.new()
+	name_l.text = _element_label(element_id) if element_id != "__interest__" else "Interest Bonus"
+	name_l.add_theme_font_size_override("font_size", 13)
+	name_l.add_theme_color_override("font_color", el_col.lightened(0.18) if not (is_max or is_lock) else Color(0.38,0.48,0.58))
+	txt_v.add_child(name_l)
+
+	var sub_l := Label.new()
+	sub_l.add_theme_font_size_override("font_size", 11)
+	if element_id == "__interest__":
+		var ir := _em_data.get("interest_rate","2%")
+		var nr := _em_data.get("next_interest_rate","3%")
+		if is_lock:
+			sub_l.text = "Max upgrades reached"
+			sub_l.add_theme_color_override("font_color", Color(0.45,0.45,0.45))
+		else:
+			sub_l.text = "%s  →  %s" % [ir, nr]
+			sub_l.add_theme_color_override("font_color", Color(0.9,0.72,0.22))
+	elif is_max:
+		sub_l.text = "Lv.3  ●  MAX"
+		sub_l.add_theme_color_override("font_color", Color(0.45,0.45,0.45))
+	else:
+		sub_l.text = "Lv.%d  →  Lv.%d" % [cur_lv, cur_lv+1]
+		sub_l.add_theme_color_override("font_color", Color(0.5,0.74,0.9))
+	txt_v.add_child(sub_l)
+
+	# Hover & click (only for selectable cards)
+	if not is_max and not is_lock:
+		card.mouse_entered.connect(func():
+			if _em_selected != element_id:
+				card.add_theme_stylebox_override("panel", s_hover))
+		card.mouse_exited.connect(func():
+			if _em_selected != element_id:
+				card.add_theme_stylebox_override("panel", s_normal))
+		card.gui_input.connect(func(ev: InputEvent):
+			if ev is InputEventMouseButton and ev.pressed and ev.button_index == MOUSE_BUTTON_LEFT:
+				_em_select(element_id))
+	return card
+
+# Select an element and rebuild center + right columns.
+func _em_select(element_id: String) -> void:
+	_em_selected = element_id
+	for eid in _em_card_nodes:
+		var card: PanelContainer = _em_card_nodes[eid]
+		if not is_instance_valid(card):
+			continue
+		var is_max: bool  = card.get_meta("is_max",  false)
+		var is_lock: bool = card.get_meta("is_lock", false)
+		if is_max or is_lock:
+			continue
+		if eid == element_id:
+			var ec: Color = card.get_meta("el_col", Color.WHITE)
+			card.add_theme_stylebox_override("panel", _em_sb(Color(ec.r,ec.g,ec.b,0.22), ec, 2.0, 6.0))
+		else:
+			card.add_theme_stylebox_override("panel", card.get_meta("s_normal"))
+	_em_rebuild_center(element_id)
+	_em_rebuild_right(element_id)
+
+# Rebuild center detail column.
+func _em_rebuild_center(element_id: String) -> void:
+	if not is_instance_valid(_em_center_col):
+		return
+	for c in _em_center_col.get_children():
+		c.queue_free()
+
+	var levels: Dictionary = _em_data.get("levels", {})
+	var el_col  := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68,0.5,1.0)
+	var meta_d  := ELEMENT_UI_META.get(element_id, {})
+
+	# Header row: large icon + name
+	var hdr := HBoxContainer.new()
+	hdr.add_theme_constant_override("separation", 14)
+	_em_center_col.add_child(hdr)
+
+	var big_icon := PanelContainer.new()
+	big_icon.custom_minimum_size = Vector2(70, 70)
+	big_icon.add_theme_stylebox_override("panel", _em_sb(Color(el_col.r,el_col.g,el_col.b,0.18), el_col.darkened(0.28), 2.0, 35.0))
+	hdr.add_child(big_icon)
+	var big_icon_l := Label.new()
+	big_icon_l.text = meta_d.get("icon","?")
+	big_icon_l.add_theme_font_size_override("font_size", 30)
+	big_icon_l.add_theme_color_override("font_color", el_col)
+	big_icon_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	big_icon_l.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
+	big_icon.add_child(big_icon_l)
+
+	var name_col := VBoxContainer.new()
+	name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_col.add_theme_constant_override("separation", 4)
+	hdr.add_child(name_col)
+
+	var en := _element_label(element_id) if element_id != "__interest__" else "Interest Bonus"
+	var name_l := _em_lbl(en.to_upper(), 24, el_col)
+	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	name_col.add_child(name_l)
+
+	var desc_l := _em_lbl(meta_d.get("description",""), 13, Color(0.72,0.82,0.92))
+	desc_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+	desc_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	name_col.add_child(desc_l)
+
+	if element_id != "__interest__":
+		var cv := int(levels.get(element_id, 0))
+		var lv_l := _em_lbl("Level  %d  →  %d" % [cv, min(cv+1,3)], 12, Color(0.45,0.88,0.55))
+		lv_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
+		name_col.add_child(lv_l)
+
+	# Attack types
+	_em_center_col.add_child(_em_sec_hdr("TOWER ATTACK TYPES"))
+	var flow := HFlowContainer.new()
+	flow.add_theme_constant_override("h_separation", 6)
+	flow.add_theme_constant_override("v_separation", 6)
+	_em_center_col.add_child(flow)
+	for at in meta_d.get("attack_types", []):
+		flow.add_child(_em_chip(at, el_col))
+
+	# Towers unlocked
+	if element_id != "__interest__":
+		_em_center_col.add_child(_em_sec_hdr("TOWERS UNLOCKED"))
+		_em_build_tower_cards(element_id, el_col)
+
+	# Element bonus
+	_em_center_col.add_child(_em_sec_hdr("ELEMENT BONUS"))
+	_em_build_bonus_section(element_id, el_col)
+
+	# Strengths & use case
+	_em_center_col.add_child(_em_sec_hdr("STRENGTHS & USE CASE"))
+	var use_v := VBoxContainer.new()
+	use_v.add_theme_constant_override("separation", 4)
+	_em_center_col.add_child(use_v)
+	for s in meta_d.get("strengths", []):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		use_v.add_child(row)
+		var dot := _em_lbl("✓", 12, Color(0.3,0.9,0.5))
+		dot.custom_minimum_size.x = 18
+		row.add_child(dot)
+		row.add_child(_em_lbl(s, 12, Color(0.78,0.9,0.78)))
+	for w in meta_d.get("weaknesses", []):
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		use_v.add_child(row)
+		var dot := _em_lbl("✗", 12, Color(0.9,0.4,0.3))
+		dot.custom_minimum_size.x = 18
+		row.add_child(dot)
+		row.add_child(_em_lbl(w, 12, Color(0.85,0.68,0.62)))
+	var best_l := _em_lbl("Best against: " + meta_d.get("best_against",""), 12, Color(0.62,0.84,1.0))
+	best_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_em_center_col.add_child(best_l)
+	var rec_l := _em_lbl("Tip: " + meta_d.get("recommended",""), 12, Color(0.88,0.76,0.38))
+	rec_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_em_center_col.add_child(rec_l)
+	var bottom_pad := Control.new()
+	bottom_pad.custom_minimum_size.y = 12
+	_em_center_col.add_child(bottom_pad)
+
+func _em_build_tower_cards(element_id: String, el_col: Color) -> void:
+	var singles: Array = []
+	var dual_n   := 0
+	var triple_n := 0
+	for tid in tower_catalog:
+		var cfg: Dictionary = tower_catalog[tid]
+		if not bool(cfg.get("build_entry", false)):
+			continue
+		var elems: Array = cfg.get("elements", [])
+		if not elems.has(element_id):
+			continue
+		var ct := str(cfg.get("combo_type",""))
+		if ct in ["single","pure"]:
+			singles.append(cfg)
+		elif ct == "dual":
+			dual_n += 1
+		elif ct == "triple":
+			triple_n += 1
+
+	var wrap := VBoxContainer.new()
+	wrap.add_theme_constant_override("separation", 5)
+	_em_center_col.add_child(wrap)
+
+	for cfg in singles:
+		wrap.add_child(_em_make_tower_card(cfg, el_col))
+
+	if dual_n > 0 or triple_n > 0:
+		var combo_p := PanelContainer.new()
+		combo_p.add_theme_stylebox_override("panel", _em_sb(Color(el_col.r,el_col.g,el_col.b,0.07), Color(el_col.r,el_col.g,el_col.b,0.28), 1.0, 4.0))
+		wrap.add_child(combo_p)
+		var cm := MarginContainer.new()
+		for sd in ["left","right","top","bottom"]:
+			cm.add_theme_constant_override("margin_"+sd, 7)
+		combo_p.add_child(cm)
+		var parts: Array[String] = []
+		if dual_n > 0:   parts.append("%d dual-element towers" % dual_n)
+		if triple_n > 0: parts.append("%d triple-element towers" % triple_n)
+		var cl := _em_lbl("Also enables: " + "  +  ".join(parts), 11, Color(el_col.r,el_col.g,el_col.b,0.88))
+		cl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		cm.add_child(cl)
+
+func _em_make_tower_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.add_theme_stylebox_override("panel", _em_sb(Color(0.07,0.09,0.14), Color(el_col.r,el_col.g,el_col.b,0.3), 1.0, 5.0))
+	var mg := MarginContainer.new()
+	for sd in ["left","right","top","bottom"]:
+		mg.add_theme_constant_override("margin_"+sd, 8)
+	card.add_child(mg)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	mg.add_child(row)
+
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.add_theme_constant_override("separation", 3)
+	row.add_child(info)
+
+	info.add_child(_em_lbl(str(cfg.get("display_name", cfg.get("name","Tower"))), 13, Color(0.9,0.92,1.0)))
+	var elems: Array = cfg.get("elements",[])
+	if not elems.is_empty():
+		var el_row := HBoxContainer.new()
+		el_row.add_theme_constant_override("separation", 4)
+		info.add_child(el_row)
+		el_row.add_child(_em_lbl("Elements:", 11, Color(0.5,0.6,0.72)))
+		for el in elems:
+			el_row.add_child(_em_chip(_element_label(str(el)), _get_element_ui_color(str(el))))
+
+	var tags_v := VBoxContainer.new()
+	tags_v.add_theme_constant_override("separation", 3)
+	row.add_child(tags_v)
+
+	var at := str(cfg.get("attack_type",""))
+	tags_v.add_child(_em_chip(_em_attack_label(at), Color(0.38,0.72,1.0)))
+	var tgt: Array = cfg.get("target_categories",["land"])
+	var tgt_text := "Ground + Air" if (tgt.has("land") and tgt.has("air")) else ("Air Only" if tgt.has("air") else "Ground")
+	tags_v.add_child(_em_chip(tgt_text, Color(0.45,0.82,0.55)))
+	return card
+
+func _em_attack_label(at: String) -> String:
+	match at:
+		"single": return "Single Target"
+		"splash": return "AoE Splash"
+		"slow":   return "Slow / Control"
+		"chain":  return "Chain Lightning"
+		"aura":   return "Aura / Debuff"
+		"support_aura": return "Support Aura"
+		_: return at.capitalize() if not at.is_empty() else "N/A"
+
+func _em_build_bonus_section(element_id: String, el_col: Color) -> void:
+	var levels: Dictionary = _em_data.get("levels", {})
+	var bv := VBoxContainer.new()
+	bv.add_theme_constant_override("separation", 5)
+	_em_center_col.add_child(bv)
+	if element_id == "__interest__":
+		var ir  := _em_data.get("interest_rate","2%")
+		var nr  := _em_data.get("next_interest_rate","3%")
+		var ic  := int(_em_data.get("interest_upgrade_count",0))
+		var im  := int(_em_data.get("interest_max_upgrades",5))
+		_em_bonus_row(bv,"Interest Rate", ir, nr, Color(0.95,0.82,0.3))
+		_em_bonus_row(bv,"Upgrades Used", "%d / %d" % [ic, im], "", Color(0.6,0.8,1.0))
+		_em_bonus_row(bv,"Tick Interval",  "Every 15s",  "", Color(0.6,0.8,1.0))
+	else:
+		var cv := int(levels.get(element_id, 0))
+		var p  := cv * 10
+		var np := (cv + 1) * 10
+		_em_bonus_row(bv, "%s Tower Damage" % _element_label(element_id), "+%d%%" % p, "+%d%%" % np, Color(0.98,0.72,0.3))
+		_em_bonus_row(bv, "%s Tower Range"  % _element_label(element_id), "+%d%%" % (p/2), "+%d%%" % (np/2), el_col)
+		_em_bonus_row(bv, "Attack Speed", "+%d%%" % (p/2), "+%d%%" % (np/2), el_col)
+		_em_bonus_row(bv, "Interest Bonus", _em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%"), Color(0.95,0.82,0.3))
+
+func _em_bonus_row(parent: VBoxContainer, lbl_text: String, cur: String, nxt: String, vc: Color) -> void:
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	var arrow := _em_lbl("▸", 11, Color(vc.r,vc.g,vc.b,0.7))
+	arrow.custom_minimum_size.x = 16
+	row.add_child(arrow)
+	var n := _em_lbl(lbl_text, 12, Color(0.62,0.72,0.84))
+	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(n)
+	var v_text := ("%s  →  %s" % [cur, nxt]) if not nxt.is_empty() else cur
+	row.add_child(_em_lbl(v_text, 12, vc))
+
+# Rebuild right summary column.
+func _em_rebuild_right(element_id: String) -> void:
+	if not is_instance_valid(_em_right_col):
+		return
+	for c in _em_right_col.get_children():
+		c.queue_free()
+	_em_confirm_btn = null
+
+	var levels : Dictionary = _em_data.get("levels", {})
+	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68,0.5,1.0)
+	var is_max  := element_id != "__interest__" and int(levels.get(element_id,0)) >= 3
+	var is_lock := element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
+
+	# Cost
+	_em_right_col.add_child(_em_sec_hdr("COST TO UNLOCK"))
+	var cost_p := PanelContainer.new()
+	cost_p.add_theme_stylebox_override("panel", _em_sb(Color(el_col.r,el_col.g,el_col.b,0.1), Color(el_col.r,el_col.g,el_col.b,0.38), 1.5, 6.0))
+	_em_right_col.add_child(cost_p)
+	var cm := MarginContainer.new()
+	for sd in ["left","right","top","bottom"]:
+		cm.add_theme_constant_override("margin_"+sd, 12)
+	cost_p.add_child(cm)
+	var cost_row := HBoxContainer.new()
+	cost_row.add_theme_constant_override("separation", 8)
+	cm.add_child(cost_row)
+	var coin_l := _em_lbl("◎", 22, Color(1.0,0.82,0.22))
+	coin_l.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	cost_row.add_child(coin_l)
+	cost_row.add_child(_em_lbl("1 PICK", 20, Color(1.0,0.9,0.6)))
+
+	# What you get
+	_em_right_col.add_child(_em_sec_hdr("WHAT YOU GET"))
+	var get_v := VBoxContainer.new()
+	get_v.add_theme_constant_override("separation", 5)
+	_em_right_col.add_child(get_v)
+	var items: Array[String]
+	if element_id == "__interest__":
+		items = ["Increase passive interest rate","Gold ticks every 15 seconds","Compounds across all waves"]
+	else:
+		var cv := int(levels.get(element_id, 0))
+		items = [
+			"Unlock %s element towers" % _element_label(element_id),
+			"Raise %s to Lv.%d" % [_element_label(element_id), cv+1],
+			"Enable new tower combinations",
+			"Apply element damage bonus",
+		]
+	for item in items:
+		var row := HBoxContainer.new()
+		row.add_theme_constant_override("separation", 6)
+		get_v.add_child(row)
+		var ck := _em_lbl("✓", 12, Color(0.3,0.9,0.5))
+		ck.custom_minimum_size.x = 18
+		row.add_child(ck)
+		var il := _em_lbl(item, 12, Color(0.8,0.88,0.96))
+		il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		il.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(il)
+
+	# Current effect
+	_em_right_col.add_child(_em_sec_hdr("CURRENT EFFECT"))
+	var eff_p := PanelContainer.new()
+	eff_p.add_theme_stylebox_override("panel", _em_sb(Color(0.05,0.07,0.12), Color(0.22,0.4,0.62,0.32), 1.0, 5.0))
+	_em_right_col.add_child(eff_p)
+	var em2 := MarginContainer.new()
+	for sd in ["left","right","top","bottom"]:
+		em2.add_theme_constant_override("margin_"+sd, 10)
+	eff_p.add_child(em2)
+	var eff_v := VBoxContainer.new()
+	eff_v.add_theme_constant_override("separation", 4)
+	em2.add_child(eff_v)
+	_em_eff_row(eff_v, "Interest:", _em_data.get("interest_rate","2%"), "→ " + _em_data.get("next_interest_rate","3%"))
+	if element_id != "__interest__":
+		var cv2 := int(levels.get(element_id, 0))
+		_em_eff_row(eff_v, _element_label(element_id)+":", "Lv.%d" % cv2, "→ Lv.%d" % min(cv2+1,3))
+
+	# Push confirm to bottom
+	var push := Control.new()
+	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_em_right_col.add_child(push)
+
+	# Confirm button
+	var btn_text: String
+	if element_id == "__interest__":
+		btn_text = "CHOOSE INTEREST BONUS"
+	else:
+		btn_text = "UNLOCK %s" % _element_label(element_id).to_upper()
+	_em_confirm_btn = Button.new()
+	_em_confirm_btn.text = btn_text
+	_em_confirm_btn.disabled = is_max or is_lock
+	_em_confirm_btn.custom_minimum_size = Vector2(0, 54)
+	_em_confirm_btn.size_flags_horizontal = Control.SIZE_FILL
+	_em_confirm_btn.add_theme_font_size_override("font_size", 15)
+	if not (is_max or is_lock):
+		var bf := Color(el_col.r*0.22, el_col.g*0.22, el_col.b*0.22, 1.0)
+		var bh := Color(el_col.r*0.36, el_col.g*0.36, el_col.b*0.36, 1.0)
+		_em_confirm_btn.add_theme_color_override("font_color", Color(1,1,1))
+		_em_confirm_btn.add_theme_stylebox_override("normal",  _em_sb(bf, el_col, 2.0, 8.0))
+		_em_confirm_btn.add_theme_stylebox_override("hover",   _em_sb(bh, el_col.lightened(0.25), 2.5, 8.0))
+		_em_confirm_btn.add_theme_stylebox_override("pressed", _em_sb(el_col.darkened(0.4), el_col, 2.0, 8.0))
+		var cid := element_id
+		_em_confirm_btn.pressed.connect(func():
+			element_choice_requested.emit(cid)
+			hide_element_choice())
+	else:
+		_em_confirm_btn.add_theme_stylebox_override("disabled", _em_sb(Color(0.08,0.1,0.14), Color(0.2,0.25,0.36,0.4), 1.0, 8.0))
+		_em_confirm_btn.add_theme_color_override("font_disabled_color", Color(0.35,0.4,0.5))
+	_em_right_col.add_child(_em_confirm_btn)
+
+func _em_eff_row(parent: VBoxContainer, lbl: String, cur: String, after: String) -> void:
+	var row := HBoxContainer.new()
+	parent.add_child(row)
+	var l := _em_lbl(lbl, 12, Color(0.58,0.68,0.8))
+	l.custom_minimum_size.x = 90
+	row.add_child(l)
+	row.add_child(_em_lbl(cur, 12, Color(0.85,0.92,1.0)))
+	if not after.is_empty():
+		row.add_child(_em_lbl("  " + after, 12, Color(0.35,0.96,0.56)))
 
 func _hide_static_tower_buttons() -> void:
 	for btn in [basic_tower_button, rapid_tower_button, cannon_tower_button, slow_tower_button, sniper_tower_button, lightning_tower_button, sawblade_tower_button]:
