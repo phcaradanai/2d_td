@@ -148,6 +148,7 @@ var _clone_visual_fire_target_global: Vector2 = Vector2.ZERO
 
 var projectile_scene: PackedScene = preload("res://scenes/projectiles/Projectile.tscn")
 var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/MuzzleFlash.tscn")
+const DISEASE_ATTACK_VFX_SCRIPT: GDScript = preload("res://scripts/effects/disease_attack_vfx.gd")
 var projectile_container: Node2D = null
 
 @onready var range_area: Area2D = $RangeArea
@@ -456,6 +457,11 @@ func _get_secondary_element_color() -> Color:
 		return _get_element_color(elements[1])
 	return _get_tower_color()
 
+func _get_tertiary_element_color() -> Color:
+	if elements.size() >= 3:
+		return _get_element_color(elements[2])
+	return _get_secondary_element_color()
+
 func _get_tower_color() -> Color:
 	if not elements.is_empty():
 		if combo_type == "periodic":
@@ -471,6 +477,38 @@ func _get_tower_color() -> Color:
 		"sawblade": return Color(0.9, 0.1, 0.1) # Industrial Red
 		"trickery": return Color(0.75, 0.45, 1.0) # Hologram violet
 		_: return Color.WHITE
+
+func _get_attack_vfx_core_color() -> Color:
+	var normalized_id := tower_id.to_lower()
+	if normalized_id.begins_with("flamethrower"):
+		return _get_element_color("fire")
+	if normalized_id.begins_with("disease_"):
+		return Color(0.42, 1.0, 0.22, 1.0)
+	if not elements.is_empty():
+		return _get_element_color(elements[0])
+	return _get_tower_color()
+
+func _get_aura_impact_vfx_type() -> String:
+	if tower_id.begins_with("disease_"):
+		return "toxic_bloom"
+	if tower_id.begins_with("oblivion_") or visual_type == "void_flower":
+		return "void_bloom"
+	return attack_type
+
+func _get_aura_core_color() -> Color:
+	if _get_aura_impact_vfx_type() == "toxic_bloom":
+		return Color(0.42, 1.0, 0.22, 1.0)
+	return _get_tower_color()
+
+func _get_aura_secondary_color() -> Color:
+	if _get_aura_impact_vfx_type() == "toxic_bloom":
+		return Color(0.46, 0.12, 0.76, 1.0)
+	return _get_secondary_element_color()
+
+func _get_aura_accent_color() -> Color:
+	if _get_aura_impact_vfx_type() == "toxic_bloom":
+		return Color(0.62, 1.0, 0.34, 1.0)
+	return _get_tertiary_element_color()
 
 func _draw() -> void:
 	# 1. Selection / Range Highlight
@@ -1439,6 +1477,11 @@ func get_info() -> Dictionary:
 		"vulnerability_duration": vulnerability_duration,
 		"chain_jumps": chain_jumps,
 		"chain_range": chain_range,
+		"chain_falloff": chain_falloff,
+		"economy_type": str(config.get("economy_type", "")),
+		"on_kill_life_counter_required": int(config.get("on_kill_life_counter_required", 0)),
+		"on_kill_life_progress": _get_economy_life_kill_progress(),
+		"on_kill_gold_bonus_percent": float(config.get("on_kill_gold_bonus_percent", 0.0)),
 		"clone_damage_multiplier": clone_damage_multiplier,
 		"clone_duration": clone_duration,
 		"clone_interval": clone_interval,
@@ -1459,6 +1502,12 @@ func get_info() -> Dictionary:
 		"target_mode": target_mode
 	}
 
+func _get_economy_life_kill_progress() -> int:
+	var wave_manager := get_tree().current_scene.get_node_or_null("WaveManager")
+	if wave_manager != null and wave_manager.has_method("get_economy_life_kill_progress"):
+		return int(wave_manager.get_economy_life_kill_progress(tower_id))
+	return 0
+
 func get_tower_id() -> String:
 	return tower_id
 
@@ -1471,6 +1520,21 @@ func get_tower_level() -> int:
 func get_fire_origin() -> Vector2:
 	if muzzle:
 		return muzzle.global_position
+	return global_position
+
+func get_muzzle_global_position(_muzzle_index: int = 0) -> Vector2:
+	return get_fire_origin()
+
+func get_target_hit_anchor_global_position(enemy: Variant) -> Vector2:
+	if enemy != null and is_instance_valid(enemy):
+		if enemy.has_method("get_hit_anchor_global_position"):
+			return enemy.get_hit_anchor_global_position()
+		if enemy.has_method("get_hit_origin"):
+			return enemy.get_hit_origin()
+		if enemy.has_method("get_aim_point"):
+			return enemy.get_aim_point()
+		if enemy is Node2D:
+			return enemy.global_position
 	return global_position
 
 func get_attack_range() -> float:
@@ -1680,35 +1744,40 @@ func shoot() -> void:
 		container.add_child(projectile)
 		
 		# STANDARD: Use fire origin anchor for projectile spawn
-		var spawn_pos = get_fire_origin()
+		var spawn_pos = get_muzzle_global_position()
 		projectile.global_position = spawn_pos
 		
 		pass # shoot debug removed for performance
 		
 		# Configure projectile based on tower type
 		var proj_scale = 1.0
-		var proj_color = Color(1, 1, 1, 1)
+		var proj_color = _get_attack_vfx_core_color()
 		var sfx_name = "tower_shoot_basic"
 		
 		if visual_type == "rapid":
 			proj_scale = 0.7
-			proj_color = Color(0.5, 1.0, 0.7, 1.0)
+			if elements.is_empty():
+				proj_color = Color(0.5, 1.0, 0.7, 1.0)
 			sfx_name = "tower_shoot_rapid"
 		elif visual_type == "cannon":
 			proj_scale = 1.8
-			proj_color = Color(1.0, 0.5, 0.5, 1.0)
+			if elements.is_empty():
+				proj_color = Color(1.0, 0.5, 0.5, 1.0)
 			sfx_name = "tower_shoot_cannon"
 		elif visual_type == "slow":
 			proj_scale = 1.1
-			proj_color = Color(0.4, 0.8, 1.0, 1.0) # Cyan
+			if elements.is_empty():
+				proj_color = Color(0.4, 0.8, 1.0, 1.0) # Cyan
 			sfx_name = "tower_shoot_slow"
 		elif visual_type == "sniper":
 			proj_scale = 0.9
-			proj_color = Color(1.0, 0.9, 0.4, 1.0)
+			if elements.is_empty():
+				proj_color = Color(1.0, 0.9, 0.4, 1.0)
 			sfx_name = "tower_shoot_sniper"
 		elif visual_type == "lightning":
 			proj_scale = 1.0
-			proj_color = Color(0.5, 0.8, 1.0, 1.0)
+			if elements.is_empty():
+				proj_color = Color(0.5, 0.8, 1.0, 1.0)
 			sfx_name = "tower_shoot_slow"
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
@@ -1734,7 +1803,13 @@ func shoot() -> void:
 
 func _perform_aura_attack() -> void:
 	var enemies = get_enemies_in_range()
-	var tower_color = _get_tower_color()
+	var aura_vfx_type := _get_aura_impact_vfx_type()
+	var tower_color = _get_aura_core_color()
+	var secondary_color := _get_aura_secondary_color()
+	var accent_color := _get_aura_accent_color()
+	var quality_name := _get_fx_quality_name()
+	var toxic_vfx_spawned := 0
+	var toxic_vfx_limit := _get_toxic_vfx_limit(quality_name)
 	
 	# Visual effect for aura
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
@@ -1750,30 +1825,66 @@ func _perform_aura_attack() -> void:
 	elif muzzle_flash_scene:
 		var flash = muzzle_flash_scene.instantiate()
 		container.add_child(flash)
-		flash.global_position = global_position
+		flash.global_position = get_muzzle_global_position()
 		if flash.has_method("setup"):
-			flash.setup(tower_color, attack_range / 30.0) # Scale with range
+			var aura_flash_scale := 1.15 if aura_vfx_type == "void_bloom" or aura_vfx_type == "toxic_bloom" else attack_range / 30.0
+			flash.setup(tower_color, aura_flash_scale, aura_vfx_type, secondary_color)
 
 	for enemy in enemies:
 		if is_instance_valid(enemy):
-			var enemy_pos = enemy.global_position
-			enemy.take_damage(damage, enemy_pos, tower_id)
+			var enemy_pos = get_target_hit_anchor_global_position(enemy)
+			enemy.take_damage(damage, enemy_pos, tower_id, attack_type)
 			
 			# Apply vulnerability if sawblade
 			if vulnerability_percent > 0 and enemy.has_method("apply_vulnerability"):
 				enemy.apply_vulnerability(1.0 + vulnerability_percent, vulnerability_duration)
+
+			if aura_vfx_type == "toxic_bloom":
+				if toxic_vfx_spawned < toxic_vfx_limit:
+					_spawn_disease_attack_vfx(enemy_pos, container, tower_color, secondary_color, accent_color, quality_name)
+					toxic_vfx_spawned += 1
+				continue
 				
 			# Small impact effect on each enemy
 			var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
 			if impact_scene:
 				var effect = impact_scene.instantiate()
-				get_tree().current_scene.add_child(effect)
+				var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+				if effects_container:
+					effects_container.add_child(effect)
+				else:
+					get_tree().current_scene.add_child(effect)
 				effect.global_position = enemy_pos
 				if effect.has_method("setup"):
-					effect.setup(tower_color, 0.6)
+					var impact_scale := 0.85 if aura_vfx_type == "void_bloom" else 0.6
+					effect.setup(tower_color, impact_scale, aura_vfx_type, secondary_color, accent_color)
 	
 	if not enemies.is_empty() and audio_manager:
 		audio_manager.play_sfx("tower_shoot_sawblade")
+
+func _spawn_disease_attack_vfx(hit_pos: Vector2, container: Node, core_color: Color, secondary_color: Color, accent_color: Color, quality_name: String) -> void:
+	if container == null:
+		return
+	var effect := Node2D.new()
+	effect.set_script(DISEASE_ATTACK_VFX_SCRIPT)
+	if effect.has_method("setup"):
+		effect.setup(get_muzzle_global_position(), hit_pos, core_color, secondary_color, accent_color, quality_name)
+	container.add_child(effect)
+
+func _get_fx_quality_name() -> String:
+	var pb := get_node_or_null("/root/PerformanceBudget")
+	if pb != null and pb.has_method("get_quality_name"):
+		return str(pb.get_quality_name())
+	return "HIGH"
+
+func _get_toxic_vfx_limit(quality_name: String) -> int:
+	match quality_name:
+		"LOW":
+			return 2
+		"MED":
+			return 4
+		_:
+			return 6
 
 func play_fire_recoil() -> void:
 	# Recoil effect: Kick the turret sprite or pivot backward
@@ -1816,8 +1927,14 @@ func spawn_muzzle_flash(color: Color) -> void:
 		if not container: container = get_tree().current_scene
 		
 		container.add_child(flash)
-		flash.global_position = get_fire_origin()
-		flash.global_rotation = turret_pivot.global_rotation if turret_pivot else global_rotation
+		flash.global_position = get_muzzle_global_position()
+		var direction_angle := turret_pivot.global_rotation if turret_pivot else global_rotation
+		if is_instance_valid(current_target):
+			var hit_anchor := get_target_hit_anchor_global_position(current_target)
+			var direction: Vector2 = hit_anchor - flash.global_position
+			if direction.length_squared() > 0.001:
+				direction_angle = direction.angle()
+		flash.global_rotation = direction_angle
 		
 		if flash.has_method("setup"):
 			var flash_scale = 1.0
@@ -1825,7 +1942,7 @@ func spawn_muzzle_flash(color: Color) -> void:
 			elif visual_type == "rapid": flash_scale = 0.6
 			elif visual_type == "sniper": flash_scale = 1.2
 			elif visual_type == "lightning": flash_scale = 1.4
-			flash.setup(color, flash_scale)
+			flash.setup(color, flash_scale, attack_type, _get_secondary_element_color())
 
 func update_target() -> void:
 	var next_target := find_target()

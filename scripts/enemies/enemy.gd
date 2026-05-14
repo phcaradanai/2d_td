@@ -267,6 +267,9 @@ func get_hit_origin() -> Vector2:
 	# canonical point for projectiles and effects
 	return global_position
 
+func get_hit_anchor_global_position() -> Vector2:
+	return get_hit_origin()
+
 func apply_visuals() -> void:
 	if not is_inside_tree(): return
 	if body: body.visible = false
@@ -2356,8 +2359,10 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	var dn_color = Color.WHITE
 	if shield_remaining > 0 and not is_bulwark:
 		dn_color = Color(0.4, 0.8, 1.0) # Light blue for shielded hits
+	elif source_id.begins_with("disease_"):
+		dn_color = Color(0.58, 1.0, 0.28)
 		
-	spawn_damage_number(int(final_damage), capture_pos, dn_color)
+	spawn_damage_number(int(final_damage), capture_pos, dn_color, source_id)
 	_play_hit_pulse()
 	_try_runner_hit_dash()
 	if enemy_type == "swarm" or tags.has("swarm"):
@@ -2434,12 +2439,15 @@ func flash_body() -> void:
 		queue_redraw()
 	)
 
-func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE) -> void:
+func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
 	if damage_number_scene:
 		var dn = damage_number_scene.instantiate()
 		get_tree().current_scene.add_child(dn)
-		dn.global_position = hit_global + Vector2(randf_range(-5, 5), -20 + randf_range(-5, 5))
+		var offset := Vector2(randf_range(-5, 5), -20 + randf_range(-5, 5))
+		if source_id.begins_with("disease_"):
+			offset = Vector2(randf_range(-12, 12), -12 + randf_range(-3, 3))
 		dn.setup(amount, color)
+		dn.global_position = hit_global + offset
 
 func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag: return

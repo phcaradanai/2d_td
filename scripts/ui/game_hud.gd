@@ -56,6 +56,7 @@ var top_bar_total_waves: int = 0
 @onready var target_mode_option_button: OptionButton = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TargetModeOptionButton
 @onready var tower_upgrade_cost_label: Label = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/TowerUpgradeCostLabel
 @onready var tower_target_label: Label = null # Will be added dynamically or linked
+@onready var tower_special_effect_label: Label = null
 @onready var upgrade_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/UpgradeTowerButton
 @onready var deselect_tower_button: Button = $Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer/DeselectTowerButton
 var sell_tower_button: Button = null
@@ -2169,6 +2170,8 @@ func show_tower_info(info: Dictionary) -> void:
 	# Clear previous type specific labels
 	tower_splash_label.hide()
 	tower_slow_label.hide()
+	if tower_special_effect_label:
+		tower_special_effect_label.hide()
 	
 	var a_type = info.get("attack_type", "single")
 	match a_type:
@@ -2189,8 +2192,8 @@ func show_tower_info(info: Dictionary) -> void:
 		"aura":
 			tower_splash_label.show()
 			var vuln = int(info.get("vulnerability_percent", 0) * 100)
-			tower_splash_label.text = "Type: BLEED AURA (+%d%%)" % vuln
-			tower_splash_label.modulate = Color(1.0, 0.3, 0.3)
+			tower_splash_label.text = "Type: VULNERABILITY AURA (+%d%%)" % vuln
+			tower_splash_label.modulate = Color(0.9, 0.55, 1.0)
 		"support_aura":
 			tower_splash_label.show()
 			var support_type := str(info.get("support_type", ""))
@@ -2219,6 +2222,12 @@ func show_tower_info(info: Dictionary) -> void:
 			tower_splash_label.show()
 			tower_splash_label.text = "Type: DIRECT KINETIC"
 			tower_splash_label.modulate = Color(0.7, 0.8, 0.9)
+
+	var special_text := _build_tower_special_effect_text(info)
+	if tower_special_effect_label and special_text != "":
+		tower_special_effect_label.text = special_text
+		tower_special_effect_label.modulate = Color(0.82, 0.92, 1.0)
+		tower_special_effect_label.show()
 	
 	updating_target_mode_ui = true
 	var current_mode = info.get("target_mode", "first")
@@ -2249,8 +2258,77 @@ func show_tower_info(info: Dictionary) -> void:
 		sell_tower_button.text = "Sell ($%d)" % refund
 		sell_tower_button.show()
 
+func _build_tower_special_effect_text(info: Dictionary) -> String:
+	var lines: PackedStringArray = []
+	var economy_type := str(info.get("economy_type", ""))
+	var attack_type := str(info.get("attack_type", "single"))
+	if economy_type == "life":
+		var required := int(info.get("on_kill_life_counter_required", 0))
+		var progress := int(info.get("on_kill_life_progress", 0))
+		if required > 0:
+			lines.append("Special Effect")
+			lines.append("Life Harvest")
+			lines.append("+1 Core after %d kills credited to this tower type." % required)
+			lines.append("Progress: %d / %d" % [progress, required])
+	elif economy_type == "gold":
+		var bonus_pct := int(round(float(info.get("on_kill_gold_bonus_percent", 0.0)) * 100.0))
+		if bonus_pct > 0:
+			lines.append("Special Effect")
+			lines.append("Gold Bounty")
+			lines.append("+%d%% bonus Credits on kills by this tower." % bonus_pct)
+	elif attack_type == "clone_support":
+		var clone_pct := int(round(float(info.get("clone_damage_multiplier", 0.0)) * 100.0))
+		var clone_target := str(info.get("clone_target_name", ""))
+		lines.append("Special Effect")
+		lines.append("Trickery Clone")
+		if clone_target != "":
+			lines.append("Copies %s at %d%% damage." % [clone_target, clone_pct])
+		else:
+			lines.append("Copies a selected tower at %d%% damage." % clone_pct)
+	elif attack_type == "support_aura":
+		var support_type := str(info.get("support_type", ""))
+		var support_pct := int(round(float(info.get("support_value", 0.0)) * 100.0))
+		var support_limit := int(info.get("support_limit", 0))
+		var support_count := int(info.get("support_target_count", 0))
+		if support_type == "attack_speed":
+			lines.append("Special Effect")
+			lines.append("Well Aura")
+			lines.append("+%d%% attack speed to nearby towers." % support_pct)
+			lines.append("Linked: %d / %d" % [support_count, support_limit])
+		elif support_type == "damage":
+			lines.append("Special Effect")
+			lines.append("Blacksmith Aura")
+			lines.append("+%d%% damage to nearby towers." % support_pct)
+			lines.append("Linked: %d / %d" % [support_count, support_limit])
+	elif attack_type == "aura":
+		var vuln_pct := int(round(float(info.get("vulnerability_percent", 0.0)) * 100.0))
+		var vuln_dur := float(info.get("vulnerability_duration", 0.0))
+		if vuln_pct > 0:
+			lines.append("Special Effect")
+			lines.append("Vulnerability Aura")
+			lines.append("+%d%% damage taken for %.1fs." % [vuln_pct, vuln_dur])
+	elif attack_type == "slow":
+		var slow_pct := int(round(float(info.get("slow_percent", 0.0)) * 100.0))
+		var slow_dur := float(info.get("slow_duration", 0.0))
+		if slow_pct > 0:
+			lines.append("Special Effect")
+			lines.append("Area Slow")
+			lines.append("Slows enemies by %d%% for %.1fs." % [slow_pct, slow_dur])
+	elif attack_type == "chain":
+		var jumps := int(info.get("chain_jumps", 0))
+		var chain_range := int(round(float(info.get("chain_range", 0.0))))
+		if jumps > 0:
+			lines.append("Special Effect")
+			lines.append("Chain Attack")
+			lines.append("Jumps to %d more enemies within %d range." % [jumps, chain_range])
+	if lines.is_empty():
+		return ""
+	return "\n".join(lines)
+
 func hide_tower_info() -> void:
 	hide_tower_info_panel()
+	if tower_special_effect_label:
+		tower_special_effect_label.hide()
 	if sell_tower_button:
 		sell_tower_button.hide()
 
@@ -2448,6 +2526,14 @@ func _setup_right_sidebar_layout() -> void:
 		detail_vbox.add_child(tower_target_label)
 		# Move it after fire rate
 		detail_vbox.move_child(tower_target_label, tower_fire_rate_label.get_index() + 1)
+		tower_special_effect_label = Label.new()
+		tower_special_effect_label.name = "TowerSpecialEffectLabel"
+		tower_special_effect_label.add_theme_font_size_override("font_size", 12)
+		tower_special_effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		tower_special_effect_label.text = ""
+		tower_special_effect_label.hide()
+		detail_vbox.add_child(tower_special_effect_label)
+		detail_vbox.move_child(tower_special_effect_label, tower_slow_label.get_index() + 1)
 
 	# 2. Setup No Selection Panel (Placeholder)
 	no_selection_panel = PanelContainer.new()
