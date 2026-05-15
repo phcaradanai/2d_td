@@ -1,6 +1,6 @@
-FROM nginx:alpine
+FROM nginx:1.27-alpine
 
-COPY nginx.conf /etc/nginx/conf.d/default.conf
-COPY builds/web/ /usr/share/nginx/html/
+COPY ./web/ /usr/share/nginx/html/
+COPY ./nginx.conf /etc/nginx/conf.d/default.conf
 
 EXPOSE 80
