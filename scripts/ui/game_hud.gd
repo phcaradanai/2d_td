@@ -118,6 +118,16 @@ var wave_intel_suggested_label: RichTextLabel = null
 var wave_intel_warnings_label: Label = null
 var no_selection_panel: PanelContainer = null
 
+const SHOW_DAMAGE_PANEL := true
+const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
+var damage_stats_tracker: Node = null
+var damage_stats_panel: PanelContainer = null
+var damage_stats_header_button: Button = null
+var damage_stats_details: RichTextLabel = null
+var damage_stats_expanded: bool = false
+var _damage_stats_dirty: bool = true
+var _damage_stats_refresh_elapsed: float = 0.0
+
 var enemy_role_tooltips = {
 	"Fast": "reaches base quickly",
 	"Heavy": "high health",
@@ -372,6 +382,7 @@ func _ready() -> void:
 	set_build_status("Build: None")
 	_ensure_interest_status_label()
 	_ensure_start_wave_countdown_badge()
+	_ensure_damage_stats_panel()
 	set_interest_status("Interest: Off")
 	
 	# Top Bar Final Polish
@@ -389,6 +400,117 @@ func _ready() -> void:
 	var top_hbox = gold_label.get_parent()
 	if top_hbox is HBoxContainer:
 		top_hbox.add_theme_constant_override("separation", 24)
+
+func _process(delta: float) -> void:
+	if damage_stats_panel == null or not SHOW_DAMAGE_PANEL:
+		return
+	_damage_stats_refresh_elapsed += delta
+	if _damage_stats_refresh_elapsed >= DAMAGE_PANEL_REFRESH_INTERVAL:
+		_damage_stats_refresh_elapsed = 0.0
+		_refresh_damage_stats_panel()
+
+func set_damage_stats_tracker(tracker: Node) -> void:
+	damage_stats_tracker = tracker
+	if damage_stats_tracker and damage_stats_tracker.has_signal("stats_changed"):
+		damage_stats_tracker.stats_changed.connect(_on_damage_stats_changed)
+	_ensure_damage_stats_panel()
+	_on_damage_stats_changed()
+
+func _on_damage_stats_changed() -> void:
+	_damage_stats_dirty = true
+	if damage_stats_expanded:
+		_refresh_damage_stats_panel()
+
+func _ensure_damage_stats_panel() -> void:
+	if damage_stats_panel != null or root == null or not SHOW_DAMAGE_PANEL:
+		return
+	damage_stats_panel = PanelContainer.new()
+	damage_stats_panel.name = "DamageStatsPanel"
+	damage_stats_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	damage_stats_panel.custom_minimum_size = Vector2(230.0, 38.0)
+	damage_stats_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
+	_set_damage_stats_panel_bounds(false)
+	root.add_child(damage_stats_panel)
+
+	var box := VBoxContainer.new()
+	box.name = "DamageStatsBox"
+	box.add_theme_constant_override("separation", 4)
+	damage_stats_panel.add_child(box)
+
+	damage_stats_header_button = Button.new()
+	damage_stats_header_button.name = "DamageStatsHeader"
+	damage_stats_header_button.text = "Damage: 0 | Top: -"
+	damage_stats_header_button.tooltip_text = "Toggle damage details"
+	damage_stats_header_button.custom_minimum_size = Vector2(230.0, 34.0)
+	damage_stats_header_button.pressed.connect(_toggle_damage_stats_panel)
+	box.add_child(damage_stats_header_button)
+
+	damage_stats_details = RichTextLabel.new()
+	damage_stats_details.name = "DamageStatsDetails"
+	damage_stats_details.bbcode_enabled = false
+	damage_stats_details.fit_content = false
+	damage_stats_details.scroll_active = true
+	damage_stats_details.custom_minimum_size = Vector2(300.0, 190.0)
+	damage_stats_details.visible = false
+	box.add_child(damage_stats_details)
+
+	_refresh_damage_stats_panel()
+
+func _toggle_damage_stats_panel() -> void:
+	damage_stats_expanded = not damage_stats_expanded
+	if damage_stats_details:
+		damage_stats_details.visible = damage_stats_expanded
+	if damage_stats_panel:
+		damage_stats_panel.custom_minimum_size = Vector2(310.0, 230.0) if damage_stats_expanded else Vector2(230.0, 38.0)
+		_set_damage_stats_panel_bounds(damage_stats_expanded)
+	_refresh_damage_stats_panel()
+
+func _set_damage_stats_panel_bounds(expanded: bool) -> void:
+	if damage_stats_panel == null:
+		return
+	damage_stats_panel.offset_left = -410.0 if expanded else -330.0
+	damage_stats_panel.offset_top = -270.0 if expanded else -56.0
+	damage_stats_panel.offset_right = -88.0
+	damage_stats_panel.offset_bottom = -18.0
+
+func _refresh_damage_stats_panel() -> void:
+	_damage_stats_dirty = false
+	if damage_stats_header_button == null:
+		return
+	var summary: Dictionary = {}
+	if damage_stats_tracker:
+		if damage_stats_expanded and damage_stats_tracker.has_method("get_summary"):
+			summary = damage_stats_tracker.get_summary()
+		elif damage_stats_tracker.has_method("get_compact_summary"):
+			summary = damage_stats_tracker.get_compact_summary()
+	var wave_damage: float = float(summary.get("wave_damage", 0.0))
+	var top_entry: Dictionary = summary.get("top_entry", {})
+	var top_name: String = str(top_entry.get("tower_name", "-")) if not top_entry.is_empty() else "-"
+	var top_damage: float = float(top_entry.get("wave_damage", 0.0)) if not top_entry.is_empty() else 0.0
+	damage_stats_header_button.text = "Damage: %d | Top: %s %d" % [int(round(wave_damage)), top_name, int(round(top_damage))]
+	if not damage_stats_expanded or damage_stats_details == null:
+		return
+	var lines: Array[String] = []
+	lines.append("Wave damage: %d" % int(round(wave_damage)))
+	lines.append("Total damage: %d" % int(round(float(summary.get("total_damage", 0.0)))))
+	lines.append("")
+	lines.append("Tower                 Wave   Hits   Total")
+	var entries: Array = summary.get("entries", [])
+	for entry_value in entries:
+		var entry: Dictionary = entry_value
+		var entry_wave_damage: float = float(entry.get("wave_damage", 0.0))
+		if entry_wave_damage <= 0.0:
+			continue
+		var tower_name: String = str(entry.get("tower_name", entry.get("tower_id", "Unknown")))
+		lines.append("%-20s %5d %5d %7d" % [
+			tower_name.substr(0, 20),
+			int(round(entry_wave_damage)),
+			int(entry.get("wave_hit_count", 0)),
+			int(round(float(entry.get("total_damage", 0.0)))),
+		])
+	if lines.size() <= 5:
+		lines.append("No tower damage yet.")
+	damage_stats_details.text = "\n".join(lines)
 
 func set_panel_active(panel: Control, active: bool, block_mouse: bool = true) -> void:
 	if panel == null: return

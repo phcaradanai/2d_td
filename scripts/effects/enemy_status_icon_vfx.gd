@@ -30,6 +30,8 @@ func _draw() -> void:
 		# [VISUAL-OPT] Compact role identity icons — replace area aura visuals.
 		"healer_id":
 			_draw_healer_id_icon(pulse)
+		"heal_cast":
+			_draw_heal_cast_icon(pulse)
 		"disruptor_id":
 			_draw_disruptor_id_icon(pulse)
 		"bulwark_id":
@@ -66,6 +68,14 @@ func _draw_healer_id_icon(pulse: float) -> void:
 	draw_line(Vector2(-s, 0.0), Vector2(s, 0.0), c, 2.5)
 	draw_line(Vector2(0.0, -s), Vector2(0.0, s), c, 2.5)
 	draw_circle(Vector2.ZERO, 1.5, Color(1.0, 1.0, 1.0, 0.7 * pulse))
+
+func _draw_heal_cast_icon(pulse: float) -> void:
+	var s := 7.0
+	var c := Color(color.r, color.g, color.b, 0.95 * pulse)
+	draw_circle(Vector2.ZERO, 9.0, Color(color.r, color.g, color.b, 0.12 * pulse))
+	draw_line(Vector2(-s, 0.0), Vector2(s, 0.0), c, 3.0)
+	draw_line(Vector2(0.0, -s), Vector2(0.0, s), c, 3.0)
+	draw_arc(Vector2.ZERO, 10.0, -PI * 0.15, PI * 1.15, 14, Color(color.r, color.g, color.b, 0.38 * pulse), 1.2)
 
 # [VISUAL-OPT] Compact rotating triangle — disruptor jammer identity marker.
 func _draw_disruptor_id_icon(pulse: float) -> void:

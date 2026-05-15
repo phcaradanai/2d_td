@@ -18,6 +18,7 @@ const HUD_STATE_PRESENTER_SCRIPT = preload("res://scripts/main/hud_state_present
 const WAVE_PREVIEW_HELPER_SCRIPT = preload("res://scripts/main/wave_preview_helper.gd")
 const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_plan_helper.gd")
 const GAMEPLAY_CONTROLLER_BINDER_SCRIPT = preload("res://scripts/main/gameplay_controller_binder.gd")
+const DAMAGE_STATS_TRACKER_SCRIPT = preload("res://scripts/core/damage_stats_tracker.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -103,6 +104,7 @@ var auto_next_wave_service: RefCounted = null
 var element_td_interest_service: RefCounted = null
 var hud_state_presenter: RefCounted = null
 var _gameplay_controller_binder: RefCounted = null
+var damage_stats_tracker: Node = null
 const ELEMENT_PICK_INTERVAL: int = 5
 const STARTING_ELEMENT_PICKS: int = 0
 const INTEREST_PICK_ID: String = "__interest__"
@@ -123,6 +125,7 @@ func _ready() -> void:
 	if game_hud: theme_mgr.apply_theme(game_hud)
 	if level_select: theme_mgr.apply_theme(level_select)
 	if debug_panel: theme_mgr.apply_theme(debug_panel)
+	_ensure_damage_stats_tracker()
 
 	if OS.is_debug_build() or enable_debug_tools:
 		ensure_debug_input_actions()
@@ -221,6 +224,15 @@ func _set_bound_hud_build_status(message: String) -> void:
 
 func _hide_element_choice() -> void:
 	game_hud.hide_element_choice(true)
+
+func _ensure_damage_stats_tracker() -> void:
+	if damage_stats_tracker == null or not is_instance_valid(damage_stats_tracker):
+		damage_stats_tracker = get_node_or_null("DamageStatsTracker")
+	if damage_stats_tracker == null:
+		damage_stats_tracker = DAMAGE_STATS_TRACKER_SCRIPT.new()
+		add_child(damage_stats_tracker)
+	if game_hud and game_hud.has_method("set_damage_stats_tracker"):
+		game_hud.set_damage_stats_tracker(damage_stats_tracker)
 
 func _update_world_layout() -> void:
 	_get_gameplay_layout_controller().update_world_layout()
@@ -1670,6 +1682,8 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status(label_text)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
+	if damage_stats_tracker and damage_stats_tracker.has_method("reset_wave"):
+		damage_stats_tracker.reset_wave()
 	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
 	else:
@@ -1776,16 +1790,6 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 			add_child(effect)
 			effect.global_position = global_pos
 			effect.setup(Color(1, 0, 0), 3.0)
-
-	# Spawn floating text
-	var damage_number_scene = preload("res://scenes/effects/DamageNumber.tscn")
-	if damage_number_scene:
-		var dn = damage_number_scene.instantiate()
-		var container = get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if container:
-			container.add_child(dn)
-			dn.global_position = global_pos + Vector2(0, -30)
-			dn.setup(base_damage, Color(1, 0.2, 0.2)) # Red for base damage
 
 	if audio_manager:
 		audio_manager.play_sfx("enemy_reach_base")

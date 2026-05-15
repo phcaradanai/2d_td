@@ -1,7 +1,7 @@
 extends Node2D
 
 const PERFORMANCE_MODE := true  # Keeps trails/splash heavy FX off; compact impacts are quality-gated.
-const ELEMENTAL_DEBUG_FLOATING_TEXT := true
+const ELEMENTAL_DEBUG_FLOATING_TEXT := false
 const ELEMENTAL_DEBUG_FLOATING_TEXT_META := "elemental_debug_floating_text_enabled"
 const ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META := "elemental_debug_floating_text_last_msec"
 const ELEMENTAL_DEBUG_FLOATING_TEXT_MIN_INTERVAL_MSEC := 90

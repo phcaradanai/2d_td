@@ -545,6 +545,9 @@ func _apply_respawn_health(enemy: Node, hp_remaining: float) -> void:
 	if hp_bar != null and is_instance_valid(hp_bar):
 		hp_bar.max_value = max_hp
 		hp_bar.value = preserved_hp
+		hp_bar.visible = false
+	if enemy.has_method("_update_health_visual_state"):
+		enemy._update_health_visual_state(true)
 
 func _on_enemy_removed() -> void:
 	active_enemy_count -= 1

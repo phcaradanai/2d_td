@@ -34,6 +34,9 @@ var status_icon: Node = null
 var protected_icon: Node = null
 # [VISUAL-OPT] Permanent compact identity symbol for special creep roles.
 var role_icon: Node = null
+var heal_cast_icon: Node = null
+var _heal_cast_hide_timer: SceneTreeTimer = null
+var _last_heal_cast_msec: int = 0
 var role_color: Color = Color(0.25, 0.85, 1.0)
 var linked_towers: Array[Node] = []
 var signals_connected: bool = false
@@ -91,13 +94,18 @@ func refresh_debug_visibility() -> void:
 	_apply_debug_visibility()
 
 func play_heal_cast() -> void:
-	if cast_beam and debug_show_heal_tick_events:
-		cast_beam.play_heal_cast(0.48 if global_quality > VFX_QUALITY_LOW else 0.36)
-
-func play_heal_received(amount: float) -> void:
 	if not debug_show_heal_tick_events:
 		return
-	_spawn_impact("heal_received", Color(0.58, 1.0, 0.78), 0.62, amount)
+	var now_msec := Time.get_ticks_msec()
+	if now_msec - _last_heal_cast_msec < 180:
+		return
+	_last_heal_cast_msec = now_msec
+	_show_heal_cast_icon()
+
+func play_heal_received(amount: float) -> void:
+	# Healing is already represented by one pooled cast icon on the healer.
+	# Avoid spawning per-target impact nodes during dense support waves.
+	pass
 
 func play_shield_spark(raw_damage: float, final_damage: float) -> void:
 	var text := "%.0f>%.0f" % [raw_damage, final_damage] if OS.is_debug_build() else ""
@@ -250,6 +258,19 @@ func _create_role_icon(icon_type: String, color: Color) -> void:
 	role_icon.position = Vector2(0, -24)
 	vfx_root.add_child(role_icon)
 	role_icon.setup(icon_type, color)
+
+func _show_heal_cast_icon() -> void:
+	if heal_cast_icon == null or not is_instance_valid(heal_cast_icon):
+		heal_cast_icon = StatusIconScript.new()
+		heal_cast_icon.name = "HealCastIcon"
+		heal_cast_icon.position = Vector2(0, -38)
+		vfx_root.add_child(heal_cast_icon)
+	heal_cast_icon.visible = true
+	heal_cast_icon.setup("heal_cast", Color(0.55, 1.0, 0.72))
+	var icon := heal_cast_icon
+	await get_tree().create_timer(0.34).timeout
+	if icon and is_instance_valid(icon):
+		icon.visible = false
 
 func _connect_enemy_signals() -> void:
 	if owner_enemy == null:
