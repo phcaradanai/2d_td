@@ -38,19 +38,19 @@ mouse_filter = 2
 theme_override_constants/separation = 0
 
 [node name="TopBar" type="PanelContainer" parent="Root/ScreenLayout" unique_id=1747892975]
-custom_minimum_size = Vector2(0, 60)
+custom_minimum_size = Vector2(0, 68)
 layout_mode = 2
 
 [node name="MarginContainer" type="MarginContainer" parent="Root/ScreenLayout/TopBar" unique_id=2001988592]
 layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 12
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 12
+theme_override_constants/margin_left = 18
+theme_override_constants/margin_top = 8
+theme_override_constants/margin_right = 18
+theme_override_constants/margin_bottom = 8
 
 [node name="HBoxContainer" type="HBoxContainer" parent="Root/ScreenLayout/TopBar/MarginContainer" unique_id=1245933317]
 layout_mode = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 18
 
 [node name="GoldLabel" type="Label" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer" unique_id=411150706]
 layout_mode = 2
@@ -64,6 +64,7 @@ vertical_alignment = 1
 
 [node name="WaveLabel" type="Label" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer" unique_id=598857697]
 layout_mode = 2
+theme_override_font_sizes/font_size = 17
 text = "Wave: 0"
 vertical_alignment = 1
 
@@ -86,25 +87,25 @@ size_flags_horizontal = 3
 mouse_filter = 2
 
 [node name="StartWaveButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer" unique_id=2052984099]
-custom_minimum_size = Vector2(140, 36)
+custom_minimum_size = Vector2(148, 38)
 layout_mode = 2
 size_flags_vertical = 4
 text = "Start Wave 1"
 
 [node name="SettingsButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer" unique_id=528885818]
-custom_minimum_size = Vector2(90, 36)
+custom_minimum_size = Vector2(86, 38)
 layout_mode = 2
 size_flags_vertical = 4
 text = "Settings"
 
 [node name="PauseButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer" unique_id=1700635020]
-custom_minimum_size = Vector2(90, 36)
+custom_minimum_size = Vector2(80, 38)
 layout_mode = 2
 size_flags_vertical = 4
 text = "Pause"
 
 [node name="RestartButton" type="Button" parent="Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer" unique_id=1585824994]
-custom_minimum_size = Vector2(90, 36)
+custom_minimum_size = Vector2(86, 38)
 layout_mode = 2
 size_flags_vertical = 4
 text = "Restart"
@@ -137,45 +138,46 @@ theme_override_constants/separation = 10
 
 [node name="Label" type="Label" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=801999728]
 layout_mode = 2
-theme_override_font_sizes/font_size = 18
-text = "Towers"
+theme_override_colors/font_color = Color(0.3, 0.9, 1.0, 1.0)
+theme_override_font_sizes/font_size = 14
+text = "BUILD TOWERS"
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=449384771]
 layout_mode = 2
 
 [node name="BasicTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=1903529846]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Basic ($50)"
 
 [node name="RapidTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=1545094826]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Rapid ($65)"
 
 [node name="CannonTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=637133305]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Cannon ($90)"
 
 [node name="SlowTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=1314133326]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Slow ($75)"
 
 [node name="SniperTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=871584645]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Sniper ($150)"
 
 [node name="LightningTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=51584840]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Lightning ($130)"
 
 [node name="SawbladeTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/LeftSidebar/MarginContainer/VBoxContainer" unique_id=2088706818]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Sawblade ($120)"
 
@@ -194,6 +196,7 @@ autowrap_mode = 3
 custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
 text = "Cancel Build"
+tooltip_text = "ESC"
 
 [node name="PlayfieldArea" type="Control" parent="Root/ScreenLayout/MainContent" unique_id=1032439366]
 layout_mode = 2
@@ -213,10 +216,10 @@ size_flags_vertical = 10
 
 [node name="MarginContainer" type="MarginContainer" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar" unique_id=595799597]
 layout_mode = 2
-theme_override_constants/margin_left = 15
-theme_override_constants/margin_top = 15
-theme_override_constants/margin_right = 15
-theme_override_constants/margin_bottom = 15
+theme_override_constants/margin_left = 14
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 14
+theme_override_constants/margin_bottom = 14
 
 [node name="VBoxContainer" type="VBoxContainer" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer" unique_id=2119816121]
 layout_mode = 2
@@ -224,8 +227,7 @@ theme_override_constants/separation = 10
 
 [node name="TowerNameLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=1577748135]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.4, 0.6, 1, 1)
-theme_override_font_sizes/font_size = 20
+theme_override_font_sizes/font_size = 18
 text = "Tower Name"
 horizontal_alignment = 1
 
@@ -263,19 +265,18 @@ layout_mode = 2
 
 [node name="TowerUpgradeCostLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=560849420]
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.8, 0, 1)
 text = "Upgrade: 40 Gold"
 
 [node name="HSeparator" type="HSeparator" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=818465790]
 layout_mode = 2
 
 [node name="UpgradeTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=161536428]
-custom_minimum_size = Vector2(0, 45)
+custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Upgrade"
 
 [node name="DeselectTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=430641691]
-custom_minimum_size = Vector2(0, 40)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "Close"
 
@@ -365,13 +366,13 @@ text = "Gold Remaining: 0"
 layout_mode = 2
 
 [node name="CenterRestartButton" type="Button" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer" unique_id=1315001458]
-custom_minimum_size = Vector2(240, 50)
+custom_minimum_size = Vector2(240, 48)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "RESTART"
 
 [node name="CenterMenuButton" type="Button" parent="Root/CenterMessagePanel/MarginContainer/VBoxContainer" unique_id=286339039]
-custom_minimum_size = Vector2(240, 50)
+custom_minimum_size = Vector2(240, 44)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "MAIN MENU"
