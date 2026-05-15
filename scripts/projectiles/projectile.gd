@@ -431,6 +431,9 @@ func _handle_chain_jump(hit_pos: Vector2) -> void:
 		next_proj.global_position = hit_pos
 		next_proj.setup(next_target, damage * chain_falloff, speed, "chain", effect_radius, slow_percent, slow_duration, target_categories, source_id, vulnerability_percent, vulnerability_duration, attack_elements_override)
 		next_proj.setup_chain(chain_jumps - 1, chain_range, chain_falloff, chained_enemies)
+		# Propagate status effects (slow, hex, etc.) to every chain bounce.
+		if not status_effects.is_empty() and next_proj.has_method("setup_status_effects"):
+			next_proj.setup_status_effects(status_effects)
 		next_proj.modulate = modulate # Keep lightning color
 
 func _find_next_chain_target(hit_pos: Vector2) -> Node2D:

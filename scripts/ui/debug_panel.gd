@@ -656,7 +656,7 @@ func _on_disruptor_counterplay_validate_pressed() -> void:
 	]))
 
 func _disruptor_counterplay_report(level_data: Dictionary) -> Dictionary:
-	var towers: Variant = _load_json_file("res://data/towers.json")
+	var towers: Variant = _load_json_file("res://data/towers_tree.json")
 	var enemies: Variant = _load_json_file("res://data/enemies.json")
 	var sniper: Dictionary = towers.get("sniper_tower", {}) if towers is Dictionary else {}
 	var sniper_range: float = 0.0

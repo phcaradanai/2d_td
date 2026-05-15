@@ -6,7 +6,7 @@ const ENEMY_SCENE := preload("res://scenes/enemies/Enemy.tscn")
 const PROJECTILE_SCENE := preload("res://scenes/projectiles/Projectile.tscn")
 const TOWER_SCENE := preload("res://scenes/towers/Tower.tscn")
 const WAVE_MANAGER_SCRIPT := preload("res://scripts/managers/wave_manager.gd")
-const TOWERS_PATH := "res://data/towers.json"
+const TOWERS_PATH := "res://data/towers_tree.json"
 
 class FakeEnemy:
 	extends Node2D

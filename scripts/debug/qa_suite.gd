@@ -15,20 +15,20 @@ func _init():
 	var validator = load("res://scripts/debug/level_validator.gd").new()
 	var all_ok = true
 	
-	# 1. Check towers.json
+	# 1. Check towers_tree.json
 	report_lines.append("\\n[1] Checking Towers Configuration...")
-	var towers_file = FileAccess.open("res://data/towers.json", FileAccess.READ)
+	var towers_file = FileAccess.open("res://data/towers_tree.json", FileAccess.READ)
 	if not towers_file:
-		report_lines.append("ERROR: data/towers.json not found!")
+		report_lines.append("ERROR: data/towers_tree.json not found!")
 		all_ok = false
 	else:
 		var json = JSON.new()
 		var err = json.parse(towers_file.get_as_text())
 		if err != OK:
-			report_lines.append("ERROR: towers.json syntax is invalid.")
+			report_lines.append("ERROR: towers_tree.json syntax is invalid.")
 			all_ok = false
 		else:
-			report_lines.append("OK: towers.json parsed successfully. (" + str(json.data.size()) + " towers)")
+			report_lines.append("OK: towers_tree.json parsed successfully. (" + str(json.data.size()) + " towers)")
 			
 	# 2. Check enemies.json
 	report_lines.append("\\n[2] Checking Enemies Configuration...")

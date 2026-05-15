@@ -3,7 +3,7 @@ extends Node
 # Perfect Play Balance Solver
 # This script searches for optimal plans and suggests balance adjustments.
 
-const TOWERS_CONFIG_PATH = "res://data/towers.json"
+const TOWERS_CONFIG_PATH = "res://data/towers_tree.json"
 const ENEMIES_CONFIG_PATH = "res://data/enemies.json"
 const OUTPUT_DIR = "user://balance_reports/"
 

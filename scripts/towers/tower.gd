@@ -2401,6 +2401,59 @@ func _build_attack_status_effects() -> Array:
 			"attack_type": "fire"
 		})
 
+	# ── Gap-fix: families that previously had no secondary identity ──────────
+
+	# Poison: venom DoT alongside the area slow
+	if tower_id.begins_with("poison_") and damage > 0.0:
+		effects.append({
+			"type": "dot",
+			"damage_per_second": damage * 0.20,
+			"duration": slow_duration if slow_duration > 0.0 else 2.6,
+			"attack_type": "nature"
+		})
+
+	# Hail: frost slow applied to every chain-bounce target (config supplies slow_percent/duration)
+	if tower_id.begins_with("hail_") and slow_percent > 0.0 and slow_duration > 0.0:
+		effects.append({
+			"type": "root",
+			"snare_percent": slow_percent,
+			"duration": slow_duration
+		})
+
+	# Jinx: hex damage amplification on every chain-bounce target
+	if tower_id.begins_with("jinx_") and vulnerability_percent > 0.0 and vulnerability_duration > 0.0:
+		effects.append({
+			"type": "damage_amp",
+			"percent": vulnerability_percent,
+			"duration": vulnerability_duration
+		})
+
+	# Flame: burn DoT alongside vulnerability aura (DoT dispatched via _apply_attack_status_effects_to_enemy)
+	if tower_id.begins_with("flame_") and damage > 0.0:
+		effects.append({
+			"type": "dot",
+			"damage_per_second": damage * 0.18,
+			"duration": vulnerability_duration if vulnerability_duration > 0.0 else 1.5,
+			"attack_type": "fire"
+		})
+
+	# Oblivion: void vitality drain DoT alongside vulnerability aura
+	if tower_id.begins_with("oblivion_") and damage > 0.0:
+		effects.append({
+			"type": "dot",
+			"damage_per_second": damage * 0.12,
+			"duration": vulnerability_duration if vulnerability_duration > 0.0 else 2.0,
+			"attack_type": "dark"
+		})
+
+	# Drowning: abyssal grip — brief heavy root on each hit (85% snare, 0.65s)
+	if tower_id.begins_with("drowning_"):
+		effects.append({
+			"type": "root",
+			"snare_percent": 0.85,
+			"duration": 0.65
+		})
+
 	return effects
 
 func _should_apply_direct_vulnerability() -> bool:
@@ -2411,19 +2464,29 @@ func _should_apply_direct_vulnerability() -> bool:
 	)
 
 func _apply_attack_status_effects_to_enemy(enemy: Variant) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
 	for effect in _build_attack_status_effects():
 		var effect_type := str(effect.get("type", "")).to_lower()
 		var duration := float(effect.get("duration", 0.0))
 		match effect_type:
 			"armor_reduction":
-				if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_armor_reduction"):
+				if enemy.has_method("apply_armor_reduction"):
 					enemy.apply_armor_reduction(float(effect.get("percent", 0.0)), duration)
 			"damage_amp":
-				if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_damage_amp"):
+				if enemy.has_method("apply_damage_amp"):
 					enemy.apply_damage_amp(1.0 + float(effect.get("percent", 0.0)), duration)
 			"root":
-				if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_root"):
+				if enemy.has_method("apply_root"):
 					enemy.apply_root(duration, float(effect.get("snare_percent", 1.0)))
+			"dot":
+				if enemy.has_method("apply_damage_over_time"):
+					enemy.apply_damage_over_time(
+						float(effect.get("damage_per_second", 0.0)),
+						duration,
+						tower_id,
+						str(effect.get("attack_type", "dot"))
+					)
 
 func _spawn_disease_attack_vfx(hit_pos: Vector2, container: Node, core_color: Color, secondary_color: Color, accent_color: Color, quality_name: String) -> void:
 	if container == null:

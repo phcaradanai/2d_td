@@ -6,7 +6,7 @@ const ENEMY_SCENE := preload("res://scenes/enemies/Enemy.tscn")
 const TOWER_SCENE := preload("res://scenes/towers/Tower.tscn")
 const MOCK_WAVE_MANAGER_SCRIPT := preload("res://scripts/debug/enemy_feature_wave_manager_mock.gd")
 const ENEMIES_PATH := "res://data/enemies.json"
-const TOWERS_PATH := "res://data/towers.json"
+const TOWERS_PATH := "res://data/towers_tree.json"
 
 var enemies_config: Dictionary = {}
 var towers_config: Dictionary = {}

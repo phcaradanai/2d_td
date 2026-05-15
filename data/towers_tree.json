@@ -2701,12 +2701,16 @@
 		"fire_rate": 0.68,
 		"chain_jumps": 4,
 		"chain_range": 90,
-		"chain_falloff": 0.82
+		"chain_falloff": 0.82,
+		"slow_percent": 0.28,
+		"slow_duration": 1.8
 	  }
 	],
 	"chain_jumps": 4,
 	"chain_range": 90,
-	"chain_falloff": 0.82
+	"chain_falloff": 0.82,
+	"slow_percent": 0.28,
+	"slow_duration": 1.8
   },
   "hail_t2": {
 	"id": "hail_t2",
@@ -2744,12 +2748,16 @@
 		"fire_rate": 0.63,
 		"chain_jumps": 5,
 		"chain_range": 104,
-		"chain_falloff": 0.82
+		"chain_falloff": 0.82,
+		"slow_percent": 0.34,
+		"slow_duration": 2.1
 	  }
 	],
 	"chain_jumps": 5,
 	"chain_range": 104,
-	"chain_falloff": 0.82
+	"chain_falloff": 0.82,
+	"slow_percent": 0.34,
+	"slow_duration": 2.1
   },
   "hail_t3": {
 	"id": "hail_t3",
@@ -2785,12 +2793,16 @@
 		"fire_rate": 0.58,
 		"chain_jumps": 6,
 		"chain_range": 118,
-		"chain_falloff": 0.82
+		"chain_falloff": 0.82,
+		"slow_percent": 0.4,
+		"slow_duration": 2.4
 	  }
 	],
 	"chain_jumps": 6,
 	"chain_range": 118,
-	"chain_falloff": 0.82
+	"chain_falloff": 0.82,
+	"slow_percent": 0.4,
+	"slow_duration": 2.4
   },
   "jinx_t1": {
 	"id": "jinx_t1",
@@ -2828,12 +2840,16 @@
 		"fire_rate": 0.72,
 		"chain_jumps": 3,
 		"chain_range": 105,
-		"chain_falloff": 0.78
+		"chain_falloff": 0.78,
+		"vulnerability_percent": 0.14,
+		"vulnerability_duration": 1.8
 	  }
 	],
 	"chain_jumps": 3,
 	"chain_range": 105,
-	"chain_falloff": 0.78
+	"chain_falloff": 0.78,
+	"vulnerability_percent": 0.14,
+	"vulnerability_duration": 1.8
   },
   "jinx_t2": {
 	"id": "jinx_t2",
@@ -2871,12 +2887,16 @@
 		"fire_rate": 0.66,
 		"chain_jumps": 4,
 		"chain_range": 119,
-		"chain_falloff": 0.78
+		"chain_falloff": 0.78,
+		"vulnerability_percent": 0.18,
+		"vulnerability_duration": 2.1
 	  }
 	],
 	"chain_jumps": 4,
 	"chain_range": 119,
-	"chain_falloff": 0.78
+	"chain_falloff": 0.78,
+	"vulnerability_percent": 0.18,
+	"vulnerability_duration": 2.1
   },
   "jinx_t3": {
 	"id": "jinx_t3",
@@ -2912,12 +2932,16 @@
 		"fire_rate": 0.61,
 		"chain_jumps": 5,
 		"chain_range": 133,
-		"chain_falloff": 0.78
+		"chain_falloff": 0.78,
+		"vulnerability_percent": 0.22,
+		"vulnerability_duration": 2.4
 	  }
 	],
 	"chain_jumps": 5,
 	"chain_range": 133,
-	"chain_falloff": 0.78
+	"chain_falloff": 0.78,
+	"vulnerability_percent": 0.22,
+	"vulnerability_duration": 2.4
   },
   "oblivion_t1": {
 	"id": "oblivion_t1",
@@ -3310,10 +3334,14 @@
 		"damage": 28.0,
 		"range": 180,
 		"fire_rate": 1.28,
-		"splash_radius": 100
+		"splash_radius": 100,
+		"slow_percent": 0.22,
+		"slow_duration": 1.5
 	  }
 	],
-	"splash_radius": 100
+	"splash_radius": 100,
+	"slow_percent": 0.22,
+	"slow_duration": 1.5
   },
   "tidal_t2": {
 	"id": "tidal_t2",
@@ -3349,10 +3377,14 @@
 		"damage": 49.0,
 		"range": 194,
 		"fire_rate": 1.18,
-		"splash_radius": 110
+		"splash_radius": 110,
+		"slow_percent": 0.28,
+		"slow_duration": 1.8
 	  }
 	],
-	"splash_radius": 110
+	"splash_radius": 110,
+	"slow_percent": 0.28,
+	"slow_duration": 1.8
   },
   "tidal_t3": {
 	"id": "tidal_t3",
@@ -3386,10 +3418,14 @@
 		"damage": 81.2,
 		"range": 208,
 		"fire_rate": 1.08,
-		"splash_radius": 120
+		"splash_radius": 120,
+		"slow_percent": 0.34,
+		"slow_duration": 2.1
 	  }
 	],
-	"splash_radius": 120
+	"splash_radius": 120,
+	"slow_percent": 0.34,
+	"slow_duration": 2.1
   },
   "polar_t1": {
 	"id": "polar_t1",

@@ -12,7 +12,6 @@ signal hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String)
 @export var grid_origin: Vector2 = Vector2.ZERO
 
 @export var tower_scene: PackedScene = preload("res://scenes/towers/Tower.tscn")
-@export var towers_data_path: String = "res://data/towers.json"
 @export var towers_tree_data_path: String = "res://data/towers_tree.json"
 
 var towers_config: Dictionary = {}

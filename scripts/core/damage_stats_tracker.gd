@@ -4,7 +4,6 @@ class_name DamageStatsTracker
 signal stats_changed()
 
 const TOWERS_TREE_DATA_PATH := "res://data/towers_tree.json"
-const TOWERS_DATA_PATH := "res://data/towers.json"
 
 var wave_damage: float = 0.0
 var total_damage: float = 0.0
@@ -14,7 +13,6 @@ var tower_names: Dictionary = {}
 func _ready() -> void:
 	name = "DamageStatsTracker"
 	_load_tower_names(TOWERS_TREE_DATA_PATH)
-	_load_tower_names(TOWERS_DATA_PATH)
 
 func reset_wave() -> void:
 	wave_damage = 0.0

@@ -16,7 +16,11 @@ static func attack_badge(info: Dictionary) -> String:
 	match a_type:
 		"splash":  return "Splash AoE"
 		"slow":    return "Area Control"
-		"chain":   return "Chain"
+		"chain":
+			if tower_id.begins_with("hail_"):    return "Frost Chain"
+			if tower_id.begins_with("jinx_"):    return "Hex Chain"
+			if tower_id.begins_with("periodic_"): return "Six-Element Chain"
+			return "Chain"
 		"aura":    return "Aura"
 		"support_aura":
 			var st := str(info.get("support_type", "")).to_lower()
@@ -75,8 +79,11 @@ static func effect_lines(info: Dictionary) -> PackedStringArray:
 				lines.append("On-hit Slow: -%d%% speed for %.1fs" % [slow_pct, slow_dur])
 
 		"slow":
-			var r := slow_r if slow_r > 0 else splash_r
-			if slow_pct > 0 and slow_dur > 0.0:
+			# corrosion/polar/enchantment use slow fields for armor-strip / root — skip generic slow line
+			var _slow_handled_by_family := tower_id.begins_with("corrosion_") \
+				or tower_id.begins_with("polar_") or tower_id.begins_with("enchantment_")
+			if not _slow_handled_by_family and slow_pct > 0 and slow_dur > 0.0:
+				var r := slow_r if slow_r > 0 else splash_r
 				if r > 0:
 					lines.append("Area Slow: -%d%% speed for %.1fs in %d radius" % [slow_pct, slow_dur, r])
 				else:
@@ -91,7 +98,8 @@ static func effect_lines(info: Dictionary) -> PackedStringArray:
 					lines.append("Chain: jumps to %d nearby enemies, %d%% damage" % [chain_j, fall_pct])
 
 		"aura":
-			if vuln_pct > 0:
+			# enchantment_ applies armor_reduction not vulnerability — handled by per-family block below
+			if vuln_pct > 0 and not tower_id.begins_with("enchantment_"):
 				lines.append("Vulnerability: enemies take +%d%% damage for %.1fs" % [vuln_pct, vuln_dur])
 
 		"support_aura":
@@ -112,7 +120,10 @@ static func effect_lines(info: Dictionary) -> PackedStringArray:
 				lines.append("Clone duration: %.0fs" % clone_dur)
 
 	# ── Vulnerability on non-aura projectile towers ─────────────────────────
-	if a_type not in ["aura", "support_aura", "clone_support"] and vuln_pct > 0 and vuln_dur > 0.0:
+	# Exclude jinx_ (handled with "Hex" label below) and enchantment_ (handled as armor reduction).
+	var _skip_vuln_line := a_type in ["aura", "support_aura", "clone_support"] \
+		or tower_id.begins_with("jinx_") or tower_id.begins_with("enchantment_")
+	if not _skip_vuln_line and vuln_pct > 0 and vuln_dur > 0.0:
 		lines.append("Vulnerability: +%d%% damage taken for %.1fs" % [vuln_pct, vuln_dur])
 
 	# ── Economy ─────────────────────────────────────────────────────────────
@@ -129,6 +140,19 @@ static func effect_lines(info: Dictionary) -> PackedStringArray:
 			lines.append("Gold Bounty: +%d%% bonus credits on kills" % bonus)
 
 	# ── Control-family parity abilities ─────────────────────────────────────
+
+	# Corrosion: slow fields hold armor-strip values, not a speed slow
+	if tower_id.begins_with("corrosion_") and slow_pct > 0 and slow_dur > 0.0:
+		lines.append("Armor Strip: -%d%% enemy armor for %.1fs in %d radius" % [slow_pct, slow_dur, slow_r if slow_r > 0 else splash_r])
+
+	# Polar: root/snare freeze, not just a slow
+	if tower_id.begins_with("polar_") and slow_pct > 0 and slow_dur > 0.0:
+		lines.append("Freeze: %d%% snare (root) for %.1fs" % [slow_pct, slow_dur])
+
+	# Enchantment: vulnerability fields hold armor-reduction values
+	if tower_id.begins_with("enchantment_") and vuln_pct > 0 and vuln_dur > 0.0:
+		lines.append("Armor Reduction: -%d%% armor for %.1fs" % [vuln_pct, vuln_dur])
+
 	if tower_id.begins_with("nova_") and damage > 0.0 and slow_dur > 0.0:
 		lines.append("Burn: %.0f dps fire for %.1fs after impact" % [damage * 0.2, slow_dur * 1.5])
 
@@ -166,6 +190,32 @@ static func effect_lines(info: Dictionary) -> PackedStringArray:
 
 	if tower_id.begins_with("flamethrower_") and damage > 0.0:
 		lines.append("Burn: %.0f dps fire for 2s after each blast" % (damage * 0.35))
+
+	# ── Gap-fix families: chain debuffs, aura DoTs, single-target CC ────────
+
+	# Hail: frost slow propagates to every chain bounce (status_effects)
+	if tower_id.begins_with("hail_") and slow_pct > 0 and slow_dur > 0.0:
+		lines.append("Frost Slow: -%d%% snare on each bounce for %.1fs" % [slow_pct, slow_dur])
+
+	# Jinx: hex damage amp propagates to every chain bounce
+	if tower_id.begins_with("jinx_") and vuln_pct > 0 and vuln_dur > 0.0:
+		lines.append("Hex: +%d%% damage taken for %.1fs per bounce" % [vuln_pct, vuln_dur])
+
+	# Poison: venom DoT alongside the area slow
+	if tower_id.begins_with("poison_") and damage > 0.0 and slow_dur > 0.0:
+		lines.append("Venom: %.0f dps nature for %.1fs" % [damage * 0.2, slow_dur])
+
+	# Flame: burn DoT alongside vulnerability aura (dispatched per aura tick)
+	if tower_id.begins_with("flame_") and damage > 0.0 and vuln_dur > 0.0:
+		lines.append("Burn: %.0f dps fire for %.1fs per aura tick" % [damage * 0.18, vuln_dur])
+
+	# Oblivion: void vitality drain DoT alongside vulnerability aura
+	if tower_id.begins_with("oblivion_") and damage > 0.0 and vuln_dur > 0.0:
+		lines.append("Void Drain: %.0f dps dark for %.1fs" % [damage * 0.12, vuln_dur])
+
+	# Drowning: abyssal grip root on every hit
+	if tower_id.begins_with("drowning_"):
+		lines.append("Abyssal Grip: 85%% root for 0.65s per hit")
 
 	return lines
 
