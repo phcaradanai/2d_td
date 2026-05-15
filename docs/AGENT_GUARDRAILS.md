@@ -174,3 +174,7 @@ Every change you submit should end with a final report shaped like this. Copy th
 ```
 
 If any checkbox is left unchecked, explain why in the report.
+
+## Element UI Rule
+Never render raw element_id, element_index, or numeric enum values directly in UI.
+All element UI must go through ElementIcon / ElementDisplay helper.

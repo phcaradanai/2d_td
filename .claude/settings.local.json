@@ -26,7 +26,8 @@
       "Bash(/Applications/Godot.app/Contents/MacOS/Godot --headless --check-only \"res://scenes/debug/tower_catalog.tscn\")",
       "Bash(/Applications/Godot.app/Contents/MacOS/Godot --headless --check-only --script \"res://scripts/towers/tower_catalog_preview.gd\")",
       "Bash(sips -g pixelWidth -g pixelHeight /tmp/tower_catalog_preview.png)",
-      "Bash(sips -z 800 600 /tmp/tower_catalog_preview.png --out /tmp/tower_catalog_small.png)"
+      "Bash(sips -z 800 600 /tmp/tower_catalog_preview.png --out /tmp/tower_catalog_small.png)",
+      "mcp__ide__getDiagnostics"
     ]
   }
 }

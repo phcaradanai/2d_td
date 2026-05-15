@@ -389,7 +389,8 @@ func _build_effect_summary(cfg: Dictionary) -> String:
 	if elements is Array and not elements.is_empty():
 		var element_names: Array[String] = []
 		for e in elements:
-			element_names.append(str(e))
+			# [DEPLOY-FIX] Use ElementIconDraw.get_short_code so numeric IDs never show raw.
+			element_names.append(ElementIconDraw.get_short_code(str(e)))
 		parts.append("Elements: %s" % "+".join(element_names))
 	return "Effect: %s" % (", ".join(parts) if not parts.is_empty() else "None")
 

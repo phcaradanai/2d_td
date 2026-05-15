@@ -1188,20 +1188,18 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 	row.add_theme_constant_override("separation", 8)
 	mg.add_child(row)
 
-	# Icon badge
+	# Icon badge — [DEPLOY-FIX] drawn icon replaces Unicode Label glyph.
 	var icon_p := PanelContainer.new()
 	icon_p.custom_minimum_size = Vector2(36, 36)
 	var ic_dim := Color(el_col.r, el_col.g, el_col.b, 0.2 if (is_max or is_lock) else 0.32)
 	var ic_brd := Color(el_col.r, el_col.g, el_col.b, 0.45 if not (is_max or is_lock) else 0.2)
 	icon_p.add_theme_stylebox_override("panel", _em_sb(ic_dim, ic_brd, 1.5, 18.0))
 	row.add_child(icon_p)
-	var icon_l := Label.new()
-	icon_l.text = ELEMENT_UI_META.get(element_id, {}).get("icon", "?")
-	icon_l.add_theme_font_size_override("font_size", 15)
-	icon_l.add_theme_color_override("font_color", el_col if not (is_max or is_lock) else el_col.darkened(0.45))
-	icon_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	icon_l.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	icon_p.add_child(icon_l)
+	var icon_draw := ElementIconDraw.new()
+	icon_draw.element_id = element_id
+	icon_draw.icon_alpha = 0.55 if (is_max or is_lock) else 1.0
+	icon_draw.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	icon_p.add_child(icon_draw)
 
 	# Text
 	var txt_v := VBoxContainer.new()
@@ -1286,13 +1284,11 @@ func _em_rebuild_center(element_id: String) -> void:
 	big_icon.custom_minimum_size = Vector2(70, 70)
 	big_icon.add_theme_stylebox_override("panel", _em_sb(Color(el_col.r,el_col.g,el_col.b,0.18), el_col.darkened(0.28), 2.0, 35.0))
 	hdr.add_child(big_icon)
-	var big_icon_l := Label.new()
-	big_icon_l.text = meta_d.get("icon","?")
-	big_icon_l.add_theme_font_size_override("font_size", 30)
-	big_icon_l.add_theme_color_override("font_color", el_col)
-	big_icon_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	big_icon_l.vertical_alignment   = VERTICAL_ALIGNMENT_CENTER
-	big_icon.add_child(big_icon_l)
+	# [DEPLOY-FIX] Drawn icon replaces Unicode Label glyph for the detail view header.
+	var big_icon_draw := ElementIconDraw.new()
+	big_icon_draw.element_id = element_id if element_id != "__interest__" else "__interest__"
+	big_icon_draw.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	big_icon.add_child(big_icon_draw)
 
 	var name_col := VBoxContainer.new()
 	name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -1680,9 +1676,10 @@ func _build_tower_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> Strin
 func _elements_short(raw_elements: Array) -> String:
 	if raw_elements.is_empty():
 		return "N"
+	# [DEPLOY-FIX] Use ElementIconDraw.get_short_code so numeric IDs never appear as-is.
 	var out: Array[String] = []
 	for raw in raw_elements:
-		out.append(_element_label(str(raw)).substr(0, 1))
+		out.append(ElementIconDraw.get_short_code(str(raw)))
 	return "+".join(out)
 
 func _elements_full(raw_elements: Array) -> String:
@@ -1704,14 +1701,16 @@ func _format_element_levels(levels: Dictionary) -> String:
 	return "Elements: " + " ".join(parts)
 
 func _element_label(element_id: String) -> String:
-	match element_id:
-		"light": return "Light"
-		"darkness": return "Darkness"
-		"water": return "Water"
-		"fire": return "Fire"
-		"nature": return "Nature"
-		"earth": return "Earth"
-		_: return element_id.capitalize()
+	match element_id.to_lower():
+		"0", "light":    return "Light"
+		"1", "darkness": return "Darkness"
+		"2", "water":    return "Water"
+		"3", "fire":     return "Fire"
+		"4", "nature":   return "Nature"
+		"5", "earth":    return "Earth"
+		"__interest__":  return "Interest"
+		"":              return "Unknown"
+		_:               return element_id.capitalize()
 
 func _get_element_ui_color(element_id: String) -> Color:
 	match element_id:
