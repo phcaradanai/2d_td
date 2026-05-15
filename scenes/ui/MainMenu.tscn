@@ -182,7 +182,7 @@ size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
 theme_override_font_sizes/font_size = 14
 text = "Game Developed by
-Antigravity AI
+phcaradanai@gmail.com
 
 Built with Godot 4.6.2
 
