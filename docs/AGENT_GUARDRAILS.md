@@ -57,7 +57,7 @@ This is the short version. If anything here conflicts with `docs/MILESTONES.md`,
 - **Element pick UI** must be clear about what is being chosen and what the alternative (interest upgrade) does.
 - HUD strings, panel placement, and signal timings must be preserved during refactors. Boundary audits exist for the HUD top bar (`audit_top_bar_hud_boundary.py`), the start-wave UI (`audit_start_wave_ui_boundary.py`), the interest UI (`audit_interest_ui_boundary.py`), and the HUD presenter (`audit_hud_presenter_boundary.py`).
 - Avoid visual changes inside refactor-only patches.
-
+- Do not hurt frame rate or introduce new performance regressions. 60 frame rate is the target or better.
 ---
 
 ## Element TD Direction

@@ -10,6 +10,7 @@ const BeamScript := preload("res://scripts/effects/enemy_beam_vfx.gd")
 const ImpactScript := preload("res://scripts/effects/enemy_impact_vfx.gd")
 const StatusIconScript := preload("res://scripts/effects/enemy_status_icon_vfx.gd")
 const PolisherScript := preload("res://scripts/effects/enemy_model_polisher.gd")
+const CreepStatusVFXScript := preload("res://scripts/effects/creep_status_vfx.gd")
 
 static var global_quality: int = VFX_QUALITY_MEDIUM
 static var global_exact_radius_visible: bool = false
@@ -35,6 +36,8 @@ var protected_icon: Node = null
 # [VISUAL-OPT] Permanent compact identity symbol for special creep roles.
 var role_icon: Node = null
 var heal_cast_icon: Node = null
+# Dynamic status-effect indicators (slow/root/burn/poison/vuln).
+var status_effects_vfx: Node = null
 var _heal_cast_hide_timer: SceneTreeTimer = null
 var _last_heal_cast_msec: int = 0
 var role_color: Color = Color(0.25, 0.85, 1.0)
@@ -172,6 +175,9 @@ func fade_out() -> void:
 		passive_aura.fade_out()
 	if active_aura:
 		active_aura.fade_out()
+	# Immediately hide status indicators — creep is dying.
+	if status_effects_vfx and is_instance_valid(status_effects_vfx):
+		status_effects_vfx.visible = false
 
 func _ensure_structure() -> void:
 	visual_root = get_node_or_null("VisualRoot")
@@ -200,6 +206,17 @@ func _ensure_structure() -> void:
 		target_links = BeamScript.new()
 		target_links.name = "TargetLinks"
 		vfx_root.add_child(target_links)
+
+	# Status-effect indicator layer (slow/root/burn/poison/vuln icons + rings).
+	status_effects_vfx = vfx_root.get_node_or_null("StatusEffectsVFX")
+	if status_effects_vfx == null:
+		status_effects_vfx = CreepStatusVFXScript.new()
+		status_effects_vfx.name = "StatusEffectsVFX"
+		status_effects_vfx.visible = false   # hidden until a status is active
+		vfx_root.add_child(status_effects_vfx)
+	# Setup is deferred so owner_enemy is guaranteed to be set by then.
+	if owner_enemy != null and status_effects_vfx.has_method("setup"):
+		status_effects_vfx.setup(owner_enemy)
 
 func _configure_role() -> void:
 	if owner_enemy == null:
