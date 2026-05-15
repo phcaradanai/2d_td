@@ -149,6 +149,8 @@ var _clone_visual_fire_target_global: Vector2 = Vector2.ZERO
 var projectile_scene: PackedScene = preload("res://scenes/projectiles/Projectile.tscn")
 var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/MuzzleFlash.tscn")
 const DISEASE_ATTACK_VFX_SCRIPT: GDScript = preload("res://scripts/effects/disease_attack_vfx.gd")
+const TOWER_OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.76)
+const TOWER_OUTLINE_THICKNESS := 2.0
 var projectile_container: Node2D = null
 
 @onready var range_area: Area2D = $RangeArea
@@ -540,6 +542,8 @@ func _draw() -> void:
 		draw_arc(local_origin, visual_range, 0, TAU, 32, Color(1, 1, 1, 0.1), 1.0)
 
 	if not use_sprite:
+		_draw_tower_outline()
+
 		# 2. Base Plate (Static)
 		_draw_base_plate()
 		
@@ -555,6 +559,15 @@ func _draw() -> void:
 	# gets a temporary z-index lift in set_selected(), so overlays stay above
 	# sibling towers on the map.
 	_draw_selected_support_overlays()
+
+func _draw_tower_outline() -> void:
+	var lvl = tree_tier
+	draw_rect(Rect2(-24, -24, 48, 48).grow(TOWER_OUTLINE_THICKNESS), TOWER_OUTLINE_COLOR)
+	if turret_pivot:
+		draw_set_transform(Vector2.ZERO, turret_pivot.rotation, Vector2.ONE)
+		draw_circle(Vector2.ZERO, 18.0 + TOWER_OUTLINE_THICKNESS, TOWER_OUTLINE_COLOR)
+		draw_line(Vector2(-10, 0), Vector2(34 + lvl * 5, 0), TOWER_OUTLINE_COLOR, 13.0 + TOWER_OUTLINE_THICKNESS * 2.0, true)
+		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _draw_base_plate() -> void:
 	var lvl = tree_tier

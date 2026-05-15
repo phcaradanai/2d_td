@@ -541,11 +541,6 @@ func _apply_respawn_health(enemy: Node, hp_remaining: float) -> void:
 		return
 	var preserved_hp := clampf(hp_remaining, 1.0, max_hp)
 	enemy.set("hp", preserved_hp)
-	var hp_bar = enemy.get("hp_bar")
-	if hp_bar != null and is_instance_valid(hp_bar):
-		hp_bar.max_value = max_hp
-		hp_bar.value = preserved_hp
-		hp_bar.visible = false
 	if enemy.has_method("_update_health_visual_state"):
 		enemy._update_health_visual_state(true)
 

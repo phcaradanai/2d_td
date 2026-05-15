@@ -15,7 +15,3 @@ script = ExtResource("1_6h0xr")
 [node name="Body" type="ColorRect" parent="Path2D/Enemy" unique_id=425916931]
 offset_right = 40.0
 offset_bottom = 40.0
-
-[node name="HpBar" type="ProgressBar" parent="Path2D/Enemy" unique_id=840493005]
-offset_right = 4.0
-offset_bottom = 27.0

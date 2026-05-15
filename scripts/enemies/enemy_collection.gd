@@ -43,15 +43,11 @@ func _ready() -> void:
 	for item in _pending_setup:
 		var enemy = item.enemy
 		var config = item.config
-		var hp_bar = item.hp_bar
 		
 		enemy.is_gallery_preview = true
 		
 		enemy.setup(config)
 		enemy.progress_ratio = 0.5
-
-		if hp_bar:
-			hp_bar.visible = false
 
 		# ใส่ sample status บางตัว เพื่อให้เห็น effect เพิ่มขึ้น
 		match config.id:
@@ -127,13 +123,6 @@ func _spawn_gallery() -> void:
 		var enemy := PathFollow2D.new()
 		enemy.name = "Enemy"
 
-		var hp_bar := ProgressBar.new()
-		hp_bar.name = "HpBar"
-		hp_bar.size = Vector2(48, 6)
-		hp_bar.position = Vector2(-24, 28)
-		hp_bar.visible = false
-		enemy.add_child(hp_bar)
-
 		enemy.set_script(ENEMY_SCRIPT)
 		enemy.is_gallery_preview = true
 
@@ -149,8 +138,7 @@ func _spawn_gallery() -> void:
 
 		_pending_setup.append({
 			"enemy": enemy,
-			"config": data,
-			"hp_bar": hp_bar
+			"config": data
 		})
 		
 func _build_detail_viewer() -> void:
@@ -395,11 +383,6 @@ func _spawn_detail_enemy(config: Dictionary) -> void:
 
 	_detail_enemy = PathFollow2D.new()
 	_detail_enemy.name = "DetailEnemy"
-
-	var hp_bar := ProgressBar.new()
-	hp_bar.name = "HpBar"
-	hp_bar.visible = false
-	_detail_enemy.add_child(hp_bar)
 
 	_detail_enemy.set_script(ENEMY_SCRIPT)
 	_detail_enemy.is_gallery_preview = true

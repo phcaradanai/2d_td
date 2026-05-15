@@ -88,7 +88,8 @@ var swarm_pack_density: float = 0.0
 var swarm_pack_check_timer: float = 0.0
 const PERFORMANCE_VISUAL_MODE := true   # Simplified silhouette rendering for 60 FPS
 const ENEMY_VISUAL_REDRAW_INTERVAL := 0.125  # 8 FPS visual update (was 1/30 = 30 FPS)
-const SHOW_CREEP_HEALTH_BARS := false
+const ENEMY_OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.74)
+const ENEMY_OUTLINE_THICKNESS := 2.0
 const SHOW_FLOATING_DAMAGE_NUMBERS := false
 enum HealthVisualState { HEALTH_OK, HEALTH_DAMAGED, HEALTH_CRITICAL }
 var health_visual_state: int = HealthVisualState.HEALTH_OK
@@ -166,7 +167,6 @@ func _resolve_visual_root() -> Node2D:
 
 	push_warning("[Enemy] No Body/VisualRoot/Model/Sprite found. Using self as visual root: %s" % name)
 	return self
-@onready var hp_bar: ProgressBar = get_node_or_null("HpBar") as ProgressBar
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
 @onready var death_pop_scene: PackedScene = preload("res://scenes/effects/DeathPopEffect.tscn")
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
@@ -231,11 +231,6 @@ func setup(config: Dictionary) -> void:
 	_configure_formation_speed()
 	update_effective_speed()
 	
-	if hp_bar:
-		hp_bar.max_value = max_hp
-		hp_bar.value = hp
-		hp_bar.visible = SHOW_CREEP_HEALTH_BARS
-	
 	_update_health_visual_state(true)
 	apply_visuals()
 	_ensure_vfx_controller()
@@ -279,8 +274,6 @@ func get_hit_anchor_global_position() -> Vector2:
 func apply_visuals() -> void:
 	if not is_inside_tree(): return
 	if body: body.visible = false
-	if hp_bar:
-		hp_bar.visible = SHOW_CREEP_HEALTH_BARS
 	queue_redraw()
 
 func _ensure_vfx_controller() -> void:
@@ -382,9 +375,10 @@ func _draw_simple_silhouette(size: float) -> void:
 			body_pts = PackedVector2Array([Vector2(0, -size * 1.1), Vector2(size * 0.5, size * 0.4), Vector2(0, size * 0.2), Vector2(-size * 0.5, size * 0.4)])
 		"tank":
 			color = _apply_health_tint(COLOR_NEON_TANK)
-			draw_rect(Rect2(Vector2(-size * 0.9, -size * 0.7), Vector2(size * 1.8, size * 1.4)), Color(color.r, color.g, color.b, 0.9))
+			var tank_rect := Rect2(Vector2(-size * 0.9, -size * 0.7), Vector2(size * 1.8, size * 1.4))
+			draw_rect(tank_rect.grow(ENEMY_OUTLINE_THICKNESS), ENEMY_OUTLINE_COLOR)
+			draw_rect(tank_rect, Color(color.r, color.g, color.b, 0.9))
 			draw_circle(Vector2.ZERO, size * 0.35, Color.WHITE)
-			_draw_health_accent(size)
 			return
 		"bulwark", "shieldbearer":
 			color = COLOR_NEON_BULWARK if visual_type == "bulwark" else Color(0.3, 0.8, 1.0)
@@ -397,10 +391,12 @@ func _draw_simple_silhouette(size: float) -> void:
 			body_pts = PackedVector2Array([Vector2(0, -size * 1.2), Vector2(size * 0.6, size * 0.6), Vector2(0, size * 0.2), Vector2(-size * 0.6, size * 0.6)])
 		"swarm":
 			color = _apply_health_tint(COLOR_NEON_FAST)
+			draw_circle(Vector2(-size * 0.5, -size * 0.3), size * 0.4 + ENEMY_OUTLINE_THICKNESS, ENEMY_OUTLINE_COLOR)
+			draw_circle(Vector2(size * 0.5, -size * 0.3), size * 0.4 + ENEMY_OUTLINE_THICKNESS, ENEMY_OUTLINE_COLOR)
+			draw_circle(Vector2(0, size * 0.4), size * 0.4 + ENEMY_OUTLINE_THICKNESS, ENEMY_OUTLINE_COLOR)
 			draw_circle(Vector2(-size * 0.5, -size * 0.3), size * 0.4, Color(color.r, color.g, color.b, 0.8))
 			draw_circle(Vector2(size * 0.5, -size * 0.3), size * 0.4, Color(color.r, color.g, color.b, 0.8))
 			draw_circle(Vector2(0, size * 0.4), size * 0.4, Color(color.r, color.g, color.b, 0.8))
-			_draw_health_accent(size)
 			return
 		"healer":
 			color = Color(0.4, 1.0, 0.4)
@@ -427,9 +423,16 @@ func _draw_simple_silhouette(size: float) -> void:
 			body_pts = PackedVector2Array([Vector2(0, -size), Vector2(size * 0.7, size * 0.5), Vector2(-size * 0.7, size * 0.5)])
 	if body_pts.size() > 0:
 		color = _apply_health_tint(color)
+		draw_colored_polygon(_scale_polygon(body_pts, ENEMY_OUTLINE_THICKNESS), ENEMY_OUTLINE_COLOR)
 		draw_colored_polygon(body_pts, Color(color.r, color.g, color.b, 0.85))
 	draw_circle(Vector2.ZERO, size * 0.3, Color.WHITE)
-	_draw_health_accent(size)
+
+func _scale_polygon(points: PackedVector2Array, amount: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for point in points:
+		var dir := point.normalized()
+		out.append(point + dir * amount)
+	return out
 
 func _apply_health_tint(base_color: Color) -> Color:
 	match health_visual_state:
@@ -439,16 +442,6 @@ func _apply_health_tint(base_color: Color) -> Color:
 			return base_color.lerp(Color(1.0, 0.08, 0.04, base_color.a), 0.55)
 		_:
 			return base_color
-
-func _draw_health_accent(size: float) -> void:
-	match health_visual_state:
-		HealthVisualState.HEALTH_DAMAGED:
-			draw_arc(Vector2.ZERO, size * 1.18, -PI * 0.25, PI * 0.35, 8, Color(1.0, 0.42, 0.08, 0.55), 1.35, true)
-		HealthVisualState.HEALTH_CRITICAL:
-			draw_arc(Vector2.ZERO, size * 1.22, -PI * 0.35, PI * 0.45, 8, Color(1.0, 0.05, 0.03, 0.78), 1.8, true)
-			draw_circle(Vector2(size * 0.42, -size * 0.35), size * 0.12, Color(1.0, 0.18, 0.08, 0.78))
-		_:
-			pass
 
 func _update_health_visual_state(force_redraw: bool = false) -> void:
 	var hp_ratio: float = 1.0
@@ -1818,7 +1811,6 @@ func _draw_cyber_disruptor(color: Color, size: float) -> void:
 
 func _ready() -> void:
 	body = get_node_or_null("Body") as ColorRect
-	hp_bar = get_node_or_null("HpBar") as ProgressBar
 	visual_root = _resolve_visual_root()
 
 	apply_visuals()
@@ -1831,11 +1823,6 @@ func _ready() -> void:
 
 
 	add_to_group("enemies")
-
-	if hp_bar:
-		hp_bar.max_value = max_hp
-		hp_bar.value = hp
-		hp_bar.visible = SHOW_CREEP_HEALTH_BARS
 
 	_ensure_vfx_controller()
 
@@ -2073,9 +2060,6 @@ func heal(amount: float, source: Variant = null) -> float:
 	var before := hp
 	hp = min(hp + amount, max_hp)
 	var applied := hp - before
-	if hp_bar:
-		hp_bar.value = hp
-		hp_bar.visible = SHOW_CREEP_HEALTH_BARS
 	if applied > 0.0:
 		_update_health_visual_state()
 		enemy_modifier_changed.emit(self , "hp", hp)
@@ -2396,9 +2380,6 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 		final_damage *= vulnerability_multiplier
 		
 	hp -= final_damage
-	if hp_bar:
-		hp_bar.value = hp
-		hp_bar.visible = SHOW_CREEP_HEALTH_BARS
 	_update_health_visual_state()
 	
 	var gm = get_tree().current_scene.get_node_or_null("GameManager")

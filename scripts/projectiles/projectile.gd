@@ -1,6 +1,7 @@
 extends Node2D
 
 const PERFORMANCE_MODE := true  # Keeps trails/splash heavy FX off; compact impacts are quality-gated.
+const SHOW_PROJECTILE_BODY_VFX := false
 const ELEMENTAL_DEBUG_FLOATING_TEXT := false
 const ELEMENTAL_DEBUG_FLOATING_TEXT_META := "elemental_debug_floating_text_enabled"
 const ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META := "elemental_debug_floating_text_last_msec"
@@ -174,6 +175,9 @@ func _update_trail() -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if not SHOW_PROJECTILE_BODY_VFX:
+		return
+
 	if attack_type == "chain":
 		_draw_lightning_projectile()
 		return
