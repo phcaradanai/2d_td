@@ -1974,6 +1974,10 @@ func _apply_saved_run_state(data: Dictionary) -> void:
 	_refresh_elemental_shop()
 	update_hud()
 
+	# If the player had an unresolved element pick when they left, re-open the panel.
+	if element_progression_manager and element_progression_manager.has_pending_pick():
+		_show_pending_element_choice()
+
 	if OS.is_debug_build():
 		var tower_count = (data["towers"] as Array).size() if data.has("towers") and data["towers"] is Array else 0
 		print("[MetaLayer] Restored — wave=%d gold=%d lives=%d towers=%d" % [
