@@ -111,7 +111,7 @@ const SWARM_GLOW_LIGHT := Color(0.718, 1.0, 0.961, 1.0) # #B7FFF5
 @export var swarm_trail_length: float = 2.7
 @export var swarm_trail_alpha: float = 0.26
 @export var swarm_hover_glow_strength: float = 0.22
-@export var swarm_death_particle_count: int = 18
+@export var swarm_death_particle_count: int = 5 # [VISUAL-OPT] Reduced from 18 — cheaper death burst.
 
 # Bulwark Stats
 var shield_radius: float = 90.0
@@ -2514,8 +2514,13 @@ func _clear_disrupted_towers() -> void:
 func spawn_death_effect(death_global: Vector2) -> void:
 	if death_pop_scene:
 		var effect = death_pop_scene.instantiate()
-		if effect.has_method("setup") and (enemy_type == "swarm" or tags.has("swarm")):
-			effect.setup("swarm_death", swarm_core_glow_color, 0.52, swarm_death_particle_count)
+		if effect.has_method("setup"):
+			if enemy_type == "swarm" or tags.has("swarm"):
+				# [VISUAL-OPT] Duration reduced 0.52→0.32 for snappier, cheaper swarm death.
+				effect.setup("swarm_death", swarm_core_glow_color, 0.32, swarm_death_particle_count)
+			else:
+				# [VISUAL-OPT] Explicit low particle count for all non-swarm deaths.
+				effect.setup("default", Color(0.9, 0.9, 0.9, 0.8), 0.28, 4)
 		get_tree().current_scene.add_child(effect)
 		effect.global_position = death_global
 

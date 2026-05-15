@@ -27,6 +27,13 @@ func _draw() -> void:
 			_draw_cloak_icon(pulse)
 		"air":
 			_draw_air_icon(pulse)
+		# [VISUAL-OPT] Compact role identity icons — replace area aura visuals.
+		"healer_id":
+			_draw_healer_id_icon(pulse)
+		"disruptor_id":
+			_draw_disruptor_id_icon(pulse)
+		"bulwark_id":
+			_draw_bulwark_id_icon(pulse)
 		_:
 			draw_circle(Vector2.ZERO, 7, Color(color.r, color.g, color.b, 0.35 * pulse))
 	if OS.is_debug_build() and label_text != "":
@@ -51,3 +58,29 @@ func _draw_air_icon(pulse: float) -> void:
 	draw_arc(Vector2.ZERO, 9.0, 0, TAU, 24, Color(color.r, color.g, color.b, 0.55 * pulse), 1.25)
 	draw_line(Vector2(-10, 0), Vector2(10, 0), Color(color.r, color.g, color.b, 0.7 * pulse), 1.5)
 	draw_line(Vector2(0, -8), Vector2(0, 8), Color(color.r, color.g, color.b, 0.35 * pulse), 1.0)
+
+# [VISUAL-OPT] Compact green cross/plus — healer identity marker.
+func _draw_healer_id_icon(pulse: float) -> void:
+	var s := 5.5
+	var c := Color(color.r, color.g, color.b, 0.9 * pulse)
+	draw_line(Vector2(-s, 0.0), Vector2(s, 0.0), c, 2.5)
+	draw_line(Vector2(0.0, -s), Vector2(0.0, s), c, 2.5)
+	draw_circle(Vector2.ZERO, 1.5, Color(1.0, 1.0, 1.0, 0.7 * pulse))
+
+# [VISUAL-OPT] Compact rotating triangle — disruptor jammer identity marker.
+func _draw_disruptor_id_icon(pulse: float) -> void:
+	# Slow rotation — one full turn every ~5 s.
+	var rot := time * 1.26
+	var r := 6.5
+	var pts := PackedVector2Array()
+	for i in range(3):
+		var a := rot + float(i) * TAU / 3.0
+		pts.append(Vector2(cos(a), sin(a)) * r)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(color.r, color.g, color.b, 0.85 * pulse), 1.8)
+	draw_circle(Vector2.ZERO, 2.0, Color(color.r, color.g, color.b, 0.7 * pulse))
+
+# [VISUAL-OPT] Compact shield outline — bulwark identity marker.
+func _draw_bulwark_id_icon(pulse: float) -> void:
+	var pts := PackedVector2Array([Vector2(0, -8), Vector2(7, -3), Vector2(4, 7), Vector2(0, 9), Vector2(-4, 7), Vector2(-7, -3)])
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color(color.r, color.g, color.b, 0.85 * pulse), 1.8)
+	draw_circle(Vector2.ZERO, 2.2, Color(color.r, color.g, color.b, 0.5 * pulse))

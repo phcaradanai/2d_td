@@ -13,11 +13,13 @@ const PolisherScript := preload("res://scripts/effects/enemy_model_polisher.gd")
 
 static var global_quality: int = VFX_QUALITY_MEDIUM
 static var global_exact_radius_visible: bool = false
-static var debug_show_support_radius: bool = true
+# [VISUAL-OPT] Aura radius rings hidden by default — replaced by compact role icons.
+# Toggle these true in debug builds if range inspection is needed.
+static var debug_show_support_radius: bool = false
 static var debug_show_active_skill_targets: bool = true
 static var debug_show_heal_tick_events: bool = true
-static var debug_show_disruptor_radius: bool = true
-static var debug_show_shield_coverage: bool = true
+static var debug_show_disruptor_radius: bool = false
+static var debug_show_shield_coverage: bool = false
 static var debug_show_cloaked_state: bool = true
 
 var owner_enemy: Node = null
@@ -30,6 +32,8 @@ var cast_beam: Node = null
 var target_links: Node = null
 var status_icon: Node = null
 var protected_icon: Node = null
+# [VISUAL-OPT] Permanent compact identity symbol for special creep roles.
+var role_icon: Node = null
 var role_color: Color = Color(0.25, 0.85, 1.0)
 var linked_towers: Array[Node] = []
 var signals_connected: bool = false
@@ -207,13 +211,23 @@ func _configure_role() -> void:
 	if status_icon and is_instance_valid(status_icon):
 		status_icon.queue_free()
 		status_icon = null
+	# [VISUAL-OPT] Free previous role identity icon before reconfiguring.
+	if role_icon and is_instance_valid(role_icon):
+		role_icon.queue_free()
+		role_icon = null
 	role_color = PolisherScript.role_color(enemy_type, visual_type, tags, skill_id)
 	if skill_id == "healer":
+		# [VISUAL-OPT] Aura hidden by default; replaced by compact cross/plus icon.
 		_create_passive_aura("heal", float(skill_params.get("radius", 0.0)))
+		_create_role_icon("healer_id", Color(0.4, 1.0, 0.6))
 	elif skill_id == "disrupt_aura":
+		# [VISUAL-OPT] Aura hidden by default; replaced by compact jammer icon.
 		_create_passive_aura("emp", float(skill_params.get("radius", 0.0)))
+		_create_role_icon("disruptor_id", Color(1.0, 0.55, 0.15))
 	elif skill_id == "shield_aura" or owner_enemy.get("is_bulwark"):
+		# [VISUAL-OPT] Shield dome radius hidden by default; replaced by compact shield icon.
 		_create_passive_aura("shield", float(skill_params.get("radius", owner_enemy.get("shield_radius"))))
+		_create_role_icon("bulwark_id", Color(0.3, 0.75, 1.0))
 	if str(owner_enemy.get("enemy_category")) == "air":
 		_show_status("air", Color(0.45, 0.9, 1.0), "")
 	if enemy_type == "cloaked" or skill_id == "stealth":
@@ -228,6 +242,14 @@ func _create_passive_aura(kind: String, radius: float) -> void:
 	passive_aura.set_exact_radius_visible(global_exact_radius_visible)
 	vfx_root.add_child(passive_aura)
 	_apply_debug_visibility()
+
+# [VISUAL-OPT] Compact identity icon above the creep body, always visible.
+func _create_role_icon(icon_type: String, color: Color) -> void:
+	role_icon = StatusIconScript.new()
+	role_icon.name = "RoleIcon"
+	role_icon.position = Vector2(0, -24)
+	vfx_root.add_child(role_icon)
+	role_icon.setup(icon_type, color)
 
 func _connect_enemy_signals() -> void:
 	if owner_enemy == null:
@@ -353,3 +375,6 @@ func _apply_debug_visibility() -> void:
 		status_icon.visible = debug_show_cloaked_state or str(status_icon.icon_type) != "cloaked"
 	if protected_icon and is_instance_valid(protected_icon):
 		protected_icon.visible = debug_show_shield_coverage
+	# [VISUAL-OPT] Role identity icon is always visible — it replaces the area aura.
+	if role_icon and is_instance_valid(role_icon):
+		role_icon.visible = true

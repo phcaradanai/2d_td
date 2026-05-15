@@ -1,6 +1,10 @@
 extends Node2D
 class_name EnemyAuraVFX
 
+# [VISUAL-OPT] Aura node retained for debug/radius visualization only.
+# By default these are hidden (debug_show_* flags = false in EnemyVFXController).
+# When visible, drawing is throttled to ~8 fps and uses minimal geometry.
+
 const KIND_HEAL := "heal"
 const KIND_EMP := "emp"
 const KIND_SHIELD := "shield"
@@ -13,6 +17,10 @@ var active: bool = true
 var quality: int = 1
 var time: float = 0.0
 var fade: float = 1.0
+
+# [VISUAL-OPT] Throttle redraws to ~8 fps instead of every frame.
+var _redraw_accum: float = 0.0
+const _REDRAW_INTERVAL: float = 0.125
 
 func setup(p_kind: String, p_radius: float, p_quality: int = 1) -> void:
 	kind = p_kind
@@ -35,28 +43,30 @@ func fade_out() -> void:
 
 func _process(delta: float) -> void:
 	time += delta
-	queue_redraw()
+	# [VISUAL-OPT] Only redraw at ~8 fps to reduce GPU overhead when visible.
+	_redraw_accum += delta
+	if _redraw_accum >= _REDRAW_INTERVAL:
+		_redraw_accum = 0.0
+		queue_redraw()
 
 func _draw() -> void:
 	if radius <= 0.0 or fade <= 0.01:
 		return
 	var pulse := 0.5 + sin(time * 2.2) * 0.5
 	var base := _base_color()
-	var line_alpha := (0.12 + pulse * 0.08) * fade
-	var fill_alpha := (0.025 + pulse * 0.012) * fade
+	var line_alpha := (0.18 + pulse * 0.10) * fade
 	if not active:
 		line_alpha *= 0.45
-		fill_alpha *= 0.35
-	draw_circle(Vector2.ZERO, radius, Color(base.r, base.g, base.b, fill_alpha))
-	draw_arc(Vector2.ZERO, radius * (0.995 + pulse * 0.01), 0.0, TAU, 96, Color(base.r, base.g, base.b, line_alpha), 2.0)
+	# [VISUAL-OPT] Removed large filled circle (was biggest cost).
+	# Thin ring only, 24 segments instead of 96.
+	draw_arc(Vector2.ZERO, radius * (0.995 + pulse * 0.01), 0.0, TAU, 24, Color(base.r, base.g, base.b, line_alpha), 1.5)
 	_draw_role_ticks(base, pulse)
 	if exact_radius_visible:
-		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 128, Color(1.0, 1.0, 1.0, 0.55 * fade), 1.25)
+		draw_arc(Vector2.ZERO, radius, 0.0, TAU, 32, Color(1.0, 1.0, 1.0, 0.55 * fade), 1.25)
 
 func _draw_role_ticks(color: Color, pulse: float) -> void:
-	var tick_count := 16
-	if quality <= 0:
-		tick_count = 8
+	# [VISUAL-OPT] Reduced tick count from 16 to 6 for debug ring decoration.
+	var tick_count := 6
 	for i in range(tick_count):
 		var a := float(i) / float(tick_count) * TAU
 		if kind == KIND_HEAL:
@@ -65,22 +75,10 @@ func _draw_role_ticks(color: Color, pulse: float) -> void:
 			a += sin(time * 5.0 + i) * 0.035
 		elif kind == KIND_SHIELD:
 			a += time * 0.08
-		var len := 7.0
-		if kind == KIND_EMP and i % 3 == 0:
-			len = 13.0
+		var len := 6.0
 		var p1 := Vector2.RIGHT.rotated(a) * (radius - len)
 		var p2 := Vector2.RIGHT.rotated(a) * (radius + 2.0)
-		draw_line(p1, p2, Color(color.r, color.g, color.b, (0.18 + pulse * 0.18) * fade), 1.5)
-	if kind == KIND_SHIELD:
-		for i in range(6):
-			var a := float(i) / 6.0 * TAU + time * 0.12
-			draw_arc(Vector2.ZERO, radius * 0.72, a, a + 0.32, 8, Color(color.r, color.g, color.b, 0.22 * fade), 2.0)
-	elif kind == KIND_EMP:
-		for i in range(5):
-			var a := float(i) / 5.0 * TAU + sin(time * 7.0 + i) * 0.2
-			var p1 := Vector2.RIGHT.rotated(a) * radius * 0.55
-			var p2 := Vector2.RIGHT.rotated(a + 0.08) * radius * 0.95
-			draw_line(p1, p2, Color(1.0, 0.16, 0.55, 0.18 * fade), 1.0)
+		draw_line(p1, p2, Color(color.r, color.g, color.b, (0.22 + pulse * 0.18) * fade), 1.5)
 
 func _base_color() -> Color:
 	match kind:
