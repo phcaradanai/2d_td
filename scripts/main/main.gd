@@ -94,6 +94,7 @@ var selected_level_id: int = 0
 var pending_unlock_level_id: String = ""
 var save_game_service: Node = null  # [MetaLayer] Run-state save/continue
 var leaderboard_service: Node = null
+var online_lb_client: Node = null   # [MetaLayer] Online leaderboard client
 var leaderboard_panel: Node = null
 var current_hero: Node = null
 var hero_panel: Node = null
@@ -190,6 +191,10 @@ func _ready() -> void:
 	_update_world_layout()
 
 	return_to_menu()
+
+	# [MetaLayer] Retry any pending online score submissions from previous sessions
+	if online_lb_client:
+		online_lb_client.retry_pending()
 
 func _on_viewport_size_changed() -> void:
 	_update_world_layout()
@@ -651,9 +656,16 @@ func _ensure_level_nodes_exist() -> void:
 		save_game_service.name = "SaveGameService"
 		add_child(save_game_service)
 
-	# Initialize Leaderboard Service
+	# Local leaderboard (existing — keeps result-panel rank working)
 	leaderboard_service = load("res://scripts/core/leaderboard_service.gd").new()
 	add_child(leaderboard_service)
+
+	# [MetaLayer] Online leaderboard client
+	if online_lb_client == null:
+		online_lb_client = load("res://scripts/meta/leaderboard_client.gd").new()
+		online_lb_client.name = "OnlineLeaderboardClient"
+		add_child(online_lb_client)
+		online_lb_client.score_submitted.connect(_on_online_score_submitted)
 	level_manager = get_node_or_null("LevelManager")
 	pathfinding_manager = get_node_or_null("GridPathfindingManager")
 	map_visual_layer = get_node_or_null("MapVisualLayer")
@@ -1089,7 +1101,9 @@ func _on_leaderboard_requested(level_id: String) -> void:
 		
 	if OS.is_debug_build(): print("[Main] Opening leaderboard for level: %s" % level_id)
 	leaderboard_panel.get_parent().visible = true
-	leaderboard_panel.show_leaderboard(leaderboard_service, level_id)
+	# [MetaLayer] Pass online client so the panel can fetch live scores
+	if leaderboard_panel.has_method("show_leaderboard"):
+		leaderboard_panel.show_leaderboard(leaderboard_service, level_id, online_lb_client)
 
 func start_game(level_path: String) -> void:
 	# [MetaLayer] A level was chosen from the selector — this is a new run, discard any existing save.
@@ -1845,7 +1859,9 @@ func _on_game_over() -> void:
 		improvements = save_manager.update_level_record(level_manager.level_id, summary)
 		if leaderboard_service:
 			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
-	
+		# [MetaLayer] Submit to online leaderboard (async, no crash if offline)
+		_submit_online_score(summary)
+
 	if game_hud:
 		game_hud.show_run_summary(summary, improvements, rank)
 		if OS.is_debug_build(): print("[ResultPanel] shown for ", current_level_id)
@@ -1888,7 +1904,9 @@ func _on_victory() -> void:
 		
 		if leaderboard_service:
 			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
-		
+		# [MetaLayer] Submit to online leaderboard (async, no crash if offline)
+		_submit_online_score(summary)
+
 		# If first time clear, check for next level unlock
 		if improvements.get("first_time_clear", false):
 			var next_id = save_manager.get_next_level_id(level_manager.level_id)
@@ -1903,6 +1921,44 @@ func _on_victory() -> void:
 	_refresh_gameplay_hud_state()
 	if audio_manager:
 		audio_manager.play_sfx("victory")
+
+# --- MetaLayer: Online Leaderboard ---
+
+func _submit_online_score(summary: Dictionary) -> void:
+	if online_lb_client == null or level_manager == null:
+		return
+	var payload = _build_online_payload(summary)
+	online_lb_client.submit_score(payload)
+
+func _build_online_payload(summary: Dictionary) -> Dictionary:
+	var player_name = save_manager.get_player_name() if save_manager else "Player"
+	var cleared = str(summary.get("result", "")) == "Victory"
+	var wave = int(summary.get("waves_completed", game_manager.current_wave if game_manager else 0))
+	var lives = int(summary.get("lives", game_manager.lives if game_manager else 0))
+	var gold = int(summary.get("gold", game_manager.gold if game_manager else 0))
+	var run_time = int(summary.get("clear_time", 0))
+	var interest_count = 0
+	if element_td_interest_service:
+		interest_count = int(element_td_interest_service.upgrade_count)
+	var elements: Dictionary = {}
+	if element_progression_manager and element_progression_manager.has_method("get_element_levels"):
+		elements = element_progression_manager.get_element_levels()
+	return {
+		"player_name": player_name,
+		"level_id": current_level_id,
+		"wave_reached": wave,
+		"cleared": cleared,
+		"lives_remaining": lives,
+		"gold_remaining": gold,
+		"interest_level": interest_count,
+		"run_time_seconds": run_time,
+		"elements": elements,
+		"client_created_at": int(Time.get_unix_time_from_system())
+	}
+
+func _on_online_score_submitted(ok: bool, score: int, rank: int) -> void:
+	if OS.is_debug_build():
+		print("[MetaLayer] Online submit: ok=%s score=%d rank=%d" % [str(ok), score, rank])
 
 # --- MetaLayer: Player Name, Save/Continue, Leaderboard from Menu ---
 
