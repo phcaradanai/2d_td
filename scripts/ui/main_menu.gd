@@ -9,6 +9,8 @@ signal quit_pressed()
 signal start_pressed()
 signal level_select_pressed()
 
+const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+
 @onready var player_name_input: LineEdit = $Root/NameContainer/PlayerNameInput
 @onready var play_button: Button = $Root/VBoxContainer/PlayButton
 @onready var continue_button: Button = $Root/VBoxContainer/ContinueButton
@@ -20,6 +22,7 @@ signal level_select_pressed()
 @onready var credits_close_button: Button = $Root/CreditsPanel/MarginContainer/VBoxContainer/CloseCreditsButton
 
 func _ready() -> void:
+	_apply_neon_terminal_layout()
 	play_button.pressed.connect(_on_play_pressed)
 	continue_button.pressed.connect(_on_continue_pressed)
 	continue_button.disabled = true
@@ -92,6 +95,40 @@ func _unlock_audio() -> void:
 	var audio_manager = get_tree().current_scene.get_node_or_null("AudioManager")
 	if audio_manager and audio_manager.has_method("unlock_audio"):
 		audio_manager.unlock_audio()
+
+func _apply_neon_terminal_layout() -> void:
+	var bg := $Root/Background
+	if bg is ColorRect:
+		bg.color = NeonStyle.BG
+
+	var title := $Root/Title
+	if title is Label:
+		title.text = "TOWER DEFENSE"
+		title.add_theme_font_size_override("font_size", 56)
+		title.add_theme_color_override("font_color", NeonStyle.CYAN)
+		title.add_theme_color_override("font_shadow_color", Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.38))
+		title.add_theme_constant_override("shadow_offset_x", 0)
+		title.add_theme_constant_override("shadow_offset_y", 2)
+		title.add_theme_constant_override("shadow_size", 9)
+
+	var name_label := $Root/NameContainer/NameLabel
+	if name_label is Label:
+		name_label.text = "OPERATOR ID"
+		NeonStyle.apply_terminal_label(name_label, 12, NeonStyle.TEXT_DIM)
+	if player_name_input:
+		player_name_input.placeholder_text = "CALLSIGN"
+		NeonStyle.style_line_edit(player_name_input)
+
+	for btn in [play_button, continue_button, leaderboard_button, credits_button, quit_button, credits_close_button]:
+		if btn:
+			NeonStyle.style_button(btn, NeonStyle.CYAN, btn == play_button)
+			btn.custom_minimum_size.y = 44
+
+	if version_label:
+		NeonStyle.apply_terminal_label(version_label, 11, NeonStyle.TEXT_DIM)
+
+	if credits_panel:
+		credits_panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, true))
 
 func show_menu() -> void:
 	show()

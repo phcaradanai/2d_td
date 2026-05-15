@@ -1,17 +1,19 @@
 extends Node
 
+const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+
 # ── Palette ───────────────────────────────────────────────────────────────────
-const C_BG          = Color(0.012, 0.022, 0.042, 0.97)
-const C_BORDER      = Color(0.18,  0.68,  0.90,  0.85)
-const C_ACCENT      = Color(0.30,  0.90,  1.00,  1.00)
-const C_GOLD        = Color(1.00,  0.82,  0.22,  1.00)
-const C_CORAL       = Color(1.00,  0.48,  0.32,  1.00)
-const C_TEXT        = Color(0.88,  0.96,  1.00,  1.00)
-const C_TEXT_DIM    = Color(0.52,  0.65,  0.76,  0.90)
-const C_BTN         = Color(0.032, 0.072, 0.140, 1.00)
-const C_BTN_HOVER   = Color(0.060, 0.165, 0.265, 1.00)
-const C_BTN_PRESS   = Color(0.016, 0.042, 0.085, 1.00)
-const C_SEP         = Color(0.18,  0.68,  0.90,  0.22)
+const C_BG          = NeonStyle.BG
+const C_BORDER      = NeonStyle.CYAN_DIM
+const C_ACCENT      = NeonStyle.CYAN
+const C_GOLD        = NeonStyle.GOLD
+const C_CORAL       = NeonStyle.CORAL
+const C_TEXT        = NeonStyle.TEXT
+const C_TEXT_DIM    = NeonStyle.TEXT_DIM
+const C_BTN         = Color(0.012, 0.050, 0.086, 0.98)
+const C_BTN_HOVER   = Color(0.022, 0.092, 0.138, 1.00)
+const C_BTN_PRESS   = Color(0.006, 0.026, 0.048, 1.00)
+const C_SEP         = NeonStyle.CYAN_FAINT
 
 func apply_theme(root: Node) -> void:
 	_process_node(root)
@@ -23,6 +25,8 @@ func _process_node(node: Node) -> void:
 		_apply_button_style(node)
 	elif node is Label:
 		_apply_label_style(node)
+	elif node is LineEdit:
+		NeonStyle.style_line_edit(node)
 	elif node is HSeparator:
 		_apply_separator_style(node)
 	elif node is OptionButton:
@@ -32,44 +36,18 @@ func _process_node(node: Node) -> void:
 
 # ── Panel ─────────────────────────────────────────────────────────────────────
 func _apply_panel_style(panel: PanelContainer) -> void:
-	var s := StyleBoxFlat.new()
-	s.bg_color        = C_BG
-	s.border_color    = C_BORDER
-	s.border_width_left   = 1
-	s.border_width_top    = 1
-	s.border_width_right  = 1
-	s.border_width_bottom = 1
-	s.corner_radius_top_left     = 4
-	s.corner_radius_top_right    = 4
-	s.corner_radius_bottom_left  = 4
-	s.corner_radius_bottom_right = 4
-	s.shadow_color  = Color(0.20, 0.82, 1.0, 0.20)
-	s.shadow_size   = 8
-	s.shadow_offset = Vector2(0, 2)
-	panel.add_theme_stylebox_override("panel", s)
+	panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL, C_BORDER, false))
 
 # ── Button helper ─────────────────────────────────────────────────────────────
 func _make_flat(bg: Color, border: Color, radius: int = 4) -> StyleBoxFlat:
-	var s := StyleBoxFlat.new()
-	s.bg_color     = bg
-	s.border_color = border
-	s.border_width_left   = 1
-	s.border_width_top    = 1
-	s.border_width_right  = 1
-	s.border_width_bottom = 1
-	s.corner_radius_top_left     = radius
-	s.corner_radius_top_right    = radius
-	s.corner_radius_bottom_left  = radius
-	s.corner_radius_bottom_right = radius
-	s.content_margin_left   = 12
-	s.content_margin_right  = 12
-	s.content_margin_top    = 5
-	s.content_margin_bottom = 5
+	var s := NeonStyle.button(bg, border, radius <= 2)
+	s.set_corner_radius_all(0)
 	return s
 
 # ── Button ────────────────────────────────────────────────────────────────────
 func _apply_button_style(btn: Button) -> void:
 	var n := btn.name
+	btn.focus_mode = Control.FOCUS_NONE
 
 	# ── Primary (Start Wave) ──
 	if n == "StartWaveButton":
@@ -137,6 +115,7 @@ func _apply_button_style(btn: Button) -> void:
 	btn.add_theme_color_override("font_hover_color",    C_ACCENT)
 	btn.add_theme_color_override("font_pressed_color",  C_TEXT)
 	btn.add_theme_color_override("font_disabled_color", C_TEXT_DIM)
+	btn.add_theme_font_size_override("font_size", 13)
 
 # ── Label ─────────────────────────────────────────────────────────────────────
 func _apply_label_style(label: Label) -> void:
@@ -147,6 +126,7 @@ func _apply_label_style(label: Label) -> void:
 			label.add_theme_constant_override("shadow_offset_x", 0)
 			label.add_theme_constant_override("shadow_offset_y", 2)
 			label.add_theme_constant_override("shadow_size",      4)
+			label.add_theme_font_size_override("font_size", 30 if label.name == "CenterMessageLabel" else 56)
 		"GoldLabel":
 			label.add_theme_color_override("font_color", C_GOLD)
 			label.add_theme_font_size_override("font_size", 15)

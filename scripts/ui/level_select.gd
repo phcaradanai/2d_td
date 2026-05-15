@@ -4,6 +4,8 @@ signal level_selected(level_path: String)
 signal back_pressed()
 signal leaderboard_requested(level_id: String)
 
+const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+
 @onready var back_button: Button = $Root/BackButton
 
 var level_container_map: Dictionary = {} # level_id: Control node
@@ -79,8 +81,7 @@ func _generate_dynamic_ui(save_manager: Node) -> void:
 		
 		var header = Label.new()
 		header.name = "Header"
-		header.add_theme_font_size_override("font_size", 32) # Increased for Full HD
-		header.add_theme_color_override("font_color", Color(0.5, 0.7, 1.0))
+		NeonStyle.apply_terminal_label(header, 20, NeonStyle.TEXT_DIM)
 		header.add_theme_constant_override("margin_bottom", 16)
 		area_box.add_child(header)
 		
@@ -107,6 +108,8 @@ func _create_level_card(level_id: String) -> Control:
 	btn.custom_minimum_size = Vector2(140, 96)
 	btn.pivot_offset = btn.custom_minimum_size / 2.0
 	btn.text = level_id.replace("level_", "L")
+	NeonStyle.style_button(btn, NeonStyle.CYAN, false)
+	btn.add_theme_font_size_override("font_size", 24)
 	btn.pressed.connect(func(): _select_level("res://data/levels/%s.json" % level_id))
 	root.add_child(btn)
 	
@@ -117,7 +120,7 @@ func _create_level_card(level_id: String) -> Control:
 		link.name = "PrevLink"
 		link.size = Vector2(24, 2)
 		link.position = Vector2(-24, 48)
-		link.color = Color(0.2, 0.4, 0.6, 0.4)
+		link.color = NeonStyle.CYAN_FAINT
 		root.add_child(link)
 		root.move_child(link, 0) # Behind button
 	
@@ -128,12 +131,11 @@ func _create_level_card(level_id: String) -> Control:
 	sel_frame.visible = false
 	var sel_style = StyleBoxFlat.new()
 	sel_style.draw_center = false
-	sel_style.set_border_width_all(2)
-	sel_style.border_color = Color(0.3, 0.9, 1.0, 0.9) # Neon Cyan
-	sel_style.set_corner_radius_all(6)
-	# Inner glow effect (inset shadow)
-	sel_style.shadow_color = Color(0.3, 0.9, 1.0, 0.2)
-	sel_style.shadow_size = 4
+	sel_style.set_border_width_all(1)
+	sel_style.border_color = NeonStyle.CYAN
+	sel_style.set_corner_radius_all(0)
+	sel_style.shadow_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.32)
+	sel_style.shadow_size = 8
 	sel_style.shadow_offset = Vector2(0, 0)
 	
 	sel_frame.add_theme_stylebox_override("panel", sel_style)
@@ -170,7 +172,7 @@ func _create_level_card(level_id: String) -> Control:
 	lock.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	lock.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	lock.add_theme_font_size_override("font_size", 13)
-	lock.add_theme_color_override("font_color", Color(0.5, 0.5, 0.6))
+	lock.add_theme_color_override("font_color", NeonStyle.TEXT_DIM)
 	lock.add_theme_stylebox_override("normal", lock_style)
 	lock.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	lock.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -178,16 +180,16 @@ func _create_level_card(level_id: String) -> Control:
 	
 	# Perfect Badge
 	var badge_style = StyleBoxFlat.new()
-	badge_style.bg_color = Color(1, 0.8, 0.2, 0.2)
+	badge_style.bg_color = Color(NeonStyle.GOLD.r, NeonStyle.GOLD.g, NeonStyle.GOLD.b, 0.16)
 	badge_style.set_border_width_all(1)
-	badge_style.border_color = Color(1, 0.8, 0.2, 0.5)
-	badge_style.set_corner_radius_all(4)
+	badge_style.border_color = Color(NeonStyle.GOLD.r, NeonStyle.GOLD.g, NeonStyle.GOLD.b, 0.58)
+	badge_style.set_corner_radius_all(0)
 	
 	var badge = Label.new()
 	badge.name = "PerfectBadge"
 	badge.text = " PERFECT "
 	badge.add_theme_font_size_override("font_size", 9)
-	badge.add_theme_color_override("font_color", Color(1, 0.9, 0.3))
+	badge.add_theme_color_override("font_color", NeonStyle.GOLD)
 	badge.add_theme_stylebox_override("normal", badge_style)
 	badge.position = Vector2(86, 6) # Adjusted for better corner breathing
 	badge.tooltip_text = "PERFECT CLEAR!"
@@ -197,7 +199,7 @@ func _create_level_card(level_id: String) -> Control:
 	label.name = "Label"
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.add_theme_font_size_override("font_size", 11) # Slightly larger font for readability
-	label.add_theme_color_override("font_color", Color(0.7, 0.8, 0.9))
+	label.add_theme_color_override("font_color", NeonStyle.TEXT_DIM)
 	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	label.position = Vector2(0, 126) # Proper spacing below stars
 	label.size = Vector2(140, 34)
@@ -286,14 +288,15 @@ func _setup_clean_layout() -> void:
 	if has_node("Root/Title"):
 		$Root/Title.hide()
 	if has_node("Root/Background"):
-		$Root/Background.modulate = Color(0.4, 0.4, 0.4, 1.0) # Dim original bg a bit more for focus
+		$Root/Background.color = NeonStyle.BG
+		$Root/Background.modulate = Color(1, 1, 1, 1)
 
 	var outer_margin = MarginContainer.new()
 	outer_margin.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	outer_margin.add_theme_constant_override("margin_left", 32)
-	outer_margin.add_theme_constant_override("margin_right", 32)
-	outer_margin.add_theme_constant_override("margin_top", 32)
-	outer_margin.add_theme_constant_override("margin_bottom", 32)
+	outer_margin.add_theme_constant_override("margin_left", 26)
+	outer_margin.add_theme_constant_override("margin_right", 26)
+	outer_margin.add_theme_constant_override("margin_top", 24)
+	outer_margin.add_theme_constant_override("margin_bottom", 24)
 	$Root.add_child(outer_margin)
 	
 	var panel = PanelContainer.new()
@@ -301,12 +304,7 @@ func _setup_clean_layout() -> void:
 	panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	outer_margin.add_child(panel)
 	
-	var panel_style = StyleBoxFlat.new()
-	panel_style.bg_color = Color(0.06, 0.06, 0.08, 0.94)
-	panel_style.set_border_width_all(2)
-	panel_style.border_color = Color(0.3, 0.6, 1.0)
-	panel_style.set_corner_radius_all(20)
-	panel.add_theme_stylebox_override("panel", panel_style)
+	panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, false))
 	
 	var margin = MarginContainer.new()
 	margin.add_theme_constant_override("margin_left", 24)
@@ -316,7 +314,7 @@ func _setup_clean_layout() -> void:
 	panel.add_child(margin)
 	
 	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 24)
+	vbox.add_theme_constant_override("separation", 18)
 	margin.add_child(vbox)
 	
 	# Header Row: Back Button and Title
@@ -326,27 +324,25 @@ func _setup_clean_layout() -> void:
 	if back_button:
 		back_button.get_parent().remove_child(back_button)
 		header.add_child(back_button)
-		back_button.text = " < BACK"
-		back_button.custom_minimum_size = Vector2(120, 44)
-		back_button.add_theme_font_size_override("font_size", 18)
+		back_button.text = "< BACK"
+		back_button.custom_minimum_size = Vector2(112, 38)
+		NeonStyle.style_button(back_button)
 	
 	var header_spacer = Control.new()
 	header_spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer)
 	
 	var title = Label.new()
-	title.text = "WORLD EXPEDITION"
+	title.text = "MISSION SELECT"
 	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	title.add_theme_font_size_override("font_size", 32)
-	title.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	NeonStyle.apply_terminal_label(title, 30, NeonStyle.CYAN, true)
 	header.add_child(title)
 	
 	# Notification Label
 	notification_label = Label.new()
 	notification_label.name = "UnlockNotification"
 	notification_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	notification_label.add_theme_font_size_override("font_size", 24)
-	notification_label.add_theme_color_override("font_color", Color(1, 1, 0.4))
+	NeonStyle.apply_terminal_label(notification_label, 18, NeonStyle.GOLD, true)
 	notification_label.modulate.a = 0
 	vbox.add_child(notification_label)
 	vbox.move_child(notification_label, 1) # Below header
@@ -362,7 +358,7 @@ func _setup_clean_layout() -> void:
 	
 	# Main horizontal split
 	main_hbox = HBoxContainer.new()
-	main_hbox.add_theme_constant_override("separation", 40)
+	main_hbox.add_theme_constant_override("separation", 24)
 	main_hbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	vbox.add_child(main_hbox)
 	
@@ -385,19 +381,14 @@ func _setup_clean_layout() -> void:
 	
 	# Right Side: Mission Intel & Loadout
 	right_vbox = VBoxContainer.new()
-	right_vbox.custom_minimum_size.x = 380
-	right_vbox.add_theme_constant_override("separation", 16)
+	right_vbox.custom_minimum_size.x = 360
+	right_vbox.add_theme_constant_override("separation", 12)
 	main_hbox.add_child(right_vbox)
 	
 	# Intel Panel (Styled & Scrollable)
 	var intel_bg = PanelContainer.new()
 	intel_bg.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	var intel_style = StyleBoxFlat.new()
-	intel_style.bg_color = Color(0.1, 0.1, 0.15, 0.6)
-	intel_style.set_border_width_all(1)
-	intel_style.border_color = Color(0.3, 0.4, 0.6, 0.8)
-	intel_style.set_corner_radius_all(10)
-	intel_bg.add_theme_stylebox_override("panel", intel_style)
+	intel_bg.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL, NeonStyle.CYAN_DIM, false))
 	right_vbox.add_child(intel_bg)
 	
 	var intel_scroll = ScrollContainer.new()
@@ -418,21 +409,10 @@ func _setup_clean_layout() -> void:
 	# Play Button at the bottom of the right column
 	play_button = Button.new()
 	play_button.text = "SELECT MISSION"
-	play_button.custom_minimum_size = Vector2(0, 72)
+	play_button.custom_minimum_size = Vector2(0, 56)
 	play_button.disabled = true
-	
-	var btn_style = StyleBoxFlat.new()
-	btn_style.bg_color = Color(0.1, 0.5, 0.25)
-	btn_style.set_corner_radius_all(15)
-	var btn_hover = btn_style.duplicate()
-	btn_hover.bg_color = Color(0.15, 0.65, 0.35)
-	var btn_disabled = btn_style.duplicate()
-	btn_disabled.bg_color = Color(0.2, 0.2, 0.2)
-	
-	play_button.add_theme_stylebox_override("normal", btn_style)
-	play_button.add_theme_stylebox_override("hover", btn_hover)
-	play_button.add_theme_stylebox_override("disabled", btn_disabled)
-	play_button.add_theme_font_size_override("font_size", 24)
+	NeonStyle.style_button(play_button, NeonStyle.GREEN, true)
+	play_button.add_theme_font_size_override("font_size", 18)
 	
 	right_vbox.add_child(play_button)
 	play_button.pressed.connect(_on_play_pressed)

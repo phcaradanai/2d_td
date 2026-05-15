@@ -17,6 +17,8 @@ signal reset_audio_requested()
 signal next_level_requested()
 signal back_to_map_requested()
 
+const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+
 # Top Bar
 @onready var gold_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/GoldLabel
 @onready var lives_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/LivesLabel
@@ -400,6 +402,7 @@ func _ready() -> void:
 	var top_hbox = gold_label.get_parent()
 	if top_hbox is HBoxContainer:
 		top_hbox.add_theme_constant_override("separation", 24)
+	_apply_terminal_hud_skin()
 
 func _process(delta: float) -> void:
 	if damage_stats_panel == null or not SHOW_DAMAGE_PANEL:
@@ -525,22 +528,89 @@ func set_panel_active(panel: Control, active: bool, block_mouse: bool = true) ->
 func update_layout_for_viewport() -> void:
 	if not is_inside_tree(): return
 	var view_size = get_viewport().get_visible_rect().size
+	var portrait: bool = view_size.x <= 760.0 or view_size.y > view_size.x * 1.22
 	
 	if left_sidebar:
-		if view_size.x < 1200:
+		if portrait:
+			left_sidebar.custom_minimum_size = Vector2(0, 168)
+		elif view_size.x < 1200:
 			left_sidebar.custom_minimum_size.x = 265
 		else:
 			left_sidebar.custom_minimum_size.x = 310
 			
 	if right_sidebar_container:
-		if view_size.x < 1200:
+		if portrait:
+			right_sidebar_container.custom_minimum_size.x = 0
+			right_sidebar_container.visible = right_sidebar.visible
+		elif view_size.x < 1200:
+			right_sidebar_container.visible = true
 			right_sidebar_container.custom_minimum_size.x = 220
 		else:
+			right_sidebar_container.visible = true
 			right_sidebar_container.custom_minimum_size.x = 240
 	_sync_tower_shop_list_width()
+	_apply_mobile_portrait_layout(portrait)
 
 	if OS.is_debug_build():
 		print("[HUD_LAYOUT] screen_size=", view_size, " playfield=", get_playfield_rect())
+
+func _apply_terminal_hud_skin() -> void:
+	if dim_overlay:
+		dim_overlay.color = Color(0.0, 0.010, 0.026, 0.72)
+	if screen_layout:
+		screen_layout.add_theme_constant_override("separation", 0)
+	var top_bar := $Root/ScreenLayout/TopBar
+	if top_bar is PanelContainer:
+		top_bar.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, false))
+		top_bar.custom_minimum_size.y = 64
+	for panel in [left_sidebar, right_sidebar, center_message_panel, settings_panel]:
+		if panel:
+			panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, panel == center_message_panel or panel == settings_panel))
+	for label in [gold_label, lives_label, wave_label, status_label, next_wave_label, build_status_label]:
+		if label:
+			NeonStyle.apply_terminal_label(label, 13, NeonStyle.TEXT)
+	if gold_label:
+		NeonStyle.apply_terminal_label(gold_label, 14, NeonStyle.GOLD, true)
+	if lives_label:
+		NeonStyle.apply_terminal_label(lives_label, 14, NeonStyle.CORAL, true)
+	if wave_label:
+		NeonStyle.apply_terminal_label(wave_label, 15, NeonStyle.CYAN, true)
+	if status_label:
+		NeonStyle.apply_terminal_label(status_label, 13, NeonStyle.CYAN)
+	if next_wave_label:
+		NeonStyle.apply_terminal_label(next_wave_label, 12, NeonStyle.TEXT_DIM)
+	if interest_status_label:
+		NeonStyle.apply_terminal_label(interest_status_label, 12, NeonStyle.GOLD)
+	for btn in [start_wave_button, settings_button, pause_button, restart_button, cancel_build_button, upgrade_tower_button, deselect_tower_button, center_restart_button, center_menu_button, close_settings_button, test_sfx_button, test_music_button, reset_audio_button]:
+		if btn:
+			NeonStyle.style_button(btn, NeonStyle.CYAN, btn == start_wave_button or btn == center_restart_button)
+
+func _apply_mobile_portrait_layout(portrait: bool) -> void:
+	if left_sidebar == null or screen_layout == null:
+		return
+	if portrait:
+		if left_sidebar.get_parent() != screen_layout:
+			var old_parent := left_sidebar.get_parent()
+			if old_parent:
+				old_parent.remove_child(left_sidebar)
+			screen_layout.add_child(left_sidebar)
+		var top_bar := $Root/ScreenLayout/TopBar
+		if top_bar is PanelContainer:
+			top_bar.custom_minimum_size.y = 96
+		var top_hbox := gold_label.get_parent()
+		if top_hbox is HBoxContainer:
+			top_hbox.add_theme_constant_override("separation", 10)
+		if start_wave_button:
+			start_wave_button.custom_minimum_size = Vector2(136, 42)
+	else:
+		var main_content := $Root/ScreenLayout/MainContent
+		if main_content and left_sidebar.get_parent() != main_content:
+			left_sidebar.get_parent().remove_child(left_sidebar)
+			main_content.add_child(left_sidebar)
+			main_content.move_child(left_sidebar, 0)
+		var top_bar := $Root/ScreenLayout/TopBar
+		if top_bar is PanelContainer:
+			top_bar.custom_minimum_size.y = 64
 
 func get_playfield_rect() -> Rect2:
 	if playfield_area and playfield_area.is_inside_tree():
@@ -1137,7 +1207,7 @@ func _ensure_element_modal() -> void:
 
 	var dim := ColorRect.new()
 	dim.set_anchors_preset(Control.PRESET_FULL_RECT)
-	dim.color = Color(0.0, 0.02, 0.05, 0.82)
+	dim.color = Color(0.0, 0.010, 0.026, 0.86)
 	dim.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_em_overlay.add_child(dim)
 
@@ -1145,10 +1215,10 @@ func _ensure_element_modal() -> void:
 	_em_panel = PanelContainer.new()
 	_em_panel.name = "ElementModalPanel"
 	_em_panel.set_anchors_preset(Control.PRESET_CENTER)
-	_em_panel.custom_minimum_size = Vector2(1380, 760)
+	_em_panel.custom_minimum_size = Vector2(1320, 720)
 	_em_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
 	_em_panel.grow_vertical   = Control.GROW_DIRECTION_BOTH
-	_em_panel.add_theme_stylebox_override("panel", _em_sb(Color(0.04, 0.055, 0.09, 0.98), Color(0.25, 0.62, 1.0, 0.55), 2.0, 10.0))
+	_em_panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, true))
 	_em_overlay.add_child(_em_panel)
 
 	var outer := MarginContainer.new()
@@ -1169,10 +1239,10 @@ func _ensure_element_modal() -> void:
 	head_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	head_col.add_theme_constant_override("separation", 3)
 	title_row.add_child(head_col)
-	var t1 := _em_lbl("CHOOSE ELEMENT", 22, Color(0.6, 0.9, 1.0))
+	var t1 := _em_lbl("CHOOSE ELEMENT", 22, NeonStyle.CYAN)
 	t1.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	head_col.add_child(t1)
-	var t2 := _em_lbl("Choose one element to unlock new towers before the next wave.", 12, Color(0.42, 0.62, 0.78))
+	var t2 := _em_lbl("Choose one element to unlock new towers before the next wave.", 12, NeonStyle.TEXT_DIM)
 	t2.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	head_col.add_child(t2)
 
@@ -1187,8 +1257,7 @@ func _ensure_element_modal() -> void:
 	_em_close_btn.custom_minimum_size = Vector2(38, 38)
 	_em_close_btn.add_theme_font_size_override("font_size", 16)
 	_em_close_btn.add_theme_color_override("font_color", Color(0.75, 0.85, 1.0))
-	_em_close_btn.add_theme_stylebox_override("normal", _em_sb(Color(0.1, 0.15, 0.24), Color(0.22, 0.38, 0.65, 0.5)))
-	_em_close_btn.add_theme_stylebox_override("hover",  _em_sb(Color(0.18, 0.22, 0.36), Color(0.45, 0.6, 1.0, 0.8)))
+	NeonStyle.style_button(_em_close_btn)
 	_em_close_btn.pressed.connect(hide_element_choice)
 	title_row.add_child(_em_close_btn)
 
@@ -1214,7 +1283,7 @@ func _ensure_element_modal() -> void:
 	left_v.add_theme_constant_override("separation", 5)
 	left_scroll.add_child(left_v)
 
-	var left_hdr := _em_lbl("◆  ELEMENTS", 11, Color(0.4, 0.68, 1.0, 0.7))
+	var left_hdr := _em_lbl("ELEMENTS", 11, NeonStyle.TEXT_DIM)
 	left_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	left_v.add_child(left_hdr)
 	var left_gap := Control.new()
@@ -2489,11 +2558,16 @@ func hide_build_panel() -> void:
 	set_panel_active(left_sidebar, false)
 
 func show_tower_info_panel() -> void:
+	if right_sidebar_container:
+		right_sidebar_container.visible = true
 	set_panel_active(right_sidebar, true, true)
 	_refresh_right_info_column_visibility()
 
 func hide_tower_info_panel() -> void:
 	set_panel_active(right_sidebar, false)
+	var view_size: Vector2 = get_viewport().get_visible_rect().size
+	if right_sidebar_container and (view_size.x <= 760.0 or view_size.y > view_size.x * 1.22):
+		right_sidebar_container.visible = false
 	_refresh_right_info_column_visibility()
 
 func enter_end_game_ui_state() -> void:
