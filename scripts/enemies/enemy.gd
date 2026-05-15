@@ -2066,7 +2066,7 @@ func _process_disrupt_aura() -> void:
 				var effective = tower.get_effective_fire_rate() if tower.has_method("get_effective_fire_rate") else 0.0
 				print("[EnemyFeature][Disruptor] source=%s tower=%s penalty=%.2f effective_interval=%.2f" % [enemy_type, str(tower.name), penalty, effective])
 	for key in disrupted_towers.keys():
-		var tower: Node = disrupted_towers[key]
+		var tower = disrupted_towers[key]
 		if not is_instance_valid(tower) or not currently_affected.has(tower):
 			if is_instance_valid(tower) and tower.has_method("remove_fire_rate_modifier"):
 				tower.remove_fire_rate_modifier(self )
@@ -2334,6 +2334,8 @@ func _draw_hunter_compass_needle(pos: Vector2, dir: Vector2, color: Color, size:
 	draw_circle(center_hot, maxf(1.5, needle_width * 0.38), Color(1.0, 1.0, 1.0, color.a * 0.85))
 
 func _process_pathing(delta: float) -> void:
+	if is_dead_flag or reached_base_flag:
+		return
 	if use_dynamic_pathing:
 		_process_dynamic_pathing(delta)
 		return
@@ -2369,6 +2371,8 @@ func on_navigation_grid_changed(version: int) -> void:
 	_recalculate_dynamic_path()
 
 func _process_dynamic_pathing(delta: float) -> void:
+	if is_dead_flag or reached_base_flag:
+		return
 	if pathfinding_manager == null or not is_instance_valid(pathfinding_manager):
 		return
 
@@ -2645,7 +2649,7 @@ func notify_stealth_targetable() -> void:
 
 func _clear_disrupted_towers() -> void:
 	for key in disrupted_towers.keys():
-		var tower: Node = disrupted_towers[key]
+		var tower = disrupted_towers[key]
 		if is_instance_valid(tower) and tower.has_method("remove_fire_rate_modifier"):
 			tower.remove_fire_rate_modifier(self )
 			disruption_removed.emit(tower, self )

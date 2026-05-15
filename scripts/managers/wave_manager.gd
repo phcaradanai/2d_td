@@ -469,6 +469,11 @@ func _apply_economy_tower_kill_effects(source_id: String, reward: int) -> void:
 		economy_life_kill_counters[source_id] = count
 
 func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> void:
+	# Guard: if the enemy already died (e.g. from DoT in the same frame as reaching
+	# the base), _on_enemy_died already decremented the count. Skip to avoid double-removal.
+	if _enemy != null and is_instance_valid(_enemy) and bool(_enemy.get("is_dead_flag")):
+		return
+
 	var hp_rem := 0.0
 	var prog := 0.0
 	if _enemy != null and is_instance_valid(_enemy):
@@ -478,7 +483,7 @@ func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> v
 	if game_manager and game_manager.battle_telemetry and _enemy != null and is_instance_valid(_enemy):
 		var lives_after = game_manager.lives - damage
 		game_manager.battle_telemetry.log_enemy_leak(_enemy.enemy_type, hp_rem, global_pos, prog, lives_after)
-		
+
 	base_damaged.emit(damage, global_pos)
 
 	# Element TD WC3-style leak loop: a leaked creep costs life, then returns to

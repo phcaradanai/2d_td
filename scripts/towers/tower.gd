@@ -3328,7 +3328,7 @@ func _get_active_clone_source() -> Node2D:
 		var entry: Dictionary = damage_modifiers[key]
 		if str(entry.get("tag", "")) != "clone":
 			continue
-		var source: Node = entry.get("source", null)
+		var source = entry.get("source", null)
 		if not is_instance_valid(source) or not source is Node2D:
 			continue
 		var value := float(entry.get("value", 1.0))
@@ -3342,7 +3342,7 @@ func get_effective_damage() -> float:
 	_stale_damage_keys.clear()
 	for key in damage_modifiers.keys():
 		var entry: Dictionary = damage_modifiers[key]
-		var source: Node = entry.get("source", null)
+		var source = entry.get("source", null)
 		if not is_instance_valid(source):
 			_stale_damage_keys.append(key)
 			continue
@@ -3362,7 +3362,7 @@ func get_active_damage_bonus_tag() -> String:
 	var strongest_tag := ""
 	for key in damage_modifiers.keys():
 		var entry: Dictionary = damage_modifiers[key]
-		var source: Node = entry.get("source", null)
+		var source = entry.get("source", null)
 		if not is_instance_valid(source):
 			continue
 		var value := float(entry.get("value", 1.0))
@@ -3382,7 +3382,7 @@ func get_active_fire_rate_bonus_tag() -> String:
 	var strongest_tag := ""
 	for key in fire_rate_modifiers.keys():
 		var entry: Dictionary = fire_rate_modifiers[key]
-		var source: Node = entry.get("source", null)
+		var source = entry.get("source", null)
 		if not is_instance_valid(source):
 			continue
 		var value := float(entry.get("value", 1.0))
@@ -3432,7 +3432,7 @@ func get_effective_fire_rate() -> float:
 	_stale_fire_rate_keys.clear()
 	for key in fire_rate_modifiers.keys():
 		var entry: Dictionary = fire_rate_modifiers[key]
-		var source: Node = entry.get("source", null)
+		var source = entry.get("source", null)
 		if not is_instance_valid(source):
 			_stale_fire_rate_keys.append(key)
 			continue
