@@ -30,9 +30,9 @@ anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
 offset_left = -200.0
-offset_top = -220.0
+offset_top = -280.0
 offset_right = 200.0
-offset_bottom = -120.0
+offset_bottom = -180.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_colors/font_shadow_color = Color(0, 0, 0, 1)
@@ -43,6 +43,36 @@ text = "TOWER DEFENSE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
+[node name="NameContainer" type="VBoxContainer" parent="Root"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -150.0
+offset_top = -160.0
+offset_right = 150.0
+offset_bottom = -80.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 6
+
+[node name="NameLabel" type="Label" parent="Root/NameContainer"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.7, 0.85, 1.0, 1)
+theme_override_font_sizes/font_size = 14
+text = "PLAYER NAME"
+horizontal_alignment = 1
+
+[node name="PlayerNameInput" type="LineEdit" parent="Root/NameContainer"]
+custom_minimum_size = Vector2(300, 42)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+placeholder_text = "Enter your name..."
+max_length = 20
+alignment = 1
+
 [node name="VBoxContainer" type="VBoxContainer" parent="Root"]
 layout_mode = 1
 anchors_preset = 8
@@ -50,34 +80,41 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -100.0
-offset_top = -40.0
-offset_right = 100.0
-offset_bottom = 180.0
+offset_left = -110.0
+offset_top = -60.0
+offset_right = 110.0
+offset_bottom = 285.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/separation = 15
+theme_override_constants/separation = 12
 
-[node name="StartButton" type="Button" parent="Root/VBoxContainer"]
-custom_minimum_size = Vector2(200, 45)
+[node name="PlayButton" type="Button" parent="Root/VBoxContainer"]
+custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "PLAY"
+text = "PLAY NEW GAME"
 
-[node name="LevelSelectButton" type="Button" parent="Root/VBoxContainer"]
-custom_minimum_size = Vector2(200, 45)
+[node name="ContinueButton" type="Button" parent="Root/VBoxContainer"]
+custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "LEVEL SELECT"
+text = "CONTINUE"
+disabled = true
+
+[node name="LeaderboardButton" type="Button" parent="Root/VBoxContainer"]
+custom_minimum_size = Vector2(220, 48)
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "LEADERBOARD"
 
 [node name="CreditsButton" type="Button" parent="Root/VBoxContainer"]
-custom_minimum_size = Vector2(200, 45)
+custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "CREDITS"
 
 [node name="QuitButton" type="Button" parent="Root/VBoxContainer"]
-custom_minimum_size = Vector2(200, 45)
+custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "QUIT"

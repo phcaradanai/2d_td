@@ -92,6 +92,7 @@ var current_level_id: String = ""
 var selected_level_id: int = 0
 
 var pending_unlock_level_id: String = ""
+var save_game_service: Node = null  # [MetaLayer] Run-state save/continue
 var leaderboard_service: Node = null
 var leaderboard_panel: Node = null
 var current_hero: Node = null
@@ -643,7 +644,13 @@ func _hide_old_path_visuals() -> void:
 func _ensure_level_nodes_exist() -> void:
 	if not save_manager:
 		save_manager = get_node_or_null("SaveManager")
-		
+
+	# [MetaLayer] Run-state save/continue service
+	if save_game_service == null:
+		save_game_service = load("res://scripts/meta/save_game_service.gd").new()
+		save_game_service.name = "SaveGameService"
+		add_child(save_game_service)
+
 	# Initialize Leaderboard Service
 	leaderboard_service = load("res://scripts/core/leaderboard_service.gd").new()
 	add_child(leaderboard_service)
@@ -778,8 +785,10 @@ func _locked_upgrade_reason(cfg: Dictionary) -> String:
 
 func _connect_signals() -> void:
 	if main_menu:
-		main_menu.start_pressed.connect(_on_level_select_requested)
-		main_menu.level_select_pressed.connect(_on_level_select_requested)
+		# [MetaLayer] New meta-progression menu signals
+		main_menu.new_game_pressed.connect(_on_new_game_pressed)
+		main_menu.continue_pressed.connect(_on_continue_requested)
+		main_menu.leaderboard_pressed.connect(_on_leaderboard_from_menu_requested)
 		main_menu.quit_pressed.connect(func(): get_tree().quit())
 
 	if level_select:
@@ -1389,8 +1398,12 @@ func _refresh_ui_for_phase() -> void:
 		GameState.MENU:
 			if main_menu:
 				main_menu.show()
-				# Title screen should block mouse to its buttons
 				main_menu.process_mode = Node.PROCESS_MODE_ALWAYS
+				# [MetaLayer] Refresh continue button state and restore saved player name
+				if main_menu.has_method("set_has_save") and save_game_service:
+					main_menu.set_has_save(save_game_service.has_valid_save())
+				if main_menu.has_method("set_player_name") and save_manager:
+					main_menu.set_player_name(save_manager.get_player_name())
 			get_tree().paused = false
 
 		GameState.LEVEL_SELECT:
@@ -1727,6 +1740,10 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 	if element_progression_manager and wave_number > 0 and wave_number % ELEMENT_PICK_INTERVAL == 0:
 		element_progression_manager.grant_pick(1)
 		_show_pending_element_choice()
+
+	# [MetaLayer] Auto-save run state after each wave clear (safe point: gold/wave updated)
+	_auto_save_run_state()
+
 	# Auto-advance to planning after a brief reward moment
 	get_tree().create_timer(2.5).timeout.connect(func():
 		if current_state == GameState.WAVE_COMPLETE:
@@ -1798,6 +1815,9 @@ func _on_game_over() -> void:
 	if OS.is_debug_build(): print("[Main] Game Over Triggered")
 	set_game_phase(GameState.GAME_OVER)
 	_clear_route_preview()
+	# [MetaLayer] Run is over — remove run save so continue is disabled
+	if save_game_service:
+		save_game_service.delete_save()
 
 	clear_selected_tower()
 	if build_manager and build_manager.has_method("cancel_build_mode"):
@@ -1841,6 +1861,9 @@ func _clear_projectiles_and_targeting() -> void:
 func _on_victory() -> void:
 	set_game_phase(GameState.VICTORY)
 	_clear_route_preview()
+	# [MetaLayer] Run cleared — remove run save so continue is disabled
+	if save_game_service:
+		save_game_service.delete_save()
 
 	clear_selected_tower()
 	if build_manager and build_manager.has_method("cancel_build_mode"):
@@ -1873,6 +1896,175 @@ func _on_victory() -> void:
 	_refresh_gameplay_hud_state()
 	if audio_manager:
 		audio_manager.play_sfx("victory")
+
+# --- MetaLayer: Player Name, Save/Continue, Leaderboard from Menu ---
+
+func _on_new_game_pressed() -> void:
+	# Persist player name, wipe any existing run save, then start level 01 fresh.
+	if save_manager and main_menu and main_menu.has_method("get_player_name"):
+		save_manager.set_player_name(main_menu.get_player_name())
+	if save_game_service:
+		save_game_service.delete_save()
+	start_game("res://data/levels/level_01.json")
+
+func _on_continue_requested() -> void:
+	if save_game_service == null or not save_game_service.has_valid_save():
+		return
+	if save_manager and main_menu and main_menu.has_method("get_player_name"):
+		save_manager.set_player_name(main_menu.get_player_name())
+	_restore_run_from_save()
+
+func _on_leaderboard_from_menu_requested() -> void:
+	_on_leaderboard_requested("level_01")
+
+func _restore_run_from_save() -> void:
+	if save_game_service == null:
+		return
+	var data = save_game_service.load_run_state()
+	if data.is_empty():
+		push_warning("[MetaLayer] Continue: save data empty or corrupt.")
+		return
+	var level_id = str(data.get("level_id", "level_01"))
+	var level_path = "res://data/levels/%s.json" % level_id
+	if not FileAccess.file_exists(level_path):
+		push_warning("[MetaLayer] Continue: level file not found: %s" % level_path)
+		return
+	# Start the level fresh (resets managers), then overlay the saved state.
+	start_level(level_path)
+	_apply_saved_run_state(data)
+
+func _apply_saved_run_state(data: Dictionary) -> void:
+	# Restore economy state
+	if game_manager:
+		game_manager.gold = int(data.get("gold", game_manager.gold))
+		game_manager.lives = int(data.get("lives", game_manager.lives))
+		game_manager.current_wave = int(data.get("current_wave", 0))
+		game_manager.waves_completed = int(data.get("current_wave", 0))
+		game_manager.gold_changed.emit(game_manager.gold)
+		game_manager.lives_changed.emit(game_manager.lives)
+		game_manager.wave_changed.emit(game_manager.current_wave)
+
+	# Advance wave index so next start_next_wave plays the correct wave
+	if wave_manager and data.has("current_wave"):
+		wave_manager.current_wave_index = int(data["current_wave"])
+
+	# Restore element levels (direct assignment, avoids pending-pick requirement)
+	if element_progression_manager and data.has("element_levels"):
+		_restore_element_levels(
+			data["element_levels"],
+			int(data.get("element_pending_picks", 0))
+		)
+
+	# Restore interest upgrade count
+	if element_td_interest_service and data.has("interest_upgrade_count"):
+		element_td_interest_service.upgrade_count = int(data["interest_upgrade_count"])
+		if element_td_interest_service.has_method("recalculate_rate"):
+			element_td_interest_service.recalculate_rate()
+
+	# Rebuild towers on the grid
+	if build_manager and data.has("towers") and data["towers"] is Array:
+		_restore_towers(data["towers"])
+
+	_refresh_elemental_shop()
+	update_hud()
+
+	if OS.is_debug_build():
+		var tower_count = (data["towers"] as Array).size() if data.has("towers") and data["towers"] is Array else 0
+		print("[MetaLayer] Restored — wave=%d gold=%d lives=%d towers=%d" % [
+			int(data.get("current_wave", 0)),
+			int(data.get("gold", 0)),
+			int(data.get("lives", 0)),
+			tower_count
+		])
+
+func _restore_element_levels(saved_levels: Dictionary, saved_pending: int) -> void:
+	if element_progression_manager == null:
+		return
+	element_progression_manager.reset(false)
+	for elem_id in saved_levels:
+		if element_progression_manager.element_levels.has(elem_id):
+			element_progression_manager.element_levels[elem_id] = int(saved_levels[elem_id])
+	element_progression_manager.pending_picks = saved_pending
+	if element_progression_manager.has_signal("element_levels_changed"):
+		element_progression_manager.element_levels_changed.emit(
+			element_progression_manager.get_element_levels()
+		)
+
+func _restore_towers(towers_data: Array) -> void:
+	if build_manager == null:
+		return
+	for tower_save in towers_data:
+		if not (tower_save is Dictionary):
+			continue
+		var tower_id = str(tower_save.get("tower_id", ""))
+		var cell = Vector2i(
+			int(tower_save.get("cell_x", 0)),
+			int(tower_save.get("cell_y", 0))
+		)
+		if tower_id.is_empty():
+			continue
+		if not build_manager.towers_config.has(tower_id):
+			push_warning("[MetaLayer] Restore: unknown tower_id='%s', skipping." % tower_id)
+			continue
+		if build_manager.is_cell_occupied(cell):
+			push_warning("[MetaLayer] Restore: cell %s occupied, skipping." % str(cell))
+			continue
+		var config = build_manager.towers_config[tower_id].duplicate(true)
+		build_manager.place_tower(cell, config)
+
+func _auto_save_run_state() -> void:
+	if save_game_service == null or game_manager == null or level_manager == null:
+		return
+
+	# Collect tower state (skip transient/preview nodes)
+	var towers_data: Array = []
+	if tower_container:
+		for tower in tower_container.get_children():
+			if not is_instance_valid(tower):
+				continue
+			if not tower.is_in_group("placed_towers"):
+				continue
+			var tower_id_val = tower.get("tower_id") if "tower_id" in tower else ""
+			var grid_cell_val = tower.get("grid_cell") if "grid_cell" in tower else Vector2i.ZERO
+			if str(tower_id_val).is_empty():
+				continue
+			towers_data.append({
+				"tower_id": str(tower_id_val),
+				"cell_x": int(grid_cell_val.x),
+				"cell_y": int(grid_cell_val.y)
+			})
+
+	# Collect element state
+	var elem_levels: Dictionary = {}
+	var elem_pending: int = 0
+	if element_progression_manager:
+		if element_progression_manager.has_method("get_element_levels"):
+			elem_levels = element_progression_manager.get_element_levels()
+		elem_pending = int(element_progression_manager.pending_picks)
+
+	# Collect interest state
+	var interest_count: int = 0
+	if element_td_interest_service:
+		interest_count = int(element_td_interest_service.upgrade_count)
+
+	var run_time: int = 0
+	if game_manager.session_start_time > 0:
+		run_time = (Time.get_ticks_msec() - game_manager.session_start_time) / 1000
+
+	var state := {
+		"player_name": save_manager.get_player_name() if save_manager else "Player",
+		"level_id": current_level_id,
+		"current_wave": int(game_manager.current_wave),
+		"lives": int(game_manager.lives),
+		"gold": int(game_manager.gold),
+		"interest_upgrade_count": interest_count,
+		"element_levels": elem_levels,
+		"element_pending_picks": elem_pending,
+		"towers": towers_data,
+		"run_time_seconds": run_time
+	}
+
+	save_game_service.save_run_state(state)
 
 # --- Audio Handlers ---
 
