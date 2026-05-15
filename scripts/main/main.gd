@@ -1092,6 +1092,9 @@ func _on_leaderboard_requested(level_id: String) -> void:
 	leaderboard_panel.show_leaderboard(leaderboard_service, level_id)
 
 func start_game(level_path: String) -> void:
+	# [MetaLayer] A level was chosen from the selector — this is a new run, discard any existing save.
+	if save_game_service:
+		save_game_service.delete_save()
 	start_level(level_path)
 
 func start_level(level_path: String) -> void:
@@ -1133,6 +1136,10 @@ func restart_level() -> void:
 
 	if game_hud:
 		game_hud.exit_end_game_ui_state()
+
+	# [MetaLayer] Restart = fresh run — discard any existing run save.
+	if save_game_service:
+		save_game_service.delete_save()
 
 	if current_level_path != "":
 		start_level(current_level_path)
@@ -1900,12 +1907,11 @@ func _on_victory() -> void:
 # --- MetaLayer: Player Name, Save/Continue, Leaderboard from Menu ---
 
 func _on_new_game_pressed() -> void:
-	# Persist player name, wipe any existing run save, then start level 01 fresh.
+	# Persist player name, then open level select so the player picks their level.
+	# Run save is deleted when they actually confirm a level (in start_game).
 	if save_manager and main_menu and main_menu.has_method("get_player_name"):
 		save_manager.set_player_name(main_menu.get_player_name())
-	if save_game_service:
-		save_game_service.delete_save()
-	start_game("res://data/levels/level_01.json")
+	_on_level_select_requested()
 
 func _on_continue_requested() -> void:
 	if save_game_service == null or not save_game_service.has_valid_save():
