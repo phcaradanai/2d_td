@@ -1,7 +1,8 @@
 extends Node2D
 
 const PERFORMANCE_MODE := true  # Keeps trails/splash heavy FX off; compact impacts are quality-gated.
-const SHOW_PROJECTILE_BODY_VFX := false
+const RENDER_GENERIC_PROJECTILE_PIXEL := false
+const SHOW_PROJECTILE_BODY_VFX := RENDER_GENERIC_PROJECTILE_PIXEL
 const ELEMENTAL_DEBUG_FLOATING_TEXT := false
 const ELEMENTAL_DEBUG_FLOATING_TEXT_META := "elemental_debug_floating_text_enabled"
 const ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META := "elemental_debug_floating_text_last_msec"
@@ -82,6 +83,7 @@ var vfx_accent_color: Color = Color.WHITE
 @onready var splash_effect_scene: PackedScene = preload("res://scenes/effects/SplashEffect.tscn")
 @onready var impact_effect_scene: PackedScene = preload("res://scenes/effects/ImpactEffect.tscn")
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
+@onready var generic_visual: CanvasItem = get_node_or_null("Visual")
 var trail_points: Array[Vector2] = []
 @export var max_trail_points: int = 8
 @export var min_point_distance: float = 4.0
@@ -110,6 +112,22 @@ func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_
 		max_trail_points = 6
 	else:
 		max_trail_points = 8
+
+	_apply_generic_projectile_visual_mode()
+
+func _ready() -> void:
+	_apply_generic_projectile_visual_mode()
+
+func _apply_generic_projectile_visual_mode() -> void:
+	if RENDER_GENERIC_PROJECTILE_PIXEL:
+		return
+	if generic_visual:
+		generic_visual.visible = false
+		generic_visual.set_process(false)
+		generic_visual.set_physics_process(false)
+		if generic_visual is Control:
+			generic_visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	trail_points.clear()
 
 func setup_chain(jumps: int, p_range: float, falloff: float, excluded: Array = []) -> void:
 	chain_jumps = jumps

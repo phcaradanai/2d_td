@@ -13,6 +13,7 @@ monitorable = false
 script = ExtResource("1_projectile_script")
 
 [node name="Visual" type="ColorRect" parent="."]
+visible = false
 offset_left = -4.0
 offset_top = -4.0
 offset_right = 4.0
