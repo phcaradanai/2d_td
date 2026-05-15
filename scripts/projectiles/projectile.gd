@@ -73,6 +73,7 @@ var source_id: String = ""
 var attack_elements_override: Array[String] = []
 var vulnerability_percent: float = 0.0
 var vulnerability_duration: float = 0.0
+var status_effects: Array[Dictionary] = []
 var last_known_target_pos: Vector2 = Vector2.ZERO
 var vfx_core_color: Color = Color(0.75, 0.9, 1.0, 1.0)
 var vfx_glow_color: Color = Color(0.25, 0.85, 1.0, 0.75)
@@ -136,6 +137,12 @@ func setup_chain(jumps: int, p_range: float, falloff: float, excluded: Array = [
 	chained_enemies = excluded
 	if is_instance_valid(target) and not chained_enemies.has(target):
 		chained_enemies.append(target)
+
+func setup_status_effects(effects: Array) -> void:
+	status_effects.clear()
+	for raw_effect in effects:
+		if raw_effect is Dictionary:
+			status_effects.append(raw_effect.duplicate(true))
 
 func _process(delta: float) -> void:
 	if game_manager != null and game_manager.is_paused:
@@ -361,6 +368,7 @@ func hit_target() -> void:
 			target.take_damage(final_damage, hit_global, source_id, attack_type)
 			_spawn_elemental_debug_text(hit_global, elemental_info)
 			_apply_damage_amp_to_enemy(target)
+			_apply_status_effects_to_enemy(target)
 			# STANDARD: Use captured hit point and current pos for angle
 			var impact_angle = (hit_global - global_position).angle()
 			# Use tower element color (modulate) for the impact spark color.
@@ -369,11 +377,44 @@ func hit_target() -> void:
 			
 			if attack_type == "chain" and chain_jumps > 0:
 				_handle_chain_jump(hit_global)
-			
+
+			if _is_beam_projectile():
+				_apply_laser_pierce(hit_global, final_damage)
+
 			if audio_manager:
 				audio_manager.play_sfx("projectile_hit")
-	
+
 	queue_free()
+
+func _apply_laser_pierce(origin: Vector2, base_damage: float) -> void:
+	var pierce_dir := Vector2.RIGHT.rotated(rotation)
+	var pierce_range := 200.0
+	var pierce_damage := base_damage * 0.65
+	var max_pierce := 2
+	var enemies_sorted: Array = []
+	for en in get_tree().get_nodes_in_group("enemies"):
+		if not is_instance_valid(en) or en == target: continue
+		if not en.has_method("is_alive") or not en.is_alive(): continue
+		if not can_affect_enemy(en): continue
+		var en_pos := _get_hit_anchor_global_position(en)
+		var to_en := en_pos - origin
+		var dist := to_en.length()
+		if dist > pierce_range or dist < 1.0: continue
+		if to_en.normalized().dot(pierce_dir) < 0.55: continue
+		enemies_sorted.append([dist, en, en_pos])
+	enemies_sorted.sort_custom(func(a, b): return a[0] < b[0])
+	var pierced := 0
+	for entry in enemies_sorted:
+		if pierced >= max_pierce: break
+		var en: Node2D = entry[1]
+		var en_pos: Vector2 = entry[2]
+		var pierce_info := _get_elemental_damage_info(pierce_damage, en)
+		var final_pierce := float(pierce_info.get("final_damage", pierce_damage))
+		en.take_damage(final_pierce, en_pos, source_id, attack_type)
+		_apply_damage_amp_to_enemy(en)
+		_apply_status_effects_to_enemy(en)
+		_spawn_impact_effect(en_pos, Color(modulate.r, modulate.g, modulate.b, 0.7), rotation)
+		pierced += 1
 
 func _handle_chain_jump(hit_pos: Vector2) -> void:
 	var next_target = _find_next_chain_target(hit_pos)
@@ -490,6 +531,10 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 					var splash_damage := float(splash_info.get("final_damage", damage * falloff))
 					enemy.take_damage(splash_damage, enemy_pos, source_id, attack_type)
 					_spawn_elemental_debug_text(enemy_pos, splash_info)
+					if slow_percent > 0.0 and slow_duration > 0.0 and enemy.has_method("apply_slow"):
+						enemy.apply_slow(slow_percent, slow_duration)
+					_apply_damage_amp_to_enemy(enemy)
+					_apply_status_effects_to_enemy(enemy)
 				elif attack_type == "slow":
 					# Area slow deals its low base damage + applies debuffs.
 					var slow_info := _get_elemental_damage_info(damage, enemy)
@@ -499,6 +544,7 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 					if enemy.has_method("apply_slow"):
 						enemy.apply_slow(slow_percent, slow_duration)
 					_apply_damage_amp_to_enemy(enemy)
+					_apply_status_effects_to_enemy(enemy)
 
 func _calculate_elemental_damage(raw_damage: float, enemy: Variant) -> float:
 	return float(_get_elemental_damage_info(raw_damage, enemy).get("final_damage", raw_damage))
@@ -797,6 +843,29 @@ func _apply_damage_amp_to_enemy(enemy: Variant) -> void:
 		return
 	if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_vulnerability"):
 		enemy.apply_vulnerability(1.0 + vulnerability_percent, vulnerability_duration)
+
+func _apply_status_effects_to_enemy(enemy: Variant) -> void:
+	if status_effects.is_empty() or enemy == null or not is_instance_valid(enemy):
+		return
+	for effect in status_effects:
+		var effect_type := str(effect.get("type", "")).to_lower()
+		var duration := float(effect.get("duration", 0.0))
+		match effect_type:
+			"armor_reduction":
+				if enemy.has_method("apply_armor_reduction"):
+					enemy.apply_armor_reduction(float(effect.get("percent", 0.0)), duration)
+			"damage_amp":
+				if enemy.has_method("apply_damage_amp"):
+					enemy.apply_damage_amp(1.0 + float(effect.get("percent", 0.0)), duration)
+			"dot":
+				if enemy.has_method("apply_damage_over_time"):
+					enemy.apply_damage_over_time(float(effect.get("damage_per_second", 0.0)), duration, source_id, str(effect.get("attack_type", "dot")))
+			"root":
+				if enemy.has_method("apply_root"):
+					enemy.apply_root(duration, float(effect.get("snare_percent", 1.0)))
+			"delayed_damage":
+				if enemy.has_method("apply_delayed_damage"):
+					enemy.apply_delayed_damage(float(effect.get("amount", 0.0)), float(effect.get("delay", duration)), source_id, str(effect.get("attack_type", "delayed")))
 
 func can_affect_enemy(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy):

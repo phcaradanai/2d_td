@@ -99,6 +99,11 @@ var fire_rate_modifiers: Dictionary = {}
 var damage_modifiers: Dictionary = {}
 var _stale_damage_keys: Array = []
 
+# Zealot: ramping hit-streak state (consecutive-hit damage multiplier)
+var _zealot_streak: int = 0
+var _zealot_streak_timer: float = 0.0
+var _zealot_last_target_id: int = 0
+
 # Element TD-style Trickery clone support.
 # Trickery does not attack creeps directly. It temporarily projects a clone of
 # one nearby non-support tower by giving that tower bonus clone damage.
@@ -2013,9 +2018,15 @@ func _process(delta: float) -> void:
 			# Optional: slow return to zero or stay
 			pass
 
+	if _zealot_streak_timer > 0.0:
+		_zealot_streak_timer -= delta
+		if _zealot_streak_timer <= 0.0:
+			_zealot_streak = 0
+			_zealot_last_target_id = 0
+
 	if shoot_cooldown > 0:
 		shoot_cooldown -= delta
-	
+
 	if is_valid_target(current_target) and shoot_cooldown <= 0:
 		shoot()
 		shoot_cooldown = get_effective_fire_rate()
@@ -2131,7 +2142,28 @@ func shoot() -> void:
 				sfx_name   = "tower_shoot_cannon"
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
-		projectile.setup(current_target, int(round(get_effective_damage())), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories, tower_id)
+		var effective_dmg := get_effective_damage()
+
+		# Impulse: damage scales with distance — further target = harder hit.
+		if tower_id.begins_with("impulse_") and is_instance_valid(current_target) and attack_range > 0.0:
+			var dist := get_range_origin().distance_to(current_target.global_position)
+			var impulse_scale := lerpf(0.8, 1.45, clampf(dist / attack_range, 0.0, 1.0))
+			effective_dmg *= impulse_scale
+
+		# Zealot: ramping damage per consecutive hit on the same target (up to +60%).
+		if tower_id.begins_with("zealot_") and is_instance_valid(current_target):
+			var t_id := current_target.get_instance_id()
+			if t_id == _zealot_last_target_id:
+				_zealot_streak = mini(_zealot_streak + 1, 10)
+			else:
+				_zealot_streak = 0
+				_zealot_last_target_id = t_id
+			_zealot_streak_timer = 1.5
+			effective_dmg *= (1.0 + _zealot_streak * 0.06)
+
+		projectile.setup(current_target, int(round(effective_dmg)), projectile_speed, attack_type, radius, slow_percent, slow_duration, target_categories, tower_id, vulnerability_percent, vulnerability_duration)
+		if projectile.has_method("setup_status_effects"):
+			projectile.setup_status_effects(_build_attack_status_effects())
 		
 		if attack_type == "chain":
 			if projectile.has_method("setup_chain"):
@@ -2227,9 +2259,9 @@ func _perform_aura_attack() -> void:
 			var enemy_pos = get_target_hit_anchor_global_position(enemy)
 			enemy.take_damage(damage, enemy_pos, tower_id, attack_type)
 			
-			# Apply vulnerability if sawblade
-			if vulnerability_percent > 0 and enemy.has_method("apply_vulnerability"):
+			if _should_apply_direct_vulnerability() and vulnerability_percent > 0 and enemy.has_method("apply_vulnerability"):
 				enemy.apply_vulnerability(1.0 + vulnerability_percent, vulnerability_duration)
+			_apply_attack_status_effects_to_enemy(enemy)
 
 			if aura_vfx_type == "toxic_bloom":
 				if toxic_vfx_spawned < toxic_vfx_limit:
@@ -2253,6 +2285,145 @@ func _perform_aura_attack() -> void:
 	
 	if not enemies.is_empty() and audio_manager:
 		audio_manager.play_sfx("tower_shoot_sawblade")
+
+func _build_attack_status_effects() -> Array:
+	var effects: Array = []
+	if tower_id.begins_with("corrosion_") and slow_percent > 0.0 and slow_duration > 0.0:
+		effects.append({
+			"type": "armor_reduction",
+			"percent": slow_percent,
+			"duration": slow_duration
+		})
+	if tower_id.begins_with("polar_") and slow_percent > 0.0 and slow_duration > 0.0:
+		effects.append({
+			"type": "root",
+			"snare_percent": slow_percent,
+			"duration": slow_duration
+		})
+	if tower_id.begins_with("enchantment_") and vulnerability_percent > 0.0 and vulnerability_duration > 0.0:
+		effects.append({
+			"type": "armor_reduction",
+			"percent": vulnerability_percent,
+			"duration": vulnerability_duration
+		})
+	if (tower_id.begins_with("disease_") or tower_id.begins_with("voodoo_")) and vulnerability_percent > 0.0 and vulnerability_duration > 0.0:
+		effects.append({
+			"type": "damage_amp",
+			"percent": vulnerability_percent,
+			"duration": vulnerability_duration
+		})
+
+	# ── Control family ────────────────────────────────────────────────────────
+
+	# Nova: solar burn DoT (fire lingers beyond the slow)
+	if tower_id.begins_with("nova_") and damage > 0.0:
+		effects.append({
+			"type": "dot",
+			"damage_per_second": damage * 0.2,
+			"duration": slow_duration * 1.5 if slow_duration > 0.0 else 3.0,
+			"attack_type": "fire"
+		})
+
+	# Roots: brief hard snare (entangle) + poison DoT
+	if tower_id.begins_with("roots_") and slow_percent > 0.0:
+		effects.append({
+			"type": "root",
+			"snare_percent": minf(slow_percent + 0.25, 1.0),
+			"duration": slow_duration * 0.35 if slow_duration > 0.0 else 0.9
+		})
+		if damage > 0.0:
+			effects.append({
+				"type": "dot",
+				"damage_per_second": damage * 0.25,
+				"duration": slow_duration if slow_duration > 0.0 else 2.7,
+				"attack_type": "nature"
+			})
+
+	# Muck: sludge acid DoT + light armor-strip
+	if tower_id.begins_with("muck_") and damage > 0.0:
+		effects.append({
+			"type": "dot",
+			"damage_per_second": damage * 0.3,
+			"duration": slow_duration * 1.2 if slow_duration > 0.0 else 3.2,
+			"attack_type": "dark"
+		})
+		effects.append({
+			"type": "armor_reduction",
+			"percent": 0.12,
+			"duration": slow_duration if slow_duration > 0.0 else 2.6
+		})
+
+	# Windstorm: brief hard stagger before the slow takes over
+	if tower_id.begins_with("windstorm_") and slow_percent > 0.0:
+		effects.append({
+			"type": "root",
+			"snare_percent": 1.0,
+			"duration": 0.35
+		})
+
+	# ── Special damage family ─────────────────────────────────────────────────
+
+	# Quark: charged-shot heavy impact root (brief 70% snare)
+	if tower_id.begins_with("quark_"):
+		effects.append({
+			"type": "root",
+			"snare_percent": 0.7,
+			"duration": 0.55
+		})
+
+	# Quaker: seismic shock — brief full stop + structural weakness window
+	if tower_id.begins_with("quaker_"):
+		effects.append({
+			"type": "root",
+			"snare_percent": 1.0,
+			"duration": 0.4
+		})
+		effects.append({
+			"type": "damage_amp",
+			"percent": 0.15,
+			"duration": 2.5
+		})
+
+	# Flesh Golem: stacking vulnerability (primal crush weakens armor)
+	if tower_id.begins_with("flesh_golem_"):
+		effects.append({
+			"type": "damage_amp",
+			"percent": 0.18,
+			"duration": 3.0
+		})
+
+	# Flamethrower: burn DoT (fire lingers after explosive splash)
+	if tower_id.begins_with("flamethrower_") and damage > 0.0:
+		effects.append({
+			"type": "dot",
+			"damage_per_second": damage * 0.35,
+			"duration": 2.0,
+			"attack_type": "fire"
+		})
+
+	return effects
+
+func _should_apply_direct_vulnerability() -> bool:
+	return not (
+		tower_id.begins_with("enchantment_")
+		or tower_id.begins_with("disease_")
+		or tower_id.begins_with("voodoo_")
+	)
+
+func _apply_attack_status_effects_to_enemy(enemy: Variant) -> void:
+	for effect in _build_attack_status_effects():
+		var effect_type := str(effect.get("type", "")).to_lower()
+		var duration := float(effect.get("duration", 0.0))
+		match effect_type:
+			"armor_reduction":
+				if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_armor_reduction"):
+					enemy.apply_armor_reduction(float(effect.get("percent", 0.0)), duration)
+			"damage_amp":
+				if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_damage_amp"):
+					enemy.apply_damage_amp(1.0 + float(effect.get("percent", 0.0)), duration)
+			"root":
+				if enemy != null and is_instance_valid(enemy) and enemy.has_method("apply_root"):
+					enemy.apply_root(duration, float(effect.get("snare_percent", 1.0)))
 
 func _spawn_disease_attack_vfx(hit_pos: Vector2, container: Node, core_color: Color, secondary_color: Color, accent_color: Color, quality_name: String) -> void:
 	if container == null:

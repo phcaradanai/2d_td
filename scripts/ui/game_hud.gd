@@ -174,6 +174,11 @@ var tower_catalog: Dictionary = {} # id: full tower config
 var tower_shop_scroll: ScrollContainer = null
 var tower_shop_list: VBoxContainer = null
 var dynamic_tower_buttons: Dictionary = {} # id: Button
+
+# Build-button hover card (desktop hover / mobile long-press).
+var _hover_card: PanelContainer = null
+var _hover_card_rtl: RichTextLabel = null
+var _hover_long_press_timer: SceneTreeTimer = null
 var element_status_label: Label = null
 var element_hint_label: Label = null
 var element_choice_panel: PanelContainer = null
@@ -280,6 +285,7 @@ func _ready() -> void:
 	center_restart_button.pressed.connect(_on_restart_pressed)
 	
 	_setup_right_sidebar_layout()
+	_setup_hover_card()
 	_ensure_elemental_shop_ui()
 	_ensure_element_modal()
 	
@@ -765,10 +771,28 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 	var display_name := _get_tower_shop_display_name(tower_id, cfg)
 
 	if is_unlocked:
-		btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
+		# btn.tooltip_text = _build_tower_tooltip(tower_id, cfg, cost)
 		var captured_tower_id: String = tower_id
+		var captured_cfg: Dictionary = cfg
+		var captured_cost: int = cost
 		var captured_button: Button = btn
 		btn.pressed.connect(func(): _on_tower_btn_pressed(captured_tower_id, captured_button))
+
+		# Desktop: hover in/out controls the card.
+		btn.mouse_entered.connect(func():
+			_show_hover_card(captured_tower_id, captured_cfg, captured_cost, captured_button))
+		btn.mouse_exited.connect(func(): _hide_hover_card())
+
+		# Mobile/touch: long-press (≥0.45s) shows the card; release hides it.
+		btn.gui_input.connect(func(ev: InputEvent):
+			if ev is InputEventScreenTouch:
+				if ev.pressed:
+					_hover_long_press_timer = get_tree().create_timer(0.45)
+					_hover_long_press_timer.timeout.connect(func():
+						_show_hover_card(captured_tower_id, captured_cfg, captured_cost, captured_button))
+				else:
+					_hover_long_press_timer = null
+					_hide_hover_card())
 	else:
 		btn.disabled = true
 		btn.tooltip_text = _build_locked_tooltip(tower_id, cfg, cost)
@@ -1855,14 +1879,7 @@ func _format_tower_button_name(tower_id: String, cfg: Dictionary) -> String:
 	return name
 
 func _build_tower_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> String:
-	if cfg.is_empty():
-		return "Cost: %d Credits" % cost
-	var desc: String = str(cfg.get("description", "Defensive structure."))
-	var elements_text: String = _elements_full(cfg.get("elements", []))
-	var combo: String = str(cfg.get("combo_type", "neutral")).capitalize()
-	var target_categories: Array = cfg.get("target_categories", ["land"])
-	var targets: String = "Land + Air" if target_categories.has("air") and target_categories.has("land") else ("Air Only" if target_categories.has("air") else "Land Only")
-	return "%s\n\nCombo: %s\nElements: %s\nTargets: %s\nCost: %d Credits" % [desc, combo, elements_text, targets, cost]
+	return TowerEffectFormatter.build_tooltip(tower_id, cfg, cost, _elements_full)
 
 func _elements_short(raw_elements: Array) -> String:
 	if raw_elements.is_empty():
@@ -2364,60 +2381,79 @@ func show_tower_info(info: Dictionary) -> void:
 		tower_special_effect_label.hide()
 	
 	var a_type = info.get("attack_type", "single")
+	var _badge := TowerEffectFormatter.attack_badge(info)
+
+	# Unified type label — always show, always informative.
+	tower_splash_label.show()
 	match a_type:
 		"splash":
-			tower_splash_label.show()
-			tower_splash_label.text = "Type: SPLASH AREA (%d)" % info["splash_radius"]
+			var splash_r := int(info.get("splash_radius", 0))
+			tower_splash_label.text = "Type: SPLASH AoE  (radius %d)" % splash_r if splash_r > 0 else "Type: SPLASH AoE"
 			tower_splash_label.modulate = Color(1.0, 0.6, 0.3)
 		"slow":
 			tower_slow_label.show()
-			var slow_pct = int(info.get("slow_percent", 0) * 100)
-			var slow_dur = info.get("slow_duration", 0)
-			tower_slow_label.text = "Type: AREA SLOW %d%% (%0.1fs)" % [slow_pct, slow_dur]
+			var slow_pct := int(info.get("slow_percent", 0.0) * 100.0)
+			var slow_dur := float(info.get("slow_duration", 0.0))
+			tower_slow_label.text = "Type: AREA CONTROL  -%d%% speed  %.1fs" % [slow_pct, slow_dur]
 			tower_slow_label.modulate = Color(0.5, 0.8, 1.0)
+			tower_splash_label.hide()
 		"chain":
-			tower_splash_label.show()
-			tower_splash_label.text = "Type: CHAIN ENERGY"
+			var jumps := int(info.get("chain_jumps", 0))
+			tower_splash_label.text = "Type: CHAIN  %d jumps" % jumps if jumps > 0 else "Type: CHAIN"
 			tower_splash_label.modulate = Color(0.6, 0.5, 1.0)
 		"aura":
-			tower_splash_label.show()
-			var vuln = int(info.get("vulnerability_percent", 0) * 100)
-			tower_splash_label.text = "Type: VULNERABILITY AURA (+%d%%)" % vuln
+			var vuln := int(info.get("vulnerability_percent", 0.0) * 100.0)
+			tower_splash_label.text = "Type: AURA  +%d%% dmg taken" % vuln if vuln > 0 else "Type: AURA"
 			tower_splash_label.modulate = Color(0.9, 0.55, 1.0)
 		"support_aura":
-			tower_splash_label.show()
-			var support_type := str(info.get("support_type", ""))
-			var support_pct := int(round(float(info.get("support_value", 0.0)) * 100.0))
-			var support_count := int(info.get("support_target_count", 0))
-			var support_limit := int(info.get("support_limit", 4))
-			if support_type == "attack_speed":
-				tower_splash_label.text = "Type: WELL SPEED AURA +%d%% (%d/%d)" % [support_pct, support_count, support_limit]
+			var sup_type := str(info.get("support_type", ""))
+			var sup_pct  := int(round(float(info.get("support_value", 0.0)) * 100.0))
+			var sup_cnt  := int(info.get("support_target_count", 0))
+			var sup_lim  := int(info.get("support_limit", 4))
+			if sup_type == "attack_speed":
+				tower_splash_label.text = "Type: SPEED AURA  +%d%%  (%d/%d towers)" % [sup_pct, sup_cnt, sup_lim]
 				tower_splash_label.modulate = Color(0.45, 0.9, 1.0)
-			elif support_type == "damage":
-				tower_splash_label.text = "Type: BLACKSMITH DAMAGE AURA +%d%% (%d/%d)" % [support_pct, support_count, support_limit]
+			elif sup_type == "damage":
+				tower_splash_label.text = "Type: DAMAGE AURA  +%d%%  (%d/%d towers)" % [sup_pct, sup_cnt, sup_lim]
 				tower_splash_label.modulate = Color(1.0, 0.65, 0.35)
 			else:
 				tower_splash_label.text = "Type: SUPPORT AURA"
 				tower_splash_label.modulate = Color(0.65, 0.85, 1.0)
 		"clone_support":
-			tower_splash_label.show()
-			var clone_pct = int(float(info.get("clone_damage_multiplier", 0.0)) * 100.0)
-			var target_name = str(info.get("clone_target_name", ""))
-			if target_name != "":
-				tower_splash_label.text = "Type: TRICKERY CLONE +%d%% → %s" % [clone_pct, target_name]
-			else:
-				tower_splash_label.text = "Type: TRICKERY CLONE +%d%%" % clone_pct
+			var clone_pct  := int(float(info.get("clone_damage_multiplier", 0.0)) * 100.0)
+			var tgt_name   := str(info.get("clone_target_name", ""))
+			tower_splash_label.text = "Type: CLONE  +%d%%  → %s" % [clone_pct, tgt_name] if tgt_name != "" \
+									else "Type: CLONE  +%d%%" % clone_pct
 			tower_splash_label.modulate = Color(0.9, 0.65, 1.0)
 		_:
-			tower_splash_label.show()
-			tower_splash_label.text = "Type: DIRECT KINETIC"
+			tower_splash_label.text = "Type: %s" % _badge.to_upper()
 			tower_splash_label.modulate = Color(0.7, 0.8, 0.9)
 
-	var special_text := _build_tower_special_effect_text(info)
-	if tower_special_effect_label and special_text != "":
-		tower_special_effect_label.text = special_text
-		tower_special_effect_label.modulate = Color(0.82, 0.92, 1.0)
-		tower_special_effect_label.show()
+	# Rich effect block — replaces old _build_tower_special_effect_text().
+	var eff_lines  := TowerEffectFormatter.effect_lines(info)
+	var eff_joined := "\n".join(eff_lines) if eff_lines.size() > 0 else ""
+
+	# Upgrade preview (compact, non-intrusive).
+	var upgrade_preview := ""
+	if not info.get("is_max_tier", false):
+		var next_ids: Array = info.get("next_upgrade_ids", [])
+		if not next_ids.is_empty():
+			var next_id  := str(next_ids[0])
+			var next_cfg: Dictionary = tower_catalog.get(next_id, {})
+			if not next_cfg.is_empty():
+				upgrade_preview = TowerEffectFormatter.upgrade_preview(info, next_cfg)
+
+	var combined := eff_joined
+	if upgrade_preview != "":
+		combined = (combined + "\n\n" + upgrade_preview) if combined != "" else upgrade_preview
+
+	if tower_special_effect_label:
+		if combined != "":
+			tower_special_effect_label.text = combined
+			tower_special_effect_label.modulate = Color(0.82, 0.92, 1.0)
+			tower_special_effect_label.show()
+		else:
+			tower_special_effect_label.hide()
 	
 	updating_target_mode_ui = true
 	var current_mode = info.get("target_mode", "first")
@@ -2448,72 +2484,9 @@ func show_tower_info(info: Dictionary) -> void:
 		sell_tower_button.text = "Sell ($%d)" % refund
 		sell_tower_button.show()
 
-func _build_tower_special_effect_text(info: Dictionary) -> String:
-	var lines: PackedStringArray = []
-	var economy_type := str(info.get("economy_type", ""))
-	var attack_type := str(info.get("attack_type", "single"))
-	if economy_type == "life":
-		var required := int(info.get("on_kill_life_counter_required", 0))
-		var progress := int(info.get("on_kill_life_progress", 0))
-		if required > 0:
-			lines.append("Special Effect")
-			lines.append("Life Harvest")
-			lines.append("+1 Core after %d kills credited to this tower type." % required)
-			lines.append("Progress: %d / %d" % [progress, required])
-	elif economy_type == "gold":
-		var bonus_pct := int(round(float(info.get("on_kill_gold_bonus_percent", 0.0)) * 100.0))
-		if bonus_pct > 0:
-			lines.append("Special Effect")
-			lines.append("Gold Bounty")
-			lines.append("+%d%% bonus Credits on kills by this tower." % bonus_pct)
-	elif attack_type == "clone_support":
-		var clone_pct := int(round(float(info.get("clone_damage_multiplier", 0.0)) * 100.0))
-		var clone_target := str(info.get("clone_target_name", ""))
-		lines.append("Special Effect")
-		lines.append("Trickery Clone")
-		if clone_target != "":
-			lines.append("Copies %s at %d%% damage." % [clone_target, clone_pct])
-		else:
-			lines.append("Copies a selected tower at %d%% damage." % clone_pct)
-	elif attack_type == "support_aura":
-		var support_type := str(info.get("support_type", ""))
-		var support_pct := int(round(float(info.get("support_value", 0.0)) * 100.0))
-		var support_limit := int(info.get("support_limit", 0))
-		var support_count := int(info.get("support_target_count", 0))
-		if support_type == "attack_speed":
-			lines.append("Special Effect")
-			lines.append("Well Aura")
-			lines.append("+%d%% attack speed to nearby towers." % support_pct)
-			lines.append("Linked: %d / %d" % [support_count, support_limit])
-		elif support_type == "damage":
-			lines.append("Special Effect")
-			lines.append("Blacksmith Aura")
-			lines.append("+%d%% damage to nearby towers." % support_pct)
-			lines.append("Linked: %d / %d" % [support_count, support_limit])
-	elif attack_type == "aura":
-		var vuln_pct := int(round(float(info.get("vulnerability_percent", 0.0)) * 100.0))
-		var vuln_dur := float(info.get("vulnerability_duration", 0.0))
-		if vuln_pct > 0:
-			lines.append("Special Effect")
-			lines.append("Vulnerability Aura")
-			lines.append("+%d%% damage taken for %.1fs." % [vuln_pct, vuln_dur])
-	elif attack_type == "slow":
-		var slow_pct := int(round(float(info.get("slow_percent", 0.0)) * 100.0))
-		var slow_dur := float(info.get("slow_duration", 0.0))
-		if slow_pct > 0:
-			lines.append("Special Effect")
-			lines.append("Area Slow")
-			lines.append("Slows enemies by %d%% for %.1fs." % [slow_pct, slow_dur])
-	elif attack_type == "chain":
-		var jumps := int(info.get("chain_jumps", 0))
-		var chain_range := int(round(float(info.get("chain_range", 0.0))))
-		if jumps > 0:
-			lines.append("Special Effect")
-			lines.append("Chain Attack")
-			lines.append("Jumps to %d more enemies within %d range." % [jumps, chain_range])
-	if lines.is_empty():
-		return ""
-	return "\n".join(lines)
+func _build_tower_special_effect_text(_info: Dictionary) -> String:
+	# Superseded by TowerEffectFormatter.effect_lines() — kept for compatibility.
+	return "\n".join(TowerEffectFormatter.effect_lines(_info))
 
 func hide_tower_info() -> void:
 	hide_tower_info_panel()
@@ -2556,6 +2529,68 @@ func show_build_panel() -> void:
 
 func hide_build_panel() -> void:
 	set_panel_active(left_sidebar, false)
+	_hide_hover_card()
+
+# ── Build-button hover card ──────────────────────────────────────────────────
+
+func _setup_hover_card() -> void:
+	_hover_card = PanelContainer.new()
+	_hover_card.name = "BuildHoverCard"
+	_hover_card.visible = false
+	_hover_card.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hover_card.z_index = 300
+	_hover_card.custom_minimum_size = Vector2(210, 0)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.038, 0.058, 0.105, 0.97)
+	style.set_border_width_all(1)
+	style.border_color = Color(0.28, 0.56, 0.84, 0.92)
+	style.set_corner_radius_all(6)
+	_hover_card.add_theme_stylebox_override("panel", style)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left",   10)
+	margin.add_theme_constant_override("margin_right",  10)
+	margin.add_theme_constant_override("margin_top",     8)
+	margin.add_theme_constant_override("margin_bottom",  8)
+	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hover_card.add_child(margin)
+
+	_hover_card_rtl = RichTextLabel.new()
+	_hover_card_rtl.bbcode_enabled = true
+	_hover_card_rtl.fit_content = true
+	_hover_card_rtl.scroll_active = false
+	_hover_card_rtl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_hover_card_rtl.custom_minimum_size = Vector2(200, 0)
+	_hover_card_rtl.add_theme_font_size_override("normal_font_size", 11)
+	_hover_card_rtl.add_theme_color_override("default_color", Color(0.88, 0.94, 1.0))
+	margin.add_child(_hover_card_rtl)
+
+	$Root.add_child(_hover_card)
+
+func _show_hover_card(tower_id: String, cfg: Dictionary, cost: int, anchor: Control) -> void:
+	if _hover_card == null or not is_instance_valid(_hover_card):
+		return
+	_hover_card_rtl.text = TowerEffectFormatter.hover_card_bbcode(tower_id, cfg, cost, _elements_full)
+	# Position: right edge of anchor + small gap
+	var rect := anchor.get_global_rect()
+	_hover_card.global_position = Vector2(rect.end.x + 6.0, rect.position.y)
+	_hover_card.visible = true
+	# Deferred clamp to prevent off-screen-bottom after layout.
+	call_deferred("_clamp_hover_card")
+
+func _clamp_hover_card() -> void:
+	if _hover_card == null or not is_instance_valid(_hover_card) or not _hover_card.visible:
+		return
+	var vp_h := float(get_viewport().get_visible_rect().size.y)
+	var card_bottom := _hover_card.global_position.y + _hover_card.size.y
+	if card_bottom > vp_h - 8.0:
+		_hover_card.global_position.y = maxf(8.0, vp_h - _hover_card.size.y - 8.0)
+
+func _hide_hover_card() -> void:
+	_hover_long_press_timer = null
+	if _hover_card and is_instance_valid(_hover_card):
+		_hover_card.visible = false
 
 func show_tower_info_panel() -> void:
 	if right_sidebar_container:

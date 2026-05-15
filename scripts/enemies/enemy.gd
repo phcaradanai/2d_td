@@ -56,6 +56,12 @@ var active_shield_source: Node = null
 var is_flashing: bool = false
 var vulnerability_multiplier: float = 1.0
 var vulnerability_remaining: float = 0.0
+var armor_reduction_bonus_percent: float = 0.0
+var armor_reduction_remaining: float = 0.0
+var root_slow_percent: float = 0.0
+var root_remaining: float = 0.0
+var active_dot_effects: Array[Dictionary] = []
+var delayed_damage_effects: Array[Dictionary] = []
 var bleed_particle_timer: float = 0.0
 
 # Special Archetypes
@@ -1886,6 +1892,21 @@ func _process(delta: float) -> void:
 		if bleed_particle_timer <= 0:
 			_spawn_bleed_particle()
 			bleed_particle_timer = 0.15 # Every 150ms
+
+	if armor_reduction_remaining > 0:
+		armor_reduction_remaining -= delta
+		if armor_reduction_remaining <= 0:
+			armor_reduction_bonus_percent = 0.0
+			enemy_modifier_changed.emit(self, "armor_reduction", 0.0)
+
+	if root_remaining > 0:
+		root_remaining -= delta
+		if root_remaining <= 0:
+			root_slow_percent = 0.0
+			update_effective_speed()
+			enemy_modifier_changed.emit(self, "root", 0.0)
+
+	_process_tower_status_effects(delta)
 		
 	# Skill Logic
 	if skill_id != "":
@@ -2076,12 +2097,59 @@ func apply_shield(duration: float, reduction: float = shield_reduction, source: 
 		vfx_controller.set_protected_icon(active_shield_reduction > 0.0)
 
 func apply_vulnerability(multiplier: float, duration: float) -> void:
+	if duration <= 0.0:
+		return
 	# Keep the highest multiplier
 	if multiplier >= vulnerability_multiplier:
 		vulnerability_multiplier = multiplier
 		vulnerability_remaining = duration
 	elif duration > vulnerability_remaining and multiplier == vulnerability_multiplier:
 		vulnerability_remaining = duration
+
+func apply_damage_amp(multiplier: float, duration: float) -> void:
+	apply_vulnerability(multiplier, duration)
+
+func apply_armor_reduction(percent: float, duration: float) -> void:
+	if duration <= 0.0 or percent <= 0.0:
+		return
+	if percent >= armor_reduction_bonus_percent:
+		armor_reduction_bonus_percent = percent
+		armor_reduction_remaining = duration
+		enemy_modifier_changed.emit(self, "armor_reduction", percent)
+	elif duration > armor_reduction_remaining and is_equal_approx(percent, armor_reduction_bonus_percent):
+		armor_reduction_remaining = duration
+
+func apply_damage_over_time(damage_per_second: float, duration: float, source_id: String = "", attack_type: String = "dot") -> void:
+	if damage_per_second <= 0.0 or duration <= 0.0:
+		return
+	active_dot_effects.append({
+		"damage_per_second": damage_per_second,
+		"remaining": duration,
+		"source_id": source_id,
+		"attack_type": attack_type
+	})
+
+func apply_root(duration: float, snare_percent: float = 1.0) -> void:
+	if duration <= 0.0:
+		return
+	var clamped_percent := clampf(snare_percent, 0.0, 1.0)
+	if clamped_percent >= root_slow_percent:
+		root_slow_percent = clamped_percent
+		root_remaining = duration
+		update_effective_speed()
+		enemy_modifier_changed.emit(self, "root", clamped_percent)
+	elif duration > root_remaining and is_equal_approx(clamped_percent, root_slow_percent):
+		root_remaining = duration
+
+func apply_delayed_damage(amount: float, delay: float, source_id: String = "", attack_type: String = "delayed") -> void:
+	if amount <= 0.0:
+		return
+	delayed_damage_effects.append({
+		"amount": amount,
+		"remaining": maxf(0.0, delay),
+		"source_id": source_id,
+		"attack_type": attack_type
+	})
 
 func _process_hunter_ai(delta: float) -> void:
 	hunter_attack_timer = maxf(0.0, hunter_attack_timer - delta)
@@ -2378,6 +2446,8 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	# Apply vulnerability
 	if vulnerability_remaining > 0:
 		final_damage *= vulnerability_multiplier
+	if armor_reduction_remaining > 0:
+		final_damage *= 1.0 + armor_reduction_bonus_percent
 		
 	hp -= final_damage
 	_update_health_visual_state()
@@ -2418,7 +2488,6 @@ func apply_slow(percent: float, duration: float) -> void:
 func clear_slow() -> void:
 	active_slow_percent = 0.0
 	slow_remaining = 0.0
-	status_speed_multiplier = 1.0
 	update_effective_speed()
 
 func _configure_formation_speed() -> void:
@@ -2453,7 +2522,9 @@ func _process_formation_speed(delta: float) -> void:
 		update_effective_speed()
 
 func update_effective_speed() -> void:
-	status_speed_multiplier = max(1.0 - active_slow_percent, 0.25)
+	var slow_multiplier: float = max(1.0 - active_slow_percent, 0.25)
+	var root_multiplier: float = max(1.0 - root_slow_percent, 0.25)
+	status_speed_multiplier = min(slow_multiplier, root_multiplier)
 	var runner_multiplier := 1.0
 	if is_runner:
 		if runner_panic_active:
@@ -2461,6 +2532,41 @@ func update_effective_speed() -> void:
 		if runner_dash_remaining > 0.0:
 			runner_multiplier *= runner_dash_speed_multiplier
 	speed = base_speed * formation_speed_multiplier * status_speed_multiplier * runner_multiplier
+
+func _process_tower_status_effects(delta: float) -> void:
+	if not active_dot_effects.is_empty():
+		var expired_dot_indexes: Array[int] = []
+		for i in range(active_dot_effects.size()):
+			var effect: Dictionary = active_dot_effects[i]
+			var remaining := float(effect.get("remaining", 0.0))
+			var tick_delta := minf(delta, remaining)
+			if tick_delta > 0.0:
+				var damage_per_second := float(effect.get("damage_per_second", 0.0))
+				var source := str(effect.get("source_id", ""))
+				var attack_type := str(effect.get("attack_type", "dot"))
+				take_damage(damage_per_second * tick_delta, global_position, source, attack_type)
+			remaining -= delta
+			if remaining <= 0.0:
+				expired_dot_indexes.append(i)
+			else:
+				effect["remaining"] = remaining
+				active_dot_effects[i] = effect
+		for j in range(expired_dot_indexes.size() - 1, -1, -1):
+			active_dot_effects.remove_at(expired_dot_indexes[j])
+
+	if not delayed_damage_effects.is_empty():
+		var triggered_indexes: Array[int] = []
+		for i in range(delayed_damage_effects.size()):
+			var effect: Dictionary = delayed_damage_effects[i]
+			var remaining := float(effect.get("remaining", 0.0)) - delta
+			if remaining <= 0.0:
+				take_damage(float(effect.get("amount", 0.0)), global_position, str(effect.get("source_id", "")), str(effect.get("attack_type", "delayed")))
+				triggered_indexes.append(i)
+			else:
+				effect["remaining"] = remaining
+				delayed_damage_effects[i] = effect
+		for j in range(triggered_indexes.size() - 1, -1, -1):
+			delayed_damage_effects.remove_at(triggered_indexes[j])
 
 func flash_body() -> void:
 	is_flashing = true
@@ -2575,16 +2681,23 @@ func _play_hit_pulse() -> void:
 	var tween = create_tween()
 	var is_swarm := enemy_type == "swarm" or tags.has("swarm")
 	var s = randf_range(1.08, 1.14) if is_swarm else randf_range(1.15, 1.25)
-	tween.tween_property(self , "scale", Vector2(s, 1.0 / s), 0.025 if is_swarm else 0.04).set_trans(Tween.TRANS_QUAD)
-	tween.tween_property(self , "scale", Vector2.ONE, 0.055 if is_swarm else 0.08).set_trans(Tween.TRANS_BACK)
-	
-	# Small hit shake
-	var original_pos = position
-	var shake_tween = create_tween()
-	var shake_strength := 1.4 if is_swarm else 3.0
-	var shake_dir = Vector2(randf_range(-1, 1), randf_range(-1, 1)).normalized() * shake_strength
-	shake_tween.tween_property(self , "position", original_pos + shake_dir, 0.018 if is_swarm else 0.03)
-	shake_tween.tween_property(self , "position", original_pos, 0.018 if is_swarm else 0.03)
+	# Scale-squeeze on the PathFollow2D root is safe: PathFollow2D._update_transform()
+	# recalculates position/rotation from progress but never resets scale.
+	tween.tween_property(self, "scale", Vector2(s, 1.0 / s), 0.025 if is_swarm else 0.04).set_trans(Tween.TRANS_QUAD)
+	tween.tween_property(self, "scale", Vector2.ONE, 0.055 if is_swarm else 0.08).set_trans(Tween.TRANS_BACK)
+
+	# Hit shake: MUST target the child visual node, not the PathFollow2D root.
+	# Tweening self.position on a PathFollow2D fights _update_transform() which
+	# recomputes position from progress every frame — causing the creep to snap/warp
+	# off the path after each hit (especially visible on control-family area hits).
+	var shake_target: Node2D = visual_root if (visual_root != null and visual_root != self) else null
+	if shake_target != null:
+		var original_pos := shake_target.position
+		var shake_tween := create_tween()
+		var shake_strength := 1.4 if is_swarm else 3.0
+		var shake_dir := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * shake_strength
+		shake_tween.tween_property(shake_target, "position", original_pos + shake_dir, 0.018 if is_swarm else 0.03)
+		shake_tween.tween_property(shake_target, "position", original_pos, 0.018 if is_swarm else 0.03)
 
 func _trigger_swarm_hit_reaction() -> void:
 	swarm_core_flicker_time = 0.08
