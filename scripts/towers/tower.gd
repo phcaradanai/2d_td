@@ -149,8 +149,8 @@ var _clone_visual_fire_target_global: Vector2 = Vector2.ZERO
 var projectile_scene: PackedScene = preload("res://scenes/projectiles/Projectile.tscn")
 var muzzle_flash_scene: PackedScene = preload("res://scenes/effects/MuzzleFlash.tscn")
 const DISEASE_ATTACK_VFX_SCRIPT: GDScript = preload("res://scripts/effects/disease_attack_vfx.gd")
-const TOWER_OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.76)
-const TOWER_OUTLINE_THICKNESS := 2.0
+const TOWER_CONTOUR_COLOR := Color(0.0, 0.0, 0.0, 0.78)
+const TOWER_CONTOUR_PX := 1.6
 var projectile_container: Node2D = null
 
 @onready var range_area: Area2D = $RangeArea
@@ -336,9 +336,7 @@ func apply_level_visuals() -> void:
 	
 	# Update muzzle based on tower type
 	if muzzle:
-		var muzzle_dist = 28.0
-		if visual_type == "cannon": muzzle_dist = 36.0
-		muzzle.position = Vector2(muzzle_dist, 0)
+		muzzle.position = _get_visual_muzzle_local_position()
 
 	# Reset base scale
 	var base_scale = Vector2.ONE
@@ -542,14 +540,13 @@ func _draw() -> void:
 		draw_arc(local_origin, visual_range, 0, TAU, 32, Color(1, 1, 1, 0.1), 1.0)
 
 	if not use_sprite:
-		_draw_tower_outline()
-
 		# 2. Base Plate (Static)
 		_draw_base_plate()
 		
 		# 3. Turret (Rotated)
 		if turret_pivot:
 			draw_set_transform(Vector2.ZERO, turret_pivot.rotation, Vector2.ONE)
+			_draw_turret_contour()
 			_draw_turret_top()
 			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
@@ -559,15 +556,6 @@ func _draw() -> void:
 	# gets a temporary z-index lift in set_selected(), so overlays stay above
 	# sibling towers on the map.
 	_draw_selected_support_overlays()
-
-func _draw_tower_outline() -> void:
-	var lvl = tree_tier
-	draw_rect(Rect2(-24, -24, 48, 48).grow(TOWER_OUTLINE_THICKNESS), TOWER_OUTLINE_COLOR)
-	if turret_pivot:
-		draw_set_transform(Vector2.ZERO, turret_pivot.rotation, Vector2.ONE)
-		draw_circle(Vector2.ZERO, 18.0 + TOWER_OUTLINE_THICKNESS, TOWER_OUTLINE_COLOR)
-		draw_line(Vector2(-10, 0), Vector2(34 + lvl * 5, 0), TOWER_OUTLINE_COLOR, 13.0 + TOWER_OUTLINE_THICKNESS * 2.0, true)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 func _draw_base_plate() -> void:
 	var lvl = tree_tier
@@ -583,6 +571,7 @@ func _draw_base_plate() -> void:
 		accent_color = Color(0.35, 0.55, 0.7, 0.35)
 
 	# Main Base Rect
+	_draw_contour_rect(Rect2(-24, -24, 48, 48))
 	draw_rect(Rect2(-24, -24, 48, 48), base_color)
 
 	# Element-colored border segments
@@ -644,6 +633,291 @@ func _draw_base_plate() -> void:
 		if not el_colors.is_empty():
 			ring_color = Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.35)
 		draw_arc(Vector2.ZERO, 20, 0, TAU, 32, ring_color, 1.5)
+
+func _get_visual_muzzle_local_position() -> Vector2:
+	var lvl := tree_tier
+	match visual_type:
+		"basic": return Vector2(26 + lvl * 4, 0)
+		"rapid": return Vector2(22 + lvl * 2, 0)
+		"cannon": return Vector2(18 + lvl * 4, 0)
+		"sniper": return Vector2(42 + lvl * 6, 0)
+		"prism_lens":
+			match _get_tower_visual_family():
+				"ice":
+					return Vector2.ZERO
+				"polar":
+					return Vector2(20, 0)
+				_:
+					return Vector2(32 + lvl * 4, 0)
+		"furnace": return Vector2(24 + lvl * 3, 0)
+		"bio_vine": return Vector2(24 + lvl * 2, 0)
+		"stone_bastion": return Vector2(26 + lvl * 3, 0)
+		"forge_anvil": return Vector2(28 + lvl * 2, 0)
+		"particle_accel": return Vector2(36 + lvl * 5, 0)
+		"heavy_mortar": return Vector2(26 + lvl * 2, 0)
+		"steam_boiler": return Vector2(24 + lvl * 2, 0)
+		"hydro_cannon": return Vector2(28 + lvl * 3, 0)
+		"dual_nozzle": return Vector2(28 + lvl * 2, 0)
+		"tri_reactor": return Vector2(30 + lvl * 4, 0)
+		"golem_body": return Vector2(24 + lvl * 2, 0)
+		"seismic_drill": return Vector2(28 + lvl * 3, 0)
+		"gold_refinery": return Vector2(24 + lvl * 2, 0)
+		"acid_vat": return Vector2(20 + lvl * 2, 0)
+		"rail_laser": return Vector2(42 + lvl * 5, 0)
+		"strike_blades": return Vector2(24, 0)
+		"slow", "lightning", "trickery", "sawblade", "void_orb", "crystal_emitter", "support_halo", "chaos_orb", "toxin_vial", "spore_cap", "tar_pool", "voodoo_totem", "root_cage", "solar_bloom", "void_vortex", "hail_crystal", "void_flower", "storm_turbine":
+			return Vector2.ZERO
+		_:
+			return Vector2(28, 0)
+
+func _get_tower_visual_family() -> String:
+	var id := tower_id.to_lower()
+	if id.begins_with("ice_"):
+		return "ice"
+	if id.begins_with("polar_"):
+		return "polar"
+	if id.begins_with("light_") or id == "pure_light":
+		return "light"
+	if id.begins_with("life_"):
+		return "life"
+	if id.begins_with("well_"):
+		return "well"
+	if id.begins_with("tidal_"):
+		return "tidal"
+	if id.begins_with("enchantment_"):
+		return "enchantment"
+	if id.begins_with("electricity_"):
+		return "electricity"
+	if id.begins_with("jinx_"):
+		return "jinx"
+	if id.begins_with("periodic_"):
+		return "periodic"
+	if id.begins_with("disease_"):
+		return "disease"
+	if id.begins_with("mushroom_"):
+		return "mushroom"
+	return visual_type
+
+func _draw_contour_rect(rect: Rect2) -> void:
+	draw_rect(rect.grow(TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
+
+func _draw_contour_circle(center: Vector2, radius: float) -> void:
+	draw_circle(center, radius + TOWER_CONTOUR_PX, TOWER_CONTOUR_COLOR)
+
+func _draw_contour_line(from: Vector2, to: Vector2, width: float) -> void:
+	draw_line(from, to, TOWER_CONTOUR_COLOR, width + TOWER_CONTOUR_PX * 2.0, true)
+
+func _draw_contour_poly(points: PackedVector2Array) -> void:
+	draw_colored_polygon(_expand_poly_from_center(points, TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
+
+func _expand_poly_from_center(points: PackedVector2Array, amount: float) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for point in points:
+		var dir := point.normalized()
+		out.append(point + dir * amount)
+	return out
+
+func _draw_turret_contour() -> void:
+	var lvl = tree_tier
+	var size = 20.0
+	match visual_type:
+		"basic":
+			_draw_contour_rect(Rect2(0, -6, 26 + lvl * 4, 12))
+			_draw_contour_circle(Vector2.ZERO, 15)
+		"rapid":
+			_draw_contour_rect(Rect2(-8, -12, 36 + lvl * 3, 24))
+			_draw_contour_rect(Rect2(-14, -10, 10, 20))
+			_draw_contour_rect(Rect2(28 + lvl * 3, -10, 10, 20))
+			_draw_contour_rect(Rect2(2, -5, 20 + lvl * 2, 10))
+		"cannon":
+			_draw_contour_rect(Rect2(-6, -14, 32 + lvl * 4, 28))
+			_draw_contour_rect(Rect2(-14, -16, 14, 32))
+		"slow":
+			_draw_contour_poly(PackedVector2Array([Vector2(0, -20 - lvl * 2), Vector2(16, 0), Vector2(0, 20 + lvl * 2), Vector2(-16, 0)]))
+		"sniper":
+			_draw_contour_rect(Rect2(0, -4, 40 + lvl * 6, 8))
+			_draw_contour_rect(Rect2(36 + lvl * 6, -5, 6, 10))
+			_draw_contour_poly(PackedVector2Array([Vector2(-18, -12), Vector2(12, -8), Vector2(12, 8), Vector2(-18, 12)]))
+		"lightning":
+			match _get_tower_visual_family():
+				"jinx":
+					_draw_contour_poly(PackedVector2Array([Vector2(-14,-18),Vector2(8,-18),Vector2(18,-8),Vector2(10,0),Vector2(18,8),Vector2(8,18),Vector2(-14,18),Vector2(-4,0)]))
+					_draw_contour_circle(Vector2.ZERO, 8)
+				"periodic":
+					_draw_contour_circle(Vector2.ZERO, 19)
+					for i in range(6):
+						var a = i * TAU / 6.0
+						_draw_contour_circle(Vector2(cos(a), sin(a)) * 18, 3.5)
+				_:
+					_draw_contour_circle(Vector2.ZERO, 16)
+					for i in range(4):
+						var a = i * PI / 2 + (idle_rotation * 0.3)
+						var tip := Vector2(cos(a), sin(a)) * 24
+						_draw_contour_line(Vector2.ZERO, tip, 3.0)
+						_draw_contour_circle(tip, 4)
+		"trickery":
+			_draw_contour_poly(PackedVector2Array([Vector2(0, -22), Vector2(18, -4), Vector2(10, 18), Vector2(-10, 18), Vector2(-18, -4)]))
+		"sawblade":
+			var blade_size = size + lvl * 2.0
+			var teeth = 12
+			var pts := PackedVector2Array()
+			for i in range(teeth * 2):
+				var angle = (float(i) / (teeth * 2)) * TAU + idle_rotation
+				var r = blade_size * (1.0 if i % 2 == 0 else 0.7)
+				pts.append(Vector2.RIGHT.rotated(angle) * r)
+			_draw_contour_poly(pts)
+		"prism_lens":
+			match _get_tower_visual_family():
+				"ice":
+					_draw_contour_poly(PackedVector2Array([Vector2(0,-24),Vector2(12,-8),Vector2(8,16),Vector2(0,22),Vector2(-8,16),Vector2(-12,-8)]))
+					_draw_contour_line(Vector2(-18, -4), Vector2(18, 4), 3.0)
+					_draw_contour_line(Vector2(-14, 10), Vector2(14, -10), 3.0)
+				"polar":
+					_draw_contour_circle(Vector2.ZERO, 18)
+					_draw_contour_poly(PackedVector2Array([Vector2(-18,-10),Vector2(10,-16),Vector2(22,0),Vector2(10,16),Vector2(-18,10),Vector2(-8,0)]))
+					_draw_contour_circle(Vector2(20, 0), 5)
+				_:
+					_draw_contour_poly(PackedVector2Array([Vector2(0,-22),Vector2(14,-8),Vector2(18,6),Vector2(0,14),Vector2(-18,6),Vector2(-14,-8)]))
+					_draw_contour_rect(Rect2(0,-4,32+lvl*4,8))
+					_draw_contour_rect(Rect2(28+lvl*4,-6,8,12))
+		"void_orb":
+			_draw_contour_circle(Vector2.ZERO, 20)
+		"crystal_emitter":
+			_draw_contour_poly(PackedVector2Array([Vector2(0,-22),Vector2(10,-8),Vector2(8,12),Vector2(0,18),Vector2(-8,12),Vector2(-10,-8)]))
+		"furnace":
+			_draw_contour_rect(Rect2(-16,-16,32,32))
+			_draw_contour_rect(Rect2(0,-7,28+lvl*3,14))
+			_draw_contour_rect(Rect2(20+lvl*3,-9,10,18))
+		"bio_vine":
+			_draw_contour_poly(PackedVector2Array([Vector2(-14,-16),Vector2(16,0),Vector2(-14,16),Vector2(-8,0)]))
+			_draw_contour_rect(Rect2(4,-12,22+lvl*2,6))
+			_draw_contour_rect(Rect2(4,6,22+lvl*2,6))
+		"stone_bastion":
+			_draw_contour_rect(Rect2(-20,-20,40,40))
+			_draw_contour_rect(Rect2(0,-10,26+lvl*3,20))
+			_draw_contour_rect(Rect2(-20,-8,8,16))
+		"forge_anvil":
+			_draw_contour_poly(PackedVector2Array([Vector2(-20,8),Vector2(20,8),Vector2(16,0),Vector2(8,-4),Vector2(8,-16),Vector2(-8,-16),Vector2(-8,-4),Vector2(-16,0)]))
+			_draw_contour_circle(Vector2.ZERO, 8)
+			_draw_contour_rect(Rect2(8,-5,20+lvl*2,10))
+		"support_halo":
+			match _get_tower_visual_family():
+				"life":
+					_draw_contour_poly(PackedVector2Array([Vector2(0,-22),Vector2(10,-8),Vector2(20,0),Vector2(10,8),Vector2(0,22),Vector2(-10,8),Vector2(-20,0),Vector2(-10,-8)]))
+					_draw_contour_circle(Vector2.ZERO, 8)
+				"well":
+					_draw_contour_rect(Rect2(-18,-10,36,20))
+					_draw_contour_circle(Vector2.ZERO, 16)
+				"tidal":
+					_draw_contour_circle(Vector2.ZERO, 19)
+					_draw_contour_poly(PackedVector2Array([Vector2(-18,8),Vector2(-6,-8),Vector2(8,-14),Vector2(20,-4),Vector2(8,8),Vector2(-6,14)]))
+				"enchantment":
+					_draw_contour_poly(PackedVector2Array([Vector2(0,-22),Vector2(19,-11),Vector2(19,11),Vector2(0,22),Vector2(-19,11),Vector2(-19,-11)]))
+					_draw_contour_circle(Vector2.ZERO, 9)
+				_:
+					_draw_contour_rect(Rect2(-10,-10,20,20))
+					_draw_contour_circle(Vector2.ZERO, 20)
+		"particle_accel":
+			_draw_contour_circle(Vector2.ZERO, 18)
+			_draw_contour_rect(Rect2(0,-2,38+lvl*5,4))
+		"chaos_orb":
+			_draw_contour_circle(Vector2.ZERO, 12)
+		"toxin_vial":
+			_draw_contour_poly(PackedVector2Array([Vector2(-8,-18),Vector2(8,-18),Vector2(10,-8),Vector2(12,12),Vector2(-12,12),Vector2(-10,-8)]))
+			_draw_contour_rect(Rect2(-3,-24,6,8))
+		"spore_cap":
+			if _get_tower_visual_family() == "disease":
+				_draw_contour_poly(PackedVector2Array([Vector2(-16,-14),Vector2(0,-22),Vector2(16,-14),Vector2(14,10),Vector2(0,20),Vector2(-14,10)]))
+				for i in range(4):
+					var a = i * TAU / 4.0 + PI / 4.0
+					_draw_contour_line(Vector2(cos(a), sin(a)) * 12, Vector2(cos(a), sin(a)) * 21, 2.0)
+			else:
+				_draw_contour_rect(Rect2(-6,0,12,16))
+				_draw_contour_poly(PackedVector2Array([Vector2(-20,0),Vector2(-14,-12),Vector2(-6,-20),Vector2(0,-22),Vector2(6,-20),Vector2(14,-12),Vector2(20,0)]))
+		"heavy_mortar":
+			_draw_contour_rect(Rect2(-14,-18,28,36))
+			_draw_contour_rect(Rect2(0,-12,28+lvl*2,24))
+			_draw_contour_circle(Vector2(26+lvl*2,0), 10)
+		"steam_boiler":
+			_draw_contour_rect(Rect2(-16,-14,32,28))
+			_draw_contour_rect(Rect2(0,-6,24+lvl*2,12))
+		"hydro_cannon":
+			_draw_contour_rect(Rect2(-18,-12,36,24))
+			_draw_contour_rect(Rect2(0,-9,30+lvl*3,18))
+			_draw_contour_circle(Vector2(28+lvl*3,0), 7)
+		"ember_bloom":
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * 0.3
+				_draw_contour_poly(PackedVector2Array([Vector2.ZERO, Vector2(cos(a-0.4),sin(a-0.4))*16, Vector2(cos(a),sin(a))*22, Vector2(cos(a+0.4),sin(a+0.4))*16]))
+			_draw_contour_circle(Vector2.ZERO, 10)
+		"tar_pool":
+			_draw_contour_rect(Rect2(-18,-8,36,16))
+			_draw_contour_circle(Vector2.ZERO, 16)
+		"voodoo_totem":
+			_draw_contour_rect(Rect2(-8,-22,16,44))
+			_draw_contour_rect(Rect2(-10,-26,20,16))
+		"dual_nozzle":
+			_draw_contour_rect(Rect2(-16,-18,32,36))
+			_draw_contour_rect(Rect2(0,-14,30+lvl*2,10))
+			_draw_contour_rect(Rect2(0,4,30+lvl*2,10))
+			_draw_contour_rect(Rect2(-20,-16,6,32))
+		"root_cage":
+			_draw_contour_circle(Vector2.ZERO, 10)
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * 0.2
+				_draw_contour_line(Vector2.ZERO, Vector2(cos(a),sin(a)) * 22, 3.0)
+		"tri_reactor":
+			_draw_contour_circle(Vector2.ZERO, 20)
+			_draw_contour_rect(Rect2(0,-3,30+lvl*4,6))
+			for i in range(3):
+				var a = idle_rotation * 0.6 + i * TAU/3.0
+				_draw_contour_circle(Vector2(cos(a),sin(a)) * 14, 5)
+		"strike_blades":
+			_draw_contour_poly(PackedVector2Array([Vector2(-14,-14),Vector2(18,-6),Vector2(24,0),Vector2(18,6),Vector2(-14,14),Vector2(-6,0)]))
+			_draw_contour_poly(PackedVector2Array([Vector2(-2,-6),Vector2(10,-6),Vector2(14,-14),Vector2(2,-16)]))
+			_draw_contour_poly(PackedVector2Array([Vector2(-2,6),Vector2(10,6),Vector2(14,14),Vector2(2,16)]))
+		"golem_body":
+			_draw_contour_rect(Rect2(-18,-18,36,36))
+			_draw_contour_rect(Rect2(0,-12,24+lvl*2,24))
+		"seismic_drill":
+			_draw_contour_rect(Rect2(-14,-12,24,24))
+			_draw_contour_poly(PackedVector2Array([Vector2(0,-8),Vector2(30+lvl*3,0),Vector2(0,8)]))
+			_draw_contour_circle(Vector2(28+lvl*3,0), 5)
+		"solar_bloom":
+			for i in range(6):
+				var a = i * TAU/6.0 + idle_rotation * 0.2
+				_draw_contour_poly(PackedVector2Array([Vector2(cos(a-0.35),sin(a-0.35))*6, Vector2(cos(a),sin(a))*20, Vector2(cos(a+0.35),sin(a+0.35))*6]))
+			_draw_contour_circle(Vector2.ZERO, 10)
+		"gold_refinery":
+			_draw_contour_rect(Rect2(-12,0,24,12))
+			_draw_contour_rect(Rect2(-10,-4,20,8))
+			_draw_contour_rect(Rect2(-8,-18,16,20))
+			_draw_contour_rect(Rect2(0,-4,24+lvl*2,8))
+		"acid_vat":
+			_draw_contour_rect(Rect2(-14,-10,28,20))
+			_draw_contour_rect(Rect2(0,-6,22+lvl*2,12))
+			_draw_contour_circle(Vector2(20+lvl*2,0), 4)
+		"void_vortex":
+			_draw_contour_circle(Vector2.ZERO, 20)
+		"hail_crystal":
+			for i in range(6):
+				var a = i * TAU/6.0 + idle_rotation * 0.1
+				_draw_contour_line(Vector2.ZERO, Vector2(cos(a),sin(a))*20, 2.0)
+			_draw_contour_circle(Vector2.ZERO, 6)
+		"rail_laser":
+			_draw_contour_rect(Rect2(-18,-14,32,28))
+			_draw_contour_rect(Rect2(0,-5,44+lvl*5,10))
+			_draw_contour_circle(Vector2(42+lvl*5,0), 4)
+		"void_flower":
+			for i in range(5):
+				var a = i * TAU/5.0 + idle_rotation * -0.2
+				_draw_contour_poly(PackedVector2Array([Vector2(cos(a-0.3),sin(a-0.3))*6, Vector2(cos(a),sin(a))*18, Vector2(cos(a+0.3),sin(a+0.3))*6]))
+			_draw_contour_circle(Vector2.ZERO, 10)
+		"storm_turbine":
+			_draw_contour_circle(Vector2.ZERO, 18)
+			for i in range(4):
+				var a = i * TAU/4.0 + idle_rotation * 1.2
+				_draw_contour_poly(PackedVector2Array([Vector2(cos(a)*4,sin(a)*4), Vector2(cos(a+0.4)*16,sin(a+0.4)*16), Vector2(cos(a+0.6)*18,sin(a+0.6)*18), Vector2(cos(a+0.15)*4,sin(a+0.15)*4)]))
 
 func _draw_element_core() -> void:
 	# Draw small element-colored dots in the center of the turret as a visual landmark.
@@ -756,24 +1030,39 @@ func _draw_turret_top() -> void:
 			_draw_element_core()
 
 		"lightning":
-			# Tesla coil — chain attack (LEGACY)
+			# Electricity / Jinx / Periodic — shared chain-like VFX, distinct silhouettes.
 			var spike_tip_color := secondary_color if el_colors.size() >= 2 else core_color
-			draw_circle(Vector2.ZERO, 16, main_color)
-			draw_arc(Vector2.ZERO, 16, 0, TAU, 32, main_color.lightened(0.4), 1.5)
-			# Spikes
-			for i in range(4):
-				var a = i * PI / 2 + (idle_rotation * 0.3)
-				draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * 24, main_color, 3.0)
-				draw_circle(Vector2(cos(a), sin(a)) * 24, 4, spike_tip_color)
-			# Electrical crackle
-			for i in range(2):
-				var crackle_pts = PackedVector2Array()
-				var start_a = randf() * TAU
-				var dist = randf_range(18, 30)
-				crackle_pts.append(Vector2.RIGHT.rotated(start_a) * 12)
-				crackle_pts.append(Vector2.RIGHT.rotated(start_a + 0.2) * dist)
-				crackle_pts.append(Vector2.RIGHT.rotated(start_a - 0.2) * (dist + 5))
-				draw_polyline(crackle_pts, core_color, 1.0)
+			match _get_tower_visual_family():
+				"jinx":
+					var jinx_pts = PackedVector2Array([Vector2(-14,-18),Vector2(8,-18),Vector2(18,-8),Vector2(10,0),Vector2(18,8),Vector2(8,18),Vector2(-14,18),Vector2(-4,0)])
+					draw_colored_polygon(jinx_pts, Color(main_color.r, main_color.g, main_color.b, 0.55))
+					draw_polyline(jinx_pts + PackedVector2Array([jinx_pts[0]]), secondary_color.lightened(0.25), 1.4)
+					draw_circle(Vector2.ZERO, 8, Color(0.05,0.0,0.08,1.0))
+					for i in range(3):
+						var a = -PI / 4.0 + i * PI / 4.0
+						draw_line(Vector2(2, 0), Vector2(cos(a), sin(a)) * 18, spike_tip_color, 1.5)
+				"periodic":
+					draw_arc(Vector2.ZERO, 19, 0, TAU, 36, Color(main_color.r,main_color.g,main_color.b,0.6), 2.0)
+					for i in range(6):
+						var a = i * TAU / 6.0
+						var node_color = el_colors[i % el_colors.size()] if not el_colors.is_empty() else main_color
+						draw_circle(Vector2(cos(a), sin(a)) * 18, 3.5, node_color)
+					draw_circle(Vector2.ZERO, 9, Color(0.92,0.96,1.0,0.85))
+				_:
+					draw_circle(Vector2.ZERO, 16, main_color)
+					draw_arc(Vector2.ZERO, 16, 0, TAU, 32, main_color.lightened(0.4), 1.5)
+					for i in range(4):
+						var a = i * PI / 2 + (idle_rotation * 0.3)
+						draw_line(Vector2.ZERO, Vector2(cos(a), sin(a)) * 24, main_color, 3.0)
+						draw_circle(Vector2(cos(a), sin(a)) * 24, 4, spike_tip_color)
+					for i in range(2):
+						var crackle_pts = PackedVector2Array()
+						var start_a = randf() * TAU
+						var dist = randf_range(18, 30)
+						crackle_pts.append(Vector2.RIGHT.rotated(start_a) * 12)
+						crackle_pts.append(Vector2.RIGHT.rotated(start_a + 0.2) * dist)
+						crackle_pts.append(Vector2.RIGHT.rotated(start_a - 0.2) * (dist + 5))
+						draw_polyline(crackle_pts, core_color, 1.0)
 			_draw_element_core()
 
 		"trickery":
@@ -814,16 +1103,29 @@ func _draw_turret_top() -> void:
 			_draw_element_core()
 
 		"prism_lens":
-			# Light / Ice / Polar — gold-white prism with lens aperture
-			var prism_pts = PackedVector2Array([Vector2(0,-22),Vector2(14,-8),Vector2(18,6),Vector2(0,14),Vector2(-18,6),Vector2(-14,-8)])
-			draw_colored_polygon(prism_pts, Color(main_color.r,main_color.g,main_color.b,0.45))
-			draw_polyline(prism_pts + PackedVector2Array([prism_pts[0]]), main_color.lightened(0.35), 1.5)
-			# Lens aperture barrel
-			draw_rect(Rect2(0,-4,32+lvl*4,8), main_color.darkened(0.35))
-			draw_rect(Rect2(28+lvl*4,-6,8,12), main_color)
-			draw_circle(Vector2(32+lvl*4,0), 5, Color.BLACK)
-			draw_circle(Vector2(32+lvl*4,0), 3, main_color.lightened(0.5))
-			draw_circle(Vector2.ZERO, 10, Color(main_color.r,main_color.g,main_color.b,0.25))
+			# Light / Ice / Polar share lens attacks but keep different silhouettes.
+			match _get_tower_visual_family():
+				"ice":
+					var ice_pts = PackedVector2Array([Vector2(0,-24),Vector2(12,-8),Vector2(8,16),Vector2(0,22),Vector2(-8,16),Vector2(-12,-8)])
+					draw_colored_polygon(ice_pts, Color(main_color.r,main_color.g,main_color.b,0.52))
+					draw_polyline(ice_pts + PackedVector2Array([ice_pts[0]]), Color(0.82,0.96,1.0,0.9), 1.4)
+					draw_line(Vector2(-18,-4), Vector2(18,4), secondary_color.lightened(0.25), 2.0)
+					draw_line(Vector2(-14,10), Vector2(14,-10), Color(0.88,0.98,1.0,0.65), 1.5)
+				"polar":
+					draw_arc(Vector2.ZERO, 18, -PI * 0.72, PI * 0.72, 32, main_color, 3.0)
+					var polar_pts = PackedVector2Array([Vector2(-18,-10),Vector2(10,-16),Vector2(22,0),Vector2(10,16),Vector2(-18,10),Vector2(-8,0)])
+					draw_colored_polygon(polar_pts, Color(secondary_color.r,secondary_color.g,secondary_color.b,0.42))
+					draw_polyline(polar_pts + PackedVector2Array([polar_pts[0]]), main_color.lightened(0.25), 1.4)
+					draw_circle(Vector2(20,0), 4, Color(0.9,0.98,1.0,0.9))
+				_:
+					var prism_pts = PackedVector2Array([Vector2(0,-22),Vector2(14,-8),Vector2(18,6),Vector2(0,14),Vector2(-18,6),Vector2(-14,-8)])
+					draw_colored_polygon(prism_pts, Color(main_color.r,main_color.g,main_color.b,0.45))
+					draw_polyline(prism_pts + PackedVector2Array([prism_pts[0]]), main_color.lightened(0.35), 1.5)
+					draw_rect(Rect2(0,-4,32+lvl*4,8), main_color.darkened(0.35))
+					draw_rect(Rect2(28+lvl*4,-6,8,12), main_color)
+					draw_circle(Vector2(32+lvl*4,0), 5, Color.BLACK)
+					draw_circle(Vector2(32+lvl*4,0), 3, main_color.lightened(0.5))
+					draw_circle(Vector2.ZERO, 10, Color(main_color.r,main_color.g,main_color.b,0.25))
 			_draw_element_core()
 
 		"void_orb":
@@ -898,14 +1200,35 @@ func _draw_turret_top() -> void:
 			_draw_element_core()
 
 		"support_halo":
-			# Support towers (Well / Life / Tidal / Enchantment / Gold) — aura emitter
-			draw_rect(Rect2(-10,-10,20,20), main_color.darkened(0.4))
-			draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.65), 2.0)
 			var h2c = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
-			draw_arc(Vector2.ZERO, 14, 0, TAU, 32, Color(h2c.r,h2c.g,h2c.b,0.4), 1.5)
-			for i in range(4):
-				var a = idle_rotation * 0.5 + i * TAU/4.0
-				draw_circle(Vector2(cos(a),sin(a))*20, 3, main_color.lightened(0.35))
+			# Support families share aura behavior, but not the same silhouette.
+			match _get_tower_visual_family():
+				"life":
+					var life_pts = PackedVector2Array([Vector2(0,-22),Vector2(10,-8),Vector2(20,0),Vector2(10,8),Vector2(0,22),Vector2(-10,8),Vector2(-20,0),Vector2(-10,-8)])
+					draw_colored_polygon(life_pts, Color(main_color.r,main_color.g,main_color.b,0.48))
+					draw_polyline(life_pts + PackedVector2Array([life_pts[0]]), h2c.lightened(0.25), 1.4)
+					draw_circle(Vector2.ZERO, 8, Color(h2c.r,h2c.g,h2c.b,0.7))
+				"well":
+					draw_rect(Rect2(-18,-10,36,20), main_color.darkened(0.35))
+					draw_arc(Vector2.ZERO, 16, 0, TAU, 32, Color(h2c.r,h2c.g,h2c.b,0.75), 2.0)
+					draw_arc(Vector2.ZERO, 10, 0, TAU, 32, Color(0.82,0.96,1.0,0.5), 1.5)
+				"tidal":
+					draw_arc(Vector2.ZERO, 19, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.55), 2.0)
+					var wave_pts = PackedVector2Array([Vector2(-18,8),Vector2(-6,-8),Vector2(8,-14),Vector2(20,-4),Vector2(8,8),Vector2(-6,14)])
+					draw_colored_polygon(wave_pts, Color(h2c.r,h2c.g,h2c.b,0.55))
+					draw_polyline(wave_pts + PackedVector2Array([wave_pts[0]]), Color(0.9,0.98,1.0,0.7), 1.2)
+				"enchantment":
+					var hex_pts = PackedVector2Array([Vector2(0,-22),Vector2(19,-11),Vector2(19,11),Vector2(0,22),Vector2(-19,11),Vector2(-19,-11)])
+					draw_colored_polygon(hex_pts, Color(main_color.r,main_color.g,main_color.b,0.28))
+					draw_polyline(hex_pts + PackedVector2Array([hex_pts[0]]), h2c.lightened(0.35), 1.5)
+					draw_circle(Vector2.ZERO, 9, Color(main_color.r,main_color.g,main_color.b,0.7))
+				_:
+					draw_rect(Rect2(-10,-10,20,20), main_color.darkened(0.4))
+					draw_arc(Vector2.ZERO, 20, 0, TAU, 32, Color(main_color.r,main_color.g,main_color.b,0.65), 2.0)
+					draw_arc(Vector2.ZERO, 14, 0, TAU, 32, Color(h2c.r,h2c.g,h2c.b,0.4), 1.5)
+					for i in range(4):
+						var a = idle_rotation * 0.5 + i * TAU/4.0
+						draw_circle(Vector2(cos(a),sin(a))*20, 3, main_color.lightened(0.35))
 			_draw_element_core()
 
 		"particle_accel":
@@ -945,14 +1268,22 @@ func _draw_turret_top() -> void:
 			_draw_element_core()
 
 		"spore_cap":
-			# Disease / Mushroom — mushroom cap silhouette
-			draw_rect(Rect2(-6,0,12,16), main_color.darkened(0.3))
-			var sc_pts = PackedVector2Array([Vector2(-20,0),Vector2(-14,-12),Vector2(-6,-20),Vector2(0,-22),Vector2(6,-20),Vector2(14,-12),Vector2(20,0)])
-			draw_colored_polygon(sc_pts, main_color)
-			draw_polyline(sc_pts, secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3), 1.5)
-			for i in range(3):
-				var a = -PI/2.0 + (i-1)*0.5
-				draw_circle(Vector2(cos(a),sin(a))*14, 2, Color(1.0,1.0,0.8,0.8))
+			if _get_tower_visual_family() == "disease":
+				var disease_pts = PackedVector2Array([Vector2(-16,-14),Vector2(0,-22),Vector2(16,-14),Vector2(14,10),Vector2(0,20),Vector2(-14,10)])
+				draw_colored_polygon(disease_pts, Color(main_color.r,main_color.g,main_color.b,0.42))
+				draw_polyline(disease_pts + PackedVector2Array([disease_pts[0]]), secondary_color.lightened(0.25), 1.4)
+				for i in range(4):
+					var a = i * TAU / 4.0 + PI / 4.0
+					draw_line(Vector2(cos(a),sin(a))*12, Vector2(cos(a),sin(a))*21, main_color.lightened(0.2), 1.8)
+				draw_circle(Vector2.ZERO, 7, Color(0.05,0.08,0.02,1.0))
+			else:
+				draw_rect(Rect2(-6,0,12,16), main_color.darkened(0.3))
+				var sc_pts = PackedVector2Array([Vector2(-20,0),Vector2(-14,-12),Vector2(-6,-20),Vector2(0,-22),Vector2(6,-20),Vector2(14,-12),Vector2(20,0)])
+				draw_colored_polygon(sc_pts, main_color)
+				draw_polyline(sc_pts, secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3), 1.5)
+				for i in range(3):
+					var a = -PI/2.0 + (i-1)*0.5
+					draw_circle(Vector2(cos(a),sin(a))*14, 2, Color(1.0,1.0,0.8,0.8))
 			_draw_element_core()
 
 		"heavy_mortar":
