@@ -87,6 +87,7 @@ var maze_map_renderer: Node2D = null
 var enemy_route_overlay: Node2D = null
 var selected_tower: Node2D = null
 var current_state: GameState = GameState.MENU
+var _touch_points: Dictionary = {}   # active touch indices for two-finger deselect
 var current_level_path: String = ""
 var current_level_id: String = ""
 var selected_level_id: int = 0
@@ -996,12 +997,13 @@ func _unhandled_input(event: InputEvent) -> void:
 				if auto_play_verifier:
 					_start_debug_auto_play()
 
-	if current_state != GameState.BUILD: return
+	# Allow deselect interactions during both BUILD and WAVE states.
+	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 
 	if event is InputEventMouseButton and event.pressed:
 		var local_mouse = map_root.to_local(get_global_mouse_position())
 
-		# Right click cancels build mode or selection
+		# Right click cancels build mode or deselects selected tower.
 		if event.button_index == MOUSE_BUTTON_RIGHT:
 			if build_manager and build_manager.has_selected_tower():
 				build_manager.clear_selected_tower()
@@ -1019,8 +1021,8 @@ func _unhandled_input(event: InputEvent) -> void:
 			if build_manager and build_manager.has_selected_tower():
 				var hovered_control = get_viewport().gui_get_hovered_control()
 				if OS.is_debug_build(): print("[BuildInput] click received. mouse_over_hud=%s hovered=%s" % [_is_mouse_over_hud(), hovered_control])
-				
-				if _is_mouse_over_hud(): 
+
+				if _is_mouse_over_hud():
 					if OS.is_debug_build(): print("[BuildInput] click ignored: mouse over HUD")
 					return
 
@@ -1036,6 +1038,18 @@ func _unhandled_input(event: InputEvent) -> void:
 				var tower_clicked = _check_tower_click(local_mouse)
 				if not tower_clicked:
 					_deselect_tower()
+
+	# Two-finger tap deselects selected tower (mobile/touch).
+	# Build-placement cancel is already handled in game_hud._handle_build_cancel_input.
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touch_points[event.index] = true
+			if _touch_points.size() >= 2 and selected_tower and \
+					not (build_manager and build_manager.has_selected_tower()):
+				_deselect_tower()
+				get_viewport().set_input_as_handled()
+		else:
+			_touch_points.erase(event.index)
 
 # --- Session Flow ---
 
