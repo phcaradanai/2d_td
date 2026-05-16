@@ -2372,20 +2372,25 @@ func _em_make_tower_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
 		mg.add_theme_constant_override("margin_"+sd, 8)
 	card.add_child(mg)
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 8)
 	mg.add_child(row)
+
+	# Element combo icon — same helper used by the Build Towers panel rows.
+	var elems: Array = cfg.get("elements", [])
+	var el_icon := _create_element_icon(elems, true)
+	el_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(el_icon)
 
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
 	info.add_theme_constant_override("separation", 3)
 	row.add_child(info)
 
 	var tower_name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name","Tower"))))
 	info.add_child(_em_lbl(tower_name, 13, Color(0.9,0.92,1.0)))
-	var elems: Array = cfg.get("elements",[])
 	if not elems.is_empty():
-		var combo := _format_element_combo_label(elems)
-		var combo_l := _em_lbl(combo, 11, Color(0.58,0.78,0.94))
+		var combo_l := _em_lbl(_format_element_combo_label(elems), 11, Color(0.58,0.78,0.94))
 		combo_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info.add_child(combo_l)
 
@@ -2543,24 +2548,66 @@ func _em_rebuild_right(element_id: String) -> void:
 	var get_v := VBoxContainer.new()
 	get_v.add_theme_constant_override("separation", 6)
 	_em_right_col.add_child(get_v)
-	var items: Array[String]
+
 	if element_id == "__interest__":
-		items = ["Interest %s → %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")], "No tower unlock"]
+		# Interest Bonus: keep simple text rows (not a tower unlock).
+		for item_text in [
+			"Interest %s → %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")],
+			"No tower unlock"
+		]:
+			var row := HBoxContainer.new()
+			row.add_theme_constant_override("separation", 6)
+			get_v.add_child(row)
+			var ck := _em_lbl("✓", 12, NeonStyle.OK)
+			ck.custom_minimum_size.x = 18
+			row.add_child(ck)
+			var il := _em_lbl(item_text, 12, Color(0.8, 0.88, 0.96))
+			il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+			il.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+			row.add_child(il)
 	else:
-		items = _em_get_unlock_summary_names(element_id)
-		if items.is_empty():
-			items = ["No new tower unlocks"]
-	for item in items:
-		var row := HBoxContainer.new()
-		row.add_theme_constant_override("separation", 6)
-		get_v.add_child(row)
-		var ck := _em_lbl("✓", 12, Color(0.3,0.9,0.5))
-		ck.custom_minimum_size.x = 18
-		row.add_child(ck)
-		var il := _em_lbl(item, 12, Color(0.8,0.88,0.96))
-		il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		il.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(il)
+		# Element unlock: one row per tower using element-combo icons that
+		# match the left Build Towers panel style exactly.
+		var preview := _em_get_unlock_preview_for_element(element_id)
+		var tower_cfgs: Array = []
+		tower_cfgs.append_array(preview.get("single_element", []))
+		tower_cfgs.append_array(preview.get("dual_element",   []))
+		tower_cfgs.append_array(preview.get("triple_element", []))
+
+		if tower_cfgs.is_empty():
+			var none_row := HBoxContainer.new()
+			none_row.add_theme_constant_override("separation", 6)
+			get_v.add_child(none_row)
+			var dash := _em_lbl("—", 12, NeonStyle.INK_3)
+			dash.custom_minimum_size.x = 18
+			none_row.add_child(dash)
+			none_row.add_child(_em_lbl("No new tower unlocks", 12, NeonStyle.INK_3))
+		else:
+			for tcfg in tower_cfgs:
+				var row := HBoxContainer.new()
+				row.add_theme_constant_override("separation", 8)
+				get_v.add_child(row)
+
+				# Element combo icon — identical to the Build Towers panel.
+				var t_elems: Array = tcfg.get("elements", [])
+				var t_icon := _create_element_icon(t_elems, true)
+				t_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+				row.add_child(t_icon)
+
+				# Name + element combination text.
+				var name_col := VBoxContainer.new()
+				name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				name_col.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
+				name_col.add_theme_constant_override("separation", 2)
+				row.add_child(name_col)
+
+				var t_name := _compact_tower_display_name(str(tcfg.get("display_name", tcfg.get("name", "Tower"))))
+				var n_lbl := _em_lbl(t_name, 13, NeonStyle.INK_1)
+				name_col.add_child(n_lbl)
+
+				if t_elems.size() >= 2:
+					var req_lbl := _em_lbl(_format_element_combo_label(t_elems), 11, NeonStyle.INK_2)
+					name_col.add_child(req_lbl)
 
 	# Push confirm to bottom
 	var push := Control.new()
