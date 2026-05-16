@@ -145,6 +145,10 @@ var _wi_wrapper: VBoxContainer = null
 var _wi_header_btn: HUDDrawerHeaderControl = null
 var _wi_reward_row: HBoxContainer = null
 var _wi_reward_display: CreditCostDisplayControl = null
+var _upgrade_cost_display: CreditCostDisplayControl = null
+var _upgrade_text_label: Label = null
+var _sell_cost_display: CreditCostDisplayControl = null
+var _sell_text_label: Label = null
 
 const SHOW_DAMAGE_PANEL := true
 const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
@@ -379,16 +383,39 @@ func _ready() -> void:
 	upgrade_tower_button.pressed.connect(func(): upgrade_tower_requested.emit())
 	deselect_tower_button.pressed.connect(func(): deselect_tower_requested.emit())
 	
-	# Create Sell Tower button dynamically
+	# Create Sell Tower button — composite: text + CreditCostDisplayControl
 	var tower_info_vbox := upgrade_tower_button.get_parent()
 	if tower_info_vbox:
 		sell_tower_button = Button.new()
 		sell_tower_button.name = "SellTowerButton"
-		sell_tower_button.text = "Sell"
+		sell_tower_button.text = ""
 		sell_tower_button.size_flags_horizontal = Control.SIZE_FILL
-		sell_tower_button.add_theme_color_override("font_color", NeonStyle.OK)
 		sell_tower_button.pressed.connect(func(): sell_tower_requested.emit())
 		sell_tower_button.hide()
+
+		var sell_row := HBoxContainer.new()
+		sell_row.set_anchors_preset(Control.PRESET_FULL_RECT)
+		sell_row.offset_left = 10
+		sell_row.offset_right = -8
+		sell_row.add_theme_constant_override("separation", 6)
+		sell_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sell_tower_button.add_child(sell_row)
+
+		_sell_text_label = Label.new()
+		_sell_text_label.text = "Sell +"
+		_sell_text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_sell_text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_sell_text_label.add_theme_font_size_override("font_size", 12)
+		_sell_text_label.add_theme_color_override("font_color", NeonStyle.OK)
+		_sell_text_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sell_row.add_child(_sell_text_label)
+
+		_sell_cost_display = CreditCostDisplayControl.new()
+		_sell_cost_display.custom_minimum_size = Vector2(58, 28)
+		_sell_cost_display.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_sell_cost_display.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		sell_row.add_child(_sell_cost_display)
+
 		tower_info_vbox.add_child(sell_tower_button)
 		tower_info_vbox.move_child(sell_tower_button, tower_info_vbox.get_child_count() - 2) # above Deselect
 	
@@ -750,12 +777,9 @@ func update_layout_for_viewport() -> void:
 		if portrait:
 			right_sidebar_container.custom_minimum_size.x = 0
 			right_sidebar_container.visible = right_sidebar.visible
-		elif view_size.x < 1200:
-			right_sidebar_container.visible = true
-			right_sidebar_container.custom_minimum_size.x = 220
 		else:
 			right_sidebar_container.visible = true
-			right_sidebar_container.custom_minimum_size.x = 240
+			right_sidebar_container.custom_minimum_size.x = 260
 	_sync_tower_shop_list_width()
 	_apply_mobile_portrait_layout(portrait)
 
@@ -783,15 +807,14 @@ func _apply_terminal_hud_skin() -> void:
 		top_bar.add_theme_stylebox_override("panel", tb_style)
 		top_bar.custom_minimum_size.y = 68
 
-	# Sidebar panels
-	for panel in [right_sidebar, settings_panel]:
-		if panel:
-			var s := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
-			s.content_margin_left   = 0
-			s.content_margin_right  = 0
-			s.content_margin_top    = 0
-			s.content_margin_bottom = 0
-			panel.add_theme_stylebox_override("panel", s)
+	# Settings panel (right_sidebar styled separately in _setup_right_sidebar_layout)
+	if settings_panel:
+		var s := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
+		s.content_margin_left   = 0
+		s.content_margin_right  = 0
+		s.content_margin_top    = 0
+		s.content_margin_bottom = 0
+		settings_panel.add_theme_stylebox_override("panel", s)
 	_apply_left_drawer_layout()
 
 	if center_message_panel:
@@ -3032,31 +3055,39 @@ func show_tower_info(info: Dictionary) -> void:
 	updating_target_mode_ui = false
 	
 	if info.get("is_max_tier", false):
-		tower_upgrade_cost_label.text = "MAX TIER"
 		upgrade_tower_button.disabled = true
-		upgrade_tower_button.text = "MAX TIER"
-		upgrade_tower_button.add_theme_color_override("font_color", NeonStyle.INK_3)
+		if _upgrade_text_label:
+			_upgrade_text_label.text = "MAX TIER"
+			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_3)
+		if _upgrade_cost_display:
+			_upgrade_cost_display.visible = false
 	elif info["can_upgrade"] and info["upgrade_cost"] > 0:
-		tower_upgrade_cost_label.text = "Upgrade  ✦%d" % info["upgrade_cost"]
 		upgrade_tower_button.disabled = false
-		upgrade_tower_button.text = "Upgrade to Lv%d  ·  ✦%d" % [
-			int(info.get("tier", 1)) + 1, info["upgrade_cost"]]
-		upgrade_tower_button.add_theme_color_override("font_color", NeonStyle.INK_1)
+		if _upgrade_text_label:
+			_upgrade_text_label.text = "Upgrade  ·  Lv%d" % [int(info.get("tier", 1)) + 1]
+			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_1)
+		if _upgrade_cost_display:
+			_upgrade_cost_display.configure(info["upgrade_cost"], true)
+			_upgrade_cost_display.visible = true
 	elif info["can_upgrade"]:
-		tower_upgrade_cost_label.text = "—"
 		upgrade_tower_button.disabled = true
-		upgrade_tower_button.text = "Upgrade (N/A)"
-		upgrade_tower_button.add_theme_color_override("font_color", NeonStyle.INK_3)
+		if _upgrade_text_label:
+			_upgrade_text_label.text = "Upgrade (N/A)"
+			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_3)
+		if _upgrade_cost_display:
+			_upgrade_cost_display.visible = false
 	else:
-		tower_upgrade_cost_label.text = "MAX TIER"
 		upgrade_tower_button.disabled = true
-		upgrade_tower_button.text = "MAX TIER"
-		upgrade_tower_button.add_theme_color_override("font_color", NeonStyle.INK_3)
+		if _upgrade_text_label:
+			_upgrade_text_label.text = "MAX TIER"
+			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_3)
+		if _upgrade_cost_display:
+			_upgrade_cost_display.visible = false
 
 	if sell_tower_button:
 		var refund := int(info.get("sell_refund", 0))
-		sell_tower_button.text = "Sell  +✦%d" % refund
-		sell_tower_button.add_theme_color_override("font_color", NeonStyle.OK)
+		if _sell_cost_display:
+			_sell_cost_display.configure(refund, true)
 		sell_tower_button.show()
 
 func _build_tower_special_effect_text(_info: Dictionary) -> String:
@@ -3304,6 +3335,26 @@ func shake_node(node: Control, strength: float = 10.0) -> void:
 		tween.tween_property(node, "position", original_pos + offset, 0.04)
 	tween.tween_property(node, "position", original_pos, 0.04)
 
+func _make_right_panel_eyebrow(text: String, color: Color) -> HBoxContainer:
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var lbl := Label.new()
+	lbl.text = text
+	lbl.add_theme_font_size_override("font_size", 10)
+	lbl.add_theme_color_override("font_color", color)
+	lbl.uppercase = true
+	lbl.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(lbl)
+	var line := ColorRect.new()
+	line.color = Color(color.r, color.g, color.b, 0.22)
+	line.custom_minimum_size = Vector2(0, 1)
+	line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	line.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(line)
+	return row
+
 func _setup_right_sidebar_layout() -> void:
 	var container = right_sidebar_container
 	if container == null: return
@@ -3312,26 +3363,39 @@ func _setup_right_sidebar_layout() -> void:
 	right_sidebar.name = "TowerDetailPanel"
 	right_sidebar.custom_minimum_size = Vector2(0, 260)
 	right_sidebar.size_flags_vertical = Control.SIZE_FILL
-	
-	var style_detail := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
+
+	# Left-side cyan accent rail matching the left Build Towers drawer
+	var style_detail := StyleBoxFlat.new()
+	style_detail.bg_color = NeonStyle.BG_1
+	style_detail.border_color = NeonStyle.LINE_2
+	style_detail.set_border_width_all(1)
+	style_detail.border_width_left = 3
+	style_detail.set_corner_radius_all(0)
 	style_detail.content_margin_left   = 0
 	style_detail.content_margin_right  = 0
 	style_detail.content_margin_top    = 0
 	style_detail.content_margin_bottom = 0
 	right_sidebar.add_theme_stylebox_override("panel", style_detail)
 
-	# Clean up margins
+	# Margins
 	var detail_margin := right_sidebar.get_node_or_null("MarginContainer")
 	if detail_margin is MarginContainer:
-		detail_margin.add_theme_constant_override("margin_left",   12)
+		detail_margin.add_theme_constant_override("margin_left",   14)
 		detail_margin.add_theme_constant_override("margin_right",  12)
-		detail_margin.add_theme_constant_override("margin_top",    12)
+		detail_margin.add_theme_constant_override("margin_top",    10)
 		detail_margin.add_theme_constant_override("margin_bottom", 12)
 
-	# Add Target Category Label if missing
+	# Rework tower detail VBox content
 	var detail_vbox := right_sidebar.get_node_or_null("MarginContainer/VBoxContainer")
 	if detail_vbox:
-		detail_vbox.add_theme_constant_override("separation", 4)
+		detail_vbox.add_theme_constant_override("separation", 5)
+
+		# Hide legacy scene label (replaced by code-added tower_target_label)
+		var old_tgt_lbl := detail_vbox.get_node_or_null("TowerTargetModeLabel")
+		if old_tgt_lbl is Control:
+			old_tgt_lbl.hide()
+			old_tgt_lbl.custom_minimum_size = Vector2.ZERO
+
 		tower_target_label = Label.new()
 		tower_target_label.name = "TowerTargetLabel"
 		tower_target_label.add_theme_font_size_override("font_size", 12)
@@ -3350,20 +3414,63 @@ func _setup_right_sidebar_layout() -> void:
 		detail_vbox.add_child(tower_special_effect_label)
 		detail_vbox.move_child(tower_special_effect_label, tower_slow_label.get_index() + 1)
 
-	# 2. No Selection Panel — compact premium card
+		# "TOWER" eyebrow header at very top
+		var td_eyebrow := _make_right_panel_eyebrow("TOWER", NeonStyle.CYAN)
+		detail_vbox.add_child(td_eyebrow)
+		detail_vbox.move_child(td_eyebrow, 0)
+
+		# "UPGRADE" eyebrow before target mode option (controls section)
+		var upg_eyebrow := _make_right_panel_eyebrow("UPGRADE", NeonStyle.INK_3)
+		detail_vbox.add_child(upg_eyebrow)
+		detail_vbox.move_child(upg_eyebrow, target_mode_option_button.get_index())
+
+		# Hide redundant cost label (info is now in the upgrade button itself)
+		tower_upgrade_cost_label.hide()
+		tower_upgrade_cost_label.custom_minimum_size = Vector2.ZERO
+
+		# Upgrade button — composite: text label + CreditCostDisplayControl
+		upgrade_tower_button.text = ""
+		upgrade_tower_button.clip_text = false
+		var upg_row := HBoxContainer.new()
+		upg_row.set_anchors_preset(Control.PRESET_FULL_RECT)
+		upg_row.offset_left = 10
+		upg_row.offset_right = -8
+		upg_row.add_theme_constant_override("separation", 6)
+		upg_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		upgrade_tower_button.add_child(upg_row)
+
+		_upgrade_text_label = Label.new()
+		_upgrade_text_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		_upgrade_text_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		_upgrade_text_label.add_theme_font_size_override("font_size", 12)
+		_upgrade_text_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		upg_row.add_child(_upgrade_text_label)
+
+		_upgrade_cost_display = CreditCostDisplayControl.new()
+		_upgrade_cost_display.custom_minimum_size = Vector2(58, 34)
+		_upgrade_cost_display.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		_upgrade_cost_display.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		upg_row.add_child(_upgrade_cost_display)
+
+	# 2. No Selection Panel — compact premium card with left rail
 	no_selection_panel = PanelContainer.new()
 	no_selection_panel.name = "NoSelectionPanel"
 	no_selection_panel.custom_minimum_size = Vector2(0, 84)
 	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
-	var ns_style := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
+	var ns_style := StyleBoxFlat.new()
+	ns_style.bg_color = NeonStyle.BG_1
+	ns_style.border_color = NeonStyle.LINE_2
+	ns_style.set_border_width_all(1)
+	ns_style.border_width_left = 3
+	ns_style.set_corner_radius_all(0)
 	ns_style.content_margin_left   = 14
 	ns_style.content_margin_right  = 14
 	ns_style.content_margin_top    = 16
 	ns_style.content_margin_bottom = 16
 	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
 	container.add_child(no_selection_panel)
-	container.move_child(no_selection_panel, 1)
+	container.move_child(no_selection_panel, right_sidebar.get_index() + 1)
 
 	var ns_vbox := VBoxContainer.new()
 	ns_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
