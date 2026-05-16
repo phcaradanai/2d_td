@@ -235,7 +235,7 @@ var tower_shop_list: VBoxContainer = null
 var dynamic_tower_buttons: Dictionary = {} # id: Button
 var active_build_tower_id: String = ""
 var build_drawer_header_button: HUDDrawerHeaderControl = null
-var build_drawer_expanded: bool = false
+var build_drawer_expanded: bool = true
 var build_towers_header_block: VBoxContainer = null
 var build_panel_bottom_separator: ColorRect = null
 var element_mastery_grid: GridContainer = null
@@ -408,7 +408,7 @@ func _ready() -> void:
 	sawblade_tower_button.pressed.connect(func(): _on_tower_btn_pressed("sawblade_tower", sawblade_tower_button))
 	cancel_build_button.pressed.connect(func():
 		cancel_build_requested.emit()
-		_set_build_towers_drawer_expanded(false))
+		_set_build_towers_drawer_expanded(true))
 	upgrade_tower_button.pressed.connect(func(): upgrade_tower_requested.emit())
 	deselect_tower_button.pressed.connect(func(): deselect_tower_requested.emit())
 	
@@ -574,24 +574,32 @@ func _ensure_left_drawer_headers(container: VBoxContainer) -> void:
 	_apply_left_drawer_layout()
 
 func _position_unified_left_drawer_tabs(container: VBoxContainer) -> void:
+	# Accordion-style left menu:
+	# [BUILD TOWERS header]
+	# [Build body when active]
+	# [WAVE INTEL header]
+	# [Wave Intel body when active]
+	# [DAMAGE STATS header]
+	# [Damage Stats body when active]
+	#
+	# Keep the expanded content directly under its matching header so the panel
+	# reads as one continuous menu instead of a row of unrelated buttons.
+	if _wi_wrapper:
+		# Wave Intel header + body should remain a single wrapper. Older layout code
+		# may have moved the body into the root container, so repair that here.
+		if wave_intel_panel and wave_intel_panel.get_parent() != _wi_wrapper:
+			var old_parent := wave_intel_panel.get_parent()
+			if old_parent:
+				old_parent.remove_child(wave_intel_panel)
+			_wi_wrapper.add_child(wave_intel_panel)
+			if _wi_tab_panel and _wi_tab_panel.get_parent() == _wi_wrapper:
+				_wi_wrapper.move_child(wave_intel_panel, _wi_tab_panel.get_index() + 1)
+
 	var index := 0
+
+	# 1) Build Towers header + body
 	if build_drawer_header_button and build_drawer_header_button.get_parent() == container:
 		container.move_child(build_drawer_header_button, index)
-		index += 1
-	if _td_header_panel and _td_header_panel.get_parent() == container:
-		container.move_child(_td_header_panel, index)
-		index += 1
-	if right_sidebar and right_sidebar.get_parent() == container:
-		container.move_child(right_sidebar, index)
-		index += 1
-	if no_selection_panel and no_selection_panel.get_parent() == container:
-		container.move_child(no_selection_panel, index)
-		index += 1
-	if _wi_wrapper and _wi_wrapper.get_parent() == container:
-		container.move_child(_wi_wrapper, index)
-		index += 1
-	if damage_stats_header_button and damage_stats_header_button.get_parent() == container:
-		container.move_child(damage_stats_header_button, index)
 		index += 1
 	if build_towers_header_block and build_towers_header_block.get_parent() == container:
 		container.move_child(build_towers_header_block, index)
@@ -605,43 +613,82 @@ func _position_unified_left_drawer_tabs(container: VBoxContainer) -> void:
 	if build_status_label and build_status_label.get_parent() == container:
 		container.move_child(build_status_label, index)
 		index += 1
+
+	# 2) Wave Intel header + body wrapper
+	if _wi_wrapper and _wi_wrapper.get_parent() == container:
+		container.move_child(_wi_wrapper, index)
+		index += 1
+
+	# 3) Damage Stats header + body
+	if damage_stats_header_button and damage_stats_header_button.get_parent() == container:
+		container.move_child(damage_stats_header_button, index)
+		index += 1
 	if damage_stats_panel and damage_stats_panel.get_parent() == container:
 		container.move_child(damage_stats_panel, index)
 
+func _cancel_active_build_for_info_menu() -> void:
+	# Switching from the build menu to an information menu should leave
+	# tower placement mode. Otherwise Damage Stats / Wave Intel still feel
+	# like they are stuck inside Build Mode.
+	if active_build_tower_id.is_empty():
+		return
+	cancel_build_requested.emit()
+	_set_active_build_row("")
+
+
 func _toggle_build_towers_drawer() -> void:
-	_set_build_towers_drawer_expanded(not build_drawer_expanded)
+	# Build Towers is the primary menu. It does not collapse the whole left
+	# panel; it switches the active menu body back to the tower shop.
+	_set_build_towers_drawer_expanded(true)
 
 func _set_build_towers_drawer_expanded(expanded: bool) -> void:
-	if expanded:
-		_set_damage_stats_expanded(false)
-		_set_tower_detail_collapsed(true)
-		_set_wave_intel_collapsed(true)
+	# The left panel is now a persistent menu system. Build Towers is one menu
+	# body; Wave Intel and Damage Stats are alternate menu bodies.
 	build_drawer_expanded = expanded
+	if build_drawer_expanded:
+		wave_intel_collapsed = true
+		damage_stats_expanded = false
+	if not build_drawer_expanded and wave_intel_collapsed and not damage_stats_expanded:
+		# Never leave the drawer with no active body.
+		build_drawer_expanded = true
+
 	if build_drawer_header_button:
-		build_drawer_header_button.set_expanded(expanded)
-	if not expanded:
-		_hide_hover_card()
+		build_drawer_header_button.set_expanded(build_drawer_expanded)
+	_hide_hover_card()
 	_apply_build_drawer_visibility()
 	_apply_left_drawer_layout()
 
 func _collapse_left_drawers() -> void:
-	_set_build_towers_drawer_expanded(false)
-	_set_tower_detail_collapsed(true)
-	_set_wave_intel_collapsed(true)
-	_set_damage_stats_expanded(false)
+	# Do not collapse the left panel anymore. It is a persistent command menu.
+	# Keep the current active menu; if no menu body is active, return to Build.
+	if wave_intel_collapsed and not damage_stats_expanded:
+		_set_build_towers_drawer_expanded(true)
+	else:
+		_apply_build_drawer_visibility()
+		_apply_left_drawer_layout()
 
 func _apply_build_drawer_visibility() -> void:
-	var tower_detail_expanded := _td_header_panel != null and not tower_detail_collapsed
+	# Tower Detail lives only in the floating tower card. The left drawer is a
+	# menu: Build Towers, Wave Intel, or Damage Stats. Only one body is visible.
+	tower_detail_collapsed = true
+
+	if not build_drawer_expanded and wave_intel_collapsed and not damage_stats_expanded:
+		build_drawer_expanded = true
+
 	var wave_intel_expanded := not wave_intel_collapsed
-	var drawer_open := build_drawer_expanded or damage_stats_expanded or tower_detail_expanded or wave_intel_expanded
+
 	if build_drawer_header_button:
-		build_drawer_header_button.set_tab_mode(not drawer_open)
+		build_drawer_header_button.set_tab_mode(false)
+		build_drawer_header_button.set_expanded(build_drawer_expanded)
 	if _td_header_panel:
-		_td_header_panel.set_tab_mode(not drawer_open)
+		_td_header_panel.visible = false
 	if _wi_tab_panel:
-		_wi_tab_panel.set_tab_mode(not drawer_open)
+		_wi_tab_panel.set_tab_mode(false)
+		_wi_tab_panel.set_expanded(wave_intel_expanded)
 	if damage_stats_header_button:
-		damage_stats_header_button.set_tab_mode(not drawer_open)
+		damage_stats_header_button.set_tab_mode(false)
+		damage_stats_header_button.set_expanded(damage_stats_expanded)
+
 	if build_towers_header_block:
 		build_towers_header_block.visible = build_drawer_expanded
 	if tower_shop_scroll:
@@ -652,56 +699,57 @@ func _apply_build_drawer_visibility() -> void:
 		build_status_label.visible = build_drawer_expanded and not active_build_tower_id.is_empty()
 	if cancel_build_button:
 		cancel_build_button.visible = false
-	if _td_header_panel:
-		_td_header_panel.visible = true
+
+	# Hide legacy Tower Detail drawer/body. The floating card is the single
+	# selected-tower action UI.
 	if right_sidebar:
-		right_sidebar.visible = tower_detail_expanded and tower_detail_has_selection
+		right_sidebar.visible = false
 	if no_selection_panel:
-		no_selection_panel.visible = tower_detail_expanded and not tower_detail_has_selection
+		no_selection_panel.visible = false
+
 	if _wi_wrapper:
 		_wi_wrapper.visible = true
+		_wi_wrapper.size_flags_vertical = Control.SIZE_EXPAND_FILL if wave_intel_expanded else Control.SIZE_SHRINK_BEGIN
 	if wave_intel_panel:
 		wave_intel_panel.visible = wave_intel_expanded
+		wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL if wave_intel_expanded else Control.SIZE_SHRINK_BEGIN
+		# Let the active body use the remaining drawer height instead of locking it
+		# to a small card that immediately shows an inner scrollbar.
+		wave_intel_panel.custom_minimum_size.y = 0.0
 	if damage_stats_panel:
 		damage_stats_panel.visible = damage_stats_expanded
+		damage_stats_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL if damage_stats_expanded else Control.SIZE_SHRINK_BEGIN
+		damage_stats_panel.custom_minimum_size.y = 0.0
 
 func _apply_left_drawer_layout() -> void:
 	if left_sidebar == null:
 		return
 
-	var drawer_open := build_drawer_expanded or damage_stats_expanded or (_td_header_panel != null and not tower_detail_collapsed) or not wave_intel_collapsed
+	# The left side is now the always-open primary command drawer.
+	var drawer_open := true
 
 	left_sidebar.visible = true
 	left_sidebar.clip_contents = false
-
-	if drawer_open:
-		left_sidebar.custom_minimum_size.x = LEFT_DRAWER_WIDTH
-		left_sidebar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		left_sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
-		left_sidebar.mouse_filter = Control.MOUSE_FILTER_STOP
-	else:
-		# Collapsed mode is a stable command rail, not a disappearing panel.
-		# Keep this width/style consistent before and after expand/collapse.
-		left_sidebar.custom_minimum_size.x = LEFT_TAB_RAIL_WIDTH
-		left_sidebar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
-		left_sidebar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-		left_sidebar.mouse_filter = Control.MOUSE_FILTER_PASS
+	left_sidebar.custom_minimum_size.x = LEFT_DRAWER_WIDTH
+	left_sidebar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	left_sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	left_sidebar.mouse_filter = Control.MOUSE_FILTER_STOP
 
 	var margin := left_sidebar.get_node_or_null("MarginContainer")
 	if margin:
-		var m := 8 
+		var m := 8
 		margin.add_theme_constant_override("margin_left", m)
 		margin.add_theme_constant_override("margin_right", m)
 		margin.add_theme_constant_override("margin_top", m)
 		margin.add_theme_constant_override("margin_bottom", m)
 
-		margin.size_flags_vertical = Control.SIZE_EXPAND_FILL if drawer_open else Control.SIZE_SHRINK_BEGIN
+		margin.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		margin.mouse_filter = Control.MOUSE_FILTER_PASS
 
 		var vbox := margin.get_node_or_null("VBoxContainer")
 		if vbox:
-			vbox.add_theme_constant_override("separation", 10 if drawer_open else 8)
-			vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL if drawer_open else Control.SIZE_SHRINK_BEGIN
+			vbox.add_theme_constant_override("separation", 10)
+			vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL
 			vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 			_position_unified_left_drawer_tabs(vbox)
 
@@ -749,7 +797,7 @@ func _ensure_damage_stats_panel() -> void:
 	damage_stats_panel = PanelContainer.new()
 	damage_stats_panel.name = "DamageStatsPanel"
 	damage_stats_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	damage_stats_panel.custom_minimum_size = Vector2(0.0, 218.0)
+	damage_stats_panel.custom_minimum_size = Vector2(0.0, 0.0)
 	damage_stats_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	damage_stats_panel.visible = false
 
@@ -799,8 +847,9 @@ func _ensure_damage_stats_panel() -> void:
 	damage_stats_details.bbcode_enabled = false
 	damage_stats_details.fit_content = false
 	damage_stats_details.scroll_active = true
-	damage_stats_details.custom_minimum_size = Vector2(0.0, 164.0)
+	damage_stats_details.custom_minimum_size = Vector2(0.0, 0.0)
 	damage_stats_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	damage_stats_details.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	damage_stats_details.add_theme_font_size_override("normal_font_size", 11)
 	damage_stats_details.add_theme_color_override("default_color", NeonStyle.INK_2)
 	box.add_child(damage_stats_details)
@@ -811,15 +860,22 @@ func _toggle_damage_stats_panel() -> void:
 	_set_damage_stats_expanded(not damage_stats_expanded)
 
 func _set_damage_stats_expanded(expanded: bool) -> void:
-	if expanded:
-		_set_build_towers_drawer_expanded(false)
-		_set_tower_detail_collapsed(true)
-		_set_wave_intel_collapsed(true)
 	damage_stats_expanded = expanded
+	if damage_stats_expanded:
+		_cancel_active_build_for_info_menu()
+		build_drawer_expanded = false
+		wave_intel_collapsed = true
+	else:
+		if wave_intel_collapsed:
+			build_drawer_expanded = true
+
 	if damage_stats_header_button:
-		damage_stats_header_button.set_expanded(expanded)
+		damage_stats_header_button.set_expanded(damage_stats_expanded)
+	if _wi_tab_panel:
+		_wi_tab_panel.set_expanded(not wave_intel_collapsed)
 	if damage_stats_panel:
-		damage_stats_panel.visible = expanded
+		damage_stats_panel.visible = damage_stats_expanded
+
 	_apply_build_drawer_visibility()
 	_apply_left_drawer_layout()
 	_refresh_damage_stats_panel()
@@ -3446,9 +3502,9 @@ func _hide_hover_card() -> void:
 func show_tower_info_panel() -> void:
 	tower_detail_has_selection = true
 	if _td_header_panel:
-		_td_header_panel.visible = true
-	# Tower Detail body is intentionally kept collapsed; the floating card is
-	# the primary detail UI.  Only the tab header is shown in the left drawer.
+		_td_header_panel.visible = false
+	if right_sidebar:
+		right_sidebar.visible = false
 	if no_selection_panel:
 		no_selection_panel.visible = false
 	_refresh_right_info_column_visibility()
@@ -3456,9 +3512,11 @@ func show_tower_info_panel() -> void:
 func hide_tower_info_panel() -> void:
 	tower_detail_has_selection = false
 	if _td_header_panel:
-		_td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, not tower_detail_collapsed, false)
-		_td_header_panel.set_subtitle("No selection")
-	set_panel_active(right_sidebar, false)
+		_td_header_panel.visible = false
+	if right_sidebar:
+		right_sidebar.visible = false
+	if no_selection_panel:
+		no_selection_panel.visible = false
 	_refresh_right_info_column_visibility()
 
 func enter_end_game_ui_state() -> void:
@@ -3643,23 +3701,21 @@ func _register_tower_detail_content(node: Control) -> void:
 	_td_content_nodes.append(node)
 
 func _set_tower_detail_collapsed(collapsed: bool) -> void:
-	if not collapsed:
-		_set_build_towers_drawer_expanded(false)
-		_set_wave_intel_collapsed(true)
-		_set_damage_stats_expanded(false)
-	tower_detail_collapsed = collapsed
+	# Legacy drawer Tower Detail is disabled. Selected tower actions now live
+	# only in the floating tower card.
+	tower_detail_collapsed = true
 	for node in _td_content_nodes:
 		if node != null and is_instance_valid(node):
-			var can_show := bool(node.get_meta("td_visible_when_expanded", true))
-			node.visible = (not collapsed) and can_show
+			node.visible = false
 	if _td_chevron_label:
-		_td_chevron_label.text = "›" if collapsed else "⌄"
+		_td_chevron_label.text = "›"
 	if _td_header_panel:
-		_td_header_panel.set_expanded(not collapsed)
+		_td_header_panel.visible = false
+		_td_header_panel.set_expanded(false)
 	if right_sidebar:
-		right_sidebar.visible = not collapsed and tower_detail_has_selection
+		right_sidebar.visible = false
 	if no_selection_panel:
-		no_selection_panel.visible = not collapsed and not tower_detail_has_selection
+		no_selection_panel.visible = false
 	_apply_build_drawer_visibility()
 	_apply_left_drawer_layout()
 
@@ -3727,6 +3783,14 @@ func _setup_right_sidebar_layout() -> void:
 	if container == null: return
 	_ensure_left_drawer_headers(container)
 
+	# Tower Detail no longer has a left drawer button/body. Selected tower
+	# actions live in the floating card only. Clean up any legacy header left
+	# from previous UI construction.
+	var legacy_td_header := container.get_node_or_null("TowerDetailDrawerHeader")
+	if legacy_td_header:
+		legacy_td_header.queue_free()
+	_td_header_panel = null
+
 	if old_right_container:
 		old_right_container.custom_minimum_size.x = 0
 		old_right_container.visible = false
@@ -3747,15 +3811,15 @@ func _setup_right_sidebar_layout() -> void:
 
 	right_sidebar.add_theme_stylebox_override("panel", _make_right_drawer_body_style(NeonStyle.CYAN))
 
-	_td_header_panel = CommandHeaderButtonControl.new()
-	_td_header_panel.name = "TowerDetailDrawerHeader"
-	_td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, false, false)
-	_td_header_panel.set_subtitle("No selection")
-	_td_header_panel.visible = false
-	# No expand toggle — Tower Detail body lives in the floating card.
-	# The header is a status-only summary tab in the left drawer.
-	container.add_child(_td_header_panel)
-	container.move_child(_td_header_panel, right_sidebar.get_index())
+	# _td_header_panel = CommandHeaderButtonControl.new()
+	# _td_header_panel.name = "TowerDetailDrawerHeader"
+	# _td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, false, false)
+	# _td_header_panel.set_subtitle("No selection")
+	# _td_header_panel.visible = false
+	# # No expand toggle — Tower Detail body lives in the floating card.
+	# # The header is a status-only summary tab in the left drawer.
+	# container.add_child(_td_header_panel)
+	# container.move_child(_td_header_panel, right_sidebar.get_index())
 
 	# Margins
 	var detail_margin := right_sidebar.get_node_or_null("MarginContainer")
@@ -4009,7 +4073,7 @@ func _setup_right_sidebar_layout() -> void:
 
 	wave_intel_panel = PanelContainer.new()
 	wave_intel_panel.name = "WaveIntelPanel"
-	wave_intel_panel.custom_minimum_size = Vector2(0, 260)
+	wave_intel_panel.custom_minimum_size = Vector2(0, 0)
 	wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_PASS
 	wave_intel_panel.visible = false
@@ -4120,21 +4184,28 @@ func _toggle_wave_intel() -> void:
 	_set_wave_intel_collapsed(not wave_intel_collapsed)
 
 func _set_wave_intel_collapsed(collapsed: bool) -> void:
-	if not collapsed:
-		_set_build_towers_drawer_expanded(false)
-		_set_tower_detail_collapsed(true)
-		_set_damage_stats_expanded(false)
 	wave_intel_collapsed = collapsed
+	if not wave_intel_collapsed:
+		_cancel_active_build_for_info_menu()
+		build_drawer_expanded = false
+		damage_stats_expanded = false
+	else:
+		if not damage_stats_expanded:
+			build_drawer_expanded = true
+
 	if _wi_header_btn:
 		_wi_header_btn.set_expanded(not wave_intel_collapsed)
 	if _wi_chevron_label:
 		_wi_chevron_label.text = "›" if wave_intel_collapsed else "⌄"
 	if _wi_tab_panel:
 		_wi_tab_panel.set_expanded(not wave_intel_collapsed)
+	if damage_stats_header_button:
+		damage_stats_header_button.set_expanded(damage_stats_expanded)
 	if wave_intel_panel:
 		wave_intel_panel.visible = not wave_intel_collapsed
 	if _wi_wrapper:
-		_wi_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if wave_intel_collapsed else Control.SIZE_EXPAND_FILL
+		_wi_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+
 	_apply_build_drawer_visibility()
 	_apply_left_drawer_layout()
 
@@ -4308,18 +4379,18 @@ func _refresh_right_info_column_visibility() -> void:
 	if right_sidebar_container:
 		right_sidebar_container.custom_minimum_size.x = 0
 		right_sidebar_container.visible = false
+		right_sidebar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _td_header_panel:
-		_td_header_panel.visible = true
+		_td_header_panel.visible = false
 	if right_sidebar:
-		right_sidebar.visible = not tower_detail_collapsed and tower_detail_has_selection
+		right_sidebar.visible = false
 	if no_selection_panel:
-		no_selection_panel.visible = not tower_detail_collapsed and not tower_detail_has_selection
+		no_selection_panel.visible = false
 	if _wi_wrapper:
 		_wi_wrapper.visible = true
 	if wave_intel_panel:
 		wave_intel_panel.visible = not wave_intel_collapsed
 	_apply_build_drawer_visibility()
-
 func _format_wave_preview_summary(preview: Dictionary) -> String:
 	var lane_info = preview.get("lane_info", {})
 	var formation_lines := _format_wave_formation_lines(preview)
