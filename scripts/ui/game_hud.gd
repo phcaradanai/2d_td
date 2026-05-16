@@ -1943,14 +1943,15 @@ func _em_lbl(text: String, sz: int, col: Color) -> Label:
 
 func _em_sec_hdr(text: String) -> HBoxContainer:
 	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 0)
 	for _i in range(2):
 		var bar := Panel.new()
-		bar.custom_minimum_size = Vector2(16, 2)
-		bar.add_theme_stylebox_override("panel", _em_sb(Color(0.25, 0.55, 0.9, 0.45)))
+		bar.custom_minimum_size = Vector2(16, 1)
+		bar.add_theme_stylebox_override("panel", _em_sb(Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.5)))
 		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		row.add_child(bar)
 		if _i == 0:
-			var lbl := _em_lbl("  %s  " % text, 11, Color(0.45, 0.78, 1.0, 0.85))
+			var lbl := _em_lbl("  %s  " % text, 10, NeonStyle.INK_3)
 			lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 			row.add_child(lbl)
 	return row
@@ -1958,11 +1959,17 @@ func _em_sec_hdr(text: String) -> HBoxContainer:
 func _em_chip(text: String, col: Color) -> PanelContainer:
 	var chip := PanelContainer.new()
 	chip.add_theme_stylebox_override("panel", _em_sb(Color(col.r, col.g, col.b, 0.18), Color(col.r, col.g, col.b, 0.65), 1.0, 4.0))
+	var mg := MarginContainer.new()
+	mg.add_theme_constant_override("margin_left",   6)
+	mg.add_theme_constant_override("margin_right",  6)
+	mg.add_theme_constant_override("margin_top",    2)
+	mg.add_theme_constant_override("margin_bottom", 2)
+	chip.add_child(mg)
 	var lbl := Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", 11)
 	lbl.add_theme_color_override("font_color", col.lightened(0.25))
-	chip.add_child(lbl)
+	mg.add_child(lbl)
 	return chip
 
 func _ensure_element_modal() -> void:
@@ -1998,11 +2005,11 @@ func _ensure_element_modal() -> void:
 
 	var outer := MarginContainer.new()
 	for s in ["left","right","top","bottom"]:
-		outer.add_theme_constant_override("margin_"+s, 22)
+		outer.add_theme_constant_override("margin_"+s, 26)
 	_em_panel.add_child(outer)
 
 	var main_v := VBoxContainer.new()
-	main_v.add_theme_constant_override("separation", 12)
+	main_v.add_theme_constant_override("separation", 14)
 	outer.add_child(main_v)
 
 	# Title row
@@ -2048,25 +2055,22 @@ func _ensure_element_modal() -> void:
 
 	# ── Left column (element list) ──
 	var left_scroll := ScrollContainer.new()
-	left_scroll.custom_minimum_size.x = 252
+	left_scroll.custom_minimum_size.x = 272
 	left_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	left_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	cols.add_child(left_scroll)
 
 	var left_v := VBoxContainer.new()
 	left_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	left_v.add_theme_constant_override("separation", 5)
+	left_v.add_theme_constant_override("separation", 6)
 	left_scroll.add_child(left_v)
 
-	var left_hdr := _em_lbl("ELEMENTS", 11, NeonStyle.TEXT_DIM)
+	var left_hdr := _em_lbl("ELEMENTS", 10, NeonStyle.INK_3)
 	left_hdr.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	left_v.add_child(left_hdr)
-	var left_gap := Control.new()
-	left_gap.custom_minimum_size.y = 2
-	left_v.add_child(left_gap)
 
 	_em_card_container = VBoxContainer.new()
-	_em_card_container.add_theme_constant_override("separation", 5)
+	_em_card_container.add_theme_constant_override("separation", 6)
 	_em_card_container.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	left_v.add_child(_em_card_container)
 
@@ -2086,21 +2090,21 @@ func _ensure_element_modal() -> void:
 	_em_center_col = VBoxContainer.new()
 	_em_center_col.name = "EmCenterCol"
 	_em_center_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	_em_center_col.add_theme_constant_override("separation", 10)
+	_em_center_col.add_theme_constant_override("separation", 12)
 	ctr_scroll.add_child(_em_center_col)
 
 	# ── VSep ──
 	var vs2 := VSeparator.new()
-	vs2.add_theme_color_override("color", Color(0.2, 0.48, 0.82, 0.3))
-	vs2.custom_minimum_size.x = 14
+	vs2.add_theme_color_override("color", Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.45))
+	vs2.custom_minimum_size.x = 16
 	cols.add_child(vs2)
 
 	# ── Right column (summary) ──
 	_em_right_col = VBoxContainer.new()
 	_em_right_col.name = "EmRightCol"
-	_em_right_col.custom_minimum_size.x = 276
+	_em_right_col.custom_minimum_size.x = 292
 	_em_right_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_em_right_col.add_theme_constant_override("separation", 10)
+	_em_right_col.add_theme_constant_override("separation", 12)
 	cols.add_child(_em_right_col)
 
 # Rebuild left-column element cards from current _em_data.
@@ -2129,12 +2133,12 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
 	var card := PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 58)
+	card.custom_minimum_size = Vector2(0, 66)
 	card.size_flags_horizontal = Control.SIZE_FILL
 
-	var s_normal := _em_sb(Color(0.07,0.09,0.14),   Color(0.2,0.32,0.52,0.5),  1.5, 6.0)
-	var s_hover  := _em_sb(Color(0.10,0.13,0.20),   Color(el_col.r,el_col.g,el_col.b,0.7), 1.5, 6.0)
-	var s_lock   := _em_sb(Color(0.05,0.06,0.09,0.7),Color(0.15,0.22,0.32,0.3), 1.0, 6.0)
+	var s_normal := _em_sb(NeonStyle.BG_1,                         Color(NeonStyle.LINE_2.r, NeonStyle.LINE_2.g, NeonStyle.LINE_2.b, 0.60), 1.0, 6.0)
+	var s_hover  := _em_sb(NeonStyle.BG_2,                         Color(el_col.r, el_col.g, el_col.b, 0.70),                               1.5, 6.0)
+	var s_lock   := _em_sb(Color(NeonStyle.BG_0.r, NeonStyle.BG_0.g, NeonStyle.BG_0.b, 0.70), Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.25), 1.0, 6.0)
 	card.add_theme_stylebox_override("panel", s_lock if (is_max or is_lock) else s_normal)
 	card.set_meta("s_normal", s_normal)
 	card.set_meta("s_hover",  s_hover)
@@ -2147,55 +2151,50 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 
 	var mg := MarginContainer.new()
 	for sd in ["left","right","top","bottom"]:
-		mg.add_theme_constant_override("margin_"+sd, 8)
+		mg.add_theme_constant_override("margin_"+sd, 10)
 	card.add_child(mg)
 
 	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 8)
+	row.add_theme_constant_override("separation", 10)
 	mg.add_child(row)
 
-	# Icon badge — [DEPLOY-FIX] drawn icon replaces Unicode Label glyph.
-	var icon_p := PanelContainer.new()
-	icon_p.custom_minimum_size = Vector2(36, 36)
-	var ic_dim := Color(el_col.r, el_col.g, el_col.b, 0.2 if (is_max or is_lock) else 0.32)
-	var ic_brd := Color(el_col.r, el_col.g, el_col.b, 0.45 if not (is_max or is_lock) else 0.2)
-	icon_p.add_theme_stylebox_override("panel", _em_sb(ic_dim, ic_brd, 1.5, 18.0))
-	row.add_child(icon_p)
-	var icon_draw := ElementIconDraw.new()
-	icon_draw.element_id = element_id
-	icon_draw.icon_alpha = 0.55 if (is_max or is_lock) else 1.0
-	icon_draw.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	icon_p.add_child(icon_draw)
+	# Icon — same ElementIcon (octagon token) as the left sidebar element mastery chips.
+	var icon_ctrl := ElementIconControl.new()
+	icon_ctrl.custom_minimum_size = Vector2(40, 40)
+	icon_ctrl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon_ctrl.configure([element_id], not (is_max or is_lock))
+	row.add_child(icon_ctrl)
 
 	# Text
 	var txt_v := VBoxContainer.new()
 	txt_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	txt_v.add_theme_constant_override("separation", 2)
+	txt_v.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
+	txt_v.add_theme_constant_override("separation", 3)
 	row.add_child(txt_v)
 
 	var name_l := Label.new()
 	name_l.text = _element_label(element_id) if element_id != "__interest__" else "Interest Bonus"
-	name_l.add_theme_font_size_override("font_size", 13)
-	name_l.add_theme_color_override("font_color", el_col.lightened(0.18) if not (is_max or is_lock) else Color(0.38,0.48,0.58))
+	name_l.add_theme_font_size_override("font_size", 14)
+	name_l.add_theme_color_override("font_color", el_col.lightened(0.18) if not (is_max or is_lock) else NeonStyle.INK_3)
 	txt_v.add_child(name_l)
 
 	var sub_l := Label.new()
-	sub_l.add_theme_font_size_override("font_size", 11)
+	sub_l.add_theme_font_size_override("font_size", 12)
 	if element_id == "__interest__":
 		var ir : String = _em_data.get("interest_rate","2%")
 		var nr : String = _em_data.get("next_interest_rate","3%")
 		if is_lock:
 			sub_l.text = "Max upgrades reached"
-			sub_l.add_theme_color_override("font_color", Color(0.45,0.45,0.45))
+			sub_l.add_theme_color_override("font_color", NeonStyle.INK_3)
 		else:
 			sub_l.text = "%s  →  %s" % [ir, nr]
-			sub_l.add_theme_color_override("font_color", Color(0.9,0.72,0.22))
+			sub_l.add_theme_color_override("font_color", NeonStyle.WARN)
 	elif is_max:
 		sub_l.text = "Lv.3  ●  MAX"
-		sub_l.add_theme_color_override("font_color", Color(0.45,0.45,0.45))
+		sub_l.add_theme_color_override("font_color", NeonStyle.INK_3)
 	else:
 		sub_l.text = "Lv.%d  →  Lv.%d" % [cur_lv, cur_lv+1]
-		sub_l.add_theme_color_override("font_color", Color(0.5,0.74,0.9))
+		sub_l.add_theme_color_override("font_color", NeonStyle.CYAN_2)
 	txt_v.add_child(sub_l)
 
 	# Hover & click (only for selectable cards)
@@ -2224,7 +2223,9 @@ func _em_select(element_id: String) -> void:
 			continue
 		if eid == element_id:
 			var ec: Color = card.get_meta("el_col", Color.WHITE)
-			card.add_theme_stylebox_override("panel", _em_sb(Color(ec.r,ec.g,ec.b,0.22), ec, 2.0, 6.0))
+			var sel_sb := _em_sb(Color(ec.r,ec.g,ec.b,0.22), ec, 2.0, 6.0)
+			sel_sb.border_width_left = 3
+			card.add_theme_stylebox_override("panel", sel_sb)
 		else:
 			card.add_theme_stylebox_override("panel", card.get_meta("s_normal"))
 	_em_rebuild_center(element_id)
@@ -2246,19 +2247,17 @@ func _em_rebuild_center(element_id: String) -> void:
 	hdr.add_theme_constant_override("separation", 14)
 	_em_center_col.add_child(hdr)
 
-	var big_icon := PanelContainer.new()
-	big_icon.custom_minimum_size = Vector2(70, 70)
-	big_icon.add_theme_stylebox_override("panel", _em_sb(Color(el_col.r,el_col.g,el_col.b,0.18), el_col.darkened(0.28), 2.0, 35.0))
-	hdr.add_child(big_icon)
-	# [DEPLOY-FIX] Drawn icon replaces Unicode Label glyph for the detail view header.
-	var big_icon_draw := ElementIconDraw.new()
-	big_icon_draw.element_id = element_id if element_id != "__interest__" else "__interest__"
-	big_icon_draw.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	big_icon.add_child(big_icon_draw)
+	# Large icon — same ElementIcon (octagon token) as the left sidebar, just bigger.
+	var big_icon_ctrl := ElementIconControl.new()
+	big_icon_ctrl.custom_minimum_size = Vector2(76, 76)
+	big_icon_ctrl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	big_icon_ctrl.configure([element_id], true)
+	hdr.add_child(big_icon_ctrl)
 
 	var name_col := VBoxContainer.new()
 	name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_col.add_theme_constant_override("separation", 4)
+	name_col.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
+	name_col.add_theme_constant_override("separation", 6)
 	hdr.add_child(name_col)
 
 	var en := _element_label(element_id) if element_id != "__interest__" else "Interest Bonus"
@@ -2531,8 +2530,28 @@ func _em_rebuild_right(element_id: String) -> void:
 	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
 	_em_right_col.add_child(_em_sec_hdr("YOU WILL UNLOCK"))
+
+	# Element identity row at the top of the right column.
+	var el_id_row := HBoxContainer.new()
+	el_id_row.add_theme_constant_override("separation", 10)
+	_em_right_col.add_child(el_id_row)
+
+	var el_id_icon := ElementIconControl.new()
+	el_id_icon.custom_minimum_size = Vector2(34, 34)
+	el_id_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	el_id_icon.configure([element_id], not (is_max or is_lock))
+	el_id_row.add_child(el_id_icon)
+
+	var el_id_lbl := _em_lbl(
+		_element_label(element_id) if element_id != "__interest__" else "Interest Bonus",
+		16, el_col
+	)
+	el_id_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	el_id_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	el_id_row.add_child(el_id_lbl)
+
 	var get_v := VBoxContainer.new()
-	get_v.add_theme_constant_override("separation", 5)
+	get_v.add_theme_constant_override("separation", 6)
 	_em_right_col.add_child(get_v)
 	var items: Array[String]
 	if element_id == "__interest__":
