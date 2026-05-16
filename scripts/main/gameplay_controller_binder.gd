@@ -14,9 +14,9 @@ const STATE_WAVE_COMPLETE: int = 4
 const STATE_PAUSED: int = 5
 const INTEREST_PICK_ID: String = "__interest__"
 const DEFAULT_INTEREST_UPGRADE_STEP: float = 0.01
-const TOP_BAR_HEIGHT: float = 60.0
-const LEFT_SIDEBAR_WIDTH: float = 200.0
-const RIGHT_SIDEBAR_WIDTH: float = 260.0
+const TOP_BAR_HEIGHT: float = 68.0      # matches _apply_terminal_hud_skin top bar
+const LEFT_SIDEBAR_WIDTH: float = 310.0  # matches LEFT_DRAWER_WIDTH in game_hud.gd
+const RIGHT_SIDEBAR_WIDTH: float = 0.0   # right panel retired; float card is overlay
 const OUTER_MARGIN: float = 0.0
 
 var gameplay_layout_controller: RefCounted = null

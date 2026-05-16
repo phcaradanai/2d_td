@@ -67,9 +67,7 @@ func fit_map_to_playfield(playfield_rect: Rect2) -> void:
 	if content_bounds.size == Vector2.ZERO:
 		return
 	
-	# Add padding
-	var padding = 40.0
-	content_bounds = content_bounds.grow(padding)
+	# get_map_content_bounds() already adds per-side margins; no extra grow needed.
 	
 	# 2. Calculate scale to fit bounds into playfield
 	var scale_x = playfield_rect.size.x / content_bounds.size.x

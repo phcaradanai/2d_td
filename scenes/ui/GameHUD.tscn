@@ -199,14 +199,17 @@ text = "Cancel Build"
 tooltip_text = "ESC"
 
 [node name="PlayfieldArea" type="Control" parent="Root/ScreenLayout/MainContent" unique_id=1032439366]
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 3
 mouse_filter = 2
 
 [node name="RightSidebarContainer" type="VBoxContainer" parent="Root/ScreenLayout/MainContent" unique_id=46789437]
 visible = false
 custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
+size_flags_horizontal = 0
 mouse_filter = 2
 theme_override_constants/separation = 10
 

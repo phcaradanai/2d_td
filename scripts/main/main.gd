@@ -199,6 +199,9 @@ func _ready() -> void:
 
 func _on_viewport_size_changed() -> void:
 	_update_world_layout()
+	# Deferred pass ensures Godot's layout system has settled HUD sizes before
+	# get_playfield_rect() reads left_sidebar.get_global_rect().
+	call_deferred("_update_world_layout")
 
 func _get_gameplay_controller_binder() -> RefCounted:
 	if _gameplay_controller_binder == null:
@@ -1156,6 +1159,9 @@ func start_level(level_path: String) -> void:
 
 	if audio_manager:
 		audio_manager.play_music("gameplay")
+
+	# Recalculate camera fit after the HUD has finished its layout pass.
+	call_deferred("_update_world_layout")
 
 func restart_level() -> void:
 	if OS.is_debug_build(): print("[Main] restart_level requested for: ", current_level_path)

@@ -180,6 +180,7 @@ const LEFT_TAB_RAIL_WIDTH := 58.0
 const RIGHT_DRAWER_WIDTH := LEFT_DRAWER_WIDTH
 const DRAWER_SECTION_GAP := 10
 const DRAWER_BODY_MIN_HEIGHT := 260.0
+const PLAYFIELD_SAFE_MARGIN := 6.0
 var damage_stats_tracker: Node = null
 var damage_stats_panel: PanelContainer = null
 var damage_stats_header_button: HUDDrawerHeaderControl = null
@@ -941,17 +942,21 @@ func update_layout_for_viewport() -> void:
 	var view_size = get_viewport().get_visible_rect().size
 	var portrait: bool = view_size.x <= 760.0 or view_size.y > view_size.x * 1.22
 
-	# Do not directly set left_sidebar width here.
-	# Let drawer layout own this state.
+	# Keep the left drawer stable, but let the gameplay area consume every
+	# remaining pixel. The right panel is retired, so it must not reserve width.
 	_apply_left_drawer_layout()
+	_apply_full_playfield_layout()
 
 	if right_sidebar_container:
-		right_sidebar_container.custom_minimum_size.x = 0
+		right_sidebar_container.custom_minimum_size = Vector2.ZERO
+		right_sidebar_container.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		right_sidebar_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		right_sidebar_container.visible = false
 		right_sidebar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	_sync_tower_shop_list_width()
 	_apply_mobile_portrait_layout(portrait)
+	_apply_full_playfield_layout()
 func _apply_terminal_hud_skin() -> void:
 	if dim_overlay:
 		dim_overlay.color = Color(0.012, 0.016, 0.028, 0.76)
@@ -1057,23 +1062,58 @@ func _apply_mobile_portrait_layout(portrait: bool) -> void:
 		if top_bar is PanelContainer:
 			top_bar.custom_minimum_size.y = 64
 
+func _apply_full_playfield_layout() -> void:
+	var main_content := $Root/ScreenLayout/MainContent
+	if main_content is HBoxContainer:
+		main_content.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		main_content.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		main_content.add_theme_constant_override("separation", 0)
+
+	if playfield_area:
+		playfield_area.custom_minimum_size = Vector2.ZERO
+		playfield_area.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		playfield_area.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		playfield_area.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if right_sidebar_container:
+		right_sidebar_container.custom_minimum_size = Vector2.ZERO
+		right_sidebar_container.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		right_sidebar_container.visible = false
+		right_sidebar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
 func get_playfield_rect() -> Rect2:
-	if playfield_area and playfield_area.is_inside_tree():
-		var rect = playfield_area.get_global_rect()
-		if rect.size.x > 100: # Sanity check that it's laid out
-			return rect
-	
-	# Fallback if HUD not ready or zero-sized
-	var view_size = get_viewport().get_visible_rect().size
-	var left_w = 265
-	if left_sidebar and left_sidebar.custom_minimum_size.x > 0:
-		left_w = left_sidebar.custom_minimum_size.x
-		
-	var right_w = 0
-	if right_sidebar_container and right_sidebar_container.custom_minimum_size.x > 0:
-		right_w = right_sidebar_container.custom_minimum_size.x
-		
-	return Rect2(left_w, 60, view_size.x - left_w - right_w, view_size.y - 60)
+	# Return the largest usable gameplay rectangle instead of the old fixed/
+	# right-sidebar-aware slot. The main scene uses this rect to fit/scale the
+	# board, so keeping it tied to the retired right panel caused large black
+	# unused margins after the UI moved to the left drawer.
+	var view_rect := get_viewport().get_visible_rect()
+	var view_size := view_rect.size
+
+	var left_edge := 0.0
+	if left_sidebar and left_sidebar.is_inside_tree() and left_sidebar.visible:
+		var left_rect := left_sidebar.get_global_rect()
+		left_edge = max(left_edge, left_rect.position.x + left_rect.size.x)
+	elif left_sidebar:
+		left_edge = max(left_edge, left_sidebar.custom_minimum_size.x)
+
+	var top_edge := 0.0
+	var top_bar := $Root/ScreenLayout/TopBar
+	if top_bar is Control and top_bar.is_inside_tree() and top_bar.visible:
+		var top_rect: Rect2 = top_bar.get_global_rect()
+		top_edge = max(top_edge, top_rect.position.y + top_rect.size.y)
+	else:
+		top_edge = 60.0
+
+	var margin := PLAYFIELD_SAFE_MARGIN
+	var rect := Rect2(
+		Vector2(left_edge + margin, top_edge + margin),
+		Vector2(
+			max(100.0, view_size.x - left_edge - margin * 2.0),
+			max(100.0, view_size.y - top_edge - margin * 2.0)
+		)
+	)
+
+	return rect
 
 func _on_restart_pressed() -> void:
 	restart_requested.emit()
