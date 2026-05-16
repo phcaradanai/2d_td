@@ -58,10 +58,13 @@ func update_world_layout() -> void:
 		background.size = Vector2(8000, 8000)
 		background.position = Vector2(-4000, -4000)
 
+const MAP_FILL_ZOOM_BIAS := 1.05
+const MAP_MAX_ZOOM := 5.0
+const MAP_MIN_ZOOM := 0.4
 func fit_map_to_playfield(playfield_rect: Rect2) -> void:
+
 	if not level_manager or not map_root or not camera:
 		return
-
 	# 1. Calculate map content bounds in world space
 	var content_bounds = get_map_content_bounds()
 	if content_bounds.size == Vector2.ZERO:
@@ -72,12 +75,16 @@ func fit_map_to_playfield(playfield_rect: Rect2) -> void:
 	# 2. Calculate scale to fit bounds into playfield
 	var scale_x = playfield_rect.size.x / content_bounds.size.x
 	var scale_y = playfield_rect.size.y / content_bounds.size.y
+	# Fit-inside zoom.
 	var fit_zoom = min(scale_x, scale_y)
+	# 3. Add a controlled visual fill bias.
+	# This zooms the map in a little more after normal fitting.
+	# Increase to 1.12–1.18 if you still see too much empty space.
+	fit_zoom *= MAP_FILL_ZOOM_BIAS
+	# Maximize scale safely.
+	fit_zoom = clamp(fit_zoom, MAP_MIN_ZOOM, MAP_MAX_ZOOM)
 	
-	# Maximize scale (allow up to 5x for small maps on large screens)
-	fit_zoom = clamp(fit_zoom, 0.4, 5.0)
-	
-	# 3. Apply to camera
+	# 4. Apply to camera
 	camera.zoom = Vector2.ONE * fit_zoom
 	
 	var content_center = content_bounds.get_center()
@@ -96,7 +103,6 @@ func fit_map_to_playfield(playfield_rect: Rect2) -> void:
 		print("[LAYOUT_DEBUG] camera_zoom=", fit_zoom)
 		print("[LAYOUT_DEBUG] camera_position=", camera_pos)
 		print("[LAYOUT_DEBUG] unused_px_h=", unused_x, " unused_px_v=", unused_y)
-
 	# Reset map_root transform (we use camera now)
 	map_root.scale = Vector2.ONE
 	map_root.position = Vector2.ZERO

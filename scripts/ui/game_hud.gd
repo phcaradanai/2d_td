@@ -1106,7 +1106,7 @@ func get_playfield_rect() -> Rect2:
 
 	var margin := PLAYFIELD_SAFE_MARGIN
 	var rect := Rect2(
-		Vector2(left_edge + margin, top_edge + margin),
+		Vector2((left_edge * 0.97) + margin, top_edge + margin),
 		Vector2(
 			max(100.0, view_size.x - left_edge - margin * 2.0),
 			max(100.0, view_size.y - top_edge - margin * 2.0)
