@@ -23,6 +23,7 @@ const TowerRowTrimControl = preload("res://scripts/ui/tower_row_trim.gd")
 const BuildSectionHeaderControl = preload("res://scripts/ui/build_section_header.gd")
 const HUDStatChipControl = preload("res://scripts/ui/hud_stat_chip.gd")
 const CreditCostDisplayControl = preload("res://scripts/ui/credit_cost_display.gd")
+const HUDDrawerHeaderControl = preload("res://scripts/ui/hud_drawer_header.gd")
 const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
 const ELEMENT_SHORT_LABELS := {
 	"light": "Light",
@@ -142,9 +143,12 @@ var no_selection_panel: PanelContainer = null
 
 const SHOW_DAMAGE_PANEL := true
 const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
+const LEFT_DRAWER_WIDTH := 310.0
+const LEFT_TAB_RAIL_WIDTH := 58.0
 var damage_stats_tracker: Node = null
 var damage_stats_panel: PanelContainer = null
-var damage_stats_header_button: Button = null
+var damage_stats_header_button: HUDDrawerHeaderControl = null
+var damage_stats_summary_label: Label = null
 var damage_stats_details: RichTextLabel = null
 var damage_stats_expanded: bool = false
 var _damage_stats_dirty: bool = true
@@ -195,9 +199,13 @@ var tower_shop_scroll: ScrollContainer = null
 var tower_shop_list: VBoxContainer = null
 var dynamic_tower_buttons: Dictionary = {} # id: Button
 var active_build_tower_id: String = ""
+var build_drawer_header_button: HUDDrawerHeaderControl = null
+var build_drawer_expanded: bool = false
 var build_towers_header_block: VBoxContainer = null
+var build_panel_bottom_separator: ColorRect = null
 var element_mastery_grid: GridContainer = null
 var element_chip_nodes: Dictionary = {} # element_id: {panel, icon, name, level}
+var _touch_points_down: Dictionary = {}
 
 # Build-button hover card (desktop hover / mobile long-press).
 var _hover_card: PanelContainer = null
@@ -360,7 +368,9 @@ func _ready() -> void:
 	sniper_tower_button.pressed.connect(func(): _on_tower_btn_pressed("sniper_tower", sniper_tower_button))
 	lightning_tower_button.pressed.connect(func(): _on_tower_btn_pressed("lightning_tower", lightning_tower_button))
 	sawblade_tower_button.pressed.connect(func(): _on_tower_btn_pressed("sawblade_tower", sawblade_tower_button))
-	cancel_build_button.pressed.connect(func(): cancel_build_requested.emit())
+	cancel_build_button.pressed.connect(func():
+		cancel_build_requested.emit()
+		_set_build_towers_drawer_expanded(false))
 	upgrade_tower_button.pressed.connect(func(): upgrade_tower_requested.emit())
 	deselect_tower_button.pressed.connect(func(): deselect_tower_requested.emit())
 	
@@ -434,6 +444,140 @@ func _process(delta: float) -> void:
 		_damage_stats_refresh_elapsed = 0.0
 		_refresh_damage_stats_panel()
 
+func _input(event: InputEvent) -> void:
+	if _handle_build_cancel_input(event):
+		return
+	if not build_drawer_expanded and not damage_stats_expanded:
+		return
+	var pressed := false
+	var pos := Vector2.ZERO
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		pressed = true
+		pos = event.position
+	elif event is InputEventScreenTouch and event.pressed:
+		pressed = true
+		pos = event.position
+	if not pressed:
+		return
+	if left_sidebar and left_sidebar.visible and left_sidebar.get_global_rect().has_point(pos):
+		return
+	_collapse_left_drawers()
+
+func _handle_build_cancel_input(event: InputEvent) -> bool:
+	if active_build_tower_id.is_empty():
+		if event is InputEventScreenTouch:
+			_touch_points_down.erase(event.index)
+		return false
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_RIGHT and event.pressed:
+		cancel_build_requested.emit()
+		_set_active_build_row("")
+		return true
+	if event is InputEventScreenTouch:
+		if event.pressed:
+			_touch_points_down[event.index] = true
+			if _touch_points_down.size() >= 2:
+				cancel_build_requested.emit()
+				_set_active_build_row("")
+				return true
+		else:
+			_touch_points_down.erase(event.index)
+	return false
+
+func _get_left_sidebar_content_box() -> VBoxContainer:
+	if left_sidebar == null:
+		return null
+	var margin := left_sidebar.get_node_or_null("MarginContainer")
+	if margin == null:
+		return null
+	var box := margin.get_node_or_null("VBoxContainer")
+	return box as VBoxContainer
+
+func _ensure_left_drawer_headers(container: VBoxContainer) -> void:
+	if build_drawer_header_button == null or not is_instance_valid(build_drawer_header_button):
+		build_drawer_header_button = HUDDrawerHeaderControl.new()
+		build_drawer_header_button.name = "BuildTowersDrawerHeader"
+		build_drawer_header_button.configure("BUILD TOWERS", "build", NeonStyle.CYAN, build_drawer_expanded, true)
+		build_drawer_header_button.pressed.connect(_toggle_build_towers_drawer)
+		container.add_child(build_drawer_header_button)
+		container.move_child(build_drawer_header_button, basic_tower_button.get_index())
+	if damage_stats_header_button == null or not is_instance_valid(damage_stats_header_button):
+		damage_stats_header_button = HUDDrawerHeaderControl.new()
+		damage_stats_header_button.name = "DamageStatsDrawerHeader"
+		damage_stats_header_button.configure("DAMAGE STATS", "damage", NeonStyle.WARN, damage_stats_expanded, true)
+		damage_stats_header_button.pressed.connect(_toggle_damage_stats_panel)
+		container.add_child(damage_stats_header_button)
+		container.move_child(damage_stats_header_button, build_drawer_header_button.get_index() + 1)
+	_apply_build_drawer_visibility()
+	_apply_left_drawer_layout()
+
+func _toggle_build_towers_drawer() -> void:
+	_set_build_towers_drawer_expanded(not build_drawer_expanded)
+
+func _set_build_towers_drawer_expanded(expanded: bool) -> void:
+	if expanded:
+		_set_damage_stats_expanded(false)
+	build_drawer_expanded = expanded
+	if build_drawer_header_button:
+		build_drawer_header_button.set_expanded(expanded)
+	if not expanded:
+		_hide_hover_card()
+	_apply_build_drawer_visibility()
+	_apply_left_drawer_layout()
+
+func _collapse_left_drawers() -> void:
+	_set_build_towers_drawer_expanded(false)
+	_set_damage_stats_expanded(false)
+
+func _apply_build_drawer_visibility() -> void:
+	var drawer_open := build_drawer_expanded or damage_stats_expanded
+	if build_drawer_header_button:
+		build_drawer_header_button.set_tab_mode(not drawer_open)
+	if damage_stats_header_button:
+		damage_stats_header_button.set_tab_mode(not drawer_open)
+	if build_towers_header_block:
+		build_towers_header_block.visible = build_drawer_expanded
+	if tower_shop_scroll:
+		tower_shop_scroll.visible = build_drawer_expanded
+	if build_panel_bottom_separator:
+		build_panel_bottom_separator.visible = build_drawer_expanded
+	if build_status_label:
+		build_status_label.visible = build_drawer_expanded and not active_build_tower_id.is_empty()
+	if cancel_build_button:
+		cancel_build_button.visible = false
+
+func _apply_left_drawer_layout() -> void:
+	if left_sidebar == null:
+		return
+	var drawer_open := build_drawer_expanded or damage_stats_expanded
+	left_sidebar.custom_minimum_size.x = LEFT_DRAWER_WIDTH if drawer_open else LEFT_TAB_RAIL_WIDTH
+	var margin := left_sidebar.get_node_or_null("MarginContainer")
+	if margin:
+		margin.add_theme_constant_override("margin_left", 0 if not drawer_open else 12)
+		margin.add_theme_constant_override("margin_right", 6 if not drawer_open else 12)
+		margin.add_theme_constant_override("margin_top", 12)
+		margin.add_theme_constant_override("margin_bottom", 12)
+	_style_left_sidebar_shell(drawer_open)
+	_sync_tower_shop_list_width()
+
+func _style_left_sidebar_shell(drawer_open: bool) -> void:
+	if left_sidebar == null:
+		return
+	var style := StyleBoxFlat.new()
+	if drawer_open:
+		style.bg_color = NeonStyle.BG_1
+		style.border_color = NeonStyle.LINE
+		style.set_border_width_all(1)
+	else:
+		style.bg_color = Color(NeonStyle.BG_1.r, NeonStyle.BG_1.g, NeonStyle.BG_1.b, 0.0)
+		style.border_color = Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.0)
+		style.set_border_width_all(0)
+	style.set_corner_radius_all(0)
+	style.content_margin_left = 0
+	style.content_margin_right = 0
+	style.content_margin_top = 0
+	style.content_margin_bottom = 0
+	left_sidebar.add_theme_stylebox_override("panel", style)
+
 func set_damage_stats_tracker(tracker: Node) -> void:
 	damage_stats_tracker = tracker
 	if damage_stats_tracker and damage_stats_tracker.has_signal("stats_changed"):
@@ -447,50 +591,57 @@ func _on_damage_stats_changed() -> void:
 		_refresh_damage_stats_panel()
 
 func _ensure_damage_stats_panel() -> void:
-	if damage_stats_panel != null or root == null or not SHOW_DAMAGE_PANEL:
+	if damage_stats_panel != null or left_sidebar == null or not SHOW_DAMAGE_PANEL:
 		return
+	var container := _get_left_sidebar_content_box()
+	if container == null:
+		return
+	_ensure_left_drawer_headers(container)
 
 	damage_stats_panel = PanelContainer.new()
 	damage_stats_panel.name = "DamageStatsPanel"
 	damage_stats_panel.mouse_filter = Control.MOUSE_FILTER_STOP
-	damage_stats_panel.custom_minimum_size = Vector2(260.0, 36.0)
-	damage_stats_panel.set_anchors_preset(Control.PRESET_BOTTOM_RIGHT)
-	_set_damage_stats_panel_bounds(false)
+	damage_stats_panel.custom_minimum_size = Vector2(0.0, 218.0)
+	damage_stats_panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	damage_stats_panel.visible = false
 
 	# Panel style matching the design system
 	var ps := StyleBoxFlat.new()
 	ps.bg_color = NeonStyle.BG_1
-	ps.border_color = NeonStyle.LINE
+	ps.border_color = Color(NeonStyle.WARN.r, NeonStyle.WARN.g, NeonStyle.WARN.b, 0.42)
 	ps.set_border_width_all(1)
+	ps.set_border_width(SIDE_LEFT, 3)
 	ps.set_corner_radius_all(0)
-	ps.content_margin_left   = 0
-	ps.content_margin_right  = 0
-	ps.content_margin_top    = 0
-	ps.content_margin_bottom = 0
+	ps.content_margin_left   = 10
+	ps.content_margin_right  = 10
+	ps.content_margin_top    = 8
+	ps.content_margin_bottom = 8
 	damage_stats_panel.add_theme_stylebox_override("panel", ps)
-	root.add_child(damage_stats_panel)
+	container.add_child(damage_stats_panel)
+	container.move_child(damage_stats_panel, damage_stats_header_button.get_index() + 1)
 
 	var box := VBoxContainer.new()
 	box.name = "DamageStatsBox"
-	box.add_theme_constant_override("separation", 0)
+	box.add_theme_constant_override("separation", 7)
 	damage_stats_panel.add_child(box)
 
-	# Header button — compact inline row
-	damage_stats_header_button = Button.new()
-	damage_stats_header_button.name = "DamageStatsHeader"
-	damage_stats_header_button.text = "DMG  0  |  Top: —"
-	damage_stats_header_button.tooltip_text = "Toggle damage log"
-	damage_stats_header_button.custom_minimum_size = Vector2(260.0, 34.0)
-	damage_stats_header_button.flat = true
-	NeonStyle.style_button(damage_stats_header_button, NeonStyle.CYAN, false)
-	damage_stats_header_button.add_theme_font_size_override("font_size", 11)
-	damage_stats_header_button.add_theme_color_override("font_color", NeonStyle.INK_2)
-	damage_stats_header_button.pressed.connect(_toggle_damage_stats_panel)
-	box.add_child(damage_stats_header_button)
+	var top_row := HBoxContainer.new()
+	top_row.name = "DamageStatsPanelHeader"
+	top_row.add_theme_constant_override("separation", 8)
+	box.add_child(top_row)
+
+	damage_stats_summary_label = Label.new()
+	damage_stats_summary_label.name = "DamageStatsSummary"
+	damage_stats_summary_label.text = "DMG  0  ·  Top: —"
+	damage_stats_summary_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	damage_stats_summary_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	damage_stats_summary_label.add_theme_font_size_override("font_size", 11)
+	damage_stats_summary_label.add_theme_color_override("font_color", NeonStyle.INK_2)
+	top_row.add_child(damage_stats_summary_label)
 
 	# Hairline separator
 	var sep := ColorRect.new()
-	sep.color = NeonStyle.LINE
+	sep.color = Color(NeonStyle.WARN.r, NeonStyle.WARN.g, NeonStyle.WARN.b, 0.30)
 	sep.custom_minimum_size.y = 1
 	box.add_child(sep)
 
@@ -500,30 +651,28 @@ func _ensure_damage_stats_panel() -> void:
 	damage_stats_details.bbcode_enabled = false
 	damage_stats_details.fit_content = false
 	damage_stats_details.scroll_active = true
-	damage_stats_details.custom_minimum_size = Vector2(320.0, 190.0)
+	damage_stats_details.custom_minimum_size = Vector2(0.0, 164.0)
+	damage_stats_details.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	damage_stats_details.add_theme_font_size_override("normal_font_size", 11)
 	damage_stats_details.add_theme_color_override("default_color", NeonStyle.INK_2)
-	damage_stats_details.visible = false
 	box.add_child(damage_stats_details)
 
 	_refresh_damage_stats_panel()
 
 func _toggle_damage_stats_panel() -> void:
-	damage_stats_expanded = not damage_stats_expanded
-	if damage_stats_details:
-		damage_stats_details.visible = damage_stats_expanded
-	if damage_stats_panel:
-		damage_stats_panel.custom_minimum_size = Vector2(310.0, 230.0) if damage_stats_expanded else Vector2(230.0, 38.0)
-		_set_damage_stats_panel_bounds(damage_stats_expanded)
-	_refresh_damage_stats_panel()
+	_set_damage_stats_expanded(not damage_stats_expanded)
 
-func _set_damage_stats_panel_bounds(expanded: bool) -> void:
-	if damage_stats_panel == null:
-		return
-	damage_stats_panel.offset_left = -410.0 if expanded else -330.0
-	damage_stats_panel.offset_top = -270.0 if expanded else -56.0
-	damage_stats_panel.offset_right = -88.0
-	damage_stats_panel.offset_bottom = -18.0
+func _set_damage_stats_expanded(expanded: bool) -> void:
+	if expanded:
+		_set_build_towers_drawer_expanded(false)
+	damage_stats_expanded = expanded
+	if damage_stats_header_button:
+		damage_stats_header_button.set_expanded(expanded)
+	if damage_stats_panel:
+		damage_stats_panel.visible = expanded
+	_apply_build_drawer_visibility()
+	_apply_left_drawer_layout()
+	_refresh_damage_stats_panel()
 
 func _refresh_damage_stats_panel() -> void:
 	_damage_stats_dirty = false
@@ -539,8 +688,9 @@ func _refresh_damage_stats_panel() -> void:
 	var top_entry: Dictionary = summary.get("top_entry", {})
 	var top_name: String = str(top_entry.get("tower_name", "—")) if not top_entry.is_empty() else "—"
 	var top_damage: float = float(top_entry.get("wave_damage", 0.0)) if not top_entry.is_empty() else 0.0
-	damage_stats_header_button.text = " DMG  %d  ·  Top: %s  %d" % [
-		int(round(wave_damage)), top_name, int(round(top_damage))]
+	if damage_stats_summary_label:
+		damage_stats_summary_label.text = "DMG  %d  ·  Top: %s  %d" % [
+			int(round(wave_damage)), top_name, int(round(top_damage))]
 	if not damage_stats_expanded or damage_stats_details == null:
 		return
 	var lines: Array[String] = []
@@ -584,12 +734,8 @@ func update_layout_for_viewport() -> void:
 	var portrait: bool = view_size.x <= 760.0 or view_size.y > view_size.x * 1.22
 	
 	if left_sidebar:
-		if portrait:
-			left_sidebar.custom_minimum_size = Vector2(0, 168)
-		elif view_size.x < 1200:
-			left_sidebar.custom_minimum_size.x = 265
-		else:
-			left_sidebar.custom_minimum_size.x = 310
+		left_sidebar.custom_minimum_size.y = 168 if portrait else 0
+		_apply_left_drawer_layout()
 			
 	if right_sidebar_container:
 		if portrait:
@@ -629,7 +775,7 @@ func _apply_terminal_hud_skin() -> void:
 		top_bar.custom_minimum_size.y = 68
 
 	# Sidebar panels
-	for panel in [left_sidebar, right_sidebar, settings_panel]:
+	for panel in [right_sidebar, settings_panel]:
 		if panel:
 			var s := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
 			s.content_margin_left   = 0
@@ -637,6 +783,7 @@ func _apply_terminal_hud_skin() -> void:
 			s.content_margin_top    = 0
 			s.content_margin_bottom = 0
 			panel.add_theme_stylebox_override("panel", s)
+	_apply_left_drawer_layout()
 
 	if center_message_panel:
 		var s := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE_STRONG, true)
@@ -1312,14 +1459,19 @@ func _ensure_elemental_shop_ui() -> void:
 	bottom_separator.color = NeonStyle.LINE
 	container.add_child(bottom_separator)
 	container.move_child(bottom_separator, build_status_label.get_index())
+	build_panel_bottom_separator = bottom_separator
 
 	NeonStyle.apply_terminal_label(build_status_label, 11, NeonStyle.INK_3)
 	cancel_build_button.custom_minimum_size.y = 44
 	_refresh_element_mastery_strip()
+	_apply_build_drawer_visibility()
+	_apply_left_drawer_layout()
 
 func _ensure_build_towers_header_ui(container: Control) -> void:
 	if build_towers_header_block != null and is_instance_valid(build_towers_header_block):
 		return
+	if container is VBoxContainer:
+		_ensure_left_drawer_headers(container)
 	var old_title := container.get_node_or_null("Label")
 	if old_title is Control:
 		old_title.hide()
@@ -1334,33 +1486,10 @@ func _ensure_build_towers_header_ui(container: Control) -> void:
 	build_towers_header_block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	build_towers_header_block.add_theme_constant_override("separation", 6)
 	container.add_child(build_towers_header_block)
-	container.move_child(build_towers_header_block, basic_tower_button.get_index())
-
-	var title_row := HBoxContainer.new()
-	title_row.name = "BuildTowersTitleRow"
-	title_row.custom_minimum_size.y = 42
-	title_row.add_theme_constant_override("separation", 8)
-	build_towers_header_block.add_child(title_row)
-
-	var build_icon := ElementIconControl.new()
-	build_icon.name = "BuildHeaderIcon"
-	build_icon.custom_minimum_size = Vector2(38, 38)
-	build_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	build_icon.configure([], true)
-	title_row.add_child(build_icon)
-
-	var title_label := Label.new()
-	title_label.name = "BuildTowersTitle"
-	title_label.text = "BUILD TOWERS"
-	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	title_label.add_theme_font_size_override("font_size", 22)
-	title_label.add_theme_color_override("font_color", NeonStyle.INK_1)
-	title_label.add_theme_color_override("font_shadow_color", Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.22))
-	title_label.add_theme_constant_override("shadow_offset_x", 0)
-	title_label.add_theme_constant_override("shadow_offset_y", 1)
-	title_label.add_theme_constant_override("shadow_size", 5)
-	title_row.add_child(title_label)
+	if damage_stats_header_button:
+		container.move_child(build_towers_header_block, damage_stats_header_button.get_index() + 1)
+	else:
+		container.move_child(build_towers_header_block, basic_tower_button.get_index())
 
 	var divider := ColorRect.new()
 	divider.name = "BuildTowersDivider"
@@ -2423,13 +2552,15 @@ func set_status(text: String, color: Color = NeonStyle.CYAN) -> void:
 		status_chip.set_value(text.to_upper(), state_color, false)
 
 func set_build_status(text: String) -> void:
-	build_status_label.text = text
+	var build_active := text != "Build: None"
+	build_status_label.text = "Right-click or two-finger tap to cancel build." if build_active else text
 	build_status_label.add_theme_color_override("font_color",
-		NeonStyle.CYAN if text != "Build: None" else NeonStyle.INK_3)
+		NeonStyle.CYAN if build_active else NeonStyle.INK_3)
 	build_status_label.add_theme_font_size_override("font_size", 11)
-	cancel_build_button.visible = (text != "Build: None")
+	cancel_build_button.visible = false
 	if text == "Build: None":
 		_set_active_build_row("")
+	_apply_build_drawer_visibility()
 
 func _configure_start_wave_button_layout() -> void:
 	if start_wave_button == null:
@@ -2963,9 +3094,11 @@ func show_victory() -> void:
 
 func show_build_panel() -> void:
 	set_panel_active(left_sidebar, true, true)
+	_apply_build_drawer_visibility()
 
 func hide_build_panel() -> void:
 	set_panel_active(left_sidebar, false)
+	_collapse_left_drawers()
 	_set_active_build_row("")
 	_hide_hover_card()
 
