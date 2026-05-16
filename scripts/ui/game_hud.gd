@@ -1941,20 +1941,10 @@ func _em_lbl(text: String, sz: int, col: Color) -> Label:
 	l.size_flags_horizontal = Control.SIZE_FILL
 	return l
 
-func _em_sec_hdr(text: String) -> HBoxContainer:
-	var row := HBoxContainer.new()
-	row.add_theme_constant_override("separation", 0)
-	for _i in range(2):
-		var bar := Panel.new()
-		bar.custom_minimum_size = Vector2(16, 1)
-		bar.add_theme_stylebox_override("panel", _em_sb(Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.5)))
-		bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		row.add_child(bar)
-		if _i == 0:
-			var lbl := _em_lbl("  %s  " % text, 10, NeonStyle.INK_3)
-			lbl.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
-			row.add_child(lbl)
-	return row
+func _em_sec_hdr(text: String) -> BuildSectionHeaderControl:
+	# Reuse the exact same header control used by the left Build Towers sidebar:
+	# double-chevron marker · label · thin neon line · diamond node.
+	return _make_build_section_header(text, false)
 
 func _em_chip(text: String, col: Color) -> PanelContainer:
 	var chip := PanelContainer.new()
