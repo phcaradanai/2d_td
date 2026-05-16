@@ -22,6 +22,7 @@ const ElementIconControl = preload("res://scripts/ui/element_icon.gd")
 const TowerRowTrimControl = preload("res://scripts/ui/tower_row_trim.gd")
 const BuildSectionHeaderControl = preload("res://scripts/ui/build_section_header.gd")
 const HUDStatChipControl = preload("res://scripts/ui/hud_stat_chip.gd")
+const CreditCostDisplayControl = preload("res://scripts/ui/credit_cost_display.gd")
 const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
 const ELEMENT_SHORT_LABELS := {
 	"light": "Light",
@@ -813,6 +814,9 @@ func _update_tower_affordability(current_gold: int) -> void:
 		var can_afford := current_gold >= cost
 		btn.set_meta("row_affordable", can_afford)
 		btn.modulate = Color(1, 1, 1, 1)
+		var cost_display := btn.get_node_or_null("Row/CostDisplay")
+		if cost_display is CreditCostDisplayControl:
+			cost_display.configure(cost, can_afford)
 		var cost_label := btn.get_node_or_null("Row/CostLabel")
 		if cost_label is Label:
 			cost_label.add_theme_color_override("font_color", NeonStyle.WARN if can_afford else Color(NeonStyle.DANGER.r, NeonStyle.DANGER.g, NeonStyle.DANGER.b, 0.82))
@@ -996,24 +1000,24 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 		req_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		name_col.add_child(req_label)
 
-	# Cost / lock indicator
-	var cost_label := Label.new()
-	cost_label.name = "CostLabel"
-	cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	cost_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_unlocked:
-		cost_label.text = "$%d" % cost
-		cost_label.custom_minimum_size.x = 58
-		cost_label.add_theme_font_size_override("font_size", 14)
-		cost_label.add_theme_color_override("font_color", NeonStyle.WARN)
+		var cost_display := CreditCostDisplayControl.new()
+		cost_display.name = "CostDisplay"
+		cost_display.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		cost_display.configure(cost, true)
+		row.add_child(cost_display)
 	else:
+		var cost_label := Label.new()
+		cost_label.name = "CostLabel"
+		cost_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+		cost_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+		cost_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		cost_label.text = "LOCKED"
 		cost_label.custom_minimum_size.x = 54
 		cost_label.add_theme_font_size_override("font_size", 9)
 		cost_label.add_theme_color_override("font_color", NeonStyle.INK_4)
-	row.add_child(cost_label)
+		row.add_child(cost_label)
 	_update_tower_row_trim(btn, false)
 
 func _get_tower_shop_display_name(tower_id: String, cfg: Dictionary) -> String:
@@ -1031,7 +1035,7 @@ func _get_tower_shop_display_name(tower_id: String, cfg: Dictionary) -> String:
 func _format_tower_cost(cost: int) -> String:
 	if cost < 0:
 		return "—"
-	return "$%d" % cost
+	return str(cost)
 
 func _format_tower_requirement(elements: Array) -> String:
 	if elements.is_empty():

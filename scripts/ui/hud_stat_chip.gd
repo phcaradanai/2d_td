@@ -2,6 +2,7 @@ extends Control
 class_name HUDStatChip
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+const CreditIconDraw = preload("res://scripts/ui/credit_icon_draw.gd")
 
 @export var icon_kind: String = "status":
 	set(value):
@@ -107,10 +108,7 @@ func _draw_icon(center: Vector2, color: Color, alpha: float) -> void:
 			_draw_status(center, color, alpha)
 
 func _draw_coin(center: Vector2, color: Color, alpha: float) -> void:
-	var c := _icon_color(NeonStyle.WARN, alpha)
-	draw_circle(center, 8.0, Color(c.r, c.g, c.b, 0.18 * alpha))
-	draw_arc(center, 7.0, 0.0, TAU, 24, c, 1.6, true)
-	draw_arc(center, 4.0, 0.0, TAU, 18, Color(c.r, c.g, c.b, 0.75 * alpha), 1.0, true)
+	CreditIconDraw.draw_coin(self, center, alpha, 8.0)
 
 func _draw_core(center: Vector2, color: Color, alpha: float) -> void:
 	var c := _icon_color(NeonStyle.CYAN_2, alpha)
