@@ -87,6 +87,7 @@ var maze_map_renderer: Node2D = null
 var enemy_route_overlay: Node2D = null
 var selected_tower: Node2D = null
 var current_state: GameState = GameState.MENU
+var _show_wave_complete_status_feedback: bool = false
 var _touch_points: Dictionary = {}   # active touch indices for two-finger deselect
 var current_level_path: String = ""
 var current_level_id: String = ""
@@ -321,6 +322,8 @@ func _get_top_bar_gameplay_status(countdown_active: bool, countdown_remaining: f
 		return "In Progress"
 	if countdown_active:
 		return "Auto next in %ds" % int(ceil(max(0.0, countdown_remaining)))
+	if _show_wave_complete_status_feedback:
+		return "Wave Complete"
 	if current_state == GameState.WAVE_COMPLETE:
 		return "Wave Complete"
 	return "Ready"
@@ -1193,6 +1196,7 @@ func start_next_level() -> void:
 		return_to_menu()
 
 func _clear_gameplay_state() -> void:
+	_show_wave_complete_status_feedback = false
 	if tower_container:
 		for tower in tower_container.get_children():
 			tower.queue_free()
@@ -1741,6 +1745,7 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status(label_text)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
+	_show_wave_complete_status_feedback = false
 	if damage_stats_tracker and damage_stats_tracker.has_method("reset_wave"):
 		damage_stats_tracker.reset_wave()
 	if element_td_interest_service:
@@ -1774,9 +1779,10 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 	else:
 		if element_td_interest_service:
 			element_td_interest_service.disabled_for_wave = false
-	set_game_phase(GameState.WAVE_COMPLETE)
 	if game_manager:
 		game_manager.award_wave_completion(reward)
+	_show_wave_complete_status_feedback = true
+	set_game_phase(GameState.BUILD)
 	if game_hud:
 		game_hud.set_status("Wave Complete")
 		show_wave_feedback("Wave Cleared! +%d Gold" % reward, Color(0.2, 1.0, 0.4))
@@ -1790,10 +1796,10 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 	# [MetaLayer] Auto-save run state after each wave clear (safe point: gold/wave updated)
 	_auto_save_run_state()
 
-	# Auto-advance to planning after a brief reward moment
+	# Keep the reward moment visual-only; planning controls unlock immediately.
 	get_tree().create_timer(2.5).timeout.connect(func():
-		if current_state == GameState.WAVE_COMPLETE:
-			set_game_phase(GameState.BUILD)
+		if current_state == GameState.BUILD:
+			_show_wave_complete_status_feedback = false
 			_maybe_start_auto_next_wave_countdown()
 	)
 
