@@ -19,6 +19,15 @@ signal back_to_map_requested()
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 const ElementIconControl = preload("res://scripts/ui/element_icon.gd")
+const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
+const ELEMENT_SHORT_LABELS := {
+	"light": "Light",
+	"darkness": "Dark",
+	"water": "Water",
+	"fire": "Fire",
+	"nature": "Nature",
+	"earth": "Earth",
+}
 
 # Top Bar
 @onready var gold_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/GoldLabel
@@ -175,6 +184,9 @@ var tower_catalog: Dictionary = {} # id: full tower config
 var tower_shop_scroll: ScrollContainer = null
 var tower_shop_list: VBoxContainer = null
 var dynamic_tower_buttons: Dictionary = {} # id: Button
+var build_towers_header_block: VBoxContainer = null
+var element_mastery_grid: GridContainer = null
+var element_chip_nodes: Dictionary = {} # element_id: {panel, icon, name, level}
 
 # Build-button hover card (desktop hover / mobile long-press).
 var _hover_card: PanelContainer = null
@@ -817,10 +829,7 @@ func refresh_tower_shop(tower_ids: Array[String]) -> void:
 		if show_hint:
 			_add_tower_section_hint(_get_section_unlock_hint(section_key, visible_entries.is_empty()))
 
-	if element_status_label:
-		element_status_label.text = _format_element_levels(current_element_levels)
-	if element_hint_label:
-		element_hint_label.text = "Pick elements to unlock towers"
+	_refresh_element_mastery_strip()
 
 	_update_tower_affordability(_get_current_gold_for_hud())
 	if tower_shop_scroll:
@@ -1125,10 +1134,7 @@ func set_tower_prices(prices: Dictionary) -> void:
 
 func set_element_levels(levels: Dictionary) -> void:
 	current_element_levels = levels.duplicate(true)
-	if element_status_label:
-		element_status_label.text = _format_element_levels(current_element_levels)
-	if element_hint_label:
-		element_hint_label.text = "Pick elements to unlock towers"
+	_refresh_element_mastery_strip()
 
 func show_element_choice(levels: Dictionary, pending_picks: int = 1, interest_rate_label: String = "2%", next_interest_rate_label: String = "3%", can_upgrade_interest: bool = true, interest_upgrade_count: int = 0, interest_max_upgrades: int = 5) -> void:
 	_ensure_element_modal()
@@ -1193,21 +1199,7 @@ func _ensure_elemental_shop_ui() -> void:
 		old_spacer.custom_minimum_size = Vector2.ZERO
 		old_spacer.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
-	element_status_label = Label.new()
-	element_status_label.name = "ElementStatusLabel"
-	element_status_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	element_status_label.text = "Elements: None"
-	NeonStyle.apply_terminal_label(element_status_label, 13, NeonStyle.CYAN_2, false)
-	container.add_child(element_status_label)
-	container.move_child(element_status_label, basic_tower_button.get_index())
-
-	element_hint_label = Label.new()
-	element_hint_label.name = "ElementHintLabel"
-	element_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	element_hint_label.text = "Pick elements to unlock towers"
-	NeonStyle.apply_terminal_label(element_hint_label, 11, NeonStyle.INK_3, false)
-	container.add_child(element_hint_label)
-	container.move_child(element_hint_label, element_status_label.get_index() + 1)
+	_ensure_build_towers_header_ui(container)
 
 	tower_shop_scroll = ScrollContainer.new()
 	tower_shop_scroll.name = "ElementalTowerShopScroll"
@@ -1216,7 +1208,7 @@ func _ensure_elemental_shop_ui() -> void:
 	tower_shop_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	tower_shop_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	container.add_child(tower_shop_scroll)
-	container.move_child(tower_shop_scroll, element_hint_label.get_index() + 1)
+	container.move_child(tower_shop_scroll, build_towers_header_block.get_index() + 1)
 
 	tower_shop_list = VBoxContainer.new()
 	tower_shop_list.name = "ElementalTowerShopList"
@@ -1234,6 +1226,196 @@ func _ensure_elemental_shop_ui() -> void:
 
 	NeonStyle.apply_terminal_label(build_status_label, 11, NeonStyle.INK_3)
 	cancel_build_button.custom_minimum_size.y = 44
+	_refresh_element_mastery_strip()
+
+func _ensure_build_towers_header_ui(container: Control) -> void:
+	if build_towers_header_block != null and is_instance_valid(build_towers_header_block):
+		return
+	var old_title := container.get_node_or_null("Label")
+	if old_title is Control:
+		old_title.hide()
+		old_title.custom_minimum_size = Vector2.ZERO
+	var old_separator := container.get_node_or_null("HSeparator")
+	if old_separator is Control:
+		old_separator.hide()
+		old_separator.custom_minimum_size = Vector2.ZERO
+
+	build_towers_header_block = VBoxContainer.new()
+	build_towers_header_block.name = "BuildTowersHeaderBlock"
+	build_towers_header_block.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	build_towers_header_block.add_theme_constant_override("separation", 6)
+	container.add_child(build_towers_header_block)
+	container.move_child(build_towers_header_block, basic_tower_button.get_index())
+
+	var title_row := HBoxContainer.new()
+	title_row.name = "BuildTowersTitleRow"
+	title_row.custom_minimum_size.y = 42
+	title_row.add_theme_constant_override("separation", 8)
+	build_towers_header_block.add_child(title_row)
+
+	var build_icon := ElementIconControl.new()
+	build_icon.name = "BuildHeaderIcon"
+	build_icon.custom_minimum_size = Vector2(38, 38)
+	build_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	build_icon.configure([], true)
+	title_row.add_child(build_icon)
+
+	var title_label := Label.new()
+	title_label.name = "BuildTowersTitle"
+	title_label.text = "BUILD TOWERS"
+	title_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	title_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	title_label.add_theme_font_size_override("font_size", 22)
+	title_label.add_theme_color_override("font_color", NeonStyle.INK_1)
+	title_label.add_theme_color_override("font_shadow_color", Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.22))
+	title_label.add_theme_constant_override("shadow_offset_x", 0)
+	title_label.add_theme_constant_override("shadow_offset_y", 1)
+	title_label.add_theme_constant_override("shadow_size", 5)
+	title_row.add_child(title_label)
+
+	var divider := ColorRect.new()
+	divider.name = "BuildTowersDivider"
+	divider.custom_minimum_size = Vector2(0, 1)
+	divider.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	divider.color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.45)
+	build_towers_header_block.add_child(divider)
+
+	var mastery_row := HBoxContainer.new()
+	mastery_row.name = "ElementMasteryTitleRow"
+	mastery_row.custom_minimum_size.y = 20
+	mastery_row.add_theme_constant_override("separation", 6)
+	build_towers_header_block.add_child(mastery_row)
+
+	var mastery_marker := Label.new()
+	mastery_marker.text = ">>"
+	mastery_marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	mastery_marker.add_theme_font_size_override("font_size", 11)
+	mastery_marker.add_theme_color_override("font_color", NeonStyle.CYAN)
+	mastery_row.add_child(mastery_marker)
+
+	element_status_label = Label.new()
+	element_status_label.name = "ElementStatusLabel"
+	element_status_label.text = "ELEMENT MASTERY"
+	element_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	element_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	NeonStyle.apply_eyebrow(element_status_label)
+	element_status_label.add_theme_color_override("font_color", NeonStyle.CYAN)
+	mastery_row.add_child(element_status_label)
+
+	var mastery_line := ColorRect.new()
+	mastery_line.custom_minimum_size = Vector2(0, 1)
+	mastery_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mastery_line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	mastery_line.color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.16)
+	mastery_row.add_child(mastery_line)
+
+	element_mastery_grid = GridContainer.new()
+	element_mastery_grid.name = "ElementMasteryGrid"
+	element_mastery_grid.columns = 2
+	element_mastery_grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	element_mastery_grid.add_theme_constant_override("h_separation", 6)
+	element_mastery_grid.add_theme_constant_override("v_separation", 5)
+	build_towers_header_block.add_child(element_mastery_grid)
+
+	for element_id in ELEMENT_ORDER:
+		var chip := _make_element_mastery_chip(element_id)
+		element_mastery_grid.add_child(chip)
+
+	element_hint_label = Label.new()
+	element_hint_label.name = "ElementHintLabel"
+	element_hint_label.text = "Pick elements between waves to unlock tower paths"
+	element_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	element_hint_label.add_theme_font_size_override("font_size", 10)
+	element_hint_label.add_theme_color_override("font_color", NeonStyle.INK_3)
+	build_towers_header_block.add_child(element_hint_label)
+
+func _make_element_mastery_chip(element_id: String) -> PanelContainer:
+	var chip := PanelContainer.new()
+	chip.name = "ElementChip_%s" % element_id.capitalize()
+	chip.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	chip.custom_minimum_size = Vector2(0, 40)
+
+	var row := HBoxContainer.new()
+	row.name = "Row"
+	row.add_theme_constant_override("separation", 5)
+	chip.add_child(row)
+
+	var icon := ElementIconControl.new()
+	icon.name = "Icon"
+	icon.custom_minimum_size = Vector2(28, 28)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	icon.configure([element_id], false)
+	row.add_child(icon)
+
+	var text_col := VBoxContainer.new()
+	text_col.name = "Text"
+	text_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	text_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	text_col.add_theme_constant_override("separation", 0)
+	row.add_child(text_col)
+
+	var name_label := Label.new()
+	name_label.name = "NameLabel"
+	name_label.text = str(ELEMENT_SHORT_LABELS.get(element_id, _element_label(element_id)))
+	name_label.clip_text = true
+	name_label.add_theme_font_size_override("font_size", 10)
+	text_col.add_child(name_label)
+
+	var level_label := Label.new()
+	level_label.name = "LevelLabel"
+	level_label.text = "Locked"
+	level_label.clip_text = true
+	level_label.add_theme_font_size_override("font_size", 10)
+	text_col.add_child(level_label)
+
+	element_chip_nodes[element_id] = {
+		"panel": chip,
+		"icon": icon,
+		"name": name_label,
+		"level": level_label,
+	}
+	return chip
+
+func _refresh_element_mastery_strip() -> void:
+	if element_mastery_grid == null or not is_instance_valid(element_mastery_grid):
+		return
+	for element_id in ELEMENT_ORDER:
+		var nodes: Dictionary = element_chip_nodes.get(element_id, {})
+		if nodes.is_empty():
+			continue
+		var level := int(current_element_levels.get(element_id, 0))
+		var unlocked := level > 0
+		var color := _get_element_ui_color(element_id)
+		var panel := nodes.get("panel") as PanelContainer
+		if panel:
+			panel.add_theme_stylebox_override("panel", _element_mastery_chip_style(color, unlocked))
+			panel.tooltip_text = "%s mastery level %d" % [_element_label(element_id), level]
+		var icon := nodes.get("icon") as ElementIconControl
+		if icon:
+			icon.configure([element_id], unlocked)
+		var name_label := nodes.get("name") as Label
+		if name_label:
+			name_label.add_theme_color_override("font_color", NeonStyle.INK_1 if unlocked else NeonStyle.INK_3)
+		var level_label := nodes.get("level") as Label
+		if level_label:
+			level_label.text = "Lv. %d" % level if unlocked else "Locked"
+			level_label.add_theme_color_override("font_color", color if unlocked else NeonStyle.INK_4)
+	if element_hint_label:
+		element_hint_label.text = "Pick elements between waves to unlock tower paths"
+
+func _element_mastery_chip_style(color: Color, unlocked: bool) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(color.r, color.g, color.b, 0.105) if unlocked else Color(NeonStyle.BG_0.r, NeonStyle.BG_0.g, NeonStyle.BG_0.b, 0.72)
+	style.border_color = Color(color.r, color.g, color.b, 0.54) if unlocked else Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.18)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 5
+	style.content_margin_bottom = 5
+	if unlocked:
+		style.set_border_width(SIDE_LEFT, 3)
+	return style
 
 func _sync_tower_shop_list_width() -> void:
 	if tower_shop_list == null or not is_instance_valid(tower_shop_list):
