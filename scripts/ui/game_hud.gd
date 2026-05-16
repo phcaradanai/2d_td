@@ -2341,18 +2341,7 @@ func _em_build_unlock_preview(element_id: String, el_col: Color) -> void:
 		for cfg in unlocked_now:
 			grid.add_child(_em_make_tower_card(cfg, el_col))
 
-	var future: Array = preview.get("enables_later", [])
-	if not future.is_empty():
-		wrap.add_child(_em_sec_hdr("ENABLES LATER"))
-		var flow := HFlowContainer.new()
-		flow.add_theme_constant_override("h_separation", 6)
-		flow.add_theme_constant_override("v_separation", 6)
-		wrap.add_child(flow)
-		var max_items: int = mini(future.size(), 10)
-		for i in range(max_items):
-			flow.add_child(_em_chip(str(future[i]), Color(el_col.r, el_col.g, el_col.b, 0.88)))
-		if future.size() > max_items:
-			flow.add_child(_em_chip("+%d more" % (future.size() - max_items), Color(0.55,0.70,0.82)))
+	# "ENABLES LATER" combo chips moved to the right summary panel.
 
 func _em_build_economy_preview() -> void:
 	var bv := VBoxContainer.new()
@@ -2524,90 +2513,92 @@ func _em_rebuild_right(element_id: String) -> void:
 	var is_max  := element_id != "__interest__" and int(levels.get(element_id,0)) >= 3
 	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
-	_em_right_col.add_child(_em_sec_hdr("YOU WILL UNLOCK"))
+	# ── SELECTED ELEMENT ─────────────────────────────────────────────────────
+	_em_right_col.add_child(_em_sec_hdr("SELECTED ELEMENT"))
 
-	# Element identity row at the top of the right column.
 	var el_id_row := HBoxContainer.new()
 	el_id_row.add_theme_constant_override("separation", 10)
 	_em_right_col.add_child(el_id_row)
 
 	var el_id_icon := ElementIconControl.new()
-	el_id_icon.custom_minimum_size = Vector2(34, 34)
+	el_id_icon.custom_minimum_size = Vector2(36, 36)
 	el_id_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	el_id_icon.configure([element_id], not (is_max or is_lock))
 	el_id_row.add_child(el_id_icon)
 
-	var el_id_lbl := _em_lbl(
-		_element_label(element_id) if element_id != "__interest__" else "Interest Bonus",
-		16, el_col
-	)
-	el_id_lbl.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	el_id_lbl.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	el_id_row.add_child(el_id_lbl)
+	var el_name_col := VBoxContainer.new()
+	el_name_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	el_name_col.add_theme_constant_override("separation", 2)
+	el_id_row.add_child(el_name_col)
 
-	var get_v := VBoxContainer.new()
-	get_v.add_theme_constant_override("separation", 6)
-	_em_right_col.add_child(get_v)
+	el_name_col.add_child(_em_lbl(
+		_element_label(element_id) if element_id != "__interest__" else "Interest Bonus",
+		14, el_col))
+
+	var cur_lv := int(levels.get(element_id, 0))
+	if element_id == "__interest__":
+		el_name_col.add_child(_em_lbl(
+			"%s → %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")],
+			11, NeonStyle.WARN))
+	elif is_max:
+		el_name_col.add_child(_em_lbl("Lv.3  MAX", 11, NeonStyle.INK_3))
+	else:
+		el_name_col.add_child(_em_lbl("Lv.%d → Lv.%d" % [cur_lv, cur_lv + 1], 11, NeonStyle.CYAN_2))
 
 	if element_id == "__interest__":
-		# Interest Bonus: keep simple text rows (not a tower unlock).
-		for item_text in [
-			"Interest %s → %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")],
-			"No tower unlock"
-		]:
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 6)
-			get_v.add_child(row)
-			var ck := _em_lbl("✓", 12, NeonStyle.OK)
-			ck.custom_minimum_size.x = 18
-			row.add_child(ck)
-			var il := _em_lbl(item_text, 12, Color(0.8, 0.88, 0.96))
-			il.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-			il.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-			row.add_child(il)
+		# ── ECONOMY EFFECT ────────────────────────────────────────────────────
+		_em_right_col.add_child(_em_sec_hdr("ECONOMY EFFECT"))
+		var eco_v := VBoxContainer.new()
+		eco_v.add_theme_constant_override("separation", 4)
+		_em_right_col.add_child(eco_v)
+		eco_v.add_child(_em_lbl("Passive gold every 15s", 12, NeonStyle.INK_2))
+		eco_v.add_child(_em_lbl("No tower unlock", 12, NeonStyle.INK_3))
 	else:
-		# Element unlock: one row per tower using element-combo icons that
-		# match the left Build Towers panel style exactly.
 		var preview := _em_get_unlock_preview_for_element(element_id)
 		var tower_cfgs: Array = []
 		tower_cfgs.append_array(preview.get("single_element", []))
 		tower_cfgs.append_array(preview.get("dual_element",   []))
 		tower_cfgs.append_array(preview.get("triple_element", []))
 
+		# ── NEW TOWERS ────────────────────────────────────────────────────────
+		_em_right_col.add_child(_em_sec_hdr("NEW TOWERS"))
 		if tower_cfgs.is_empty():
-			var none_row := HBoxContainer.new()
-			none_row.add_theme_constant_override("separation", 6)
-			get_v.add_child(none_row)
-			var dash := _em_lbl("—", 12, NeonStyle.INK_3)
-			dash.custom_minimum_size.x = 18
-			none_row.add_child(dash)
-			none_row.add_child(_em_lbl("No new tower unlocks", 12, NeonStyle.INK_3))
+			_em_right_col.add_child(_em_lbl("No new tower unlocks", 12, NeonStyle.INK_3))
 		else:
+			var towers_v := VBoxContainer.new()
+			towers_v.add_theme_constant_override("separation", 6)
+			_em_right_col.add_child(towers_v)
 			for tcfg in tower_cfgs:
 				var row := HBoxContainer.new()
 				row.add_theme_constant_override("separation", 8)
-				get_v.add_child(row)
-
-				# Element combo icon — identical to the Build Towers panel.
+				towers_v.add_child(row)
 				var t_elems: Array = tcfg.get("elements", [])
 				var t_icon := _create_element_icon(t_elems, true)
 				t_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 				row.add_child(t_icon)
-
-				# Name + element combination text.
-				var name_col := VBoxContainer.new()
-				name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				name_col.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
-				name_col.add_theme_constant_override("separation", 2)
-				row.add_child(name_col)
-
-				var t_name := _compact_tower_display_name(str(tcfg.get("display_name", tcfg.get("name", "Tower"))))
-				var n_lbl := _em_lbl(t_name, 13, NeonStyle.INK_1)
-				name_col.add_child(n_lbl)
-
+				var nc := VBoxContainer.new()
+				nc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				nc.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
+				nc.add_theme_constant_override("separation", 2)
+				row.add_child(nc)
+				var t_name := _compact_tower_display_name(str(tcfg.get("display_name", tcfg.get("name","Tower"))))
+				nc.add_child(_em_lbl(t_name, 13, NeonStyle.INK_1))
 				if t_elems.size() >= 2:
-					var req_lbl := _em_lbl(_format_element_combo_label(t_elems), 11, NeonStyle.INK_2)
-					name_col.add_child(req_lbl)
+					nc.add_child(_em_lbl(_format_element_combo_label(t_elems), 11, NeonStyle.INK_2))
+
+		# ── COMBO PATHS OPENED (moved from center panel) ─────────────────────
+		var future: Array = preview.get("enables_later", [])
+		if not future.is_empty():
+			_em_right_col.add_child(_em_sec_hdr("COMBO PATHS OPENED"))
+			var flow := HFlowContainer.new()
+			flow.add_theme_constant_override("h_separation", 5)
+			flow.add_theme_constant_override("v_separation", 5)
+			_em_right_col.add_child(flow)
+			var max_chips: int = mini(future.size(), 8)
+			for i in range(max_chips):
+				flow.add_child(_em_chip(str(future[i]), Color(el_col.r, el_col.g, el_col.b, 0.88)))
+			if future.size() > max_chips:
+				flow.add_child(_em_chip("+%d more" % (future.size() - max_chips), Color(0.55,0.70,0.82)))
 
 	# Push confirm to bottom
 	var push := Control.new()
