@@ -246,6 +246,9 @@ var _touch_points_down: Dictionary = {}
 var _hover_card: PanelContainer = null
 var _hover_card_rtl: RichTextLabel = null
 var _hover_long_press_timer: SceneTreeTimer = null
+
+# Selected-tower floating info card.
+var _tower_float_card: Control = null
 var element_status_label: Label = null
 var element_hint_label: Label = null
 var element_choice_panel: PanelContainer = null
@@ -3289,6 +3292,11 @@ func show_tower_info(info: Dictionary) -> void:
 		sell_tower_button.show()
 	_set_tower_detail_collapsed(tower_detail_collapsed)
 
+	# Keep the floating card in sync (e.g. after target-mode or upgrade refresh).
+	if _tower_float_card != null and is_instance_valid(_tower_float_card) \
+			and _tower_float_card.visible and _tower_float_card.has_method("refresh_info"):
+		_tower_float_card.call("refresh_info", info)
+
 func _build_tower_special_effect_text(_info: Dictionary) -> String:
 	# Superseded by TowerEffectFormatter.effect_lines() — kept for compatibility.
 	return "\n".join(TowerEffectFormatter.effect_lines(_info))
@@ -3299,6 +3307,36 @@ func hide_tower_info() -> void:
 		tower_special_effect_label.hide()
 	if sell_tower_button:
 		sell_tower_button.hide()
+
+# ── Floating tower info card ─────────────────────────────────────────────────
+
+func _ensure_tower_float_card() -> void:
+	if _tower_float_card != null and is_instance_valid(_tower_float_card):
+		return
+	var script = load("res://scripts/ui/tower_float_card.gd")
+	if script == null:
+		return
+	_tower_float_card = script.new()
+	_tower_float_card.name = "TowerFloatCard"
+	$Root.add_child(_tower_float_card)
+	# Route float card actions back through game_hud signals so main.gd
+	# receives them exactly as before.
+	if _tower_float_card.has_signal("upgrade_requested"):
+		_tower_float_card.upgrade_requested.connect(func(): upgrade_tower_requested.emit())
+	if _tower_float_card.has_signal("sell_requested"):
+		_tower_float_card.sell_requested.connect(func(): sell_tower_requested.emit())
+	if _tower_float_card.has_signal("target_mode_changed"):
+		_tower_float_card.target_mode_changed.connect(
+			func(mode: String): target_mode_changed.emit(mode))
+
+func show_tower_float_card(info: Dictionary, tower: Node2D) -> void:
+	_ensure_tower_float_card()
+	if _tower_float_card and _tower_float_card.has_method("show_for_tower"):
+		_tower_float_card.call("show_for_tower", info, tower)
+
+func hide_tower_float_card() -> void:
+	if _tower_float_card != null and is_instance_valid(_tower_float_card):
+		_tower_float_card.call("hide_card")
 
 func show_center_message(title: String, show_buttons: bool = true) -> void:
 	set_panel_active(center_message_panel, true, true)
@@ -3409,8 +3447,8 @@ func show_tower_info_panel() -> void:
 	tower_detail_has_selection = true
 	if _td_header_panel:
 		_td_header_panel.visible = true
-	_set_tower_detail_collapsed(false)
-	set_panel_active(right_sidebar, not tower_detail_collapsed, true)
+	# Tower Detail body is intentionally kept collapsed; the floating card is
+	# the primary detail UI.  Only the tab header is shown in the left drawer.
 	if no_selection_panel:
 		no_selection_panel.visible = false
 	_refresh_right_info_column_visibility()
@@ -3714,7 +3752,8 @@ func _setup_right_sidebar_layout() -> void:
 	_td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, false, false)
 	_td_header_panel.set_subtitle("No selection")
 	_td_header_panel.visible = false
-	_td_header_panel.pressed.connect(_toggle_tower_detail_collapsed)
+	# No expand toggle — Tower Detail body lives in the floating card.
+	# The header is a status-only summary tab in the left drawer.
 	container.add_child(_td_header_panel)
 	container.move_child(_td_header_panel, right_sidebar.get_index())
 

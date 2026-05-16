@@ -1535,7 +1535,10 @@ func _select_tower(tower: Node2D) -> void:
 		if selected_tower.has_method("set_selected"):
 			selected_tower.set_selected(true)
 		if game_hud:
-			game_hud.show_tower_info(selected_tower.get_info())
+			var _info : Dictionary = selected_tower.get_info()
+			game_hud.show_tower_info(_info)
+			if game_hud.has_method("show_tower_float_card"):
+				game_hud.show_tower_float_card(_info, selected_tower)
 	else:
 		clear_selected_tower()
 
@@ -1547,6 +1550,8 @@ func clear_selected_tower() -> void:
 	_get_tower_interaction_controller().clear_selected_tower()
 	if game_hud:
 		game_hud.hide_tower_info()
+		if game_hud.has_method("hide_tower_float_card"):
+			game_hud.hide_tower_float_card()
 
 func _deselect_tower() -> void:
 	clear_selected_tower()
