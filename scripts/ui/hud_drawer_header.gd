@@ -95,7 +95,7 @@ func _draw() -> void:
 		draw_rect(rect.grow(-1.0), border, false, 1.0)
 	var rail_rect := Rect2(Vector2(1.0, 1.0), Vector2(3.0, rect.size.y - 2.0))
 	if tab_mode:
-		rail_rect = Rect2(Vector2(rect.size.x - 5.0, 8.0), Vector2(4.0, rect.size.y - 16.0))
+		rail_rect = Rect2(Vector2(1.0, 8.0), Vector2(4.0, rect.size.y - 16.0))
 	draw_rect(rail_rect, Color(accent_color.r, accent_color.g, accent_color.b, 0.90 * alpha), true)
 	if not tab_mode:
 		_draw_corner_ticks(rect.grow(-1.0), border)
@@ -119,19 +119,20 @@ func _draw() -> void:
 func _draw_tab_body(rect: Rect2, fill: Color, border: Color, alpha: float) -> void:
 	var cut := 7.0
 	var r := rect.grow(-1.0)
+	# Flat left edge (attaches to screen), angled cut on right (faces game board)
 	var points := PackedVector2Array([
-		r.position + Vector2(0.0, cut),
-		r.position + Vector2(cut, 0.0),
-		r.position + Vector2(r.size.x, 0.0),
-		r.position + Vector2(r.size.x, r.size.y),
-		r.position + Vector2(cut, r.size.y),
-		r.position + Vector2(0.0, r.size.y - cut),
+		r.position + Vector2(0.0, 0.0),
+		r.position + Vector2(r.size.x - cut, 0.0),
+		r.position + Vector2(r.size.x, cut),
+		r.position + Vector2(r.size.x, r.size.y - cut),
+		r.position + Vector2(r.size.x - cut, r.size.y),
+		r.position + Vector2(0.0, r.size.y),
 	])
 	draw_colored_polygon(points, fill)
 	draw_polyline(PackedVector2Array([points[0], points[1], points[2], points[3], points[4], points[5], points[0]]), border, 1.1, true)
 	var tick_color := Color(accent_color.r, accent_color.g, accent_color.b, 0.34 * alpha)
-	draw_line(r.position + Vector2(9.0, 7.0), r.position + Vector2(r.size.x - 10.0, 7.0), tick_color, 1.0, true)
-	draw_line(r.position + Vector2(9.0, r.size.y - 7.0), r.position + Vector2(r.size.x - 10.0, r.size.y - 7.0), tick_color, 1.0, true)
+	draw_line(r.position + Vector2(5.0, 7.0), r.position + Vector2(r.size.x - cut - 3.0, 7.0), tick_color, 1.0, true)
+	draw_line(r.position + Vector2(5.0, r.size.y - 7.0), r.position + Vector2(r.size.x - cut - 3.0, r.size.y - 7.0), tick_color, 1.0, true)
 
 func _draw_stacked_tab_label(rect: Rect2, alpha: float) -> void:
 	var words := _tab_words()

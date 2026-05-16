@@ -140,6 +140,11 @@ var wave_intel_suggested_title_label: Label = null
 var wave_intel_suggested_label: RichTextLabel = null
 var wave_intel_warnings_label: Label = null
 var no_selection_panel: PanelContainer = null
+var wave_intel_collapsed: bool = false
+var _wi_wrapper: VBoxContainer = null
+var _wi_header_btn: HUDDrawerHeaderControl = null
+var _wi_reward_row: HBoxContainer = null
+var _wi_reward_display: CreditCostDisplayControl = null
 
 const SHOW_DAMAGE_PANEL := true
 const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
@@ -552,10 +557,14 @@ func _apply_left_drawer_layout() -> void:
 	left_sidebar.custom_minimum_size.x = LEFT_DRAWER_WIDTH if drawer_open else LEFT_TAB_RAIL_WIDTH
 	var margin := left_sidebar.get_node_or_null("MarginContainer")
 	if margin:
-		margin.add_theme_constant_override("margin_left", 0 if not drawer_open else 12)
-		margin.add_theme_constant_override("margin_right", 6 if not drawer_open else 12)
-		margin.add_theme_constant_override("margin_top", 12)
-		margin.add_theme_constant_override("margin_bottom", 12)
+		var m := 12 if drawer_open else 0
+		margin.add_theme_constant_override("margin_left",   m)
+		margin.add_theme_constant_override("margin_right",  m)
+		margin.add_theme_constant_override("margin_top",    m)
+		margin.add_theme_constant_override("margin_bottom", m)
+		var vbox := margin.get_node_or_null("VBoxContainer")
+		if vbox:
+			vbox.add_theme_constant_override("separation", 10 if drawer_open else 2)
 	_style_left_sidebar_shell(drawer_open)
 	_sync_tower_shop_list_width()
 
@@ -3028,9 +3037,9 @@ func show_tower_info(info: Dictionary) -> void:
 		upgrade_tower_button.text = "MAX TIER"
 		upgrade_tower_button.add_theme_color_override("font_color", NeonStyle.INK_3)
 	elif info["can_upgrade"] and info["upgrade_cost"] > 0:
-		tower_upgrade_cost_label.text = "Upgrade  $%d" % info["upgrade_cost"]
+		tower_upgrade_cost_label.text = "Upgrade  ✦%d" % info["upgrade_cost"]
 		upgrade_tower_button.disabled = false
-		upgrade_tower_button.text = "Upgrade to Lv%d  ·  $%d" % [
+		upgrade_tower_button.text = "Upgrade to Lv%d  ·  ✦%d" % [
 			int(info.get("tier", 1)) + 1, info["upgrade_cost"]]
 		upgrade_tower_button.add_theme_color_override("font_color", NeonStyle.INK_1)
 	elif info["can_upgrade"]:
@@ -3046,7 +3055,7 @@ func show_tower_info(info: Dictionary) -> void:
 
 	if sell_tower_button:
 		var refund := int(info.get("sell_refund", 0))
-		sell_tower_button.text = "Sell  +$%d" % refund
+		sell_tower_button.text = "Sell  +✦%d" % refund
 		sell_tower_button.add_theme_color_override("font_color", NeonStyle.OK)
 		sell_tower_button.show()
 
@@ -3341,25 +3350,30 @@ func _setup_right_sidebar_layout() -> void:
 		detail_vbox.add_child(tower_special_effect_label)
 		detail_vbox.move_child(tower_special_effect_label, tower_slow_label.get_index() + 1)
 
-	# 2. No Selection Panel
+	# 2. No Selection Panel — compact premium card
 	no_selection_panel = PanelContainer.new()
 	no_selection_panel.name = "NoSelectionPanel"
-	no_selection_panel.custom_minimum_size = Vector2(0, 100)
+	no_selection_panel.custom_minimum_size = Vector2(0, 84)
 	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
-	var ns_style := NeonStyle.panel(Color(NeonStyle.BG_0.r, NeonStyle.BG_0.g, NeonStyle.BG_0.b, 0.50), NeonStyle.LINE, false)
+	var ns_style := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
+	ns_style.content_margin_left   = 14
+	ns_style.content_margin_right  = 14
+	ns_style.content_margin_top    = 16
+	ns_style.content_margin_bottom = 16
 	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
 	container.add_child(no_selection_panel)
 	container.move_child(no_selection_panel, 1)
 
 	var ns_vbox := VBoxContainer.new()
 	ns_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	ns_vbox.add_theme_constant_override("separation", 5)
 	no_selection_panel.add_child(ns_vbox)
 
 	var ns_label := Label.new()
 	ns_label.text = "NO SELECTION"
 	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ns_label.add_theme_font_size_override("font_size", 10)
+	ns_label.add_theme_font_size_override("font_size", 11)
 	ns_label.add_theme_color_override("font_color", NeonStyle.INK_2)
 	ns_label.uppercase = true
 	ns_vbox.add_child(ns_label)
@@ -3371,14 +3385,26 @@ func _setup_right_sidebar_layout() -> void:
 	ns_sub.add_theme_color_override("font_color", NeonStyle.INK_3)
 	ns_vbox.add_child(ns_sub)
 
-	# 3. Setup Wave Intel Panel
+	# 3. Wave Intel — collapsible wrapper: header button + body panel
+	_wi_wrapper = VBoxContainer.new()
+	_wi_wrapper.name = "WaveIntelWrapper"
+	_wi_wrapper.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_wi_wrapper.add_theme_constant_override("separation", 0)
+	container.add_child(_wi_wrapper)
+
+	_wi_header_btn = HUDDrawerHeaderControl.new()
+	_wi_header_btn.name = "WaveIntelHeader"
+	_wi_header_btn.configure("WAVE INTEL", "wave", NeonStyle.CYAN, true)
+	_wi_wrapper.add_child(_wi_header_btn)
+	_wi_header_btn.pressed.connect(_toggle_wave_intel)
+
 	wave_intel_panel = PanelContainer.new()
 	wave_intel_panel.name = "WaveIntelPanel"
-	wave_intel_panel.custom_minimum_size = Vector2(0, 160)
-	wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL # Use remaining space
+	wave_intel_panel.custom_minimum_size = Vector2(0, 140)
+	wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_PASS
-	container.add_child(wave_intel_panel)
-	
+	_wi_wrapper.add_child(wave_intel_panel)
+
 	var style_intel := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
 	style_intel.content_margin_left   = 0
 	style_intel.content_margin_right  = 0
@@ -3389,49 +3415,54 @@ func _setup_right_sidebar_layout() -> void:
 	var margin := MarginContainer.new()
 	margin.add_theme_constant_override("margin_left",   14)
 	margin.add_theme_constant_override("margin_right",  14)
-	margin.add_theme_constant_override("margin_top",    10)
+	margin.add_theme_constant_override("margin_top",    8)
 	margin.add_theme_constant_override("margin_bottom", 10)
 	margin.mouse_filter = Control.MOUSE_FILTER_PASS
 	wave_intel_panel.add_child(margin)
 
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 6)
+	vbox.add_theme_constant_override("separation", 5)
 	vbox.mouse_filter = Control.MOUSE_FILTER_PASS
 	margin.add_child(vbox)
 
-	# Header row: eyebrow + wave count
-	var hdr_row := HBoxContainer.new()
-	hdr_row.add_theme_constant_override("separation", 8)
-	vbox.add_child(hdr_row)
-
-	var title := _create_wave_intel_label("WAVE INTEL", 10, NeonStyle.INK_3)
-	title.uppercase = true
-	hdr_row.add_child(title)
-
-	var hdr_line := ColorRect.new()
-	hdr_line.color = NeonStyle.LINE
-	hdr_line.custom_minimum_size = Vector2(0, 1)
-	hdr_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hdr_line.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
-	hdr_row.add_child(hdr_line)
+	# Wave count row (replaces old inline header)
+	var wave_count_row := HBoxContainer.new()
+	wave_count_row.add_theme_constant_override("separation", 8)
+	vbox.add_child(wave_count_row)
 
 	wave_intel_current_label = _create_wave_intel_label("", 11, NeonStyle.INK_3)
-	hdr_row.add_child(wave_intel_current_label)
+	wave_intel_current_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	wave_count_row.add_child(wave_intel_current_label)
 
 	wave_intel_name_label = _create_wave_intel_label("", 13, NeonStyle.INK_1)
-	wave_intel_name_label.add_theme_font_size_override("font_size", 13)
 	vbox.add_child(wave_intel_name_label)
 
 	# Status + reward inline
 	var status_row := HBoxContainer.new()
-	status_row.add_theme_constant_override("separation", 12)
+	status_row.add_theme_constant_override("separation", 8)
 	vbox.add_child(status_row)
 
 	wave_intel_status_label = _create_wave_intel_label("", 11, NeonStyle.OK)
+	wave_intel_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	status_row.add_child(wave_intel_status_label)
 
-	wave_intel_reward_label = _create_wave_intel_label("", 11, NeonStyle.WARN)
-	status_row.add_child(wave_intel_reward_label)
+	# Reward: coin icon + amount via CreditCostDisplayControl
+	_wi_reward_row = HBoxContainer.new()
+	_wi_reward_row.add_theme_constant_override("separation", 4)
+	_wi_reward_row.visible = false
+	_wi_reward_row.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	status_row.add_child(_wi_reward_row)
+
+	wave_intel_reward_label = _create_wave_intel_label("Reward", 10, NeonStyle.INK_3)
+	wave_intel_reward_label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+	wave_intel_reward_label.autowrap_mode = TextServer.AUTOWRAP_OFF
+	_wi_reward_row.add_child(wave_intel_reward_label)
+
+	_wi_reward_display = CreditCostDisplayControl.new()
+	_wi_reward_display.custom_minimum_size = Vector2(50, 22)
+	_wi_reward_display.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	_wi_reward_display.configure(0, true)
+	_wi_reward_row.add_child(_wi_reward_display)
 
 	wave_intel_section_label = _create_wave_intel_label("", 10, NeonStyle.INK_3)
 	wave_intel_section_label.uppercase = true
@@ -3439,23 +3470,23 @@ func _setup_right_sidebar_layout() -> void:
 	vbox.add_child(wave_intel_section_label)
 
 	vbox.add_child(_create_wave_intel_separator())
-	
+
 	# Scrollable Body
 	var scroll = ScrollContainer.new()
 	scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	scroll.mouse_filter = Control.MOUSE_FILTER_PASS
 	vbox.add_child(scroll)
-	
+
 	var body = VBoxContainer.new()
 	body.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	body.add_theme_constant_override("separation", 8)
 	body.mouse_filter = Control.MOUSE_FILTER_PASS
 	scroll.add_child(body)
-	
+
 	wave_intel_section_label = _create_wave_intel_label("Upcoming", 12, Color(0.58, 0.78, 0.96))
 	body.add_child(wave_intel_section_label)
-	
+
 	wave_intel_main_summary_label = _create_wave_intel_richtext(12, NeonStyle.INK_1)
 	body.add_child(wave_intel_main_summary_label)
 
@@ -3487,6 +3518,13 @@ func _setup_right_sidebar_layout() -> void:
 	body.add_child(wave_intel_warnings_label)
 
 	_refresh_right_info_column_visibility()
+
+func _toggle_wave_intel() -> void:
+	wave_intel_collapsed = not wave_intel_collapsed
+	if _wi_header_btn:
+		_wi_header_btn.set_expanded(not wave_intel_collapsed)
+	if wave_intel_panel:
+		wave_intel_panel.visible = not wave_intel_collapsed
 
 func _layout_right_sidebar_container(width: float = 260.0) -> void:
 	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
@@ -3529,8 +3567,11 @@ func _set_next_wave_intel_visible(visible: bool) -> void:
 
 func clear_wave_intel() -> void:
 	if wave_intel_panel == null: return
-	
-	wave_intel_panel.visible = false
+
+	if _wi_wrapper:
+		_wi_wrapper.visible = false
+	else:
+		wave_intel_panel.visible = false
 	_refresh_right_info_column_visibility()
 	if wave_intel_current_label:
 		wave_intel_current_label.text = ""
@@ -3538,7 +3579,9 @@ func clear_wave_intel() -> void:
 		wave_intel_name_label.text = ""
 	if wave_intel_status_label:
 		wave_intel_status_label.text = ""
-	if wave_intel_reward_label:
+	if _wi_reward_row:
+		_wi_reward_row.visible = false
+	elif wave_intel_reward_label:
 		wave_intel_reward_label.text = ""
 	if wave_intel_section_label:
 		wave_intel_section_label.text = ""
@@ -3556,7 +3599,11 @@ func clear_wave_intel() -> void:
 func set_wave_intel_visible(visible: bool) -> void:
 	if wave_intel_panel == null:
 		return
-	wave_intel_panel.visible = visible
+	if _wi_wrapper:
+		_wi_wrapper.visible = visible
+		wave_intel_panel.visible = visible and not wave_intel_collapsed
+	else:
+		wave_intel_panel.visible = visible
 	_refresh_right_info_column_visibility()
 
 func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx: int, total_waves: int, is_running: bool) -> void:
@@ -3586,10 +3633,17 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 
 	var reward : int = current_preview.get("reward", 0)
 	if reward > 0:
-		wave_intel_reward_label.text = "Reward  +%d" % reward
-		wave_intel_reward_label.visible = true
+		if _wi_reward_display and _wi_reward_row:
+			_wi_reward_display.configure(reward, true)
+			_wi_reward_row.visible = true
+		elif wave_intel_reward_label:
+			wave_intel_reward_label.text = "Reward  ✦%d" % reward
+			wave_intel_reward_label.visible = true
 	else:
-		wave_intel_reward_label.visible = false
+		if _wi_reward_row:
+			_wi_reward_row.visible = false
+		elif wave_intel_reward_label:
+			wave_intel_reward_label.visible = false
 
 	if wave_intel_section_label:
 		wave_intel_section_label.text = "CURRENT" if is_running else "UPCOMING"
@@ -3614,25 +3668,35 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	else:
 		_set_next_wave_intel_visible(false)
 	
-	wave_intel_panel.visible = true
+	if _wi_wrapper:
+		_wi_wrapper.visible = true
+		wave_intel_panel.visible = not wave_intel_collapsed
+	else:
+		wave_intel_panel.visible = true
 	_refresh_right_info_column_visibility()
 
 func _refresh_right_info_column_visibility() -> void:
 	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
 	if container == null: return
-	
+
 	var tower_visible = right_sidebar != null and right_sidebar.visible
-	var wave_visible = wave_intel_panel != null and wave_intel_panel.visible
-	
+	var wave_visible: bool
+	if _wi_wrapper != null:
+		wave_visible = _wi_wrapper.visible
+	else:
+		wave_visible = wave_intel_panel != null and wave_intel_panel.visible
+
 	if right_sidebar:
 		right_sidebar.visible = tower_visible
-	
+
 	if no_selection_panel:
 		no_selection_panel.visible = not tower_visible
-	
-	if wave_intel_panel:
+
+	if _wi_wrapper:
+		_wi_wrapper.visible = wave_visible
+	elif wave_intel_panel:
 		wave_intel_panel.visible = wave_visible
-	
+
 	container.visible = true
 
 func _format_wave_preview_summary(preview: Dictionary) -> String:
