@@ -19,6 +19,7 @@ signal back_to_map_requested()
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 const ElementIconControl = preload("res://scripts/ui/element_icon.gd")
+const TowerRowTrimControl = preload("res://scripts/ui/tower_row_trim.gd")
 const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
 const ELEMENT_SHORT_LABELS := {
 	"light": "Light",
@@ -184,6 +185,7 @@ var tower_catalog: Dictionary = {} # id: full tower config
 var tower_shop_scroll: ScrollContainer = null
 var tower_shop_list: VBoxContainer = null
 var dynamic_tower_buttons: Dictionary = {} # id: Button
+var active_build_tower_id: String = ""
 var build_towers_header_block: VBoxContainer = null
 var element_mastery_grid: GridContainer = null
 var element_chip_nodes: Dictionary = {} # element_id: {panel, icon, name, level}
@@ -759,13 +761,16 @@ func _update_tower_affordability(current_gold: int) -> void:
 		if btn.disabled:
 			continue  # Skip locked towers; they keep their gray state.
 		var cost: int = int(tower_prices.get(tower_id, 50))
+		var can_afford := current_gold >= cost
+		btn.set_meta("row_affordable", can_afford)
 		btn.modulate = Color(1, 1, 1, 1)
 		var cost_label := btn.get_node_or_null("Row/CostLabel")
 		if cost_label is Label:
-			cost_label.add_theme_color_override("font_color", NeonStyle.WARN if current_gold >= cost else NeonStyle.DANGER)
+			cost_label.add_theme_color_override("font_color", NeonStyle.WARN if can_afford else Color(NeonStyle.DANGER.r, NeonStyle.DANGER.g, NeonStyle.DANGER.b, 0.82))
 		var name_label := btn.get_node_or_null("Row/NameColumn/NameLabel")
 		if name_label is Label:
-			name_label.add_theme_color_override("font_color", NeonStyle.INK_1 if current_gold >= cost else NeonStyle.INK_2)
+			name_label.add_theme_color_override("font_color", NeonStyle.INK_1 if can_afford else NeonStyle.INK_2)
+		_update_tower_row_trim(btn, bool(btn.get_meta("row_hovered", false)))
 
 func refresh_tower_shop(tower_ids: Array[String]) -> void:
 	_ensure_elemental_shop_ui()
@@ -857,8 +862,11 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 
 		# Desktop: hover in/out controls the card.
 		btn.mouse_entered.connect(func():
+			_update_tower_row_trim(captured_button, true)
 			_show_hover_card(captured_tower_id, captured_cfg, captured_cost, captured_button))
-		btn.mouse_exited.connect(func(): _hide_hover_card())
+		btn.mouse_exited.connect(func():
+			_update_tower_row_trim(captured_button, false)
+			_hide_hover_card())
 
 		# Mobile/touch: long-press (≥0.45s) shows the card; release hides it.
 		btn.gui_input.connect(func(ev: InputEvent):
@@ -880,10 +888,22 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 	dynamic_tower_buttons[tower_id] = btn
 
 func _populate_tower_row_button(btn: Button, display_name: String, cost: int, elements: Array, is_unlocked: bool) -> void:
+	btn.set_meta("tower_id", btn.name.replace("TowerButton_", ""))
+	btn.set_meta("row_elements", elements.duplicate(true))
+	btn.set_meta("row_locked", not is_unlocked)
+	btn.set_meta("row_affordable", true)
+	btn.set_meta("row_hovered", false)
+
+	var trim := TowerRowTrimControl.new()
+	trim.name = "RowTrim"
+	trim.set_anchors_preset(Control.PRESET_FULL_RECT)
+	trim.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.add_child(trim)
+
 	var row := HBoxContainer.new()
 	row.name = "Row"
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.offset_left   = 8
+	row.offset_left   = 12
 	row.offset_top    = 0
 	row.offset_right  = -8
 	row.offset_bottom = 0
@@ -892,6 +912,8 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 	btn.add_child(row)
 
 	var icon := _create_element_icon(elements, is_unlocked)
+	if not is_unlocked:
+		icon.modulate = Color(1.0, 1.0, 1.0, 0.86)
 	row.add_child(icon)
 
 	# Name + optional requirement sub-label in VBox
@@ -940,9 +962,10 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 	else:
 		cost_label.text = "LOCKED"
 		cost_label.custom_minimum_size.x = 54
-		cost_label.add_theme_font_size_override("font_size", 10)
+		cost_label.add_theme_font_size_override("font_size", 9)
 		cost_label.add_theme_color_override("font_color", NeonStyle.INK_4)
 	row.add_child(cost_label)
+	_update_tower_row_trim(btn, false)
 
 func _get_tower_shop_display_name(tower_id: String, cfg: Dictionary) -> String:
 	var raw_name := str(cfg.get("display_name", cfg.get("name", tower_id)))
@@ -1086,6 +1109,29 @@ func _create_element_icon(raw_elements: Array, is_unlocked: bool) -> ElementIcon
 	icon.custom_minimum_size = Vector2(icon_width, 34)
 	icon.configure(raw_elements, is_unlocked)
 	return icon
+
+func _update_tower_row_trim(btn: Button, hovered: bool) -> void:
+	if btn == null or not is_instance_valid(btn):
+		return
+	btn.set_meta("row_hovered", hovered)
+	var trim := btn.get_node_or_null("RowTrim") as TowerRowTrimControl
+	if trim == null:
+		return
+	var tower_id := str(btn.get_meta("tower_id", btn.name.replace("TowerButton_", "")))
+	var elements: Array = btn.get_meta("row_elements", [])
+	var locked := bool(btn.get_meta("row_locked", btn.disabled))
+	var affordable := bool(btn.get_meta("row_affordable", true))
+	var selected := not active_build_tower_id.is_empty() and tower_id == active_build_tower_id
+	trim.configure(elements, locked, affordable, selected, hovered)
+
+func _set_active_build_row(tower_id: String) -> void:
+	if active_build_tower_id == tower_id:
+		return
+	active_build_tower_id = tower_id
+	for button_id in dynamic_tower_buttons.keys():
+		var btn := dynamic_tower_buttons[button_id] as Button
+		if btn != null and is_instance_valid(btn):
+			_update_tower_row_trim(btn, bool(btn.get_meta("row_hovered", false)))
 
 func _element_badge_color(raw_elements: Array, is_unlocked: bool) -> Color:
 	if not is_unlocked:
@@ -2125,6 +2171,7 @@ func _clear_dynamic_tower_buttons() -> void:
 	for child in tower_shop_list.get_children():
 		child.queue_free()
 	dynamic_tower_buttons.clear()
+	active_build_tower_id = ""
 
 func _format_tower_button_name(tower_id: String, cfg: Dictionary) -> String:
 	var combo_type: String = str(cfg.get("combo_type", "neutral")).capitalize()
@@ -2266,6 +2313,8 @@ func set_build_status(text: String) -> void:
 		NeonStyle.CYAN if text != "Build: None" else NeonStyle.INK_3)
 	build_status_label.add_theme_font_size_override("font_size", 11)
 	cancel_build_button.visible = (text != "Build: None")
+	if text == "Build: None":
+		_set_active_build_row("")
 
 func _configure_start_wave_button_layout() -> void:
 	if start_wave_button == null:
@@ -2799,6 +2848,7 @@ func show_build_panel() -> void:
 
 func hide_build_panel() -> void:
 	set_panel_active(left_sidebar, false)
+	_set_active_build_row("")
 	_hide_hover_card()
 
 # ── Build-button hover card ──────────────────────────────────────────────────
@@ -2978,7 +3028,8 @@ func _on_tower_btn_pressed(id: String, btn: Button) -> void:
 		shake_node(btn)
 		set_build_status("Not enough gold ($%d)!" % cost)
 		return
-		
+
+	_set_active_build_row(id)
 	tower_build_selected.emit(id)
 
 func shake_node(node: Control, strength: float = 10.0) -> void:
