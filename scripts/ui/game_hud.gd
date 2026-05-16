@@ -24,6 +24,7 @@ const BuildSectionHeaderControl = preload("res://scripts/ui/build_section_header
 const HUDStatChipControl = preload("res://scripts/ui/hud_stat_chip.gd")
 const CreditCostDisplayControl = preload("res://scripts/ui/credit_cost_display.gd")
 const HUDDrawerHeaderControl = preload("res://scripts/ui/hud_drawer_header.gd")
+const CommandHeaderButtonControl = HUDDrawerHeaderControl
 const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
 const ELEMENT_SHORT_LABELS := {
 	"light": "Light",
@@ -169,12 +170,16 @@ var _td_header_row: HBoxContainer = null  # for showing/hiding when no tower
 var _td_header_panel: HUDDrawerHeaderControl = null
 var _td_chevron_label: Label = null
 var _td_content_nodes: Array[Control] = []
-var tower_detail_collapsed: bool = false
+var tower_detail_collapsed: bool = true
+var tower_detail_has_selection: bool = false
 
 const SHOW_DAMAGE_PANEL := true
 const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
 const LEFT_DRAWER_WIDTH := 310.0
 const LEFT_TAB_RAIL_WIDTH := 58.0
+const RIGHT_DRAWER_WIDTH := LEFT_DRAWER_WIDTH
+const DRAWER_SECTION_GAP := 10
+const DRAWER_BODY_MIN_HEIGHT := 260.0
 var damage_stats_tracker: Node = null
 var damage_stats_panel: PanelContainer = null
 var damage_stats_header_button: HUDDrawerHeaderControl = null
@@ -548,21 +553,57 @@ func _get_left_sidebar_content_box() -> VBoxContainer:
 
 func _ensure_left_drawer_headers(container: VBoxContainer) -> void:
 	if build_drawer_header_button == null or not is_instance_valid(build_drawer_header_button):
-		build_drawer_header_button = HUDDrawerHeaderControl.new()
+		build_drawer_header_button = CommandHeaderButtonControl.new()
 		build_drawer_header_button.name = "BuildTowersDrawerHeader"
 		build_drawer_header_button.configure("BUILD TOWERS", "build", NeonStyle.CYAN, build_drawer_expanded, true)
 		build_drawer_header_button.pressed.connect(_toggle_build_towers_drawer)
 		container.add_child(build_drawer_header_button)
 		container.move_child(build_drawer_header_button, basic_tower_button.get_index())
 	if damage_stats_header_button == null or not is_instance_valid(damage_stats_header_button):
-		damage_stats_header_button = HUDDrawerHeaderControl.new()
+		damage_stats_header_button = CommandHeaderButtonControl.new()
 		damage_stats_header_button.name = "DamageStatsDrawerHeader"
 		damage_stats_header_button.configure("DAMAGE STATS", "damage", NeonStyle.WARN, damage_stats_expanded, true)
 		damage_stats_header_button.pressed.connect(_toggle_damage_stats_panel)
 		container.add_child(damage_stats_header_button)
 		container.move_child(damage_stats_header_button, build_drawer_header_button.get_index() + 1)
+	_position_unified_left_drawer_tabs(container)
 	_apply_build_drawer_visibility()
 	_apply_left_drawer_layout()
+
+func _position_unified_left_drawer_tabs(container: VBoxContainer) -> void:
+	var index := 0
+	if build_drawer_header_button and build_drawer_header_button.get_parent() == container:
+		container.move_child(build_drawer_header_button, index)
+		index += 1
+	if _td_header_panel and _td_header_panel.get_parent() == container:
+		container.move_child(_td_header_panel, index)
+		index += 1
+	if right_sidebar and right_sidebar.get_parent() == container:
+		container.move_child(right_sidebar, index)
+		index += 1
+	if no_selection_panel and no_selection_panel.get_parent() == container:
+		container.move_child(no_selection_panel, index)
+		index += 1
+	if _wi_wrapper and _wi_wrapper.get_parent() == container:
+		container.move_child(_wi_wrapper, index)
+		index += 1
+	if damage_stats_header_button and damage_stats_header_button.get_parent() == container:
+		container.move_child(damage_stats_header_button, index)
+		index += 1
+	if build_towers_header_block and build_towers_header_block.get_parent() == container:
+		container.move_child(build_towers_header_block, index)
+		index += 1
+	if tower_shop_scroll and tower_shop_scroll.get_parent() == container:
+		container.move_child(tower_shop_scroll, index)
+		index += 1
+	if build_panel_bottom_separator and build_panel_bottom_separator.get_parent() == container:
+		container.move_child(build_panel_bottom_separator, index)
+		index += 1
+	if build_status_label and build_status_label.get_parent() == container:
+		container.move_child(build_status_label, index)
+		index += 1
+	if damage_stats_panel and damage_stats_panel.get_parent() == container:
+		container.move_child(damage_stats_panel, index)
 
 func _toggle_build_towers_drawer() -> void:
 	_set_build_towers_drawer_expanded(not build_drawer_expanded)
@@ -570,6 +611,8 @@ func _toggle_build_towers_drawer() -> void:
 func _set_build_towers_drawer_expanded(expanded: bool) -> void:
 	if expanded:
 		_set_damage_stats_expanded(false)
+		_set_tower_detail_collapsed(true)
+		_set_wave_intel_collapsed(true)
 	build_drawer_expanded = expanded
 	if build_drawer_header_button:
 		build_drawer_header_button.set_expanded(expanded)
@@ -580,12 +623,20 @@ func _set_build_towers_drawer_expanded(expanded: bool) -> void:
 
 func _collapse_left_drawers() -> void:
 	_set_build_towers_drawer_expanded(false)
+	_set_tower_detail_collapsed(true)
+	_set_wave_intel_collapsed(true)
 	_set_damage_stats_expanded(false)
 
 func _apply_build_drawer_visibility() -> void:
-	var drawer_open := build_drawer_expanded or damage_stats_expanded
+	var tower_detail_expanded := _td_header_panel != null and not tower_detail_collapsed
+	var wave_intel_expanded := not wave_intel_collapsed
+	var drawer_open := build_drawer_expanded or damage_stats_expanded or tower_detail_expanded or wave_intel_expanded
 	if build_drawer_header_button:
 		build_drawer_header_button.set_tab_mode(not drawer_open)
+	if _td_header_panel:
+		_td_header_panel.set_tab_mode(not drawer_open)
+	if _wi_tab_panel:
+		_wi_tab_panel.set_tab_mode(not drawer_open)
 	if damage_stats_header_button:
 		damage_stats_header_button.set_tab_mode(not drawer_open)
 	if build_towers_header_block:
@@ -598,12 +649,24 @@ func _apply_build_drawer_visibility() -> void:
 		build_status_label.visible = build_drawer_expanded and not active_build_tower_id.is_empty()
 	if cancel_build_button:
 		cancel_build_button.visible = false
+	if _td_header_panel:
+		_td_header_panel.visible = true
+	if right_sidebar:
+		right_sidebar.visible = tower_detail_expanded and tower_detail_has_selection
+	if no_selection_panel:
+		no_selection_panel.visible = tower_detail_expanded and not tower_detail_has_selection
+	if _wi_wrapper:
+		_wi_wrapper.visible = true
+	if wave_intel_panel:
+		wave_intel_panel.visible = wave_intel_expanded
+	if damage_stats_panel:
+		damage_stats_panel.visible = damage_stats_expanded
 
 func _apply_left_drawer_layout() -> void:
 	if left_sidebar == null:
 		return
 
-	var drawer_open := build_drawer_expanded or damage_stats_expanded
+	var drawer_open := build_drawer_expanded or damage_stats_expanded or (_td_header_panel != null and not tower_detail_collapsed) or not wave_intel_collapsed
 
 	left_sidebar.visible = true
 	left_sidebar.clip_contents = false
@@ -637,6 +700,7 @@ func _apply_left_drawer_layout() -> void:
 			vbox.add_theme_constant_override("separation", 10 if drawer_open else 8)
 			vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL if drawer_open else Control.SIZE_SHRINK_BEGIN
 			vbox.mouse_filter = Control.MOUSE_FILTER_PASS
+			_position_unified_left_drawer_tabs(vbox)
 
 	_style_left_sidebar_shell(drawer_open)
 	_sync_tower_shop_list_width()
@@ -746,6 +810,8 @@ func _toggle_damage_stats_panel() -> void:
 func _set_damage_stats_expanded(expanded: bool) -> void:
 	if expanded:
 		_set_build_towers_drawer_expanded(false)
+		_set_tower_detail_collapsed(true)
+		_set_wave_intel_collapsed(true)
 	damage_stats_expanded = expanded
 	if damage_stats_header_button:
 		damage_stats_header_button.set_expanded(expanded)
@@ -821,15 +887,9 @@ func update_layout_for_viewport() -> void:
 	_apply_left_drawer_layout()
 
 	if right_sidebar_container:
-		if portrait:
-			right_sidebar_container.custom_minimum_size.x = 0
-			right_sidebar_container.visible = right_sidebar.visible
-		elif view_size.x < 1200:
-			right_sidebar_container.visible = true
-			right_sidebar_container.custom_minimum_size.x = 260
-		else:
-			right_sidebar_container.visible = true
-			right_sidebar_container.custom_minimum_size.x = 260
+		right_sidebar_container.custom_minimum_size.x = 0
+		right_sidebar_container.visible = false
+		right_sidebar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	_sync_tower_shop_list_width()
 	_apply_mobile_portrait_layout(portrait)
@@ -950,7 +1010,7 @@ func get_playfield_rect() -> Rect2:
 	if left_sidebar and left_sidebar.custom_minimum_size.x > 0:
 		left_w = left_sidebar.custom_minimum_size.x
 		
-	var right_w = 240
+	var right_w = 0
 	if right_sidebar_container and right_sidebar_container.custom_minimum_size.x > 0:
 		right_w = right_sidebar_container.custom_minimum_size.x
 		
@@ -3346,16 +3406,21 @@ func _hide_hover_card() -> void:
 		_hover_card.visible = false
 
 func show_tower_info_panel() -> void:
-	if right_sidebar_container:
-		right_sidebar_container.visible = true
-	set_panel_active(right_sidebar, true, true)
+	tower_detail_has_selection = true
+	if _td_header_panel:
+		_td_header_panel.visible = true
+	_set_tower_detail_collapsed(false)
+	set_panel_active(right_sidebar, not tower_detail_collapsed, true)
+	if no_selection_panel:
+		no_selection_panel.visible = false
 	_refresh_right_info_column_visibility()
 
 func hide_tower_info_panel() -> void:
+	tower_detail_has_selection = false
+	if _td_header_panel:
+		_td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, not tower_detail_collapsed, false)
+		_td_header_panel.set_subtitle("No selection")
 	set_panel_active(right_sidebar, false)
-	var view_size: Vector2 = get_viewport().get_visible_rect().size
-	if right_sidebar_container and (view_size.x <= 760.0 or view_size.y > view_size.x * 1.22):
-		right_sidebar_container.visible = false
 	_refresh_right_info_column_visibility()
 
 func enter_end_game_ui_state() -> void:
@@ -3540,6 +3605,10 @@ func _register_tower_detail_content(node: Control) -> void:
 	_td_content_nodes.append(node)
 
 func _set_tower_detail_collapsed(collapsed: bool) -> void:
+	if not collapsed:
+		_set_build_towers_drawer_expanded(false)
+		_set_wave_intel_collapsed(true)
+		_set_damage_stats_expanded(false)
 	tower_detail_collapsed = collapsed
 	for node in _td_content_nodes:
 		if node != null and is_instance_valid(node):
@@ -3549,9 +3618,31 @@ func _set_tower_detail_collapsed(collapsed: bool) -> void:
 		_td_chevron_label.text = "›" if collapsed else "⌄"
 	if _td_header_panel:
 		_td_header_panel.set_expanded(not collapsed)
+	if right_sidebar:
+		right_sidebar.visible = not collapsed and tower_detail_has_selection
+	if no_selection_panel:
+		no_selection_panel.visible = not collapsed and not tower_detail_has_selection
+	_apply_build_drawer_visibility()
+	_apply_left_drawer_layout()
 
 func _toggle_tower_detail_collapsed() -> void:
 	_set_tower_detail_collapsed(not tower_detail_collapsed)
+
+func _has_tower_detail_selection() -> bool:
+	return tower_detail_has_selection
+
+func _make_right_drawer_body_style(accent: Color) -> StyleBoxFlat:
+	var style := StyleBoxFlat.new()
+	style.bg_color = NeonStyle.BG_1
+	style.border_color = Color(accent.r, accent.g, accent.b, 0.42)
+	style.set_border_width_all(1)
+	style.set_border_width(SIDE_LEFT, 3)
+	style.set_corner_radius_all(0)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 8
+	style.content_margin_bottom = 8
+	return style
 
 func _effect_title_color(info: Dictionary, title: String) -> Color:
 	var haystack := ("%s %s %s" % [
@@ -3593,26 +3684,39 @@ func _clean_effect_body_text(text: String) -> String:
 	return "\n".join(output)
 
 func _setup_right_sidebar_layout() -> void:
-	var container = right_sidebar_container
+	var old_right_container := right_sidebar_container
+	var container := _get_left_sidebar_content_box()
 	if container == null: return
+	_ensure_left_drawer_headers(container)
+
+	if old_right_container:
+		old_right_container.custom_minimum_size.x = 0
+		old_right_container.visible = false
+		old_right_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+	if right_sidebar.get_parent() != container:
+		var old_parent := right_sidebar.get_parent()
+		if old_parent:
+			old_parent.remove_child(right_sidebar)
+		container.add_child(right_sidebar)
+
+	container.add_theme_constant_override("separation", DRAWER_SECTION_GAP)
 
 	# 1. Setup Tower Detail Panel (Existing RightSidebar)
 	right_sidebar.name = "TowerDetailPanel"
 	right_sidebar.custom_minimum_size = Vector2(0, 0)
 	right_sidebar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
-	# Left-side accent rail
-	var style_detail := StyleBoxFlat.new()
-	style_detail.bg_color = NeonStyle.BG_1
-	style_detail.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.42)
-	style_detail.set_border_width_all(1)
-	style_detail.border_width_left = 3
-	style_detail.set_corner_radius_all(0)
-	style_detail.content_margin_left   = 8
-	style_detail.content_margin_right  = 8
-	style_detail.content_margin_top    = 8
-	style_detail.content_margin_bottom = 8
-	right_sidebar.add_theme_stylebox_override("panel", style_detail)
+	right_sidebar.add_theme_stylebox_override("panel", _make_right_drawer_body_style(NeonStyle.CYAN))
+
+	_td_header_panel = CommandHeaderButtonControl.new()
+	_td_header_panel.name = "TowerDetailDrawerHeader"
+	_td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, false, false)
+	_td_header_panel.set_subtitle("No selection")
+	_td_header_panel.visible = false
+	_td_header_panel.pressed.connect(_toggle_tower_detail_collapsed)
+	container.add_child(_td_header_panel)
+	container.move_child(_td_header_panel, right_sidebar.get_index())
 
 	# Margins
 	var detail_margin := right_sidebar.get_node_or_null("MarginContainer")
@@ -3666,18 +3770,8 @@ func _setup_right_sidebar_layout() -> void:
 		tower_special_effect_label.custom_minimum_size = Vector2.ZERO
 		detail_vbox.add_child(tower_special_effect_label)
 
-		# ── Build premium nodes with vi (visual insert index) ──
+		# ── Build premium body nodes with vi (visual insert index) ──
 		var vi := 0
-
-		# HEADER TAB — reuse the same drawn drawer header used by the left rail.
-		_td_header_panel = HUDDrawerHeaderControl.new()
-		_td_header_panel.name = "TowerDetailDrawerHeader"
-		_td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, true, false)
-		_td_header_panel.pressed.connect(_toggle_tower_detail_collapsed)
-
-		detail_vbox.add_child(_td_header_panel)
-		detail_vbox.move_child(_td_header_panel, vi)
-		vi += 1
 
 		# THIN SEPARATOR after header
 		var sep1 := _make_panel_separator()
@@ -3838,23 +3932,12 @@ func _setup_right_sidebar_layout() -> void:
 		deselect_tower_button.hide()
 		deselect_tower_button.custom_minimum_size = Vector2.ZERO
 
-	# 2. No Selection Panel — compact premium card with left rail
+	# 2. No Selection — Tower Detail's empty drawer body
 	no_selection_panel = PanelContainer.new()
 	no_selection_panel.name = "NoSelectionPanel"
-	no_selection_panel.custom_minimum_size = Vector2(0, 126)
+	no_selection_panel.custom_minimum_size = Vector2(0, 68)
 	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-
-	var ns_style := StyleBoxFlat.new()
-	ns_style.bg_color = NeonStyle.BG_1
-	ns_style.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.42)
-	ns_style.set_border_width_all(1)
-	ns_style.border_width_left = 3
-	ns_style.set_corner_radius_all(0)
-	ns_style.content_margin_left   = 8
-	ns_style.content_margin_right  = 8
-	ns_style.content_margin_top    = 8
-	ns_style.content_margin_bottom = 8
-	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
+	no_selection_panel.add_theme_stylebox_override("panel", _make_right_drawer_body_style(NeonStyle.CYAN))
 	container.add_child(no_selection_panel)
 	container.move_child(no_selection_panel, right_sidebar.get_index() + 1)
 
@@ -3862,13 +3945,6 @@ func _setup_right_sidebar_layout() -> void:
 	ns_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
 	ns_vbox.add_theme_constant_override("separation", 8)
 	no_selection_panel.add_child(ns_vbox)
-
-	var ns_header := HUDDrawerHeaderControl.new()
-	ns_header.name = "NoSelectionDrawerHeader"
-	ns_header.configure("NO SELECTION", "build", NeonStyle.CYAN, false, false)
-	ns_header.set_subtitle("Select a tower")
-	ns_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	ns_vbox.add_child(ns_header)
 
 	var ns_sub := Label.new()
 	ns_sub.text = "Select a tower or build tile to view details."
@@ -3885,7 +3961,7 @@ func _setup_right_sidebar_layout() -> void:
 	_wi_wrapper.add_theme_constant_override("separation", 6)
 	container.add_child(_wi_wrapper)
 
-	_wi_tab_panel = HUDDrawerHeaderControl.new()
+	_wi_tab_panel = CommandHeaderButtonControl.new()
 	_wi_tab_panel.name = "WaveIntelDrawerHeader"
 	_wi_tab_panel.configure("WAVE INTEL", "damage", NeonStyle.CYAN, false, false)
 	_wi_tab_panel.set_subtitle("Wave --/--")
@@ -3900,17 +3976,7 @@ func _setup_right_sidebar_layout() -> void:
 	wave_intel_panel.visible = false
 	_wi_wrapper.add_child(wave_intel_panel)
 
-	var style_intel := StyleBoxFlat.new()
-	style_intel.bg_color = NeonStyle.BG_1
-	style_intel.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.42)
-	style_intel.set_border_width_all(1)
-	style_intel.set_border_width(SIDE_LEFT, 3)
-	style_intel.set_corner_radius_all(0)
-	style_intel.content_margin_left   = 10
-	style_intel.content_margin_right  = 10
-	style_intel.content_margin_top    = 8
-	style_intel.content_margin_bottom = 8
-	wave_intel_panel.add_theme_stylebox_override("panel", style_intel)
+	wave_intel_panel.add_theme_stylebox_override("panel", _make_right_drawer_body_style(NeonStyle.CYAN))
 
 	var vbox := VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 7)
@@ -4012,7 +4078,14 @@ func _setup_right_sidebar_layout() -> void:
 	_refresh_right_info_column_visibility()
 
 func _toggle_wave_intel() -> void:
-	wave_intel_collapsed = not wave_intel_collapsed
+	_set_wave_intel_collapsed(not wave_intel_collapsed)
+
+func _set_wave_intel_collapsed(collapsed: bool) -> void:
+	if not collapsed:
+		_set_build_towers_drawer_expanded(false)
+		_set_tower_detail_collapsed(true)
+		_set_damage_stats_expanded(false)
+	wave_intel_collapsed = collapsed
 	if _wi_header_btn:
 		_wi_header_btn.set_expanded(not wave_intel_collapsed)
 	if _wi_chevron_label:
@@ -4023,8 +4096,10 @@ func _toggle_wave_intel() -> void:
 		wave_intel_panel.visible = not wave_intel_collapsed
 	if _wi_wrapper:
 		_wi_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if wave_intel_collapsed else Control.SIZE_EXPAND_FILL
+	_apply_build_drawer_visibility()
+	_apply_left_drawer_layout()
 
-func _layout_right_sidebar_container(width: float = 260.0) -> void:
+func _layout_right_sidebar_container(width: float = RIGHT_DRAWER_WIDTH) -> void:
 	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
 	if container:
 		container.custom_minimum_size.x = width
@@ -4191,28 +4266,20 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	_refresh_right_info_column_visibility()
 
 func _refresh_right_info_column_visibility() -> void:
-	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
-	if container == null: return
-
-	var tower_visible = right_sidebar != null and right_sidebar.visible
-	var wave_visible: bool
-	if _wi_wrapper != null:
-		wave_visible = _wi_wrapper.visible
-	else:
-		wave_visible = wave_intel_panel != null and wave_intel_panel.visible
-
+	if right_sidebar_container:
+		right_sidebar_container.custom_minimum_size.x = 0
+		right_sidebar_container.visible = false
+	if _td_header_panel:
+		_td_header_panel.visible = true
 	if right_sidebar:
-		right_sidebar.visible = tower_visible
-
+		right_sidebar.visible = not tower_detail_collapsed and tower_detail_has_selection
 	if no_selection_panel:
-		no_selection_panel.visible = not tower_visible
-
+		no_selection_panel.visible = not tower_detail_collapsed and not tower_detail_has_selection
 	if _wi_wrapper:
-		_wi_wrapper.visible = wave_visible
-	elif wave_intel_panel:
-		wave_intel_panel.visible = wave_visible
-
-	container.visible = true
+		_wi_wrapper.visible = true
+	if wave_intel_panel:
+		wave_intel_panel.visible = not wave_intel_collapsed
+	_apply_build_drawer_visibility()
 
 func _format_wave_preview_summary(preview: Dictionary) -> String:
 	var lane_info = preview.get("lane_info", {})
