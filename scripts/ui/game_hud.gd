@@ -21,6 +21,7 @@ const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 const ElementIconControl = preload("res://scripts/ui/element_icon.gd")
 const TowerRowTrimControl = preload("res://scripts/ui/tower_row_trim.gd")
 const BuildSectionHeaderControl = preload("res://scripts/ui/build_section_header.gd")
+const HUDStatChipControl = preload("res://scripts/ui/hud_stat_chip.gd")
 const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
 const ELEMENT_SHORT_LABELS := {
 	"light": "Light",
@@ -44,6 +45,12 @@ const ELEMENT_SHORT_LABELS := {
 var interest_status_label: Label = null
 var start_wave_countdown_badge: Label = null
 var top_bar_total_waves: int = 0
+var credits_chip: HUDStatChipControl = null
+var core_chip: HUDStatChipControl = null
+var wave_chip: HUDStatChipControl = null
+var status_chip: HUDStatChipControl = null
+var next_wave_chip: HUDStatChipControl = null
+var interest_chip: HUDStatChipControl = null
 
 # Sidebar Panels
 @onready var left_sidebar: PanelContainer = $Root/ScreenLayout/MainContent/LeftSidebar
@@ -402,6 +409,7 @@ func _ready() -> void:
 	# This prevents invisible containers from blocking map clicks.
 	$Root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
+	_ensure_top_hud_stat_chips()
 	set_status("Ready")
 	set_build_status("Build: None")
 	_ensure_interest_status_label()
@@ -415,7 +423,7 @@ func _ready() -> void:
 	# Top-bar HBox spacing
 	var top_hbox := gold_label.get_parent()
 	if top_hbox is HBoxContainer:
-		top_hbox.add_theme_constant_override("separation", 20)
+		top_hbox.add_theme_constant_override("separation", 8)
 
 func _process(delta: float) -> void:
 	if damage_stats_panel == null or not SHOW_DAMAGE_PANEL:
@@ -649,6 +657,7 @@ func _apply_terminal_hud_skin() -> void:
 		NeonStyle.apply_terminal_label(interest_status_label, 11, NeonStyle.EL_INTEREST)
 	if build_status_label:
 		NeonStyle.apply_terminal_label(build_status_label, 11, NeonStyle.INK_3)
+	_style_top_hud_backing_labels()
 
 	# Buttons — refined sizing
 	for btn in [settings_button, pause_button, restart_button,
@@ -746,12 +755,51 @@ func set_audio_settings_ui(settings: Dictionary) -> void:
 	sfx_mute_check.button_pressed = settings.get("sfx_muted", false)
 	updating_audio_ui = false
 
+func _ensure_top_hud_stat_chips() -> void:
+	var top_hbox := gold_label.get_parent()
+	if not top_hbox is HBoxContainer:
+		return
+	if credits_chip != null and is_instance_valid(credits_chip):
+		return
+	top_hbox.add_theme_constant_override("separation", 8)
+	credits_chip = _make_hud_stat_chip("CreditsChip", "credits", "0", NeonStyle.WARN, Vector2(86, 38))
+	core_chip = _make_hud_stat_chip("CoreChip", "core", "20", NeonStyle.CYAN_2, Vector2(72, 38))
+	wave_chip = _make_hud_stat_chip("WaveChip", "wave", "WAVE 0/60", NeonStyle.CYAN, Vector2(118, 38))
+	status_chip = _make_hud_stat_chip("StatusChip", "status", "READY", NeonStyle.CYAN, Vector2(92, 38))
+	next_wave_chip = _make_hud_stat_chip("NextWaveChip", "next", "NEXT W1", NeonStyle.INK_2, Vector2(210, 38))
+	interest_chip = _make_hud_stat_chip("InterestChip", "interest", "OFF", NeonStyle.EL_INTEREST, Vector2(164, 38))
+	var chips: Array[HUDStatChipControl] = [credits_chip, core_chip, wave_chip, status_chip, next_wave_chip, interest_chip]
+	var insert_index := gold_label.get_index()
+	for chip in chips:
+		top_hbox.add_child(chip)
+		top_hbox.move_child(chip, insert_index)
+		insert_index += 1
+	_style_top_hud_backing_labels()
+
+func _make_hud_stat_chip(node_name: String, kind: String, text: String, accent: Color, min_size: Vector2) -> HUDStatChipControl:
+	var chip := HUDStatChipControl.new()
+	chip.name = node_name
+	chip.custom_minimum_size = min_size
+	chip.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	chip.configure(kind, text, accent, false)
+	return chip
+
+func _style_top_hud_backing_labels() -> void:
+	for label in [gold_label, lives_label, wave_label, status_label, next_wave_label, interest_status_label]:
+		if label is Label:
+			label.visible = false
+			label.custom_minimum_size = Vector2.ZERO
+			label.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+
 func set_gold(value: int) -> void:
 	var old_text := gold_label.text
 	gold_label.text = "✦ %d" % value
 	gold_label.add_theme_color_override("font_color", NeonStyle.WARN)
 	if old_text != gold_label.text:
-		pulse_label(gold_label)
+		pulse_label(credits_chip if credits_chip else gold_label)
+	if credits_chip:
+		credits_chip.set_value(str(value), NeonStyle.WARN, false)
 	_update_tower_affordability(value)
 
 func _update_tower_affordability(current_gold: int) -> void:
@@ -2266,14 +2314,20 @@ func set_lives(value: int) -> void:
 	var live_color := NeonStyle.CYAN_2 if value >= 5 else NeonStyle.DANGER
 	lives_label.add_theme_color_override("font_color", live_color)
 	if old_text != lives_label.text:
-		pulse_label(lives_label, 1.2 if value < 5 else 1.1)
+		pulse_label(core_chip if core_chip else lives_label, 1.2 if value < 5 else 1.1)
 		# Flash red on damage, then restore
 		var flash_tween := create_tween()
 		lives_label.add_theme_color_override("font_color", NeonStyle.DANGER)
+		if core_chip:
+			core_chip.set_value(str(value), NeonStyle.DANGER, false)
 		flash_tween.tween_interval(0.35)
 		flash_tween.tween_callback(func():
 			lives_label.add_theme_color_override("font_color", live_color)
+			if core_chip:
+				core_chip.set_value(str(value), live_color, false)
 		)
+	elif core_chip:
+		core_chip.set_value(str(value), live_color, false)
 
 func set_wave(value: int) -> void:
 	set_current_wave(value, top_bar_total_waves)
@@ -2282,22 +2336,32 @@ func set_current_wave(current_wave: int, total_waves: int) -> void:
 	top_bar_total_waves = total_waves
 	var old_text := wave_label.text
 	if total_waves > 0:
-		wave_label.text = "W%d / %d" % [current_wave, total_waves]
+		wave_label.text = "Wave: %d/%d" % [current_wave, total_waves]
 	else:
-		wave_label.text = "W%d" % current_wave
+		wave_label.text = "Wave: %d" % current_wave
 	if old_text != wave_label.text:
-		pulse_label(wave_label)
+		pulse_label(wave_chip if wave_chip else wave_label)
+	if wave_chip:
+		var chip_text := "WAVE %d/%d" % [current_wave, total_waves] if total_waves > 0 else "WAVE %d" % current_wave
+		wave_chip.set_value(chip_text, NeonStyle.CYAN, false)
 
 func set_next_wave_preview(next_wave_number: int, wave_name: String, has_next_wave: bool) -> void:
 	if next_wave_label == null:
 		return
 	if not has_next_wave or next_wave_number <= 0:
-		next_wave_label.text = ""
+		next_wave_label.text = "Next: None"
+		if next_wave_chip:
+			next_wave_chip.set_value("NEXT --", NeonStyle.INK_4, true)
 		return
 	if wave_name != "":
-		next_wave_label.text = "NEXT · W%d — %s" % [next_wave_number, wave_name]
+		next_wave_label.text = "Next: Wave %d - %s" % [next_wave_number, wave_name]
 	else:
-		next_wave_label.text = "NEXT · W%d" % next_wave_number
+		next_wave_label.text = "Next: Wave %d" % next_wave_number
+	if next_wave_chip:
+		var chip_text := "NEXT W%d" % next_wave_number
+		if wave_name != "":
+			chip_text += " · %s" % wave_name
+		next_wave_chip.set_value(chip_text, NeonStyle.INK_2, false)
 
 func set_gameplay_status(message: String, color: Color = Color(0.85, 0.95, 1.0)) -> void:
 	set_status(message, color)
@@ -2307,6 +2371,22 @@ func set_interest_status(text: String) -> void:
 	if interest_status_label:
 		interest_status_label.text = text
 		interest_status_label.tooltip_text = text
+	if interest_chip:
+		interest_chip.set_value(_format_interest_chip_text(text), NeonStyle.EL_INTEREST, text.to_lower().find("off") >= 0)
+		interest_chip.tooltip_text = text
+
+func _format_interest_chip_text(text: String) -> String:
+	var normalized := text.strip_edges()
+	if normalized.is_empty():
+		return "OFF"
+	normalized = normalized.replace("Interest:", "")
+	normalized = normalized.replace("Interest", "")
+	normalized = normalized.replace("Next:", "")
+	normalized = normalized.replace("Next", "")
+	normalized = normalized.replace("every", "/")
+	normalized = normalized.replace(" in ", " / ")
+	normalized = normalized.replace("  ", " ")
+	return normalized.strip_edges().to_upper()
 
 func set_version(text: String) -> void:
 	if version_label:
@@ -2316,6 +2396,8 @@ func set_level_name(text: String) -> void:
 	if status_label:
 		status_label.text = text
 		status_label.add_theme_color_override("font_color", Color(0.4, 0.8, 1.0))
+	if status_chip:
+		status_chip.set_value(text.to_upper(), NeonStyle.CYAN, false)
 
 func set_status(text: String, color: Color = NeonStyle.CYAN) -> void:
 	status_label.text = text
@@ -2333,6 +2415,8 @@ func set_status(text: String, color: Color = NeonStyle.CYAN) -> void:
 		state_color = NeonStyle.DANGER
 	status_label.add_theme_color_override("font_color", state_color)
 	status_label.add_theme_font_size_override("font_size", 11)
+	if status_chip:
+		status_chip.set_value(text.to_upper(), state_color, false)
 
 func set_build_status(text: String) -> void:
 	build_status_label.text = text
@@ -2487,6 +2571,7 @@ func _ensure_interest_status_label() -> void:
 			top_hbox.move_child(interest_status_label, next_wave_label.get_index() + 1)
 	interest_status_label.add_theme_font_size_override("font_size", 13)
 	interest_status_label.add_theme_color_override("font_color", Color(0.95, 0.86, 0.35))
+	_style_top_hud_backing_labels()
 
 func _ensure_start_wave_countdown_badge() -> void:
 	if start_wave_button == null:
@@ -2869,6 +2954,8 @@ func show_victory() -> void:
 		start_wave_button.disabled = true
 	if next_wave_label:
 		next_wave_label.text = "All waves cleared"
+	if next_wave_chip:
+		next_wave_chip.set_value("ALL WAVES CLEARED", NeonStyle.OK, false)
 
 func show_build_panel() -> void:
 	set_panel_active(left_sidebar, true, true)
@@ -2962,6 +3049,8 @@ func enter_end_game_ui_state() -> void:
 	# Clear status to avoid clutter
 	set_status("")
 	if next_wave_label: next_wave_label.text = ""
+	if next_wave_chip:
+		next_wave_chip.set_value("NEXT --", NeonStyle.INK_4, true)
 
 func exit_end_game_ui_state() -> void:
 	show_build_panel()
