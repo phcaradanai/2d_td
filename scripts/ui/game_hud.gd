@@ -594,34 +594,57 @@ func _apply_build_drawer_visibility() -> void:
 func _apply_left_drawer_layout() -> void:
 	if left_sidebar == null:
 		return
+
 	var drawer_open := build_drawer_expanded or damage_stats_expanded
-	left_sidebar.custom_minimum_size.x = LEFT_DRAWER_WIDTH if drawer_open else LEFT_TAB_RAIL_WIDTH
+
+	left_sidebar.visible = true
+	left_sidebar.clip_contents = false
+
+	if drawer_open:
+		left_sidebar.custom_minimum_size.x = LEFT_DRAWER_WIDTH
+		left_sidebar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		left_sidebar.size_flags_vertical = Control.SIZE_EXPAND_FILL
+		left_sidebar.mouse_filter = Control.MOUSE_FILTER_STOP
+	else:
+		# Collapsed mode is a stable command rail, not a disappearing panel.
+		# Keep this width/style consistent before and after expand/collapse.
+		left_sidebar.custom_minimum_size.x = LEFT_TAB_RAIL_WIDTH
+		left_sidebar.size_flags_horizontal = Control.SIZE_SHRINK_BEGIN
+		left_sidebar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+		left_sidebar.mouse_filter = Control.MOUSE_FILTER_PASS
+
 	var margin := left_sidebar.get_node_or_null("MarginContainer")
 	if margin:
-		var m := 12 if drawer_open else 0
-		margin.add_theme_constant_override("margin_left",   m)
-		margin.add_theme_constant_override("margin_right",  m)
-		margin.add_theme_constant_override("margin_top",    m)
+		var m := 8 
+		margin.add_theme_constant_override("margin_left", m)
+		margin.add_theme_constant_override("margin_right", m)
+		margin.add_theme_constant_override("margin_top", m)
 		margin.add_theme_constant_override("margin_bottom", m)
+
+		margin.size_flags_vertical = Control.SIZE_EXPAND_FILL if drawer_open else Control.SIZE_SHRINK_BEGIN
+		margin.mouse_filter = Control.MOUSE_FILTER_PASS
+
 		var vbox := margin.get_node_or_null("VBoxContainer")
 		if vbox:
-			vbox.add_theme_constant_override("separation", 10 if drawer_open else 2)
+			vbox.add_theme_constant_override("separation", 10 if drawer_open else 8)
+			vbox.size_flags_vertical = Control.SIZE_EXPAND_FILL if drawer_open else Control.SIZE_SHRINK_BEGIN
+			vbox.mouse_filter = Control.MOUSE_FILTER_PASS
+
 	_style_left_sidebar_shell(drawer_open)
 	_sync_tower_shop_list_width()
 
 func _style_left_sidebar_shell(drawer_open: bool) -> void:
 	if left_sidebar == null:
 		return
+
+	# Keep one consistent visual direction for the left side:
+	# a persistent command rail is always visible while collapsed,
+	# and the same shell expands into the full drawer.
+	# This avoids the inconsistent "border exists before opening, disappears after collapse" state.
 	var style := StyleBoxFlat.new()
-	if drawer_open:
-		style.bg_color = NeonStyle.BG_1
-		style.border_color = NeonStyle.LINE
-		style.set_border_width_all(1)
-	else:
-		style.bg_color = Color(NeonStyle.BG_1.r, NeonStyle.BG_1.g, NeonStyle.BG_1.b, 0.0)
-		style.border_color = Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.0)
-		style.set_border_width_all(0)
-	style.set_corner_radius_all(0)
+	style.bg_color = NeonStyle.BG_1 if drawer_open else Color(NeonStyle.BG_1.r, NeonStyle.BG_1.g, NeonStyle.BG_1.b, 0.72)
+	style.border_color = NeonStyle.LINE if drawer_open else Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.42)
+	style.set_border_width_all(1)
 	style.content_margin_left = 0
 	style.content_margin_right = 0
 	style.content_margin_top = 0
@@ -779,27 +802,29 @@ func set_panel_active(panel: Control, active: bool, block_mouse: bool = true) ->
 		panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func update_layout_for_viewport() -> void:
-	if not is_inside_tree(): return
+	if not is_inside_tree():
+		return
+
 	var view_size = get_viewport().get_visible_rect().size
 	var portrait: bool = view_size.x <= 760.0 or view_size.y > view_size.x * 1.22
-	
-	if left_sidebar:
-		left_sidebar.custom_minimum_size.y = 168 if portrait else 0
-		_apply_left_drawer_layout()
-			
+
+	# Do not directly set left_sidebar width here.
+	# Let drawer layout own this state.
+	_apply_left_drawer_layout()
+
 	if right_sidebar_container:
 		if portrait:
 			right_sidebar_container.custom_minimum_size.x = 0
 			right_sidebar_container.visible = right_sidebar.visible
+		elif view_size.x < 1200:
+			right_sidebar_container.visible = true
+			right_sidebar_container.custom_minimum_size.x = 220
 		else:
 			right_sidebar_container.visible = true
-			right_sidebar_container.custom_minimum_size.x = 260
+			right_sidebar_container.custom_minimum_size.x = 240
+
 	_sync_tower_shop_list_width()
 	_apply_mobile_portrait_layout(portrait)
-
-	if OS.is_debug_build():
-		print("[HUD_LAYOUT] screen_size=", view_size, " playfield=", get_playfield_rect())
-
 func _apply_terminal_hud_skin() -> void:
 	if dim_overlay:
 		dim_overlay.color = Color(0.012, 0.016, 0.028, 0.76)
@@ -3237,10 +3262,14 @@ func show_victory() -> void:
 func show_build_panel() -> void:
 	set_panel_active(left_sidebar, true, true)
 	_apply_build_drawer_visibility()
+	_apply_left_drawer_layout()
 
 func hide_build_panel() -> void:
-	set_panel_active(left_sidebar, false)
+	# Keep the left command rail visible; only collapse drawer content.
 	_collapse_left_drawers()
+	if left_sidebar:
+		left_sidebar.visible = true
+		left_sidebar.process_mode = Node.PROCESS_MODE_INHERIT
 	_set_active_build_row("")
 	_hide_hover_card()
 
