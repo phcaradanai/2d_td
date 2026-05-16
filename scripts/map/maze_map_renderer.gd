@@ -19,8 +19,8 @@ const ROAD_EDGE_CYAN       := Color(0.12, 0.66, 0.90, 0.58)
 const ROAD_CENTER_GLOW     := Color(0.12, 0.78, 1.0, 0.30)
 const ROAD_CENTER_LINE     := Color(0.56, 0.92, 1.0, 0.48)
 const ROAD_CORNER_GLOW     := Color(0.2, 0.95, 1.0, 0.12)
-const SPAWN_COLOR          := Color(0.3,  0.95, 0.45, 0.95)
-const CORE_COLOR           := Color(1.0,  0.22, 0.12, 0.95)
+const SPAWN_COLOR          := Color(1.0,  0.22, 0.12, 0.95)
+const CORE_COLOR           := Color(0.3,  0.95, 0.45, 0.95)
 const GUIDELINE_COLOR      := Color(1.0, 0.58, 0.18, 0.74)
 const GUIDELINE_SHADOW     := Color(0.0, 0.0, 0.0, 0.50)
 const PATH_DOT_COLOR       := Color(0.16, 0.88, 1.0, 0.54)
@@ -266,8 +266,8 @@ func _draw_spawn_cells() -> void:
 		var portal_center := _cell_center(cell)
 		draw_circle(portal_center, _grid_size * 0.48, Color(SPAWN_COLOR.r, SPAWN_COLOR.g, SPAWN_COLOR.b, 0.09))
 		draw_circle(portal_center, _grid_size * 0.36, Color(SPAWN_COLOR.r, SPAWN_COLOR.g, SPAWN_COLOR.b, 0.07))
-		draw_arc(portal_center, _grid_size * 0.38, -PI * 0.15, PI * 1.15, 28, Color(0.72, 1.0, 0.80, 0.58), 1.6)
-		draw_arc(portal_center, _grid_size * 0.28, PI * 0.85, PI * 2.10, 28, Color(0.18, 0.95, 0.52, 0.42), 1.2)
+		draw_arc(portal_center, _grid_size * 0.38, -PI * 0.15, PI * 1.15, 28, Color(0.997, 0.716, 0.698, 0.58), 1.6)
+		draw_arc(portal_center, _grid_size * 0.28, PI * 0.85, PI * 2.10, 28, Color(1.0, 0.435, 0.402, 0.42), 1.2)
 
 		var pts := PackedVector2Array([
 			center + Vector2(0.0, -half),
@@ -275,16 +275,37 @@ func _draw_spawn_cells() -> void:
 			center + Vector2( half * 0.866, half * 0.5),
 		])
 		draw_colored_polygon(pts, SPAWN_COLOR)
-		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]), Color(0.75, 1.0, 0.82, 0.88), 1.6, true)
+		
+		draw_polyline(
+			PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]),
+			Color(0.02, 0.02, 0.025, 0.95),
+			2.4,
+			true
+		)
+		# Outer black outline
+		draw_polyline(
+			PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]),
+			Color(0.02, 0.02, 0.025, 0.96),
+			3.2,
+			true
+		)
 
+		# Inner warm highlight
+		draw_polyline(
+			PackedVector2Array([pts[0], pts[1], pts[2], pts[0]]),
+			Color(0.996, 0.192, 0.118, 0.549),
+			1.2,
+			true
+		)
 		var label_rect := Rect2(
 			center.x - _grid_size * 0.5,
 			center.y + label_offset,
 			_grid_size,
 			float(font_size)
 		)
+#SPAWN
 		draw_string(font, label_rect.position + Vector2(0, float(font_size)),
-			"SPAWN", HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, font_size, SPAWN_COLOR)
+			"", HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, font_size, SPAWN_COLOR)
 
 
 func _draw_base_cells() -> void:
@@ -299,8 +320,8 @@ func _draw_base_cells() -> void:
 		var core_center := _cell_center(cell)
 		draw_circle(core_center, _grid_size * 0.52, Color(CORE_COLOR.r, CORE_COLOR.g, CORE_COLOR.b, 0.11))
 		draw_circle(core_center, _grid_size * 0.38, Color(CORE_COLOR.r, CORE_COLOR.g, CORE_COLOR.b, 0.08))
-		draw_arc(core_center, _grid_size * 0.40, -PI * 0.25, PI * 1.25, 30, Color(1.0, 0.62, 0.45, 0.56), 1.7)
-		draw_arc(core_center, _grid_size * 0.28, PI * 0.80, PI * 2.05, 30, Color(1.0, 0.28, 0.16, 0.44), 1.2)
+		draw_arc(core_center, _grid_size * 0.40, -PI * 0.25, PI * 1.25, 30, Color(0.488, 0.841, 0.0, 0.56), 1.7)
+		draw_arc(core_center, _grid_size * 0.28, PI * 0.80, PI * 2.05, 30, Color(0.0, 0.696, 0.262, 0.44), 1.2)
 
 		var pts := PackedVector2Array([
 			center + Vector2(0.0, -half),
@@ -309,16 +330,37 @@ func _draw_base_cells() -> void:
 			center + Vector2(-half, 0.0),
 		])
 		draw_colored_polygon(pts, CORE_COLOR)
-		draw_polyline(PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]), Color(1.0, 0.72, 0.64, 0.90), 1.8, true)
+		
+		draw_polyline(
+			PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]),
+			Color(0.02, 0.02, 0.025, 0.95),
+			2.4,
+			true
+		)
+		# Outer black outline
+		draw_polyline(
+			PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]),
+			Color(0.02, 0.02, 0.025, 0.96),
+			3.2,
+			true
+		)
 
+		# Inner warm highlight
+		draw_polyline(
+			PackedVector2Array([pts[0], pts[1], pts[2], pts[3], pts[0]]),
+			Color(0.303, 0.95, 0.0, 0.55),
+			1.2,
+			true
+		)
 		var label_rect := Rect2(
 			center.x - _grid_size * 0.5,
 			center.y + label_offset,
 			_grid_size,
 			float(font_size)
 		)
+#CORE
 		draw_string(font, label_rect.position + Vector2(0, float(font_size)),
-			"CORE", HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, font_size, CORE_COLOR)
+			"", HORIZONTAL_ALIGNMENT_CENTER, label_rect.size.x, font_size, CORE_COLOR)
 
 
 func _draw_guideline_path() -> void:
