@@ -160,7 +160,8 @@ var _td_stat_spd: Label = null
 var _td_stat_tgt: Label = null
 var _td_stat_eff: Label = null            # KINETIC / SPLASH / etc badge
 var _td_effect_section: Control = null    # whole EFFECT section (hide if empty)
-var _td_effect_body: Label = null         # effect + upgrade preview text
+var _td_effect_title: Label = null        # effect-colored badge title
+var _td_effect_body: Label = null         # effect body + upgrade preview text
 var _td_header_row: HBoxContainer = null  # for showing/hiding when no tower
 
 const SHOW_DAMAGE_PANEL := true
@@ -859,12 +860,6 @@ func _apply_terminal_hud_skin() -> void:
 		if btn:
 			NeonStyle.style_button(btn, NeonStyle.CYAN, false)
 			btn.custom_minimum_size.y = 32
-
-	# Deselect button — subtle style
-	if deselect_tower_button:
-		NeonStyle.style_button(deselect_tower_button, NeonStyle.INK_4, false)
-		deselect_tower_button.text = "Close"
-		deselect_tower_button.custom_minimum_size.y = 28
 
 	# Primary action buttons stay taller
 	for btn in [start_wave_button, center_restart_button, center_menu_button]:
@@ -3129,17 +3124,26 @@ func show_tower_info(info: Dictionary) -> void:
 				_td_stat_tgt.text = "Ground Only"
 				_td_stat_tgt.add_theme_color_override("font_color", NeonStyle.INK_2)
 
-	if _td_stat_eff:
-		_td_stat_eff.text = tower_splash_label.text
-		if tower_splash_label.has_theme_color("font_color"):
-			_td_stat_eff.add_theme_color_override("font_color", tower_splash_label.get_theme_color("font_color"))
+	# EFFECT section — colored title + plain body, never duplicated with STATS
+	if _td_effect_title:
+		var a_type_eff := str(info.get("attack_type", "single"))
+		if a_type_eff == "slow":
+			_td_effect_title.text = tower_slow_label.text
+			_td_effect_title.add_theme_color_override("font_color", NeonStyle.EL_WATER)
 		else:
-			_td_stat_eff.add_theme_color_override("font_color", NeonStyle.INK_2)
+			_td_effect_title.text = tower_splash_label.text
+			if tower_splash_label.has_theme_color("font_color"):
+				_td_effect_title.add_theme_color_override("font_color",
+					tower_splash_label.get_theme_color("font_color"))
+			else:
+				_td_effect_title.add_theme_color_override("font_color", NeonStyle.INK_2)
 
 	if _td_effect_section and _td_effect_body:
 		var eff_text := tower_special_effect_label.text if tower_special_effect_label else ""
-		if eff_text != "":
-			_td_effect_body.text = eff_text
+		_td_effect_body.text = eff_text
+		_td_effect_body.visible = eff_text != ""
+		var has_badge := _td_effect_title != null and _td_effect_title.text != ""
+		if has_badge or eff_text != "":
 			_td_effect_section.show()
 		else:
 			_td_effect_section.hide()
@@ -3568,11 +3572,16 @@ func _setup_right_sidebar_layout() -> void:
 		# ── Build premium nodes with vi (visual insert index) ──
 		var vi := 0
 
-		# HEADER ROW
+		# HEADER ROW — clicking it deselects the tower (replaces Close button)
 		_td_header_row = HBoxContainer.new()
 		_td_header_row.name = "TDHeaderRow"
 		_td_header_row.add_theme_constant_override("separation", 8)
-		_td_header_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_td_header_row.mouse_filter = Control.MOUSE_FILTER_STOP
+		_td_header_row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
+		_td_header_row.gui_input.connect(func(ev: InputEvent):
+			if (ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and ev.pressed) \
+					or (ev is InputEventScreenTouch and ev.pressed):
+				deselect_tower_requested.emit())
 
 		_td_el_badge = ElementIconControl.new()
 		_td_el_badge.custom_minimum_size = Vector2(28, 28)
@@ -3643,20 +3652,18 @@ func _setup_right_sidebar_layout() -> void:
 		detail_vbox.move_child(stats_tgt_row, vi)
 		vi += 1
 
-		var stats_eff_result := _make_stat_row("TYPE", NeonStyle.INK_2)
-		var stats_eff_row: HBoxContainer = stats_eff_result[0]
-		_td_stat_eff = stats_eff_result[1]
-		detail_vbox.add_child(stats_eff_row)
-		detail_vbox.move_child(stats_eff_row, vi)
-		vi += 1
-
-		# EFFECT section (hidden when empty)
+		# EFFECT section (TYPE row removed — effect shown in EFFECT section with colored title)
 		_td_effect_section = VBoxContainer.new()
 		_td_effect_section.name = "TDEffectSection"
 		_td_effect_section.add_theme_constant_override("separation", 4)
 		_td_effect_section.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_td_effect_section.add_child(_make_panel_separator())
 		_td_effect_section.add_child(_make_right_panel_eyebrow("EFFECT", NeonStyle.INK_3))
+		_td_effect_title = Label.new()
+		_td_effect_title.add_theme_font_size_override("font_size", 12)
+		_td_effect_title.add_theme_color_override("font_color", NeonStyle.INK_2)
+		_td_effect_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_td_effect_section.add_child(_td_effect_title)
 		_td_effect_body = Label.new()
 		_td_effect_body.add_theme_font_size_override("font_size", 11)
 		_td_effect_body.add_theme_color_override("font_color", NeonStyle.INK_2)
@@ -3745,10 +3752,9 @@ func _setup_right_sidebar_layout() -> void:
 		detail_vbox.move_child(upgrade_tower_button, vi)
 		vi += 1
 
-		# Deselect button — small subtle text style
-		NeonStyle.style_button(deselect_tower_button, NeonStyle.INK_4, false)
-		deselect_tower_button.text = "Close"
-		deselect_tower_button.custom_minimum_size.y = 28
+		# Deselect button — hidden; use the tower header row click to deselect
+		deselect_tower_button.hide()
+		deselect_tower_button.custom_minimum_size = Vector2.ZERO
 
 	# 2. No Selection Panel — compact premium card with left rail
 	no_selection_panel = PanelContainer.new()
