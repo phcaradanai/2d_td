@@ -150,6 +150,19 @@ var _upgrade_text_label: Label = null
 var _sell_cost_display: CreditCostDisplayControl = null
 var _sell_text_label: Label = null
 
+# Tower Detail premium nodes
+var _td_name_label: Label = null
+var _td_tier_chip: Label = null
+var _td_el_badge: Control = null          # ElementIconControl or placeholder
+var _td_stat_dmg: Label = null
+var _td_stat_rng: Label = null
+var _td_stat_spd: Label = null
+var _td_stat_tgt: Label = null
+var _td_stat_eff: Label = null            # KINETIC / SPLASH / etc badge
+var _td_effect_section: Control = null    # whole EFFECT section (hide if empty)
+var _td_effect_body: Label = null         # effect + upgrade preview text
+var _td_header_row: HBoxContainer = null  # for showing/hiding when no tower
+
 const SHOW_DAMAGE_PANEL := true
 const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
 const LEFT_DRAWER_WIDTH := 310.0
@@ -841,19 +854,29 @@ func _apply_terminal_hud_skin() -> void:
 
 	# Buttons — refined sizing
 	for btn in [settings_button, pause_button, restart_button,
-			cancel_build_button, deselect_tower_button,
+			cancel_build_button,
 			close_settings_button, test_sfx_button, test_music_button, reset_audio_button]:
 		if btn:
 			NeonStyle.style_button(btn, NeonStyle.CYAN, false)
 			btn.custom_minimum_size.y = 32
 
+	# Deselect button — subtle style
+	if deselect_tower_button:
+		NeonStyle.style_button(deselect_tower_button, NeonStyle.INK_4, false)
+		deselect_tower_button.text = "Close"
+		deselect_tower_button.custom_minimum_size.y = 28
+
 	# Primary action buttons stay taller
-	for btn in [start_wave_button, upgrade_tower_button,
-			center_restart_button, center_menu_button]:
+	for btn in [start_wave_button, center_restart_button, center_menu_button]:
 		if btn:
 			NeonStyle.style_button(btn, NeonStyle.CYAN,
 				btn == start_wave_button or btn == center_restart_button)
 			btn.custom_minimum_size.y = 38
+
+	# Upgrade button — WARN (amber/gold) primary action
+	if upgrade_tower_button:
+		NeonStyle.style_button(upgrade_tower_button, NeonStyle.WARN, false)
+		upgrade_tower_button.custom_minimum_size.y = 36
 
 	if sell_tower_button:
 		NeonStyle.style_button(sell_tower_button, NeonStyle.OK, false)
@@ -3046,7 +3069,82 @@ func show_tower_info(info: Dictionary) -> void:
 			tower_special_effect_label.show()
 		else:
 			tower_special_effect_label.hide()
-	
+
+	# ── Premium node updates ──────────────────────────────────────────────────
+	if _td_name_label:
+		_td_name_label.text = info["name"]
+
+	if _td_tier_chip:
+		info_elements = info.get("elements", [])
+		tier_text = "Lv%d" % info["tier"]
+		if not info_elements.is_empty():
+			tier_text += "  ·  %s" % _elements_full(info_elements)
+		elif info.get("branch_id", "") != "":
+			tier_text += "  ·  %s" % info["branch_id"].capitalize()
+		if info.get("is_max_tier", false):
+			tier_text += "  ·  MAX"
+		_td_tier_chip.text = tier_text
+
+	if _td_el_badge is ElementIconControl:
+		var el_arr: Array = info.get("elements", [])
+		_td_el_badge.configure(el_arr, true)
+
+	if _td_stat_dmg:
+		active_damage_bonus = int(info.get("active_damage_bonus_percent", 0))
+		if active_damage_bonus > 0:
+			var eff := int(round(float(info.get("effective_damage", info["damage"]))))
+			_td_stat_dmg.text = "%s  (+%d%%→%d)" % [str(info["damage"]), active_damage_bonus, eff]
+			_td_stat_dmg.add_theme_color_override("font_color", NeonStyle.WARN)
+		else:
+			_td_stat_dmg.text = str(info["damage"])
+			_td_stat_dmg.add_theme_color_override("font_color", NeonStyle.CYAN_2)
+
+	if _td_stat_rng:
+		_td_stat_rng.text = "%s tiles" % str(info["range"])
+
+	if _td_stat_spd:
+		active_speed_bonus = int(info.get("active_fire_rate_bonus_percent", 0))
+		if active_speed_bonus > 0:
+			var eff_rate := float(info.get("effective_fire_rate", info["fire_rate"]))
+			_td_stat_spd.text = "%0.2fs  (+%d%%→%0.2fs)" % [float(info["fire_rate"]), active_speed_bonus, eff_rate]
+			_td_stat_spd.add_theme_color_override("font_color", NeonStyle.CYAN)
+		else:
+			_td_stat_spd.text = "%ss" % str(info["fire_rate"])
+			_td_stat_spd.add_theme_color_override("font_color", NeonStyle.INK_2)
+
+	if _td_stat_tgt:
+		var a_type_for_targets := str(info.get("attack_type", "single"))
+		if a_type_for_targets in ["support_aura", "clone_support"]:
+			_td_stat_tgt.text = "Nearby Towers"
+			_td_stat_tgt.add_theme_color_override("font_color", NeonStyle.CYAN)
+		else:
+			var targets: Array = info.get("target_categories", ["land"])
+			if targets.size() >= 2:
+				_td_stat_tgt.text = "Ground + Air"
+				_td_stat_tgt.add_theme_color_override("font_color", NeonStyle.EL_NATURE)
+			elif targets.has("air"):
+				_td_stat_tgt.text = "Air Only"
+				_td_stat_tgt.add_theme_color_override("font_color", NeonStyle.EL_NATURE)
+			else:
+				_td_stat_tgt.text = "Ground Only"
+				_td_stat_tgt.add_theme_color_override("font_color", NeonStyle.INK_2)
+
+	if _td_stat_eff:
+		_td_stat_eff.text = tower_splash_label.text
+		if tower_splash_label.has_theme_color("font_color"):
+			_td_stat_eff.add_theme_color_override("font_color", tower_splash_label.get_theme_color("font_color"))
+		else:
+			_td_stat_eff.add_theme_color_override("font_color", NeonStyle.INK_2)
+
+	if _td_effect_section and _td_effect_body:
+		var eff_text := tower_special_effect_label.text if tower_special_effect_label else ""
+		if eff_text != "":
+			_td_effect_body.text = eff_text
+			_td_effect_section.show()
+		else:
+			_td_effect_section.hide()
+	# ─────────────────────────────────────────────────────────────────────────
+
 	updating_target_mode_ui = true
 	var current_mode = info.get("target_mode", "first")
 	var mode_index = target_modes.find(current_mode)
@@ -3335,6 +3433,44 @@ func shake_node(node: Control, strength: float = 10.0) -> void:
 		tween.tween_property(node, "position", original_pos + offset, 0.04)
 	tween.tween_property(node, "position", original_pos, 0.04)
 
+func _make_panel_separator() -> ColorRect:
+	var r := ColorRect.new()
+	r.color = NeonStyle.LINE
+	r.custom_minimum_size = Vector2(0, 1)
+	r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	r.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return r
+
+func _make_stat_row(key: String, accent: Color) -> Array:
+	var row := HBoxContainer.new()
+	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_theme_constant_override("separation", 6)
+
+	var key_label := Label.new()
+	key_label.text = key
+	key_label.add_theme_font_size_override("font_size", 10)
+	key_label.add_theme_color_override("font_color", NeonStyle.INK_3)
+	key_label.uppercase = true
+	key_label.custom_minimum_size = Vector2(56, 0)
+	key_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(key_label)
+
+	var divider := ColorRect.new()
+	divider.color = NeonStyle.LINE
+	divider.custom_minimum_size = Vector2(1, 12)
+	divider.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	divider.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(divider)
+
+	var val_label := Label.new()
+	val_label.add_theme_font_size_override("font_size", 12)
+	val_label.add_theme_color_override("font_color", accent)
+	val_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	val_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row.add_child(val_label)
+
+	return [row, val_label]
+
 func _make_right_panel_eyebrow(text: String, color: Color) -> HBoxContainer:
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -3358,13 +3494,13 @@ func _make_right_panel_eyebrow(text: String, color: Color) -> HBoxContainer:
 func _setup_right_sidebar_layout() -> void:
 	var container = right_sidebar_container
 	if container == null: return
-	
+
 	# 1. Setup Tower Detail Panel (Existing RightSidebar)
 	right_sidebar.name = "TowerDetailPanel"
 	right_sidebar.custom_minimum_size = Vector2(0, 260)
 	right_sidebar.size_flags_vertical = Control.SIZE_FILL
 
-	# Left-side cyan accent rail matching the left Build Towers drawer
+	# Left-side accent rail
 	var style_detail := StyleBoxFlat.new()
 	style_detail.bg_color = NeonStyle.BG_1
 	style_detail.border_color = NeonStyle.LINE_2
@@ -3380,29 +3516,44 @@ func _setup_right_sidebar_layout() -> void:
 	# Margins
 	var detail_margin := right_sidebar.get_node_or_null("MarginContainer")
 	if detail_margin is MarginContainer:
-		detail_margin.add_theme_constant_override("margin_left",   14)
-		detail_margin.add_theme_constant_override("margin_right",  12)
+		detail_margin.add_theme_constant_override("margin_left",   12)
+		detail_margin.add_theme_constant_override("margin_right",  10)
 		detail_margin.add_theme_constant_override("margin_top",    10)
 		detail_margin.add_theme_constant_override("margin_bottom", 12)
 
 	# Rework tower detail VBox content
 	var detail_vbox := right_sidebar.get_node_or_null("MarginContainer/VBoxContainer")
 	if detail_vbox:
-		detail_vbox.add_theme_constant_override("separation", 5)
+		detail_vbox.add_theme_constant_override("separation", 0)
 
-		# Hide legacy scene label (replaced by code-added tower_target_label)
+		# Hide legacy scene labels (replaced by premium nodes)
 		var old_tgt_lbl := detail_vbox.get_node_or_null("TowerTargetModeLabel")
 		if old_tgt_lbl is Control:
 			old_tgt_lbl.hide()
 			old_tgt_lbl.custom_minimum_size = Vector2.ZERO
 
+		for lbl in [tower_name_label, tower_level_label, tower_damage_label,
+				tower_range_label, tower_fire_rate_label, tower_splash_label,
+				tower_slow_label, tower_upgrade_cost_label]:
+			if lbl is Control:
+				lbl.hide()
+				lbl.custom_minimum_size = Vector2.ZERO
+
+		# Hide scene HSeparator if present
+		var old_hsep := detail_vbox.get_node_or_null("HSeparator")
+		if old_hsep is Control:
+			old_hsep.hide()
+			old_hsep.custom_minimum_size = Vector2.ZERO
+
+		# Add tower_target_label and tower_special_effect_label (hidden initially)
 		tower_target_label = Label.new()
 		tower_target_label.name = "TowerTargetLabel"
 		tower_target_label.add_theme_font_size_override("font_size", 12)
 		tower_target_label.add_theme_color_override("font_color", NeonStyle.INK_2)
 		tower_target_label.text = "→ Ground Only"
+		tower_target_label.hide()
+		tower_target_label.custom_minimum_size = Vector2.ZERO
 		detail_vbox.add_child(tower_target_label)
-		detail_vbox.move_child(tower_target_label, tower_fire_rate_label.get_index() + 1)
 
 		tower_special_effect_label = Label.new()
 		tower_special_effect_label.name = "TowerSpecialEffectLabel"
@@ -3411,26 +3562,160 @@ func _setup_right_sidebar_layout() -> void:
 		tower_special_effect_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		tower_special_effect_label.text = ""
 		tower_special_effect_label.hide()
+		tower_special_effect_label.custom_minimum_size = Vector2.ZERO
 		detail_vbox.add_child(tower_special_effect_label)
-		detail_vbox.move_child(tower_special_effect_label, tower_slow_label.get_index() + 1)
 
-		# "TOWER" eyebrow header at very top
-		var td_eyebrow := _make_right_panel_eyebrow("TOWER", NeonStyle.CYAN)
-		detail_vbox.add_child(td_eyebrow)
-		detail_vbox.move_child(td_eyebrow, 0)
+		# ── Build premium nodes with vi (visual insert index) ──
+		var vi := 0
 
-		# "UPGRADE" eyebrow before target mode option (controls section)
+		# HEADER ROW
+		_td_header_row = HBoxContainer.new()
+		_td_header_row.name = "TDHeaderRow"
+		_td_header_row.add_theme_constant_override("separation", 8)
+		_td_header_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+
+		_td_el_badge = ElementIconControl.new()
+		_td_el_badge.custom_minimum_size = Vector2(28, 28)
+		_td_el_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_td_header_row.add_child(_td_el_badge)
+
+		var name_col := VBoxContainer.new()
+		name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		name_col.add_theme_constant_override("separation", 2)
+		name_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_td_header_row.add_child(name_col)
+
+		_td_name_label = Label.new()
+		_td_name_label.add_theme_font_size_override("font_size", 14)
+		_td_name_label.add_theme_color_override("font_color", NeonStyle.INK_1)
+		_td_name_label.clip_text = true
+		_td_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name_col.add_child(_td_name_label)
+
+		_td_tier_chip = Label.new()
+		_td_tier_chip.add_theme_font_size_override("font_size", 10)
+		_td_tier_chip.add_theme_color_override("font_color", NeonStyle.INK_3)
+		_td_tier_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		name_col.add_child(_td_tier_chip)
+
+		detail_vbox.add_child(_td_header_row)
+		detail_vbox.move_child(_td_header_row, vi)
+		vi += 1
+
+		# THIN SEPARATOR after header
+		var sep1 := _make_panel_separator()
+		detail_vbox.add_child(sep1)
+		detail_vbox.move_child(sep1, vi)
+		vi += 1
+
+		# STATS eyebrow
+		var stats_eyebrow := _make_right_panel_eyebrow("STATS", NeonStyle.INK_3)
+		detail_vbox.add_child(stats_eyebrow)
+		detail_vbox.move_child(stats_eyebrow, vi)
+		vi += 1
+
+		# Stat rows
+		var stats_dmg_result := _make_stat_row("DMG", NeonStyle.CYAN_2)
+		var stats_dmg_row: HBoxContainer = stats_dmg_result[0]
+		_td_stat_dmg = stats_dmg_result[1]
+		detail_vbox.add_child(stats_dmg_row)
+		detail_vbox.move_child(stats_dmg_row, vi)
+		vi += 1
+
+		var stats_rng_result := _make_stat_row("RNG", NeonStyle.INK_2)
+		var stats_rng_row: HBoxContainer = stats_rng_result[0]
+		_td_stat_rng = stats_rng_result[1]
+		detail_vbox.add_child(stats_rng_row)
+		detail_vbox.move_child(stats_rng_row, vi)
+		vi += 1
+
+		var stats_spd_result := _make_stat_row("SPD", NeonStyle.INK_2)
+		var stats_spd_row: HBoxContainer = stats_spd_result[0]
+		_td_stat_spd = stats_spd_result[1]
+		detail_vbox.add_child(stats_spd_row)
+		detail_vbox.move_child(stats_spd_row, vi)
+		vi += 1
+
+		var stats_tgt_result := _make_stat_row("TARGET", NeonStyle.INK_2)
+		var stats_tgt_row: HBoxContainer = stats_tgt_result[0]
+		_td_stat_tgt = stats_tgt_result[1]
+		detail_vbox.add_child(stats_tgt_row)
+		detail_vbox.move_child(stats_tgt_row, vi)
+		vi += 1
+
+		var stats_eff_result := _make_stat_row("TYPE", NeonStyle.INK_2)
+		var stats_eff_row: HBoxContainer = stats_eff_result[0]
+		_td_stat_eff = stats_eff_result[1]
+		detail_vbox.add_child(stats_eff_row)
+		detail_vbox.move_child(stats_eff_row, vi)
+		vi += 1
+
+		# EFFECT section (hidden when empty)
+		_td_effect_section = VBoxContainer.new()
+		_td_effect_section.name = "TDEffectSection"
+		_td_effect_section.add_theme_constant_override("separation", 4)
+		_td_effect_section.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_td_effect_section.add_child(_make_panel_separator())
+		_td_effect_section.add_child(_make_right_panel_eyebrow("EFFECT", NeonStyle.INK_3))
+		_td_effect_body = Label.new()
+		_td_effect_body.add_theme_font_size_override("font_size", 11)
+		_td_effect_body.add_theme_color_override("font_color", NeonStyle.INK_2)
+		_td_effect_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		_td_effect_body.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_td_effect_section.add_child(_td_effect_body)
+		detail_vbox.add_child(_td_effect_section)
+		detail_vbox.move_child(_td_effect_section, vi)
+		vi += 1
+		_td_effect_section.hide()
+
+		# Separator before targeting
+		var sep2 := _make_panel_separator()
+		detail_vbox.add_child(sep2)
+		detail_vbox.move_child(sep2, vi)
+		vi += 1
+
+		# TARGETING eyebrow
+		var tgt_eyebrow := _make_right_panel_eyebrow("TARGETING", NeonStyle.INK_3)
+		detail_vbox.add_child(tgt_eyebrow)
+		detail_vbox.move_child(tgt_eyebrow, vi)
+		vi += 1
+
+		# Move target_mode_option_button into position and restyle it
+		var opt_style := StyleBoxFlat.new()
+		opt_style.bg_color = NeonStyle.BG_1
+		opt_style.border_color = NeonStyle.LINE_2
+		opt_style.set_border_width_all(1)
+		opt_style.set_corner_radius_all(0)
+		opt_style.content_margin_left = 8
+		opt_style.content_margin_right = 8
+		opt_style.content_margin_top = 4
+		opt_style.content_margin_bottom = 4
+		target_mode_option_button.add_theme_stylebox_override("normal", opt_style)
+		target_mode_option_button.add_theme_stylebox_override("hover", opt_style.duplicate())
+		target_mode_option_button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+		target_mode_option_button.add_theme_font_size_override("font_size", 12)
+		target_mode_option_button.add_theme_color_override("font_color", NeonStyle.INK_1)
+		detail_vbox.move_child(target_mode_option_button, vi)
+		vi += 1
+
+		# Separator + UPGRADE eyebrow
+		var sep3 := _make_panel_separator()
+		detail_vbox.add_child(sep3)
+		detail_vbox.move_child(sep3, vi)
+		vi += 1
+
 		var upg_eyebrow := _make_right_panel_eyebrow("UPGRADE", NeonStyle.INK_3)
 		detail_vbox.add_child(upg_eyebrow)
-		detail_vbox.move_child(upg_eyebrow, target_mode_option_button.get_index())
+		detail_vbox.move_child(upg_eyebrow, vi)
+		vi += 1
 
-		# Hide redundant cost label (info is now in the upgrade button itself)
-		tower_upgrade_cost_label.hide()
-		tower_upgrade_cost_label.custom_minimum_size = Vector2.ZERO
+		# tower_upgrade_cost_label — keep hidden, zero size (already hidden above)
 
 		# Upgrade button — composite: text label + CreditCostDisplayControl
 		upgrade_tower_button.text = ""
 		upgrade_tower_button.clip_text = false
+		for ch in upgrade_tower_button.get_children():
+			ch.queue_free()
 		var upg_row := HBoxContainer.new()
 		upg_row.set_anchors_preset(Control.PRESET_FULL_RECT)
 		upg_row.offset_left = 10
@@ -3452,6 +3737,19 @@ func _setup_right_sidebar_layout() -> void:
 		_upgrade_cost_display.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		upg_row.add_child(_upgrade_cost_display)
 
+		# Style upgrade button as WARN (amber/gold) — primary action
+		NeonStyle.style_button(upgrade_tower_button, NeonStyle.WARN, false)
+		upgrade_tower_button.custom_minimum_size.y = 36
+
+		# Move upgrade button into position
+		detail_vbox.move_child(upgrade_tower_button, vi)
+		vi += 1
+
+		# Deselect button — small subtle text style
+		NeonStyle.style_button(deselect_tower_button, NeonStyle.INK_4, false)
+		deselect_tower_button.text = "Close"
+		deselect_tower_button.custom_minimum_size.y = 28
+
 	# 2. No Selection Panel — compact premium card with left rail
 	no_selection_panel = PanelContainer.new()
 	no_selection_panel.name = "NoSelectionPanel"
@@ -3464,32 +3762,50 @@ func _setup_right_sidebar_layout() -> void:
 	ns_style.set_border_width_all(1)
 	ns_style.border_width_left = 3
 	ns_style.set_corner_radius_all(0)
-	ns_style.content_margin_left   = 14
-	ns_style.content_margin_right  = 14
-	ns_style.content_margin_top    = 16
-	ns_style.content_margin_bottom = 16
+	ns_style.content_margin_left   = 0
+	ns_style.content_margin_right  = 0
+	ns_style.content_margin_top    = 0
+	ns_style.content_margin_bottom = 0
 	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
 	container.add_child(no_selection_panel)
 	container.move_child(no_selection_panel, right_sidebar.get_index() + 1)
 
+	var ns_margin := MarginContainer.new()
+	ns_margin.add_theme_constant_override("margin_left",   14)
+	ns_margin.add_theme_constant_override("margin_right",  14)
+	ns_margin.add_theme_constant_override("margin_top",    18)
+	ns_margin.add_theme_constant_override("margin_bottom", 18)
+	no_selection_panel.add_child(ns_margin)
+
 	var ns_vbox := VBoxContainer.new()
 	ns_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	ns_vbox.add_theme_constant_override("separation", 5)
-	no_selection_panel.add_child(ns_vbox)
+	ns_vbox.add_theme_constant_override("separation", 6)
+	ns_margin.add_child(ns_vbox)
 
-	var ns_label := Label.new()
-	ns_label.text = "NO SELECTION"
-	ns_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ns_label.add_theme_font_size_override("font_size", 11)
-	ns_label.add_theme_color_override("font_color", NeonStyle.INK_2)
-	ns_label.uppercase = true
-	ns_vbox.add_child(ns_label)
+	var icon_row := HBoxContainer.new()
+	icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
+	icon_row.add_theme_constant_override("separation", 8)
+	ns_vbox.add_child(icon_row)
+
+	var icon_dot := ColorRect.new()
+	icon_dot.color = NeonStyle.INK_4
+	icon_dot.custom_minimum_size = Vector2(8, 8)
+	icon_row.add_child(icon_dot)
+
+	var ns_title := Label.new()
+	ns_title.text = "NO SELECTION"
+	ns_title.add_theme_font_size_override("font_size", 11)
+	ns_title.add_theme_color_override("font_color", NeonStyle.INK_2)
+	ns_title.uppercase = true
+	ns_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	icon_row.add_child(ns_title)
 
 	var ns_sub := Label.new()
-	ns_sub.text = "Select a tower or\nbuild tile to view details"
+	ns_sub.text = "Select a tower or build tile\nto view details."
 	ns_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ns_sub.add_theme_font_size_override("font_size", 11)
 	ns_sub.add_theme_color_override("font_color", NeonStyle.INK_3)
+	ns_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	ns_vbox.add_child(ns_sub)
 
 	# 3. Wave Intel — collapsible wrapper: header button + body panel
