@@ -319,7 +319,7 @@ func apply_level_visuals() -> void:
 	if not is_inside_tree(): return
 	
 	if level_badge:
-		level_badge.text = "T" + str(tree_tier)
+		level_badge.visible = false
 	
 	# Hide legacy ColorRect nodes
 	if body: body.visible = false
@@ -561,6 +561,7 @@ func _draw() -> void:
 	# gets a temporary z-index lift in set_selected(), so overlays stay above
 	# sibling towers on the map.
 	_draw_selected_support_overlays()
+	_draw_tower_rank_badge(Vector2(0, 30), tree_tier, _get_rank_accent_color())
 
 func _draw_base_plate() -> void:
 	var lvl = tree_tier
@@ -1526,10 +1527,6 @@ func _draw_turret_top() -> void:
 			draw_circle(Vector2.ZERO, 5, main_color.darkened(0.3))
 			_draw_element_core()
 
-	# Level Indicators (small white dots)
-	for i in range(lvl):
-		var dot_offset = -12 + i * 8
-		draw_circle(Vector2(dot_offset, 0), 2, Color.WHITE)
 
 func _update_range_collision() -> void:
 	if collision_shape and collision_shape.shape is CircleShape2D:
@@ -3553,3 +3550,47 @@ func set_target_mode(mode: String) -> void:
 
 func get_target_mode() -> String:
 	return target_mode
+
+func _get_rank_accent_color() -> Color:
+	var el_colors := _get_all_element_colors()
+	if not el_colors.is_empty():
+		return el_colors[0]
+	return Color(0.55, 0.75, 0.85, 1.0)
+
+func _draw_tower_rank_badge(center: Vector2, tier: int, accent: Color, scale_factor: float = 1.0) -> void:
+	var safe_tier: int = clampi(tier, 1, 4)
+	var plate_w := 24.0 * scale_factor
+	var plate_h := 14.0 * scale_factor
+	var plate := Rect2(center.x - plate_w * 0.5, center.y - plate_h * 0.5, plate_w, plate_h)
+
+	draw_rect(plate.grow(1.5 * scale_factor), Color(0.0, 0.0, 0.0, 0.75))
+	draw_rect(plate, Color(0.04, 0.06, 0.08, 0.88))
+	draw_rect(plate, Color(accent.r, accent.g, accent.b, 0.65), false, 1.2 * scale_factor)
+
+	var stripe_count: int = mini(safe_tier, 3)
+	var start_y := center.y + 3.0 * scale_factor
+	var stripe_gap := 3.4 * scale_factor
+	var stripe_w := 11.0 * scale_factor
+	var stripe_h := 3.0 * scale_factor
+
+	for i in range(stripe_count):
+		var y := start_y - float(i) * stripe_gap
+		var pts := PackedVector2Array([
+			Vector2(center.x - stripe_w * 0.5, y),
+			Vector2(center.x, y - stripe_h),
+			Vector2(center.x + stripe_w * 0.5, y)
+		])
+		draw_polyline(pts, Color(0.0, 0.0, 0.0, 0.9), 3.0 * scale_factor, true)
+		draw_polyline(pts, accent.lightened(0.35), 1.4 * scale_factor, true)
+
+	if safe_tier >= 4:
+		var d := 3.0 * scale_factor
+		var diamond_center := center + Vector2(0.0, -6.0 * scale_factor)
+		var diamond := PackedVector2Array([
+			diamond_center + Vector2(0, -d),
+			diamond_center + Vector2(d, 0),
+			diamond_center + Vector2(0, d),
+			diamond_center + Vector2(-d, 0),
+		])
+		draw_colored_polygon(diamond, accent.lightened(0.25))
+		draw_polyline(PackedVector2Array([diamond[0], diamond[1], diamond[2], diamond[3], diamond[0]]), Color(0.0, 0.0, 0.0, 0.85), 1.0 * scale_factor, true)
