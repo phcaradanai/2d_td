@@ -140,9 +140,12 @@ var wave_intel_suggested_title_label: Label = null
 var wave_intel_suggested_label: RichTextLabel = null
 var wave_intel_warnings_label: Label = null
 var no_selection_panel: PanelContainer = null
-var wave_intel_collapsed: bool = false
+var wave_intel_collapsed: bool = true
 var _wi_wrapper: VBoxContainer = null
 var _wi_header_btn: HUDDrawerHeaderControl = null
+var _wi_tab_panel: HUDDrawerHeaderControl = null
+var _wi_summary_label: Label = null
+var _wi_chevron_label: Label = null
 var _wi_reward_row: HBoxContainer = null
 var _wi_reward_display: CreditCostDisplayControl = null
 var _upgrade_cost_display: CreditCostDisplayControl = null
@@ -163,6 +166,10 @@ var _td_effect_section: Control = null    # whole EFFECT section (hide if empty)
 var _td_effect_title: Label = null        # effect-colored badge title
 var _td_effect_body: Label = null         # effect body + upgrade preview text
 var _td_header_row: HBoxContainer = null  # for showing/hiding when no tower
+var _td_header_panel: HUDDrawerHeaderControl = null
+var _td_chevron_label: Label = null
+var _td_content_nodes: Array[Control] = []
+var tower_detail_collapsed: bool = false
 
 const SHOW_DAMAGE_PANEL := true
 const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
@@ -432,6 +439,7 @@ func _ready() -> void:
 
 		tower_info_vbox.add_child(sell_tower_button)
 		tower_info_vbox.move_child(sell_tower_button, tower_info_vbox.get_child_count() - 2) # above Deselect
+		_register_tower_detail_content(sell_tower_button)
 	
 	target_mode_option_button.clear()
 	for mode in target_modes:
@@ -818,10 +826,10 @@ func update_layout_for_viewport() -> void:
 			right_sidebar_container.visible = right_sidebar.visible
 		elif view_size.x < 1200:
 			right_sidebar_container.visible = true
-			right_sidebar_container.custom_minimum_size.x = 220
+			right_sidebar_container.custom_minimum_size.x = 260
 		else:
 			right_sidebar_container.visible = true
-			right_sidebar_container.custom_minimum_size.x = 240
+			right_sidebar_container.custom_minimum_size.x = 260
 
 	_sync_tower_shop_list_width()
 	_apply_mobile_portrait_layout(portrait)
@@ -3016,8 +3024,9 @@ func show_tower_info(info: Dictionary) -> void:
 	var a_type = info.get("attack_type", "single")
 	var _badge := TowerEffectFormatter.attack_badge(info)
 
-	# Unified type label — always show, always informative.
-	tower_splash_label.show()
+	# Unified type label backing text. Legacy labels stay hidden; the EFFECT
+	# section below is the single visible effect surface.
+	tower_splash_label.hide()
 	tower_splash_label.add_theme_font_size_override("font_size", 12)
 	match a_type:
 		"splash":
@@ -3025,7 +3034,7 @@ func show_tower_info(info: Dictionary) -> void:
 			tower_splash_label.text = "SPLASH AoE%s" % ("  r%d" % splash_r if splash_r > 0 else "")
 			tower_splash_label.add_theme_color_override("font_color", NeonStyle.EL_FIRE)
 		"slow":
-			tower_slow_label.show()
+			tower_slow_label.hide()
 			var slow_pct := int(info.get("slow_percent", 0.0) * 100.0)
 			var slow_dur := float(info.get("slow_duration", 0.0))
 			tower_slow_label.text = "AREA CTRL  -%d%% spd  %.1fs" % [slow_pct, slow_dur]
@@ -3086,7 +3095,7 @@ func show_tower_info(info: Dictionary) -> void:
 		if combined != "":
 			tower_special_effect_label.text = combined
 			tower_special_effect_label.modulate = Color(0.82, 0.92, 1.0)
-			tower_special_effect_label.show()
+			tower_special_effect_label.hide()
 		else:
 			tower_special_effect_label.hide()
 
@@ -3108,6 +3117,10 @@ func show_tower_info(info: Dictionary) -> void:
 	if _td_el_badge is ElementIconControl:
 		var el_arr: Array = info.get("elements", [])
 		_td_el_badge.configure(el_arr, true)
+
+	if _td_header_panel:
+		_td_header_panel.configure(str(info["name"]).to_upper(), "build", NeonStyle.CYAN, not tower_detail_collapsed, false)
+		_td_header_panel.set_subtitle(tier_text)
 
 	if _td_stat_dmg:
 		active_damage_bonus = int(info.get("active_damage_bonus_percent", 0))
@@ -3154,23 +3167,21 @@ func show_tower_info(info: Dictionary) -> void:
 		var a_type_eff := str(info.get("attack_type", "single"))
 		if a_type_eff == "slow":
 			_td_effect_title.text = tower_slow_label.text
-			_td_effect_title.add_theme_color_override("font_color", NeonStyle.EL_WATER)
 		else:
 			_td_effect_title.text = tower_splash_label.text
-			if tower_splash_label.has_theme_color("font_color"):
-				_td_effect_title.add_theme_color_override("font_color",
-					tower_splash_label.get_theme_color("font_color"))
-			else:
-				_td_effect_title.add_theme_color_override("font_color", NeonStyle.INK_2)
+		_td_effect_title.add_theme_color_override("font_color", _effect_title_color(info, _td_effect_title.text))
 
 	if _td_effect_section and _td_effect_body:
 		var eff_text := tower_special_effect_label.text if tower_special_effect_label else ""
+		eff_text = _clean_effect_body_text(eff_text)
 		_td_effect_body.text = eff_text
 		_td_effect_body.visible = eff_text != ""
 		var has_badge := _td_effect_title != null and _td_effect_title.text != ""
 		if has_badge or eff_text != "":
+			_td_effect_section.set_meta("td_visible_when_expanded", true)
 			_td_effect_section.show()
 		else:
+			_td_effect_section.set_meta("td_visible_when_expanded", false)
 			_td_effect_section.hide()
 	# ─────────────────────────────────────────────────────────────────────────
 
@@ -3216,6 +3227,7 @@ func show_tower_info(info: Dictionary) -> void:
 		if _sell_cost_display:
 			_sell_cost_display.configure(refund, true)
 		sell_tower_button.show()
+	_set_tower_detail_collapsed(tower_detail_collapsed)
 
 func _build_tower_special_effect_text(_info: Dictionary) -> String:
 	# Superseded by TowerEffectFormatter.effect_lines() — kept for compatibility.
@@ -3524,40 +3536,96 @@ func _make_right_panel_eyebrow(text: String, color: Color) -> HBoxContainer:
 	row.add_child(line)
 	return row
 
+func _register_tower_detail_content(node: Control) -> void:
+	_td_content_nodes.append(node)
+
+func _set_tower_detail_collapsed(collapsed: bool) -> void:
+	tower_detail_collapsed = collapsed
+	for node in _td_content_nodes:
+		if node != null and is_instance_valid(node):
+			var can_show := bool(node.get_meta("td_visible_when_expanded", true))
+			node.visible = (not collapsed) and can_show
+	if _td_chevron_label:
+		_td_chevron_label.text = "›" if collapsed else "⌄"
+	if _td_header_panel:
+		_td_header_panel.set_expanded(not collapsed)
+
+func _toggle_tower_detail_collapsed() -> void:
+	_set_tower_detail_collapsed(not tower_detail_collapsed)
+
+func _effect_title_color(info: Dictionary, title: String) -> Color:
+	var haystack := ("%s %s %s" % [
+		str(info.get("attack_type", "")),
+		str(info.get("id", info.get("tower_id", ""))),
+		title
+	]).to_lower()
+	if haystack.contains("splash") or haystack.contains("aoe") or haystack.contains("slam"):
+		return NeonStyle.EL_FIRE
+	if haystack.contains("slow") or haystack.contains("freeze") or haystack.contains("frost") or haystack.contains("ice"):
+		return NeonStyle.EL_WATER
+	if haystack.contains("burn") or haystack.contains("fire") or haystack.contains("flame") or haystack.contains("nova"):
+		return NeonStyle.EL_FIRE
+	if haystack.contains("poison") or haystack.contains("venom") or haystack.contains("nature") or haystack.contains("roots"):
+		return NeonStyle.EL_NATURE
+	if haystack.contains("light") or haystack.contains("holy") or haystack.contains("reveal") or haystack.contains("laser"):
+		return NeonStyle.WARN
+	if haystack.contains("dark") or haystack.contains("curse") or haystack.contains("void") or haystack.contains("hex") or haystack.contains("jinx"):
+		return NeonStyle.EL_DARKNESS
+	if haystack.contains("wind") or haystack.contains("storm") or haystack.contains("gale") or haystack.contains("chain"):
+		return NeonStyle.CYAN
+	return NeonStyle.INK_2
+
+func _clean_effect_body_text(text: String) -> String:
+	var output := PackedStringArray()
+	for raw_line in text.split("\n", false):
+		var line := str(raw_line).strip_edges()
+		if line == "":
+			output.append("")
+			continue
+		var colon_idx := line.find(":")
+		if colon_idx > 0:
+			var prefix := line.substr(0, colon_idx).strip_edges().to_lower()
+			if prefix in ["splash", "area slow", "on-hit slow", "chain", "speed aura", "damage aura", "support aura", "clone", "burn", "poison", "venom", "freeze", "frost slow", "hex", "gale", "vulnerability"]:
+				line = line.substr(colon_idx + 1).strip_edges()
+				if not line.is_empty():
+					line = line.substr(0, 1).to_upper() + line.substr(1)
+		output.append(line)
+	return "\n".join(output)
+
 func _setup_right_sidebar_layout() -> void:
 	var container = right_sidebar_container
 	if container == null: return
 
 	# 1. Setup Tower Detail Panel (Existing RightSidebar)
 	right_sidebar.name = "TowerDetailPanel"
-	right_sidebar.custom_minimum_size = Vector2(0, 260)
-	right_sidebar.size_flags_vertical = Control.SIZE_FILL
+	right_sidebar.custom_minimum_size = Vector2(0, 0)
+	right_sidebar.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 	# Left-side accent rail
 	var style_detail := StyleBoxFlat.new()
 	style_detail.bg_color = NeonStyle.BG_1
-	style_detail.border_color = NeonStyle.LINE_2
+	style_detail.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.42)
 	style_detail.set_border_width_all(1)
 	style_detail.border_width_left = 3
 	style_detail.set_corner_radius_all(0)
-	style_detail.content_margin_left   = 0
-	style_detail.content_margin_right  = 0
-	style_detail.content_margin_top    = 0
-	style_detail.content_margin_bottom = 0
+	style_detail.content_margin_left   = 8
+	style_detail.content_margin_right  = 8
+	style_detail.content_margin_top    = 8
+	style_detail.content_margin_bottom = 8
 	right_sidebar.add_theme_stylebox_override("panel", style_detail)
 
 	# Margins
 	var detail_margin := right_sidebar.get_node_or_null("MarginContainer")
 	if detail_margin is MarginContainer:
-		detail_margin.add_theme_constant_override("margin_left",   12)
-		detail_margin.add_theme_constant_override("margin_right",  10)
-		detail_margin.add_theme_constant_override("margin_top",    10)
-		detail_margin.add_theme_constant_override("margin_bottom", 12)
+		detail_margin.add_theme_constant_override("margin_left",   0)
+		detail_margin.add_theme_constant_override("margin_right",  0)
+		detail_margin.add_theme_constant_override("margin_top",    0)
+		detail_margin.add_theme_constant_override("margin_bottom", 0)
 
 	# Rework tower detail VBox content
 	var detail_vbox := right_sidebar.get_node_or_null("MarginContainer/VBoxContainer")
 	if detail_vbox:
-		detail_vbox.add_theme_constant_override("separation", 0)
+		detail_vbox.add_theme_constant_override("separation", 7)
 
 		# Hide legacy scene labels (replaced by premium nodes)
 		var old_tgt_lbl := detail_vbox.get_node_or_null("TowerTargetModeLabel")
@@ -3601,55 +3669,28 @@ func _setup_right_sidebar_layout() -> void:
 		# ── Build premium nodes with vi (visual insert index) ──
 		var vi := 0
 
-		# HEADER ROW — clicking it deselects the tower (replaces Close button)
-		_td_header_row = HBoxContainer.new()
-		_td_header_row.name = "TDHeaderRow"
-		_td_header_row.add_theme_constant_override("separation", 8)
-		_td_header_row.mouse_filter = Control.MOUSE_FILTER_STOP
-		_td_header_row.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
-		_td_header_row.gui_input.connect(func(ev: InputEvent):
-			if (ev is InputEventMouseButton and ev.button_index == MOUSE_BUTTON_LEFT and ev.pressed) \
-					or (ev is InputEventScreenTouch and ev.pressed):
-				deselect_tower_requested.emit())
+		# HEADER TAB — reuse the same drawn drawer header used by the left rail.
+		_td_header_panel = HUDDrawerHeaderControl.new()
+		_td_header_panel.name = "TowerDetailDrawerHeader"
+		_td_header_panel.configure("TOWER DETAIL", "build", NeonStyle.CYAN, true, false)
+		_td_header_panel.pressed.connect(_toggle_tower_detail_collapsed)
 
-		_td_el_badge = ElementIconControl.new()
-		_td_el_badge.custom_minimum_size = Vector2(28, 28)
-		_td_el_badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_td_header_row.add_child(_td_el_badge)
-
-		var name_col := VBoxContainer.new()
-		name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		name_col.add_theme_constant_override("separation", 2)
-		name_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		_td_header_row.add_child(name_col)
-
-		_td_name_label = Label.new()
-		_td_name_label.add_theme_font_size_override("font_size", 14)
-		_td_name_label.add_theme_color_override("font_color", NeonStyle.INK_1)
-		_td_name_label.clip_text = true
-		_td_name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		name_col.add_child(_td_name_label)
-
-		_td_tier_chip = Label.new()
-		_td_tier_chip.add_theme_font_size_override("font_size", 10)
-		_td_tier_chip.add_theme_color_override("font_color", NeonStyle.INK_3)
-		_td_tier_chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		name_col.add_child(_td_tier_chip)
-
-		detail_vbox.add_child(_td_header_row)
-		detail_vbox.move_child(_td_header_row, vi)
+		detail_vbox.add_child(_td_header_panel)
+		detail_vbox.move_child(_td_header_panel, vi)
 		vi += 1
 
 		# THIN SEPARATOR after header
 		var sep1 := _make_panel_separator()
 		detail_vbox.add_child(sep1)
 		detail_vbox.move_child(sep1, vi)
+		_register_tower_detail_content(sep1)
 		vi += 1
 
 		# STATS eyebrow
 		var stats_eyebrow := _make_right_panel_eyebrow("STATS", NeonStyle.INK_3)
 		detail_vbox.add_child(stats_eyebrow)
 		detail_vbox.move_child(stats_eyebrow, vi)
+		_register_tower_detail_content(stats_eyebrow)
 		vi += 1
 
 		# Stat rows
@@ -3658,6 +3699,7 @@ func _setup_right_sidebar_layout() -> void:
 		_td_stat_dmg = stats_dmg_result[1]
 		detail_vbox.add_child(stats_dmg_row)
 		detail_vbox.move_child(stats_dmg_row, vi)
+		_register_tower_detail_content(stats_dmg_row)
 		vi += 1
 
 		var stats_rng_result := _make_stat_row("RNG", NeonStyle.INK_2)
@@ -3665,6 +3707,7 @@ func _setup_right_sidebar_layout() -> void:
 		_td_stat_rng = stats_rng_result[1]
 		detail_vbox.add_child(stats_rng_row)
 		detail_vbox.move_child(stats_rng_row, vi)
+		_register_tower_detail_content(stats_rng_row)
 		vi += 1
 
 		var stats_spd_result := _make_stat_row("SPD", NeonStyle.INK_2)
@@ -3672,6 +3715,7 @@ func _setup_right_sidebar_layout() -> void:
 		_td_stat_spd = stats_spd_result[1]
 		detail_vbox.add_child(stats_spd_row)
 		detail_vbox.move_child(stats_spd_row, vi)
+		_register_tower_detail_content(stats_spd_row)
 		vi += 1
 
 		var stats_tgt_result := _make_stat_row("TARGET", NeonStyle.INK_2)
@@ -3679,11 +3723,13 @@ func _setup_right_sidebar_layout() -> void:
 		_td_stat_tgt = stats_tgt_result[1]
 		detail_vbox.add_child(stats_tgt_row)
 		detail_vbox.move_child(stats_tgt_row, vi)
+		_register_tower_detail_content(stats_tgt_row)
 		vi += 1
 
 		# EFFECT section (TYPE row removed — effect shown in EFFECT section with colored title)
 		_td_effect_section = VBoxContainer.new()
 		_td_effect_section.name = "TDEffectSection"
+		_td_effect_section.set_meta("td_visible_when_expanded", false)
 		_td_effect_section.add_theme_constant_override("separation", 4)
 		_td_effect_section.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		_td_effect_section.add_child(_make_panel_separator())
@@ -3701,6 +3747,7 @@ func _setup_right_sidebar_layout() -> void:
 		_td_effect_section.add_child(_td_effect_body)
 		detail_vbox.add_child(_td_effect_section)
 		detail_vbox.move_child(_td_effect_section, vi)
+		_register_tower_detail_content(_td_effect_section)
 		vi += 1
 		_td_effect_section.hide()
 
@@ -3708,12 +3755,14 @@ func _setup_right_sidebar_layout() -> void:
 		var sep2 := _make_panel_separator()
 		detail_vbox.add_child(sep2)
 		detail_vbox.move_child(sep2, vi)
+		_register_tower_detail_content(sep2)
 		vi += 1
 
 		# TARGETING eyebrow
 		var tgt_eyebrow := _make_right_panel_eyebrow("TARGETING", NeonStyle.INK_3)
 		detail_vbox.add_child(tgt_eyebrow)
 		detail_vbox.move_child(tgt_eyebrow, vi)
+		_register_tower_detail_content(tgt_eyebrow)
 		vi += 1
 
 		# Move target_mode_option_button into position and restyle it
@@ -3732,17 +3781,20 @@ func _setup_right_sidebar_layout() -> void:
 		target_mode_option_button.add_theme_font_size_override("font_size", 12)
 		target_mode_option_button.add_theme_color_override("font_color", NeonStyle.INK_1)
 		detail_vbox.move_child(target_mode_option_button, vi)
+		_register_tower_detail_content(target_mode_option_button)
 		vi += 1
 
 		# Separator + UPGRADE eyebrow
 		var sep3 := _make_panel_separator()
 		detail_vbox.add_child(sep3)
 		detail_vbox.move_child(sep3, vi)
+		_register_tower_detail_content(sep3)
 		vi += 1
 
 		var upg_eyebrow := _make_right_panel_eyebrow("UPGRADE", NeonStyle.INK_3)
 		detail_vbox.add_child(upg_eyebrow)
 		detail_vbox.move_child(upg_eyebrow, vi)
+		_register_tower_detail_content(upg_eyebrow)
 		vi += 1
 
 		# tower_upgrade_cost_label — keep hidden, zero size (already hidden above)
@@ -3779,6 +3831,7 @@ func _setup_right_sidebar_layout() -> void:
 
 		# Move upgrade button into position
 		detail_vbox.move_child(upgrade_tower_button, vi)
+		_register_tower_detail_content(upgrade_tower_button)
 		vi += 1
 
 		# Deselect button — hidden; use the tower header row click to deselect
@@ -3788,55 +3841,37 @@ func _setup_right_sidebar_layout() -> void:
 	# 2. No Selection Panel — compact premium card with left rail
 	no_selection_panel = PanelContainer.new()
 	no_selection_panel.name = "NoSelectionPanel"
-	no_selection_panel.custom_minimum_size = Vector2(0, 84)
+	no_selection_panel.custom_minimum_size = Vector2(0, 126)
 	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
 
 	var ns_style := StyleBoxFlat.new()
 	ns_style.bg_color = NeonStyle.BG_1
-	ns_style.border_color = NeonStyle.LINE_2
+	ns_style.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.42)
 	ns_style.set_border_width_all(1)
 	ns_style.border_width_left = 3
 	ns_style.set_corner_radius_all(0)
-	ns_style.content_margin_left   = 0
-	ns_style.content_margin_right  = 0
-	ns_style.content_margin_top    = 0
-	ns_style.content_margin_bottom = 0
+	ns_style.content_margin_left   = 8
+	ns_style.content_margin_right  = 8
+	ns_style.content_margin_top    = 8
+	ns_style.content_margin_bottom = 8
 	no_selection_panel.add_theme_stylebox_override("panel", ns_style)
 	container.add_child(no_selection_panel)
 	container.move_child(no_selection_panel, right_sidebar.get_index() + 1)
 
-	var ns_margin := MarginContainer.new()
-	ns_margin.add_theme_constant_override("margin_left",   14)
-	ns_margin.add_theme_constant_override("margin_right",  14)
-	ns_margin.add_theme_constant_override("margin_top",    18)
-	ns_margin.add_theme_constant_override("margin_bottom", 18)
-	no_selection_panel.add_child(ns_margin)
-
 	var ns_vbox := VBoxContainer.new()
 	ns_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	ns_vbox.add_theme_constant_override("separation", 6)
-	ns_margin.add_child(ns_vbox)
+	ns_vbox.add_theme_constant_override("separation", 8)
+	no_selection_panel.add_child(ns_vbox)
 
-	var icon_row := HBoxContainer.new()
-	icon_row.alignment = BoxContainer.ALIGNMENT_CENTER
-	icon_row.add_theme_constant_override("separation", 8)
-	ns_vbox.add_child(icon_row)
-
-	var icon_dot := ColorRect.new()
-	icon_dot.color = NeonStyle.INK_4
-	icon_dot.custom_minimum_size = Vector2(8, 8)
-	icon_row.add_child(icon_dot)
-
-	var ns_title := Label.new()
-	ns_title.text = "NO SELECTION"
-	ns_title.add_theme_font_size_override("font_size", 11)
-	ns_title.add_theme_color_override("font_color", NeonStyle.INK_2)
-	ns_title.uppercase = true
-	ns_title.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	icon_row.add_child(ns_title)
+	var ns_header := HUDDrawerHeaderControl.new()
+	ns_header.name = "NoSelectionDrawerHeader"
+	ns_header.configure("NO SELECTION", "build", NeonStyle.CYAN, false, false)
+	ns_header.set_subtitle("Select a tower")
+	ns_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	ns_vbox.add_child(ns_header)
 
 	var ns_sub := Label.new()
-	ns_sub.text = "Select a tower or build tile\nto view details."
+	ns_sub.text = "Select a tower or build tile to view details."
 	ns_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	ns_sub.add_theme_font_size_override("font_size", 11)
 	ns_sub.add_theme_color_override("font_color", NeonStyle.INK_3)
@@ -3846,42 +3881,41 @@ func _setup_right_sidebar_layout() -> void:
 	# 3. Wave Intel — collapsible wrapper: header button + body panel
 	_wi_wrapper = VBoxContainer.new()
 	_wi_wrapper.name = "WaveIntelWrapper"
-	_wi_wrapper.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_wi_wrapper.add_theme_constant_override("separation", 0)
+	_wi_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
+	_wi_wrapper.add_theme_constant_override("separation", 6)
 	container.add_child(_wi_wrapper)
 
-	_wi_header_btn = HUDDrawerHeaderControl.new()
-	_wi_header_btn.name = "WaveIntelHeader"
-	_wi_header_btn.configure("WAVE INTEL", "wave", NeonStyle.CYAN, true)
-	_wi_wrapper.add_child(_wi_header_btn)
-	_wi_header_btn.pressed.connect(_toggle_wave_intel)
+	_wi_tab_panel = HUDDrawerHeaderControl.new()
+	_wi_tab_panel.name = "WaveIntelDrawerHeader"
+	_wi_tab_panel.configure("WAVE INTEL", "damage", NeonStyle.CYAN, false, false)
+	_wi_tab_panel.set_subtitle("Wave --/--")
+	_wi_tab_panel.pressed.connect(_toggle_wave_intel)
+	_wi_wrapper.add_child(_wi_tab_panel)
 
 	wave_intel_panel = PanelContainer.new()
 	wave_intel_panel.name = "WaveIntelPanel"
-	wave_intel_panel.custom_minimum_size = Vector2(0, 140)
+	wave_intel_panel.custom_minimum_size = Vector2(0, 260)
 	wave_intel_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	wave_intel_panel.mouse_filter = Control.MOUSE_FILTER_PASS
+	wave_intel_panel.visible = false
 	_wi_wrapper.add_child(wave_intel_panel)
 
-	var style_intel := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
-	style_intel.content_margin_left   = 0
-	style_intel.content_margin_right  = 0
-	style_intel.content_margin_top    = 0
-	style_intel.content_margin_bottom = 0
+	var style_intel := StyleBoxFlat.new()
+	style_intel.bg_color = NeonStyle.BG_1
+	style_intel.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.42)
+	style_intel.set_border_width_all(1)
+	style_intel.set_border_width(SIDE_LEFT, 3)
+	style_intel.set_corner_radius_all(0)
+	style_intel.content_margin_left   = 10
+	style_intel.content_margin_right  = 10
+	style_intel.content_margin_top    = 8
+	style_intel.content_margin_bottom = 8
 	wave_intel_panel.add_theme_stylebox_override("panel", style_intel)
 
-	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left",   14)
-	margin.add_theme_constant_override("margin_right",  14)
-	margin.add_theme_constant_override("margin_top",    8)
-	margin.add_theme_constant_override("margin_bottom", 10)
-	margin.mouse_filter = Control.MOUSE_FILTER_PASS
-	wave_intel_panel.add_child(margin)
-
 	var vbox := VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 5)
+	vbox.add_theme_constant_override("separation", 7)
 	vbox.mouse_filter = Control.MOUSE_FILTER_PASS
-	margin.add_child(vbox)
+	wave_intel_panel.add_child(vbox)
 
 	# Wave count row (replaces old inline header)
 	var wave_count_row := HBoxContainer.new()
@@ -3981,8 +4015,14 @@ func _toggle_wave_intel() -> void:
 	wave_intel_collapsed = not wave_intel_collapsed
 	if _wi_header_btn:
 		_wi_header_btn.set_expanded(not wave_intel_collapsed)
+	if _wi_chevron_label:
+		_wi_chevron_label.text = "›" if wave_intel_collapsed else "⌄"
+	if _wi_tab_panel:
+		_wi_tab_panel.set_expanded(not wave_intel_collapsed)
 	if wave_intel_panel:
 		wave_intel_panel.visible = not wave_intel_collapsed
+	if _wi_wrapper:
+		_wi_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if wave_intel_collapsed else Control.SIZE_EXPAND_FILL
 
 func _layout_right_sidebar_container(width: float = 260.0) -> void:
 	var container = $Root/ScreenLayout/MainContent/RightSidebarContainer
@@ -4033,6 +4073,10 @@ func clear_wave_intel() -> void:
 	_refresh_right_info_column_visibility()
 	if wave_intel_current_label:
 		wave_intel_current_label.text = ""
+	if _wi_summary_label:
+		_wi_summary_label.text = "Wave --/--"
+	if _wi_tab_panel:
+		_wi_tab_panel.set_subtitle("Wave --/--")
 	if wave_intel_name_label:
 		wave_intel_name_label.text = ""
 	if wave_intel_status_label:
@@ -4085,6 +4129,18 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	
 	wave_intel_current_label.text = "%d / %d" % [display_wave_idx + 1, wave_total]
 	wave_intel_name_label.text = current_preview.get("name", "Unknown Wave")
+	if _wi_summary_label:
+		_wi_summary_label.text = "Wave %d/%d  ·  %s" % [
+			display_wave_idx + 1,
+			wave_total,
+			str(current_preview.get("name", "Unknown Wave"))
+		]
+	if _wi_tab_panel:
+		_wi_tab_panel.set_subtitle("Wave %d/%d  ·  %s" % [
+			display_wave_idx + 1,
+			wave_total,
+			str(current_preview.get("name", "Unknown Wave"))
+		])
 	wave_intel_status_label.text = "● " + status_text
 	wave_intel_status_label.add_theme_color_override("font_color",
 		NeonStyle.OK if is_running else NeonStyle.WARN)
@@ -4128,6 +4184,7 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	
 	if _wi_wrapper:
 		_wi_wrapper.visible = true
+		_wi_wrapper.size_flags_vertical = Control.SIZE_SHRINK_BEGIN if wave_intel_collapsed else Control.SIZE_EXPAND_FILL
 		wave_intel_panel.visible = not wave_intel_collapsed
 	else:
 		wave_intel_panel.visible = true

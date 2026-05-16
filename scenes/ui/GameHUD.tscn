@@ -276,9 +276,9 @@ layout_mode = 2
 text = "Upgrade"
 
 [node name="DeselectTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=430641691]
-custom_minimum_size = Vector2(0, 36)
+custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
-text = "Close"
+text = ""
 
 [node name="CenterMessagePanel" type="PanelContainer" parent="Root" unique_id=1207480817]
 visible = false

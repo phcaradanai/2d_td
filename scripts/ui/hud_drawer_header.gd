@@ -10,6 +10,11 @@ const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 		title = value
 		queue_redraw()
 
+@export var subtitle: String = "":
+	set(value):
+		subtitle = value
+		queue_redraw()
+
 @export var icon_kind: String = "build":
 	set(value):
 		icon_kind = value
@@ -63,6 +68,12 @@ func set_expanded(value: bool) -> void:
 	expanded = value
 	queue_redraw()
 
+func set_subtitle(value: String) -> void:
+	if subtitle == value:
+		return
+	subtitle = value
+	queue_redraw()
+
 func set_tab_mode(value: bool) -> void:
 	if tab_mode == value:
 		return
@@ -105,15 +116,22 @@ func _draw() -> void:
 		_draw_chevron(Vector2(rect.size.x * 0.5, rect.size.y - 15.0), Color(accent_color.r, accent_color.g, accent_color.b, minf(1.0, border.a + 0.26)))
 	else:
 		_draw_icon(Vector2(25.0, rect.size.y * 0.5), alpha, 1.0)
-		draw_string(
-			ThemeDB.fallback_font,
-			Vector2(48.0, rect.size.y * 0.5 + 6.0),
-			title,
-			HORIZONTAL_ALIGNMENT_LEFT,
-			maxf(0.0, rect.size.x - 86.0),
-			14,
-			Color(NeonStyle.INK_1.r, NeonStyle.INK_1.g, NeonStyle.INK_1.b, 0.98)
-		)
+		var font := ThemeDB.fallback_font
+		var title_color := Color(NeonStyle.INK_1.r, NeonStyle.INK_1.g, NeonStyle.INK_1.b, 0.98)
+		var text_width := maxf(0.0, rect.size.x - 86.0)
+		if subtitle.strip_edges() == "":
+			draw_string(font, Vector2(48.0, rect.size.y * 0.5 + 6.0), title, HORIZONTAL_ALIGNMENT_LEFT, text_width, 14, title_color)
+		else:
+			draw_string(font, Vector2(48.0, rect.size.y * 0.5 - 1.0), title, HORIZONTAL_ALIGNMENT_LEFT, text_width, 12, title_color)
+			draw_string(
+				font,
+				Vector2(48.0, rect.size.y * 0.5 + 13.0),
+				subtitle,
+				HORIZONTAL_ALIGNMENT_LEFT,
+				text_width,
+				10,
+				Color(NeonStyle.INK_3.r, NeonStyle.INK_3.g, NeonStyle.INK_3.b, 0.94 * alpha)
+			)
 		_draw_chevron(Vector2(rect.size.x - 22.0, rect.size.y * 0.5), border)
 
 func _draw_tab_body(rect: Rect2, fill: Color, border: Color, alpha: float) -> void:
