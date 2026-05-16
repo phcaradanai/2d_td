@@ -18,6 +18,7 @@ signal next_level_requested()
 signal back_to_map_requested()
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+const ElementIconControl = preload("res://scripts/ui/element_icon.gd")
 
 # Top Bar
 @onready var gold_label: Label = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/GoldLabel
@@ -750,6 +751,9 @@ func _update_tower_affordability(current_gold: int) -> void:
 		var cost_label := btn.get_node_or_null("Row/CostLabel")
 		if cost_label is Label:
 			cost_label.add_theme_color_override("font_color", NeonStyle.WARN if current_gold >= cost else NeonStyle.DANGER)
+		var name_label := btn.get_node_or_null("Row/NameColumn/NameLabel")
+		if name_label is Label:
+			name_label.add_theme_color_override("font_color", NeonStyle.INK_1 if current_gold >= cost else NeonStyle.INK_2)
 
 func refresh_tower_shop(tower_ids: Array[String]) -> void:
 	_ensure_elemental_shop_ui()
@@ -830,7 +834,7 @@ func _add_tower_shop_button(tower_id: String, cfg: Dictionary, is_unlocked: bool
 	btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	btn.focus_mode = Control.FOCUS_NONE
 	btn.clip_text = false
-	btn.custom_minimum_size.y = 40
+	btn.custom_minimum_size.y = 46
 	btn.text = ""
 	var display_name := _get_tower_shop_display_name(tower_id, cfg)
 
@@ -870,22 +874,22 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 	var row := HBoxContainer.new()
 	row.name = "Row"
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.offset_left   = 10
+	row.offset_left   = 8
 	row.offset_top    = 0
-	row.offset_right  = -10
+	row.offset_right  = -8
 	row.offset_bottom = 0
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_theme_constant_override("separation", 10)
+	row.add_theme_constant_override("separation", 9)
 	btn.add_child(row)
 
-	# Element badge — tinted glyph 28×28
-	var badge := _create_element_badge(elements, is_unlocked)
-	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	row.add_child(badge)
+	var icon := _create_element_icon(elements, is_unlocked)
+	row.add_child(icon)
 
 	# Name + optional requirement sub-label in VBox
 	var name_col := VBoxContainer.new()
+	name_col.name = "NameColumn"
 	name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	name_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	name_col.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	name_col.add_theme_constant_override("separation", 1)
 	row.add_child(name_col)
@@ -896,7 +900,7 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	name_label.clip_text = true
 	name_label.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	name_label.add_theme_font_size_override("font_size", 12)
+	name_label.add_theme_font_size_override("font_size", 13)
 	name_label.add_theme_color_override("font_color",
 		NeonStyle.INK_1 if is_unlocked else NeonStyle.INK_3)
 	name_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -906,8 +910,9 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 		var req_label := Label.new()
 		req_label.name = "RequireLabel"
 		req_label.text = _format_tower_requirement(elements)
-		req_label.add_theme_font_size_override("font_size", 9)
-		req_label.add_theme_color_override("font_color", NeonStyle.INK_4)
+		req_label.add_theme_font_size_override("font_size", 10)
+		req_label.add_theme_color_override("font_color", NeonStyle.INK_3)
+		req_label.clip_text = true
 		req_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		name_col.add_child(req_label)
 
@@ -920,12 +925,12 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 	cost_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if is_unlocked:
 		cost_label.text = "$%d" % cost
-		cost_label.custom_minimum_size.x = 52
-		cost_label.add_theme_font_size_override("font_size", 13)
+		cost_label.custom_minimum_size.x = 58
+		cost_label.add_theme_font_size_override("font_size", 14)
 		cost_label.add_theme_color_override("font_color", NeonStyle.WARN)
 	else:
-		cost_label.text = "LOCK"
-		cost_label.custom_minimum_size.x = 40
+		cost_label.text = "LOCKED"
+		cost_label.custom_minimum_size.x = 54
 		cost_label.add_theme_font_size_override("font_size", 10)
 		cost_label.add_theme_color_override("font_color", NeonStyle.INK_4)
 	row.add_child(cost_label)
@@ -952,7 +957,7 @@ func _format_tower_requirement(elements: Array) -> String:
 		return "Locked"
 	if elements.size() == 1:
 		return "Requires %s" % _element_label(str(elements[0]))
-	return "Requires %s" % _elements_short(elements).replace("+", " + ")
+	return "Requires %s" % _elements_full(elements)
 
 func _add_tower_section_header(section_key: String, label_text: String) -> void:
 	var header := HBoxContainer.new()
@@ -1035,8 +1040,8 @@ func _style_tower_shop_button(btn: Button, is_unlocked: bool) -> void:
 	var pressed  := NeonStyle.row_normal(is_unlocked)
 	pressed.bg_color = NeonStyle.BG_3
 	var disabled := NeonStyle.row_normal(false)
-	disabled.bg_color = Color(NeonStyle.BG_0.r, NeonStyle.BG_0.g, NeonStyle.BG_0.b, 0.80)
-	disabled.border_color = Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.08)
+	disabled.bg_color = Color(NeonStyle.BG_1.r, NeonStyle.BG_1.g, NeonStyle.BG_1.b, 0.78)
+	disabled.border_color = Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.16)
 
 	btn.add_theme_stylebox_override("normal",   normal)
 	btn.add_theme_stylebox_override("hover",    hover_sb if is_unlocked else disabled)
@@ -1060,43 +1065,18 @@ func _build_locked_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> Stri
 	var lock_reason: String = "Requires: " + ", ".join(missing_parts) if not missing_parts.is_empty() else "Locked"
 	return "%s\n\nElements: %s\n%s\nCost: %d Credits" % [desc, elements_text, lock_reason, cost]
 
-func _create_element_badge(raw_elements: Array, is_unlocked: bool) -> Label:
-	var badge := Label.new()
-	badge.text = _elements_short(raw_elements)
-	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	badge.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	badge.add_theme_font_size_override("font_size", 9)
-
-	var badge_style := StyleBoxFlat.new()
-	if is_unlocked and not raw_elements.is_empty():
-		var el := str(raw_elements[0]).to_lower()
-		var el_col := NeonStyle.element_color(el)
-		badge_style.bg_color     = Color(el_col.r, el_col.g, el_col.b, 0.12)
-		badge_style.border_color = Color(el_col.r, el_col.g, el_col.b, 0.50)
-		badge.add_theme_color_override("font_color", el_col)
-	elif is_unlocked:
-		badge_style.bg_color     = NeonStyle.BG_3
-		badge_style.border_color = NeonStyle.LINE_2
-		badge.add_theme_color_override("font_color", NeonStyle.INK_2)
-	else:
-		badge_style.bg_color     = Color(NeonStyle.BG_0.r, NeonStyle.BG_0.g, NeonStyle.BG_0.b, 0.80)
-		badge_style.border_color = NeonStyle.LINE
-		badge.add_theme_color_override("font_color", NeonStyle.INK_4)
-
-	badge_style.set_border_width_all(1)
-	badge_style.set_corner_radius_all(3)
-	badge_style.content_margin_left  = 3
-	badge_style.content_margin_right = 3
-	badge.add_theme_stylebox_override("normal", badge_style)
-
-	# Badge width scales with element count
-	var badge_width := 28
-	if raw_elements.size() == 2:   badge_width = 44
-	elif raw_elements.size() >= 3: badge_width = 52
-	badge.custom_minimum_size = Vector2(badge_width, 26)
-	badge.tooltip_text = _elements_full(raw_elements)
-	return badge
+func _create_element_icon(raw_elements: Array, is_unlocked: bool) -> ElementIconControl:
+	var icon := ElementIconControl.new()
+	icon.name = "ElementIcon"
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var icon_width := 34
+	if raw_elements.size() == 2:
+		icon_width = 50
+	elif raw_elements.size() >= 3:
+		icon_width = 64
+	icon.custom_minimum_size = Vector2(icon_width, 34)
+	icon.configure(raw_elements, is_unlocked)
+	return icon
 
 func _element_badge_color(raw_elements: Array, is_unlocked: bool) -> Color:
 	if not is_unlocked:
