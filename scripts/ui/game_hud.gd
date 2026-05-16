@@ -20,6 +20,7 @@ signal back_to_map_requested()
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 const ElementIconControl = preload("res://scripts/ui/element_icon.gd")
 const TowerRowTrimControl = preload("res://scripts/ui/tower_row_trim.gd")
+const BuildSectionHeaderControl = preload("res://scripts/ui/build_section_header.gd")
 const ELEMENT_ORDER: Array[String] = ["light", "darkness", "water", "fire", "nature", "earth"]
 const ELEMENT_SHORT_LABELS := {
 	"light": "Light",
@@ -992,31 +993,21 @@ func _format_tower_requirement(elements: Array) -> String:
 	return "Requires %s" % _elements_full(elements)
 
 func _add_tower_section_header(section_key: String, label_text: String) -> void:
-	var header := HBoxContainer.new()
+	var header := _make_build_section_header(label_text, false)
 	header.name = "SectionHeader_%s" % section_key
-	header.custom_minimum_size.y = 26
-	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	header.add_theme_constant_override("separation", 8)
 	# Top margin spacer for visual breathing room between sections
 	if tower_shop_list.get_child_count() > 0:
 		var spacer := Control.new()
-		spacer.custom_minimum_size.y = 6
+		spacer.custom_minimum_size.y = 5
 		tower_shop_list.add_child(spacer)
 	tower_shop_list.add_child(header)
 
-	var title := Label.new()
-	title.text = label_text.to_upper()
-	title.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	NeonStyle.apply_eyebrow(title)
-	header.add_child(title)
-
-	# Hairline after the eyebrow
-	var line := ColorRect.new()
-	line.color = NeonStyle.LINE
-	line.custom_minimum_size = Vector2(0, 1)
-	line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	header.add_child(line)
+func _make_build_section_header(label_text: String, important: bool = false) -> BuildSectionHeaderControl:
+	var header := BuildSectionHeaderControl.new()
+	header.custom_minimum_size = Vector2(0, 24)
+	header.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	header.configure(label_text, NeonStyle.CYAN, not important)
+	return header
 
 func _add_tower_section_hint(text: String) -> void:
 	var panel := PanelContainer.new()
@@ -1326,34 +1317,14 @@ func _ensure_build_towers_header_ui(container: Control) -> void:
 	divider.color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.45)
 	build_towers_header_block.add_child(divider)
 
-	var mastery_row := HBoxContainer.new()
-	mastery_row.name = "ElementMasteryTitleRow"
-	mastery_row.custom_minimum_size.y = 20
-	mastery_row.add_theme_constant_override("separation", 6)
-	build_towers_header_block.add_child(mastery_row)
-
-	var mastery_marker := Label.new()
-	mastery_marker.text = ">>"
-	mastery_marker.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	mastery_marker.add_theme_font_size_override("font_size", 11)
-	mastery_marker.add_theme_color_override("font_color", NeonStyle.CYAN)
-	mastery_row.add_child(mastery_marker)
-
 	element_status_label = Label.new()
 	element_status_label.name = "ElementStatusLabel"
-	element_status_label.text = "ELEMENT MASTERY"
-	element_status_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	element_status_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	NeonStyle.apply_eyebrow(element_status_label)
-	element_status_label.add_theme_color_override("font_color", NeonStyle.CYAN)
-	mastery_row.add_child(element_status_label)
+	element_status_label.visible = false
+	element_status_label.custom_minimum_size = Vector2.ZERO
 
-	var mastery_line := ColorRect.new()
-	mastery_line.custom_minimum_size = Vector2(0, 1)
-	mastery_line.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	mastery_line.size_flags_vertical = Control.SIZE_SHRINK_CENTER
-	mastery_line.color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.16)
-	mastery_row.add_child(mastery_line)
+	var mastery_row := _make_build_section_header("Element Mastery", true)
+	mastery_row.name = "ElementMasteryTitleRow"
+	build_towers_header_block.add_child(mastery_row)
 
 	element_mastery_grid = GridContainer.new()
 	element_mastery_grid.name = "ElementMasteryGrid"
