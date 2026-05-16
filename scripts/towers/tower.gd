@@ -1732,7 +1732,7 @@ func _is_upgrade_config_unlocked(next_config: Dictionary) -> bool:
 	if next_config.is_empty():
 		return false
 
-	var combo_type := str(next_config.get("combo_type", "neutral"))
+	combo_type = str(next_config.get("combo_type", "neutral"))
 	var raw_elements = next_config.get("elements", [])
 	var requires_elements : bool = combo_type != "neutral" and raw_elements is Array and not raw_elements.is_empty()
 
