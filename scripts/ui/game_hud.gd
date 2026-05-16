@@ -1338,13 +1338,69 @@ func _ensure_build_towers_header_ui(container: Control) -> void:
 		var chip := _make_element_mastery_chip(element_id)
 		element_mastery_grid.add_child(chip)
 
+	build_towers_header_block.add_child(_make_element_hint_card())
+
+func _make_element_hint_card() -> PanelContainer:
+	var card := PanelContainer.new()
+	card.name = "ElementHintCard"
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.custom_minimum_size = Vector2(0, 38)
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.055)
+	style.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.28)
+	style.set_border_width_all(1)
+	style.set_border_width(SIDE_LEFT, 3)
+	style.set_corner_radius_all(3)
+	style.content_margin_left = 8
+	style.content_margin_right = 8
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	card.add_theme_stylebox_override("panel", style)
+
+	var row := HBoxContainer.new()
+	row.name = "HintRow"
+	row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.alignment = BoxContainer.ALIGNMENT_BEGIN
+	row.add_theme_constant_override("separation", 7)
+	card.add_child(row)
+
+	var info_chip := PanelContainer.new()
+	info_chip.name = "HintInfoChip"
+	info_chip.custom_minimum_size = Vector2(20, 20)
+	info_chip.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	var chip_style := StyleBoxFlat.new()
+	chip_style.bg_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.10)
+	chip_style.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.46)
+	chip_style.set_border_width_all(1)
+	chip_style.set_corner_radius_all(3)
+	chip_style.content_margin_left = 0
+	chip_style.content_margin_right = 0
+	chip_style.content_margin_top = 0
+	chip_style.content_margin_bottom = 0
+	info_chip.add_theme_stylebox_override("panel", chip_style)
+	row.add_child(info_chip)
+
+	var hint_icon := Label.new()
+	hint_icon.name = "HintIcon"
+	hint_icon.text = "i"
+	hint_icon.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hint_icon.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	hint_icon.add_theme_font_size_override("font_size", 11)
+	hint_icon.add_theme_color_override("font_color", NeonStyle.CYAN)
+	info_chip.add_child(hint_icon)
+
 	element_hint_label = Label.new()
 	element_hint_label.name = "ElementHintLabel"
-	element_hint_label.text = "Pick elements between waves to unlock tower paths"
+	element_hint_label.text = "Choose elements between waves to unlock tower paths."
 	element_hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	element_hint_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	element_hint_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	element_hint_label.add_theme_font_size_override("font_size", 10)
-	element_hint_label.add_theme_color_override("font_color", NeonStyle.INK_3)
-	build_towers_header_block.add_child(element_hint_label)
+	element_hint_label.add_theme_color_override("font_color", NeonStyle.INK_2)
+	row.add_child(element_hint_label)
+
+	return card
 
 func _make_element_mastery_chip(element_id: String) -> PanelContainer:
 	var chip := PanelContainer.new()
@@ -1418,7 +1474,7 @@ func _refresh_element_mastery_strip() -> void:
 			level_label.text = "Lv. %d" % level if unlocked else "Locked"
 			level_label.add_theme_color_override("font_color", color if unlocked else NeonStyle.INK_4)
 	if element_hint_label:
-		element_hint_label.text = "Pick elements between waves to unlock tower paths"
+		element_hint_label.text = "Choose elements between waves to unlock tower paths."
 
 func _element_mastery_chip_style(color: Color, unlocked: bool) -> StyleBoxFlat:
 	var style := StyleBoxFlat.new()
