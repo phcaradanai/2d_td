@@ -15,6 +15,10 @@ var _cooldown_elapsed: Dictionary = {}
 # How many pool players are currently playing each sfx_type.
 var _sim_counts: Dictionary = {}
 
+# Active sfx and finish callbacks by pooled AudioStreamPlayer instance id.
+var _player_sfx_types: Dictionary = {}
+var _player_finished_callbacks: Dictionary = {}
+
 # ---------------------------------------------------------------------------
 # Initialization
 # ---------------------------------------------------------------------------
@@ -86,6 +90,8 @@ func _play(sfx_type: String, priority_override: int) -> void:
 	if stream == null:
 		return
 
+	_prepare_player_for_reuse(player)
+
 	# Pitch variation
 	var pitch_var: float = _Config.PITCH_VARIATION.get(sfx_type, 0.0)
 	if pitch_var > 0.0:
@@ -113,9 +119,28 @@ func _play(sfx_type: String, priority_override: int) -> void:
 
 	_cooldown_elapsed[sfx_type] = 0.0
 	_sim_counts[sfx_type] = _sim_counts.get(sfx_type, 0) + 1
-	player.finished.connect(_on_finished.bind(sfx_type), CONNECT_ONE_SHOT)
+	var player_id := player.get_instance_id()
+	var callback := _on_finished.bind(player_id, sfx_type)
+	_player_sfx_types[player_id] = sfx_type
+	_player_finished_callbacks[player_id] = callback
+	player.finished.connect(callback, CONNECT_ONE_SHOT)
 
-func _on_finished(sfx_type: String) -> void:
+func _prepare_player_for_reuse(player: AudioStreamPlayer) -> void:
+	var player_id := player.get_instance_id()
+	if _player_sfx_types.has(player_id):
+		var previous_sfx: String = _player_sfx_types[player_id]
+		_sim_counts[previous_sfx] = maxi(0, _sim_counts.get(previous_sfx, 0) - 1)
+		_player_sfx_types.erase(player_id)
+
+	if _player_finished_callbacks.has(player_id):
+		var previous_callback: Callable = _player_finished_callbacks[player_id]
+		if player.finished.is_connected(previous_callback):
+			player.finished.disconnect(previous_callback)
+		_player_finished_callbacks.erase(player_id)
+
+func _on_finished(player_id: int, sfx_type: String) -> void:
+	_player_sfx_types.erase(player_id)
+	_player_finished_callbacks.erase(player_id)
 	_sim_counts[sfx_type] = maxi(0, _sim_counts.get(sfx_type, 0) - 1)
 
 func _process(delta: float) -> void:
