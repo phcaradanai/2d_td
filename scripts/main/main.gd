@@ -470,7 +470,6 @@ func _setup_game_from_level() -> void:
 		if debug_starting_gold_override >= 0 and is_debug_auto_play_allowed():
 			gold_to_apply = debug_starting_gold_override
 			debug_starting_gold_override = -1
-			DebugLog.trace("economy", "[AUTO_CLEAR] Applied debug-only starting_gold override: %d" % gold_to_apply)
 		game_manager.apply_level_config(gold_to_apply, level_manager.starting_lives)
 		game_manager.reset_runtime_state()
 		game_manager.set_total_waves(wave_manager.get_total_waves())

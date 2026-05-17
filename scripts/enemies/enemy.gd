@@ -181,6 +181,7 @@ func _resolve_visual_root() -> Node2D:
 @onready var death_pop_scene: PackedScene = preload("res://scenes/effects/DeathPopEffect.tscn")
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 const ENEMY_VFX_CONTROLLER_SCRIPT := preload("res://scripts/effects/enemy_vfx_controller.gd")
+const ENEMY_VISUAL_ROUTER := preload("res://scripts/enemies/enemy_visual_router.gd")
 
 var vfx_controller: Node = null
 
@@ -301,75 +302,7 @@ func get_vfx_controller() -> Node:
 	return vfx_controller
 
 func _draw() -> void:
-	var size = 16.0
-
-	if PERFORMANCE_VISUAL_MODE:
-		_draw_simple_silhouette(size)
-		if shield_remaining > 0:
-			draw_arc(Vector2.ZERO, size * 1.4, 0, TAU, 12, Color(0.4, 0.8, 1.0, 0.5), 1.5)
-		if active_slow_percent > 0:
-			draw_circle(Vector2.ZERO, size * 1.2, Color(0.6, 0.9, 1.0, 0.2))
-		if is_flashing:
-			draw_circle(Vector2.ZERO, size * 1.5, Color(1, 1, 1, 0.4))
-		return
-
-	if enemy_category == ENEMY_CATEGORY_AIR and not (enemy_type == "swarm" or tags.has("swarm")):
-		var hover_offset := sin(pulse_time * 4.0) * 2.0
-		draw_circle(Vector2(0, 12), size * 0.75, Color(0.0, 0.0, 0.0, 0.16))
-		draw_arc(Vector2(0, hover_offset), size * 1.15, 0, TAU, 28, Color(0.45, 0.9, 1.0, 0.18), 1.2)
-
-	if shield_remaining > 0:
-		# Subtle hex-style or thin ring indicator for protected units
-		var p_pulse = sin(pulse_time * 5.0) * 0.1 + 0.9
-		draw_arc(Vector2.ZERO, size * 1.4 * p_pulse, 0, TAU, 16, Color(0.4, 0.8, 1.0, 0.4), 1.5)
-		draw_circle(Vector2.ZERO, size * 1.4, Color(0.4, 0.8, 1.0, 0.08))
-
-	if active_slow_percent > 0:
-		# Frost/Slow glow
-		draw_circle(Vector2.ZERO, size * 1.2, Color(0.6, 0.9, 1.0, 0.25))
-		draw_arc(Vector2.ZERO, size * 1.1, 0, TAU, 24, Color(0.6, 0.9, 1.0, 0.4), 2.0)
-
-	match visual_type:
-		"basic":
-			_draw_cyber_node(COLOR_NEON_BASIC, size)
-		"fast":
-			_draw_cyber_runner(COLOR_NEON_FAST, size)
-		"tank":
-			_draw_cyber_tank(COLOR_NEON_TANK, size * 1.4)
-		"bulwark":
-			_draw_cyber_bulwark(COLOR_NEON_BULWARK, size * 1.6)
-		"hunter":
-			_draw_cyber_hunter(COLOR_NEON_HUNTER, size * 1.3)
-		"swarm":
-			_draw_cyber_swarm(COLOR_NEON_FAST, size * 0.86)
-		"runner":
-			_draw_cyber_runner(Color(1.0, 0.35, 0.05), size)
-		"shieldbearer":
-			_draw_cyber_bulwark(Color(0.3, 0.8, 1.0), size * 1.3)
-		"healer":
-			_draw_cyber_healer(Color(0.4, 1.0, 0.4), size * 1.1)
-		"splitter":
-			_draw_cyber_splitter(Color(0.8, 0.4, 1.0), size * 1.3)
-		"cloaked":
-			_draw_cyber_cloaked(Color(0.7, 0.7, 1.0), size)
-		"flyer":
-			_draw_cyber_drone(COLOR_NEON_BULWARK, size, false)
-		"fast_flyer":
-			_draw_cyber_drone(COLOR_NEON_FAST, size * 0.8, true)
-		"armored_flyer":
-			_draw_cyber_drone(COLOR_NEON_TANK, size * 1.5, false)
-		"disruptor":
-			_draw_cyber_disruptor(Color(0.6, 0.3, 1.0), size * 1.2)
-			
-	if is_flashing:
-		draw_circle(Vector2.ZERO, size * 1.5, Color(1, 1, 1, 0.4))
-		draw_arc(Vector2.ZERO, size * 1.6, 0, TAU, 32, Color(1, 1, 1, 0.6), 2.0)
-
-	if is_runner:
-		_draw_runner_role_telegraph(size)
-
-	if is_hunter:
-		_draw_hunter_role_telegraph(size)
+	ENEMY_VISUAL_ROUTER.draw_enemy(self)
 
 # --- Performance Silhouette Mode ---
 
