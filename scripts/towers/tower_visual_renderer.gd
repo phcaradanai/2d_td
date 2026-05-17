@@ -14,7 +14,7 @@ static func draw_element_core(t: Node2D) -> void:
 	TowerVisualDrawUtils.draw_element_core(t)
 
 static func draw_turret_contour(t: Node2D) -> void:
-	var visual_script := TowerVisualRegistry.get_visual_script(t.visual_type)
+	var visual_script := TowerVisualRegistry.get_visual_script(t.tower_id, t.visual_type)
 	if visual_script:
 		visual_script.draw_contour(t)
 
@@ -35,6 +35,6 @@ static func draw_turret_top(t: Node2D) -> void:
 		core_color = Color(0.7, 0.8, 0.85, 1.0)
 
 	var size = 20.0
-	var visual_script := TowerVisualRegistry.get_visual_script(t.visual_type)
+	var visual_script := TowerVisualRegistry.get_visual_script(t.tower_id, t.visual_type)
 	if visual_script:
 		visual_script.draw_top(t, main_color, secondary_color, core_color, lvl, size, el_colors)

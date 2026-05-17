@@ -1,9 +1,23 @@
 extends RefCounted
 class_name TowerVisualRegistry
 
-# Maps visual_type -> one procedural visual file.
-# Add new tower visual files here, then set tower.visual_type to the same key.
+# Lookup order: tower_id (BY_ID) first, visual_type (VISUALS) second, "basic" default last.
+# Add a by_id entry to scripts/towers/visuals/by_id/ to override any tower independently.
 
+# Per-tower-id overrides. Tower identity takes precedence over shared visual_type families.
+const BY_ID := {
+	"trickery_t1": preload("res://scripts/towers/visuals/by_id/trickery_t1_visual.gd"),
+	"blacksmith_t1": preload("res://scripts/towers/visuals/by_id/blacksmith_t1_visual.gd"),
+	"electricity_t1": preload("res://scripts/towers/visuals/by_id/electricity_t1_visual.gd"),
+	"quark_t1": preload("res://scripts/towers/visuals/by_id/quark_t1_visual.gd"),
+	"vapor_t1": preload("res://scripts/towers/visuals/by_id/vapor_t1_visual.gd"),
+	"roots_t1": preload("res://scripts/towers/visuals/by_id/roots_t1_visual.gd"),
+	"muck_t1": preload("res://scripts/towers/visuals/by_id/muck_t1_visual.gd"),
+	"zealot_t1": preload("res://scripts/towers/visuals/by_id/zealot_t1_visual.gd"),
+	"flamethrower_t1": preload("res://scripts/towers/visuals/by_id/flamethrower_t1_visual.gd"),
+}
+
+# Shared visual_type families — fallback when no by_id entry exists.
 const VISUALS := {
 	"acid_vat": preload("res://scripts/towers/visuals/acid_vat_tower_visual.gd"),
 	"basic": preload("res://scripts/towers/visuals/basic_tower_visual.gd"),
@@ -47,5 +61,7 @@ const VISUALS := {
 	"voodoo_totem": preload("res://scripts/towers/visuals/voodoo_totem_tower_visual.gd")
 }
 
-static func get_visual_script(visual_type: String) -> Script:
+static func get_visual_script(tower_id: String, visual_type: String) -> Script:
+	if BY_ID.has(tower_id):
+		return BY_ID[tower_id]
 	return VISUALS.get(visual_type, VISUALS.get("basic"))

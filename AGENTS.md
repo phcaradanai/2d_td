@@ -40,6 +40,14 @@ Whenever adding a new feature, fixing a bug, or improving UI/VFX/audio/gameplay 
 9. Avoid global singletons unless the project already uses that pattern or the feature clearly benefits from it.
 10. If modifying a large file is unavoidable, keep the change minimal and explain why in the commit notes.
 
+## Tower 
+
+Tower visual must resolve by tower_id first.
+visual_type is only fallback for towers not yet migrated.
+Every new tower or redesigned tower must have its own by_id visual file.
+No gameplay logic is allowed inside tower visual files.
+Visual files may only draw shape, core, accent, idle hint, and static preview-safe VFX.
+
 ### Required Pattern
 
 When adding a feature, first decide whether it belongs in one of these categories:
@@ -71,3 +79,4 @@ var audio_player_pool := []
 
 func play_tower_sound(...):
 	# hundreds of lines of audio policy here
+
