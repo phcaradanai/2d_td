@@ -4,7 +4,7 @@ class_name TowerVisualRenderer
 # Central tower visual facade.
 # tower.gd calls this file; actual tower silhouettes live in scripts/towers/visuals/*_tower_visual.gd.
 
-const TowerVisualDrawUtils = preload("res://scripts/towers/visuals/tower_visual_draw_utils.gd")
+const TowerVisualDrawUtils = preload("res://scripts/towers/visuals/common/tower_visual_draw_utils.gd")
 const TowerVisualRegistry = preload("res://scripts/towers/visuals/tower_visual_registry.gd")
 
 static func draw_base_plate(t: Node2D) -> void:
