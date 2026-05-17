@@ -115,7 +115,7 @@ static func draw_contour(t: Node2D) -> void:
 	_circle(t, _v(15, 0), 7.0, OUTLINE)
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Fixed scale keeps catalog preview consistent with other tower by_id visuals.
 	var base := _poly([
 		_v(-24, 13), _v(-20, -9), _v(-5, -20), _v(12, -18),

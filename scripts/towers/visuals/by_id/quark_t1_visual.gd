@@ -52,7 +52,7 @@ static func _draw_ring(t: Node2D, center: Vector2, radius: float, color: Color, 
 
 static func _draw_stroked_polygon(t: Node2D, points: PackedVector2Array, fill: Color, trim: Color, trim_width := 1.2) -> void:
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
-	var inner := TowerVisualDrawUtils._expand_poly_from_center(t, points, -1.4)
+	var inner := TowerVisualDrawUtils._expand_poly_from_center(points, -1.4)
 	t.draw_colored_polygon(inner, fill)
 	_closed_polyline(t, inner, trim, trim_width)
 
@@ -109,7 +109,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-5, 0), 6.0)
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var light_col := main_color.lightened(0.18)
 	var earth_col := secondary_color if el_colors.size() >= 2 else Color(0.72, 0.58, 0.32, 1.0)
 	var deep_metal := Color(0.055, 0.050, 0.038, 0.94)

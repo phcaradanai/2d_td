@@ -146,7 +146,7 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_circle(_v(Vector2.ZERO), _r(30.0), OUTLINE)
 	TowerVisualDrawUtils._draw_contour_poly(t, _regular_poly(Vector2.ZERO, 24.0, 6, PI / 6.0))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Static ritual aura rings: communicates aura attack without using particles.
 	_draw_arc(t, Vector2.ZERO, 39.0, -2.65, -0.52, Color(0.67, 0.22, 1.0, 0.36), 2.0)
 	_draw_arc(t, Vector2.ZERO, 39.0, 0.50, 2.66, Color(1.0, 0.38, 0.13, 0.32), 2.0)

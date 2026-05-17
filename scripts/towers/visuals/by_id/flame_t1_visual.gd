@@ -58,7 +58,7 @@ static func _draw_petal(t: Node2D, dir: Vector2, length: float, width: float, fi
 		base + n * width,
 	])
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, points, -1.4), fill)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(points, -1.4), fill)
 	_draw_stroked_polyline(t, points, edge, 1.0)
 
 static func _draw_leaf(t: Node2D, dir: Vector2, length: float, width: float, fill: Color, edge: Color) -> void:
@@ -72,14 +72,14 @@ static func _draw_leaf(t: Node2D, dir: Vector2, length: float, width: float, fil
 		base + n * width * 0.75,
 	])
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, points, -1.2), fill)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(points, -1.2), fill)
 	_draw_stroked_polyline(t, points, edge, 0.9)
 
 static func _draw_dual_fire_nature_token(t: Node2D, center: Vector2, radius: float, fire_c: Color, nature_c: Color) -> void:
 	var outer := _regular_poly(center, radius, 8, PI / 8.0)
 	var inner := _regular_poly(center, radius * 0.78, 8, PI / 8.0)
 	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, outer, -1.1), Color(0.035, 0.030, 0.018, 0.86))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.1), Color(0.035, 0.030, 0.018, 0.86))
 	_draw_stroked_polyline(t, outer, Color(fire_c.r, fire_c.g, fire_c.b, 0.54), 0.8)
 	_draw_stroked_polyline(t, inner, Color(nature_c.r, nature_c.g, nature_c.b, 0.48), 0.7)
 
@@ -92,7 +92,7 @@ static func _draw_dual_fire_nature_token(t: Node2D, center: Vector2, radius: flo
 		center + Vector2(3.0, 3.8),
 	])
 	t.draw_colored_polygon(flame, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, flame, -0.8), Color(1.0, 0.34, 0.06, 0.92))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(flame, -0.8), Color(1.0, 0.34, 0.06, 0.92))
 
 	var leaf := PackedVector2Array([
 		center + Vector2(0.0, 4.8),
@@ -101,7 +101,7 @@ static func _draw_dual_fire_nature_token(t: Node2D, center: Vector2, radius: flo
 		center + Vector2(1.1, -1.4),
 	])
 	t.draw_colored_polygon(leaf, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, leaf, -0.7), Color(nature_c.r, nature_c.g, nature_c.b, 0.72))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(leaf, -0.7), Color(nature_c.r, nature_c.g, nature_c.b, 0.72))
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl: int = t.tree_tier
@@ -120,7 +120,7 @@ static func draw_contour(t: Node2D) -> void:
 		_outline_circle(t, p, 3.6)
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var fire_c := main_color
 	var nature_c := secondary_color
 	if el_colors.size() >= 2:
@@ -161,7 +161,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-17, 5),
 	])
 	t.draw_colored_polygon(body, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, body, -1.7), body_dark)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(body, -1.7), body_dark)
 	_draw_stroked_polyline(t, body, Color(ember.r, ember.g, ember.b, 0.54), 1.0)
 
 	# Molten bio-reactor core with vulnerability spikes.
@@ -176,7 +176,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(5.0, 4.6),
 	])
 	t.draw_colored_polygon(inner_flame, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, inner_flame, -0.9), hot)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(inner_flame, -0.9), hot)
 	var inner_leaf := PackedVector2Array([
 		Vector2(-1.2, 5.2),
 		Vector2(4.2, 1.5),
@@ -184,7 +184,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(0.8, -1.0),
 	])
 	t.draw_colored_polygon(inner_leaf, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, inner_leaf, -0.55), Color(green.r, green.g, green.b, 0.64))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(inner_leaf, -0.55), Color(green.r, green.g, green.b, 0.64))
 	t.draw_circle(Vector2(0.0, -0.7), 2.2, yellow)
 
 	# Aura pylons: small bloom nodes around the tower to signal nearby burn/amplify effect.

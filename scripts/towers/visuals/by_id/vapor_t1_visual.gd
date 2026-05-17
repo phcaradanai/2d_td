@@ -75,9 +75,9 @@ static func _draw_vapor_token(t: Node2D, center: Vector2, radius: float, water_c
 		center + Vector2(radius * 0.10, -radius * 0.16),
 	])
 	t.draw_colored_polygon(left_drop, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, left_drop, -0.7), Color(water_color.r, water_color.g, water_color.b, 0.86))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(left_drop, -0.7), Color(water_color.r, water_color.g, water_color.b, 0.86))
 	t.draw_colored_polygon(right_flame, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, right_flame, -0.7), Color(fire_color.r, fire_color.g, fire_color.b, 0.88))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(right_flame, -0.7), Color(fire_color.r, fire_color.g, fire_color.b, 0.88))
 
 	_draw_closed_polyline(t, inner, Color(1.0, 1.0, 1.0, 0.16), 0.7)
 
@@ -105,7 +105,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(0, -25), 4.0)
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-15, 15, 24, 7))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var water := main_color
 	var fire := secondary_color if el_colors.size() >= 2 else Color(1.0, 0.48, 0.12, 0.95)
 	var steam := Color(0.86, 0.96, 1.0, 0.58)
@@ -148,7 +148,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(9, 8),
 	])
 	t.draw_colored_polygon(vent, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, vent, -2.0), Color(0.075, 0.085, 0.088, 0.96))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(vent, -2.0), Color(0.075, 0.085, 0.088, 0.96))
 	_draw_stroked_polyline(t, vent, Color(steam.r, steam.g, steam.b, 0.46), 1.1)
 	_draw_stroked_line(t, Vector2(12, -4), Vector2(18 + nozzle_len, -7), Color(water.r, water.g, water.b, 0.50), 1.0, true)
 	_draw_stroked_line(t, Vector2(12, 4), Vector2(18 + nozzle_len, 7), Color(fire.r, fire.g, fire.b, 0.48), 1.0, true)

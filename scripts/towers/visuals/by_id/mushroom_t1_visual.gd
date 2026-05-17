@@ -49,7 +49,7 @@ static func draw_contour(t: Node2D) -> void:
 	_draw_stroked_line(t, Vector2(22, 16) * s, Vector2(39, 24) * s, Color(0.45, 0.28, 0.13, 0.84), 3.0 * s)
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var s : float= max(size / 54.0, 0.62)
 
 	var nature := Color(0.28, 0.95, 0.48, 1.0)

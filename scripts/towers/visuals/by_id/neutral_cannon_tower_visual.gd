@@ -99,7 +99,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-10, 11), 5.5)
 	TowerVisualDrawUtils._draw_contour_line(t, Vector2(-19, 0), Vector2(24, 0), 4.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	var barrel_len := 30.0 + float(lvl) * 1.5
 	var dark := METAL_DARK
 	var mid := METAL_MID

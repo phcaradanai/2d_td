@@ -117,7 +117,7 @@ static func draw_contour(t: Node2D) -> void:
 		Vector2(22, 19), Vector2(10, 28), Vector2(-10, 28), Vector2(-22, 19)
 	]))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var darkness := DARKNESS_COL
 	var water := WATER_COL
 	var earth := EARTH_COL

@@ -109,7 +109,7 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_circle(Vector2.ZERO, _sr(30.0), OUTLINE)
 	_outline_poly(t, _regular_poly(Vector2.ZERO, 24.0, 8, PI / 8.0), OUTLINE)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var light_col := LIGHT_COL
 	var dark_col := DARK_COL
 	var nature_col := NATURE_COL

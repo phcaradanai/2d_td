@@ -41,7 +41,7 @@ static func _closed_path(points: PackedVector2Array) -> PackedVector2Array:
 
 static func _draw_stroked_poly(t: Node2D, points: PackedVector2Array, fill: Color, line_color: Color, line_width := 1.2) -> void:
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
-	var inner := TowerVisualDrawUtils._expand_poly_from_center(t, points, -1.6)
+	var inner := TowerVisualDrawUtils._expand_poly_from_center(points, -1.6)
 	t.draw_colored_polygon(inner, fill)
 	t.draw_polyline(_closed_path(inner), line_color, line_width, true)
 
@@ -73,7 +73,7 @@ static func _draw_dual_fire_earth_token(t: Node2D, center: Vector2, radius: floa
 	var outer := _regular_poly(center, radius, 8, PI / 8.0)
 	var inner := _regular_poly(center, radius * 0.78, 8, PI / 8.0)
 	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, outer, -1.3), Color(0.045, 0.033, 0.025, 0.90))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.3), Color(0.045, 0.033, 0.025, 0.90))
 	t.draw_polyline(_closed_path(inner), Color(earth_c.r, earth_c.g, earth_c.b, 0.50), 0.9, true)
 
 	# Fire half and earth half as readable miniature symbols.
@@ -86,7 +86,7 @@ static func _draw_dual_fire_earth_token(t: Node2D, center: Vector2, radius: floa
 		center + Vector2(0.0, 4.2),
 	])
 	t.draw_colored_polygon(flame, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, flame, -0.9), Color(fire_c.r, fire_c.g, fire_c.b, 0.82))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(flame, -0.9), Color(fire_c.r, fire_c.g, fire_c.b, 0.82))
 	_draw_stroked_line(t, center + Vector2(-4.2, 5.4), center + Vector2(4.2, 5.4), Color(earth_c.r, earth_c.g, earth_c.b, 0.70), 1.0, true)
 
 static func draw_contour(t: Node2D) -> void:
@@ -115,7 +115,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_line(t, Vector2(10, -21), Vector2(22, -9), 3.2)
 	_outline_rect(t, Rect2(19, -13, 8, 5))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var fire_c := _fire_color(el_colors, Color(1.0, 0.36, 0.08, 1.0))
 	var earth_c := _earth_color(el_colors, Color(0.58, 0.43, 0.20, 1.0))
 	var forge_hot := Color(1.0, 0.48, 0.08, 0.95)

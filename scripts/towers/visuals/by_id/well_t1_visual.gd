@@ -104,7 +104,7 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_colored_polygon(PackedVector2Array([Vector2(-13, -16), Vector2(0, -24), Vector2(13, -16), Vector2(0, -13)]), DETAIL_OUTLINE)
 	t.draw_colored_polygon(PackedVector2Array([Vector2(-13, 16), Vector2(0, 24), Vector2(13, 16), Vector2(0, 13)]), DETAIL_OUTLINE)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var water := Color(0.18, 0.82, 1.0, 1.0)
 	var nature := Color(0.28, 0.92, 0.42, 1.0)
 	if el_colors.size() > 0:

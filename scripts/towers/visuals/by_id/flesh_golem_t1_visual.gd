@@ -155,7 +155,7 @@ static func draw_contour(t: Node2D) -> void:
 	_draw_outlined_circle(t, Vector2(-23, 24), 11.5, OUTLINE, 1.0)
 	_draw_outlined_circle(t, Vector2(23, 24), 11.5, OUTLINE, 1.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var water_col := WATER
 	var nature_col := NATURE
 	var earth_col := EARTH

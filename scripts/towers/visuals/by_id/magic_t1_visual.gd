@@ -55,8 +55,8 @@ static func _draw_element_dot(t: Node2D, center: Vector2, radius: float, color: 
 static func _draw_dual_token(t: Node2D, center: Vector2, radius: float, dark_c: Color, fire_c: Color) -> void:
 	var frame := _regular_poly(center, radius, 8, PI / 8.0)
 	t.draw_colored_polygon(frame, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, frame, -1.6), Color(0.018, 0.015, 0.026, 0.88))
-	_draw_closed_polyline(t, TowerVisualDrawUtils._expand_poly_from_center(t, frame, -0.5), Color(0.86, 0.42, 1.0, 0.38), 0.9)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(frame, -1.6), Color(0.018, 0.015, 0.026, 0.88))
+	_draw_closed_polyline(t, TowerVisualDrawUtils._expand_poly_from_center(frame, -0.5), Color(0.86, 0.42, 1.0, 0.38), 0.9)
 
 	_draw_element_dot(t, center + Vector2(-4.0, 0.0), radius * 0.28, dark_c)
 	_draw_element_dot(t, center + Vector2(4.0, 0.0), radius * 0.28, fire_c)
@@ -66,7 +66,7 @@ static func _draw_chaos_rune(t: Node2D, center: Vector2, radius: float, dark_c: 
 	var inner := _regular_poly(center, radius * 0.62, 8, 0.0)
 
 	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, outer, -2.1), Color(0.025, 0.014, 0.032, 0.92))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -2.1), Color(0.025, 0.014, 0.032, 0.92))
 	t.draw_colored_polygon(inner, Color(dark_c.r, dark_c.g, dark_c.b, 0.50))
 	_draw_closed_polyline(t, outer, Color(fire_c.r, fire_c.g, fire_c.b, 0.58), 1.25)
 	_draw_closed_polyline(t, inner, Color(dark_c.r, dark_c.g, dark_c.b, 0.74), 1.1)
@@ -128,7 +128,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_line(t, Vector2(-24, 0), Vector2(-16, 0), 2.0)
 	_outline_line(t, Vector2(16, 0), Vector2(24, 0), 2.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var dark_c := el_colors[1] if el_colors.size() > 1 else Color(0.55, 0.25, 1.0)
 	var fire_c := el_colors[3] if el_colors.size() > 3 else Color(1.0, 0.28, 0.08)
 	var body_radius := 17.0 + float(lvl) * 0.8
@@ -162,7 +162,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		var poly: PackedVector2Array = item[0]
 		var fill: Color = item[1]
 		t.draw_colored_polygon(poly, DETAIL_OUTLINE)
-		t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, poly, -1.7), fill)
+		t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(poly, -1.7), fill)
 		_draw_stroked_polyline(t, poly, Color(1.0, 0.47, 0.12, 0.35), 0.8)
 
 	# Four pylon nodes that imply the explosion is released in all directions.
@@ -202,9 +202,9 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-2, -2),
 	])
 	t.draw_colored_polygon(swirl_a, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, swirl_a, -0.9), Color(fire_c.r, fire_c.g, fire_c.b, 0.62))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(swirl_a, -0.9), Color(fire_c.r, fire_c.g, fire_c.b, 0.62))
 	t.draw_colored_polygon(swirl_b, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, swirl_b, -0.9), Color(dark_c.r, dark_c.g, dark_c.b, 0.66))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(swirl_b, -0.9), Color(dark_c.r, dark_c.g, dark_c.b, 0.66))
 
 	# Arcane explosion rune over the core, kept small so it does not become noisy.
 	_draw_chaos_rune(t, Vector2.ZERO, 8.2, dark_c, fire_c)

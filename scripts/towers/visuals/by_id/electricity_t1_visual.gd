@@ -30,7 +30,7 @@ static func _closed(points: PackedVector2Array) -> PackedVector2Array:
 static func _draw_stroked_poly(t: Node2D, points: PackedVector2Array, fill: Color, stroke_width := 2.0) -> void:
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
 	# Keep the fill slightly inside the black edge for a crisp catalog silhouette.
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, points, -stroke_width), fill)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(points, -stroke_width), fill)
 
 
 static func _draw_stroked_polyline(t: Node2D, points: PackedVector2Array, color: Color, width: float, closed := true) -> void:
@@ -59,7 +59,7 @@ static func _draw_light_fire_token(t: Node2D, center: Vector2, radius: float, li
 	# Tiny dual element badge: light star + fire ember. Kept secondary so it does not hide the coil.
 	var token := _regular_poly(center, radius, 8, PI / 8.0)
 	t.draw_colored_polygon(token, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, token, -1.3), Color(0.03, 0.02, 0.015, 0.86))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(token, -1.3), Color(0.03, 0.02, 0.015, 0.86))
 	_draw_stroked_polyline(t, token, Color(1.0, 0.88, 0.32, 0.55), 0.8)
 
 	# Left light spark.
@@ -70,7 +70,7 @@ static func _draw_light_fire_token(t: Node2D, center: Vector2, radius: float, li
 		var r := radius * (0.30 if i % 2 == 0 else 0.12)
 		spark.append(spark_center + Vector2(cos(a), sin(a)) * r)
 	t.draw_colored_polygon(spark, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, spark, -0.6), Color(light_color.r, light_color.g, light_color.b, 0.82))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(spark, -0.6), Color(light_color.r, light_color.g, light_color.b, 0.82))
 
 	# Right fire ember.
 	var flame := PackedVector2Array([
@@ -80,7 +80,7 @@ static func _draw_light_fire_token(t: Node2D, center: Vector2, radius: float, li
 		center + Vector2(radius * 0.50, radius * 0.25),
 	])
 	t.draw_colored_polygon(flame, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, flame, -0.45), Color(fire_color.r, fire_color.g, fire_color.b, 0.82))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(flame, -0.45), Color(fire_color.r, fire_color.g, fire_color.b, 0.82))
 
 
 static func draw_contour(t: Node2D) -> void:
@@ -100,7 +100,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_poly(t, _regular_poly(Vector2(0, 18.5), 6.0, 8, PI / 8.0))
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var light_color := el_colors[0] if el_colors.size() > 0 else Color(1.0, 0.95, 0.34, 1.0)
 	var fire_color := el_colors[1] if el_colors.size() > 1 else Color(1.0, 0.32, 0.08, 1.0)
 	var electric := Color(1.0, 0.92, 0.22, 1.0)

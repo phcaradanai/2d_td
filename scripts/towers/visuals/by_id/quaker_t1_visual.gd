@@ -31,7 +31,7 @@ static func _closed_polyline(t: Node2D, points: PackedVector2Array, color: Color
 
 static func _stroked_poly(t: Node2D, points: PackedVector2Array, fill: Color, line_color: Color, width := 1.35) -> void:
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, points, -1.8), fill)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(points, -1.8), fill)
 	_closed_polyline(t, points, DETAIL_OUTLINE, width + 2.0)
 	_closed_polyline(t, points, line_color, width)
 
@@ -46,7 +46,7 @@ static func _stroked_circle(t: Node2D, center: Vector2, radius: float, fill: Col
 static func _draw_tri_element_token(t: Node2D, center: Vector2, radius: float, fire_c: Color, nature_c: Color, earth_c: Color) -> void:
 	var frame := _regular_poly(center, radius, 6, PI / 6.0)
 	t.draw_colored_polygon(frame, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, frame, -1.3), Color(0.035, 0.031, 0.025, 0.88))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(frame, -1.3), Color(0.035, 0.031, 0.025, 0.88))
 	_closed_polyline(t, frame, Color(1.0, 0.72, 0.28, 0.52), 0.9)
 
 	var p1 := center + Vector2(0, -radius * 0.43)
@@ -95,7 +95,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_line(t, Vector2(-27, 24), Vector2(27, 24), 2.0)
 	_outline_line(t, Vector2(-25, 29), Vector2(25, 29), 1.4)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var fire_c := Color(1.0, 0.34, 0.08, 1.0)
 	var nature_c := Color(0.30, 0.92, 0.34, 1.0)
 	var earth_c := Color(0.74, 0.58, 0.34, 1.0)

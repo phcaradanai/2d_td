@@ -106,7 +106,7 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_circle(Vector2.ZERO, _r(31.5), OUTLINE)
 	TowerVisualDrawUtils._draw_contour_poly(t, _regular_poly(Vector2.ZERO, 25.0, 8, PI / 8.0))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Soft slow-field ring.
 	_draw_arc(t, Vector2.ZERO, 38.0, 0.03 * PI, 0.65 * PI, Color(0.70, 0.96, 1.0, 0.30), 2.4)
 	_draw_arc(t, Vector2.ZERO, 38.0, 0.75 * PI, 1.38 * PI, Color(0.58, 0.86, 1.0, 0.24), 2.2)

@@ -131,7 +131,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_line(t, Vector2(-17, -18), Vector2(-6, -18), 3.0)
 	TowerVisualDrawUtils._draw_contour_line(t, Vector2(-17, 18), Vector2(-6, 18), 3.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	var water := main_color.lightened(0.16)
 	var water_bright := main_color.lightened(0.42)
 	var earth := secondary_color.darkened(0.08) if secondary_color.a > 0.01 else Color(0.54, 0.42, 0.24, 1.0)

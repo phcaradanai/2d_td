@@ -27,7 +27,7 @@ static func _closed_line(t: Node2D, pts: PackedVector2Array, color: Color, width
 
 static func _draw_stroked_poly(t: Node2D, pts: PackedVector2Array, fill: Color, line_color: Color, width := 1.2) -> void:
 	t.draw_colored_polygon(pts, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, pts, -1.6), fill)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(pts, -1.6), fill)
 	_closed_line(t, pts, line_color, width)
 
 
@@ -50,7 +50,7 @@ static func _draw_dual_token(t: Node2D, center: Vector2, radius: float, darkness
 	var frame := _poly(center, radius, 8, PI / 8.0)
 	t.draw_colored_polygon(_poly(center, radius * 1.18, 8, PI / 8.0), Color(earth.r, earth.g, earth.b, 0.08))
 	t.draw_colored_polygon(frame, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, frame, -1.5), Color(0.020, 0.018, 0.016, 0.92))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(frame, -1.5), Color(0.020, 0.018, 0.016, 0.92))
 
 	var left := PackedVector2Array([
 		center + Vector2(-radius * 0.55, -radius * 0.44),
@@ -104,7 +104,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-12, 0), 8.0)
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var darkness := el_colors[1] if el_colors.size() > 1 else Color(0.42, 0.18, 0.72)
 	var earth := el_colors[5] if el_colors.size() > 5 else Color(0.62, 0.46, 0.25)
 	var metal := Color(0.19, 0.17, 0.15, 0.96)

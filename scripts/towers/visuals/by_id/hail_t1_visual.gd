@@ -44,7 +44,7 @@ static func _regular_poly(center: Vector2, radius: float, sides: int, rotation: 
 static func _draw_tri_element_token(t: Node2D, center: Vector2, radius: float, light_color: Color, dark_color: Color, water_color: Color) -> void:
 	var outer := _regular_poly(center, radius, 9, PI / 9.0)
 	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, outer, -1.4), Color(0.012, 0.018, 0.030, 0.9))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.4), Color(0.012, 0.018, 0.030, 0.9))
 
 	var top := PackedVector2Array([
 		center + Vector2(0.0, -radius * 0.66),
@@ -141,7 +141,7 @@ static func draw_contour(t: Node2D) -> void:
 		_outline_circle(t, p, 4.5 * s)
 	_outline_circle(t, Vector2(0, 1) * s, 9.5 * s)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var s := 1.0 + float(max(lvl - 1, 0)) * 0.05
 	var light_color := Color(1.0, 0.92, 0.40, 1.0)
 	var dark_color := Color(0.50, 0.20, 0.95, 1.0)
@@ -168,7 +168,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 	# Base plate.
 	var base := _regular_poly(Vector2(0, 3) * s, 25.5 * s, 8, PI / 8.0)
 	t.draw_colored_polygon(base, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, base, -2.0 * s), shadow)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(base, -2.0 * s), shadow)
 	_draw_stroked_polyline(t, _regular_poly(Vector2(0, 3) * s, 21.0 * s, 8, PI / 8.0), Color(water_color.r, water_color.g, water_color.b, 0.38), 1.0, true)
 
 	# Rear hail crystal body.
@@ -182,7 +182,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-16, 15) * s,
 	])
 	t.draw_colored_polygon(rear_crystal, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, rear_crystal, -1.8 * s), dark_ice)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(rear_crystal, -1.8 * s), dark_ice)
 
 	var left_facet := PackedVector2Array([
 		Vector2(-15, -8) * s,
@@ -209,7 +209,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-11, 11) * s,
 	])
 	t.draw_colored_polygon(center_shard, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, center_shard, -1.4 * s), Color(0.42, 0.88, 1.0, 0.93))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(center_shard, -1.4 * s), Color(0.42, 0.88, 1.0, 0.93))
 	_draw_stroked_line(t, Vector2(2, -27) * s, Vector2(0, 21) * s, Color(0.95, 1.0, 1.0, 0.55), 0.8, true)
 	_draw_stroked_line(t, Vector2(-6, -12) * s, Vector2(9, -12) * s, Color(light_color.r, light_color.g, light_color.b, 0.35), 0.75, true)
 
@@ -237,7 +237,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-9, 6) * s,
 	])
 	t.draw_colored_polygon(emitter, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, emitter, -1.3 * s), Color(0.22, 0.68, 0.90, 0.94))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(emitter, -1.3 * s), Color(0.22, 0.68, 0.90, 0.94))
 	_draw_stroked_line(t, Vector2(3, -7) * s, Vector2(28, -3) * s, Color(0.94, 1.0, 1.0, 0.68), 0.9, true)
 	_draw_stroked_line(t, Vector2(3, 7) * s, Vector2(27, 3) * s, Color(dark_color.r, dark_color.g, dark_color.b, 0.46), 0.9, true)
 
@@ -254,6 +254,6 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 			p + Vector2(0.0, 3.3) * s,
 		])
 		t.draw_colored_polygon(shard, DETAIL_OUTLINE)
-		t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, shard, -0.7 * s), Color(ice.r, ice.g, ice.b, 0.78))
+		t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(shard, -0.7 * s), Color(ice.r, ice.g, ice.b, 0.78))
 
 	_draw_tri_element_token(t, Vector2(0, 28.5) * s, 7.0 * s, light_color, dark_color, water_color)

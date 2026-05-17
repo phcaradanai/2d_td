@@ -120,7 +120,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_poly(t, _regular_poly(Vector2.ZERO, 28.0, 8, PI / 8.0))
 	TowerVisualDrawUtils._draw_contour_poly(t, _poly([Vector2(15, -11), Vector2(48, 0), Vector2(15, 11), Vector2(22, 0)]))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Abyssal base shell.
 	_circle(t, Vector2.ZERO, 35.5, OUTLINE_SOFT)
 	t.draw_colored_polygon(_regular_poly(Vector2.ZERO, 29.0, 8, PI / 8.0), OUTLINE)

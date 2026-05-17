@@ -53,7 +53,7 @@ static func _draw_dual_element_token(t: Node2D, center: Vector2, radius: float, 
 	var inner := _regular_poly(center, radius * 0.78, 8, PI / 8.0)
 
 	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, outer, -1.5), Color(0.015, 0.025, 0.035, 0.88))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.5), Color(0.015, 0.025, 0.035, 0.88))
 	_draw_closed_polyline(t, outer, Color(water_color.r, water_color.g, water_color.b, 0.45), 1.0)
 
 	# Split diagonal facets: holy ice / water crystal.
@@ -139,7 +139,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_circle(t, Vector2(-21, 21), 4.0)
 	_outline_circle(t, Vector2(21, 21), 4.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var water_color := main_color
 	if el_colors.size() > 0:
 		water_color = el_colors[0]
@@ -173,7 +173,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-12, 16),
 	])
 	t.draw_colored_polygon(body, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, body, -2.0), Color(water_color.r * 0.35, water_color.g * 0.48, water_color.b * 0.55, 0.88))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(body, -2.0), Color(water_color.r * 0.35, water_color.g * 0.48, water_color.b * 0.55, 0.88))
 	_draw_stroked_polyline(t, body, Color(ice.r, ice.g, ice.b, 0.68), 1.25)
 
 	# Mirrored inner crystal facets.
@@ -190,10 +190,10 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-1, 2),
 	])
 	t.draw_colored_polygon(top_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, top_facet, -1.0), Color(0.88, 1.0, 1.0, 0.22))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(top_facet, -1.0), Color(0.88, 1.0, 1.0, 0.22))
 	_draw_stroked_polyline(t, top_facet, Color(0.92, 1.0, 1.0, 0.48), 0.8)
 	t.draw_colored_polygon(bot_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, bot_facet, -1.0), Color(water_color.r, water_color.g, water_color.b, 0.24))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(bot_facet, -1.0), Color(water_color.r, water_color.g, water_color.b, 0.24))
 	_draw_stroked_polyline(t, bot_facet, Color(0.72, 0.96, 1.0, 0.42), 0.8)
 
 	# Symmetric stabilizer fins. These read as control/slow rather than raw DPS.
@@ -210,10 +210,10 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(10, 9),
 	])
 	t.draw_colored_polygon(upper_fin, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, upper_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.34))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(upper_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.34))
 	_draw_stroked_polyline(t, upper_fin, Color(ice.r, ice.g, ice.b, 0.42), 0.9)
 	t.draw_colored_polygon(lower_fin, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, lower_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.26))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(lower_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.26))
 	_draw_stroked_polyline(t, lower_fin, Color(ice.r, ice.g, ice.b, 0.38), 0.9)
 
 	# Long frost shard emitter: sharp tip implies piercing frost shard, not round cannon.
@@ -225,7 +225,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-2, 6),
 	])
 	t.draw_colored_polygon(shard, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, shard, -1.5), shadow)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(shard, -1.5), shadow)
 	t.draw_colored_polygon(PackedVector2Array([
 		Vector2(0, -3.6),
 		Vector2(shard_len - 5.0, -2.8),

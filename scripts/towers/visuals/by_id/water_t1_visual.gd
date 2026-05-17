@@ -74,7 +74,7 @@ static func _draw_water_element_icon(t: Node2D, center: Vector2, radius: float, 
 		center + Vector2(-radius * 0.34, -radius * 0.10),
 	])
 	t.draw_colored_polygon(drop, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, drop, -0.9), Color(0.16, 0.78, 1.0, 0.92))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(drop, -0.9), Color(0.16, 0.78, 1.0, 0.92))
 	_draw_closed_polyline(t, drop, Color(0.72, 0.96, 1.0, 0.82), 0.85)
 
 	_draw_stroked_line(
@@ -119,7 +119,7 @@ static func draw_contour(t: Node2D) -> void:
 		Vector2(-7, 8),
 	]))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	var aqua := main_color.lightened(0.25)
 	var ice := Color(0.72, 0.95, 1.0, 0.92)
 	var deep := Color(0.025, 0.095, 0.145, 0.92)
@@ -140,7 +140,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-9, 15),
 	])
 	t.draw_colored_polygon(body, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, body, -2.0), glass)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(body, -2.0), glass)
 	_draw_stroked_polyline(t, body, Color(aqua.r, aqua.g, aqua.b, 0.78), 1.4)
 
 	var upper_facet := PackedVector2Array([
@@ -156,10 +156,10 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-2, 2),
 	])
 	t.draw_colored_polygon(upper_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, upper_facet, -1.1), Color(ice.r, ice.g, ice.b, 0.22))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(upper_facet, -1.1), Color(ice.r, ice.g, ice.b, 0.22))
 	_draw_stroked_polyline(t, upper_facet, Color(ice.r, ice.g, ice.b, 0.55), 0.85)
 	t.draw_colored_polygon(lower_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, lower_facet, -1.1), Color(aqua.r, aqua.g, aqua.b, 0.18))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(lower_facet, -1.1), Color(aqua.r, aqua.g, aqua.b, 0.18))
 	_draw_stroked_polyline(t, lower_facet, Color(aqua.r, aqua.g, aqua.b, 0.46), 0.85)
 
 	_draw_stroked_rect(t, Rect2(-2, -4, nose_len, 8), deep, 1.8)
@@ -175,7 +175,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(tip_x - 1.6, 0.0),
 	])
 	t.draw_colored_polygon(splash_tip, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, splash_tip, -0.8), Color(0.78, 0.98, 1.0, 0.86))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(splash_tip, -0.8), Color(0.78, 0.98, 1.0, 0.86))
 	_draw_stroked_polyline(t, splash_tip, Color(0.90, 1.0, 1.0, 0.70), 0.75)
 
 	var upper_fin := PackedVector2Array([
@@ -191,10 +191,10 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-7, 8),
 	])
 	t.draw_colored_polygon(upper_fin, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, upper_fin, -1.0), Color(0.10, 0.54, 0.82, 0.72))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(upper_fin, -1.0), Color(0.10, 0.54, 0.82, 0.72))
 	_draw_stroked_polyline(t, upper_fin, Color(0.60, 0.90, 1.0, 0.50), 0.85)
 	t.draw_colored_polygon(lower_fin, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, lower_fin, -1.0), Color(0.06, 0.38, 0.64, 0.72))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(lower_fin, -1.0), Color(0.06, 0.38, 0.64, 0.72))
 	_draw_stroked_polyline(t, lower_fin, Color(0.42, 0.80, 1.0, 0.42), 0.85)
 
 	var halo_points := [

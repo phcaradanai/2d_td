@@ -137,7 +137,7 @@ static func draw_contour(t: Node2D) -> void:
 		Vector2(0, 31), Vector2(-18, 25), Vector2(-26, 5)
 	]))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Slow/control field
 	_draw_acid_cloud(t)
 

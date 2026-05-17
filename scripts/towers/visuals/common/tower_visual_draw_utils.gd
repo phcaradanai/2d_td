@@ -94,9 +94,9 @@ static func _draw_contour_line(t: Node2D, from: Vector2, to: Vector2, width: flo
 	t.draw_line(from, to, TOWER_CONTOUR_COLOR, width + TOWER_CONTOUR_PX * 2.0, true)
 
 static func _draw_contour_poly(t: Node2D, points: PackedVector2Array) -> void:
-	t.draw_colored_polygon(_expand_poly_from_center(t, points, TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
+	t.draw_colored_polygon(_expand_poly_from_center(points, TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
 
-static func _expand_poly_from_center(t: Node2D, points: PackedVector2Array, amount: float) -> PackedVector2Array:
+static func _expand_poly_from_center(points: PackedVector2Array, amount: float) -> PackedVector2Array:
 	var out := PackedVector2Array()
 	for point in points:
 		var dir := point.normalized()

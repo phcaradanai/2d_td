@@ -88,7 +88,7 @@ static func _draw_light_element_icon(t: Node2D, center: Vector2, radius: float, 
 
 	t.draw_colored_polygon(star, DETAIL_OUTLINE)
 	t.draw_colored_polygon(
-		TowerVisualDrawUtils._expand_poly_from_center(t, star, -1.0),
+		TowerVisualDrawUtils._expand_poly_from_center(star, -1.0),
 		Color(1.0, 0.76, 0.06, 0.96)
 	)
 	_draw_closed_polyline(t, star, Color(1.0, 0.96, 0.58, 0.82), 0.9)
@@ -118,7 +118,7 @@ static func draw_contour(t: Node2D) -> void:
 	# Rear lens ring only. Forward muzzle orb removed for cleaner silhouette.
 	_outline_circle(t, Vector2(-10, 0), 7.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	var light := main_color.lightened(0.35)
 	var soft := Color(main_color.r, main_color.g, main_color.b, 0.42)
 	var deep := main_color.darkened(0.38)
@@ -138,7 +138,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-8, 16),
 	])
 	t.draw_colored_polygon(body, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, body, -2.0), soft)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(body, -2.0), soft)
 	_draw_stroked_polyline(t, body, light, 1.5)
 
 	# Light element token replaces the old generic yellow rear circle.
@@ -159,11 +159,11 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_
 		Vector2(-2, 3),
 	])
 	t.draw_colored_polygon(upper_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, upper_facet, -1.2), Color(light.r, light.g, light.b, 0.22))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(upper_facet, -1.2), Color(light.r, light.g, light.b, 0.22))
 	_draw_stroked_polyline(t, upper_facet, Color(light.r, light.g, light.b, 0.50), 0.9)
 
 	t.draw_colored_polygon(lower_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, lower_facet, -1.2), Color(light.r, light.g, light.b, 0.14))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(lower_facet, -1.2), Color(light.r, light.g, light.b, 0.14))
 	_draw_stroked_polyline(t, lower_facet, Color(light.r, light.g, light.b, 0.42), 0.9)
 
 	# Centered beam channel / barrel with black trim on every rail.

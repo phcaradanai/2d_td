@@ -28,7 +28,7 @@ static func _closed(points: PackedVector2Array) -> PackedVector2Array:
 
 static func _draw_poly(t: Node2D, points: PackedVector2Array, fill: Color, stroke_width := 1.8) -> void:
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
-	var inner := TowerVisualDrawUtils._expand_poly_from_center(t, points, -stroke_width)
+	var inner := TowerVisualDrawUtils._expand_poly_from_center(points, -stroke_width)
 	t.draw_colored_polygon(inner, fill)
 
 static func _draw_polyline(t: Node2D, points: PackedVector2Array, color: Color, width: float, closed := true) -> void:
@@ -58,7 +58,7 @@ static func _draw_earth_token(t: Node2D, center: Vector2, radius: float, main_co
 
 	t.draw_colored_polygon(_regular_poly(center, radius * 1.08, 6, PI / 6.0), Color(earth.r, earth.g, earth.b, 0.10))
 	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, outer, -1.5), Color(0.045, 0.040, 0.025, 0.92))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.5), Color(0.045, 0.040, 0.025, 0.92))
 	t.draw_polyline(_closed(inner), Color(earth.r, earth.g, earth.b, 0.35), 0.9, true)
 
 	var mountain := PackedVector2Array([
@@ -105,7 +105,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-24, -9, 9, 18))
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-2, 0), 8.5)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	var stone := main_color.darkened(0.08)
 	var stone_mid := main_color.darkened(0.24)
 	var stone_light := main_color.lightened(0.18)

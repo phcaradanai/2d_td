@@ -131,7 +131,7 @@ static func draw_contour(t: Node2D) -> void:
 	_draw_poly_outline(t, _diamond(Vector2.ZERO, 18.0, 31.0), OUTLINE, 2.0)
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Ground/earth anchor: heavy and stable, not a hail shard cluster.
 	_draw_poly_outline(t, [
 		Vector2(-24.0, 15.0), Vector2(-16.0, 24.0), Vector2(0.0, 28.0),

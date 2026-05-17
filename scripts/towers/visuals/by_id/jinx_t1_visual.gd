@@ -140,7 +140,7 @@ static func draw_contour(t: Node2D) -> void:
 	], s))
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Renderer/catalog may pass a larger preview scale value.
 	# Do NOT multiply by `size`; by_id tower visuals are authored in local pixels like the other catalog-safe files.
 	var s := CATALOG_FIT_SCALE * (1.0 + float(max(lvl - 1, 0)) * 0.05)

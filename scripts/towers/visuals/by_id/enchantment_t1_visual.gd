@@ -138,7 +138,7 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_circle(Vector2.ZERO, _r(30.0), OUTLINE)
 	_outline_poly(t, _regular_poly(Vector2.ZERO, 23.0, 6, PI / 6.0), OUTLINE)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Aura rings: vulnerability field. Static only; renderer handles any catalog rotation.
 	_stroked_polyline(t, _arc_points(Vector2.ZERO, 34.0, -2.85, -0.35, 18), LIGHT_SOFT, 1.6)
 	_stroked_polyline(t, _arc_points(Vector2.ZERO, 34.0, 0.30, 2.75, 18), Color(0.52, 1.0, 0.50, 0.28), 1.6)

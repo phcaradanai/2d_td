@@ -38,7 +38,7 @@ static func _draw_closed_polyline(t: Node2D, points: PackedVector2Array, color: 
 
 static func _draw_stroked_poly(t: Node2D, points: PackedVector2Array, fill: Color, stroke_width: float = 1.8) -> void:
 	t.draw_colored_polygon(points, DETAIL_OUTLINE)
-	var inner := TowerVisualDrawUtils._expand_poly_from_center(t, points, -stroke_width)
+	var inner := TowerVisualDrawUtils._expand_poly_from_center(points, -stroke_width)
 	t.draw_colored_polygon(inner, fill)
 	_draw_closed_polyline(t, points, DETAIL_OUTLINE_SOFT, 0.8)
 
@@ -66,7 +66,7 @@ static func _draw_neutral_badge(t: Node2D, center: Vector2, radius: float) -> vo
 	var outer := _regular_poly(center, radius, 8, PI / 8.0)
 	var inner := _regular_poly(center, radius * 0.72, 8, PI / 8.0)
 	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(t, outer, -1.6), Color(0.075, 0.085, 0.095, 0.88))
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.6), Color(0.075, 0.085, 0.095, 0.88))
 	_draw_closed_polyline(t, outer, Color(0.62, 0.70, 0.76, 0.62), 1.1)
 	_draw_closed_polyline(t, inner, Color(0.42, 0.48, 0.53, 0.46), 0.8)
 	_draw_stroked_line(t, center + Vector2(-radius * 0.42, 0), center + Vector2(radius * 0.42, 0), Color(0.72, 0.80, 0.86, 0.72), 0.8)
@@ -105,7 +105,7 @@ static func draw_contour(t: Node2D) -> void:
 	# Rear neutral badge.
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-11, 0), 7.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
 	# Subtle neutral aura: tells the player this is a non-element starter, not a magic tower.
 	t.draw_circle(Vector2.ZERO, 17.0, NEUTRAL_GLOW)
 	for r in [19.0, 24.0]:
