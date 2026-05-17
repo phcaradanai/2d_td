@@ -12,7 +12,8 @@ var save_data: Dictionary = {
 			"sfx_volume": 0.8,
 			"master_muted": false,
 			"music_muted": false,
-			"sfx_muted": false
+			"sfx_muted": false,
+			"audio_combat_mode": "balanced"
 		}
 	}
 }
@@ -212,7 +213,8 @@ func clear_save() -> void:
 				"sfx_volume": 0.8,
 				"master_muted": false,
 				"music_muted": false,
-				"sfx_muted": false
+				"sfx_muted": false,
+				"audio_combat_mode": "balanced"
 			}
 		}
 	}

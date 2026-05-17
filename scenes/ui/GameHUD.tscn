@@ -389,10 +389,10 @@ anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -220.0
-offset_right = 200.0
-offset_bottom = 220.0
+offset_left = -215.0
+offset_top = -275.0
+offset_right = 215.0
+offset_bottom = 275.0
 grow_horizontal = 2
 grow_vertical = 2
 
@@ -474,21 +474,6 @@ layout_mode = 2
 
 [node name="HSeparator" type="HSeparator" parent="Root/SettingsPanel/MarginContainer/VBoxContainer" unique_id=561921371]
 layout_mode = 2
-
-[node name="HBoxContainer" type="HBoxContainer" parent="Root/SettingsPanel/MarginContainer/VBoxContainer" unique_id=1827507061]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 1
-
-[node name="TestSfxButton" type="Button" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=1392893336]
-custom_minimum_size = Vector2(120, 35)
-layout_mode = 2
-text = "Test SFX"
-
-[node name="TestMusicButton" type="Button" parent="Root/SettingsPanel/MarginContainer/VBoxContainer/HBoxContainer" unique_id=2128541982]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Test Music"
 
 [node name="ResetAudioButton" type="Button" parent="Root/SettingsPanel/MarginContainer/VBoxContainer" unique_id=585492365]
 layout_mode = 2

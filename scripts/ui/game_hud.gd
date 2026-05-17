@@ -12,7 +12,6 @@ signal element_choice_requested(option: Variant)
 signal target_mode_changed(mode: String)
 signal main_menu_requested()
 signal audio_settings_changed(settings: Dictionary)
-signal test_audio_requested(type: String)
 signal reset_audio_requested()
 signal next_level_requested()
 signal back_to_map_requested()
@@ -120,8 +119,6 @@ var current_ui_state: HUDState = HUDState.GAMEPLAY
 @onready var master_mute_check: CheckBox = $Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer/MasterMuteCheck
 @onready var music_mute_check: CheckBox = $Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer/MusicMuteCheck
 @onready var sfx_mute_check: CheckBox = $Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer/SfxMuteCheck
-@onready var test_sfx_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/HBoxContainer/TestSfxButton
-@onready var test_music_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/HBoxContainer/TestMusicButton
 @onready var reset_audio_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/ResetAudioButton
 @onready var close_settings_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/CloseSettingsButton
 
@@ -206,6 +203,8 @@ var enemy_role_tooltips = {
 
 var updating_target_mode_ui := false
 var updating_audio_ui := false
+var _selected_combat_mode: String = "balanced"
+var _combat_mode_btns: Dictionary = {}  # mode key -> Button
 var target_modes = ["first", "last", "nearest", "strongest", "weakest", "fastest", "air_first", "support_first", "shield_first"]
 var target_mode_labels = {
 	"first": "First",
@@ -467,8 +466,6 @@ func _ready() -> void:
 	music_mute_check.toggled.connect(func(_v): _on_audio_ui_changed())
 	sfx_mute_check.toggled.connect(func(_v): _on_audio_ui_changed())
 	
-	test_sfx_button.pressed.connect(func(): test_audio_requested.emit("sfx"))
-	test_music_button.pressed.connect(func(): test_audio_requested.emit("music"))
 	reset_audio_button.pressed.connect(func(): reset_audio_requested.emit())
 	close_settings_button.pressed.connect(func(): set_panel_active(settings_panel, false))
 	
@@ -493,6 +490,9 @@ func _ready() -> void:
 	
 	# Final skin pass (also styles buttons added above)
 	_apply_terminal_hud_skin()
+
+	# Settings panel redesign — adds combat audio section, removes debug buttons
+	_setup_settings_panel()
 
 	# Top-bar HBox spacing
 	var top_hbox := gold_label.get_parent()
@@ -1013,7 +1013,7 @@ func _apply_terminal_hud_skin() -> void:
 	# Buttons — refined sizing
 	for btn in [settings_button, pause_button, restart_button,
 			cancel_build_button,
-			close_settings_button, test_sfx_button, test_music_button, reset_audio_button]:
+			close_settings_button, reset_audio_button]:
 		if btn:
 			NeonStyle.style_button(btn, NeonStyle.CYAN, false)
 			btn.custom_minimum_size.y = 32
@@ -1131,7 +1131,8 @@ func _on_audio_ui_changed() -> void:
 		"sfx_volume": sfx_slider.value,
 		"master_muted": master_mute_check.button_pressed,
 		"music_muted": music_mute_check.button_pressed,
-		"sfx_muted": sfx_mute_check.button_pressed
+		"sfx_muted": sfx_mute_check.button_pressed,
+		"audio_combat_mode": _selected_combat_mode,
 	}
 	audio_settings_changed.emit(settings)
 
@@ -1143,7 +1144,165 @@ func set_audio_settings_ui(settings: Dictionary) -> void:
 	master_mute_check.button_pressed = settings.get("master_muted", false)
 	music_mute_check.button_pressed = settings.get("music_muted", false)
 	sfx_mute_check.button_pressed = settings.get("sfx_muted", false)
+	_selected_combat_mode = settings.get("audio_combat_mode", "balanced")
+	_refresh_combat_mode_buttons()
 	updating_audio_ui = false
+
+func _setup_settings_panel() -> void:
+	if not is_instance_valid(settings_panel):
+		return
+
+	# ── Panel background upgrade (stronger glow border) ──────────────────────
+	var ps := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE_STRONG, true)
+	ps.content_margin_left   = 0
+	ps.content_margin_right  = 0
+	ps.content_margin_top    = 0
+	ps.content_margin_bottom = 0
+	settings_panel.add_theme_stylebox_override("panel", ps)
+
+	var margin: MarginContainer = settings_panel.get_child(0)
+	margin.add_theme_constant_override("margin_left",   22)
+	margin.add_theme_constant_override("margin_right",  22)
+	margin.add_theme_constant_override("margin_top",    20)
+	margin.add_theme_constant_override("margin_bottom", 20)
+
+	var vbox: VBoxContainer = margin.get_child(0)
+	vbox.add_theme_constant_override("separation", 8)
+
+	# ── Title ─────────────────────────────────────────────────────────────────
+	var title_node := vbox.get_child(0)
+	if title_node is Label:
+		NeonStyle.apply_terminal_label(title_node, 15, NeonStyle.CYAN_2, true)
+		title_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+		title_node.text = "AUDIO SETTINGS"
+
+	# ── Volume & Mute section header ──────────────────────────────────────────
+	var vol_hdr := _make_settings_section_header("VOLUME & MUTE")
+	vbox.add_child(vol_hdr)
+	vbox.move_child(vol_hdr, 1)
+
+	# ── Style GridContainer (sliders + mute checks) ───────────────────────────
+	var grid: GridContainer = $Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer
+	grid.add_theme_constant_override("h_separation", 14)
+	grid.add_theme_constant_override("v_separation", 6)
+	for child in grid.get_children():
+		if child is Label:
+			NeonStyle.apply_terminal_label(child, 12, NeonStyle.INK_2)
+		elif child is CheckBox:
+			child.add_theme_color_override("font_color", NeonStyle.INK_2)
+			child.add_theme_font_size_override("font_size", 12)
+
+	# ── Style HSeparator ──────────────────────────────────────────────────────
+	var hsep: HSeparator = $Root/SettingsPanel/MarginContainer/VBoxContainer/HSeparator
+	var sep_flat := StyleBoxFlat.new()
+	sep_flat.bg_color = Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.40)
+	sep_flat.set_content_margin_all(0)
+	hsep.add_theme_stylebox_override("separator", sep_flat)
+
+	# ── Combat Audio section ──────────────────────────────────────────────────
+	# Current vbox order: Title(0) vol_hdr(1) GridContainer(2) HSeparator(3)
+	# ResetAudioButton(4) CloseSettingsButton(5) VersionLabel(6)
+
+	var combat_hdr := _make_settings_section_header("COMBAT AUDIO")
+	vbox.add_child(combat_hdr)
+	vbox.move_child(combat_hdr, 4)
+
+	var density_label := Label.new()
+	density_label.text = "Tower SFX Density"
+	NeonStyle.apply_terminal_label(density_label, 12, NeonStyle.INK_2)
+	vbox.add_child(density_label)
+	vbox.move_child(density_label, 5)
+
+	var mode_row := HBoxContainer.new()
+	mode_row.add_theme_constant_override("separation", 6)
+	var mode_defs: Array = [
+		["full",     "Full"],
+		["balanced", "Balanced  ★"],
+		["minimal",  "Minimal"],
+	]
+	for m in mode_defs:
+		var btn := Button.new()
+		btn.text = m[1]
+		btn.custom_minimum_size = Vector2(90, 30)
+		btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		mode_row.add_child(btn)
+		_combat_mode_btns[m[0]] = btn
+		btn.pressed.connect(_on_combat_mode_selected.bind(m[0]))
+	vbox.add_child(mode_row)
+	vbox.move_child(mode_row, 6)
+
+	var hint_label := Label.new()
+	hint_label.text = "Balanced is recommended for cleaner late-game audio."
+	hint_label.add_theme_color_override("font_color", NeonStyle.INK_3)
+	hint_label.add_theme_font_size_override("font_size", 10)
+	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	vbox.add_child(hint_label)
+	vbox.move_child(hint_label, 7)
+
+	# ── Bottom row: Reset + Close side-by-side ────────────────────────────────
+	# After moves: Reset(8), Close(9), Version(10)
+	vbox.remove_child(reset_audio_button)
+	vbox.remove_child(close_settings_button)
+
+	var bottom_row := HBoxContainer.new()
+	bottom_row.add_theme_constant_override("separation", 10)
+	reset_audio_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	close_settings_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	bottom_row.add_child(reset_audio_button)
+	bottom_row.add_child(close_settings_button)
+	vbox.add_child(bottom_row)
+	vbox.move_child(bottom_row, 8)
+
+	# Style Reset dim, Close prominent
+	NeonStyle.style_button(reset_audio_button, NeonStyle.INK_3, false)
+	reset_audio_button.add_theme_color_override("font_color", NeonStyle.INK_2)
+	NeonStyle.style_button(close_settings_button, NeonStyle.CYAN, true)
+	reset_audio_button.custom_minimum_size.y = 32
+	close_settings_button.custom_minimum_size.y = 32
+
+	# ── Version label (stays at end) ──────────────────────────────────────────
+	var ver_label := vbox.get_child(vbox.get_child_count() - 1)
+	if ver_label is Label:
+		NeonStyle.apply_terminal_label(ver_label, 10, NeonStyle.INK_4)
+		ver_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+
+	_refresh_combat_mode_buttons()
+
+func _make_settings_section_header(text: String) -> VBoxContainer:
+	var container := VBoxContainer.new()
+	container.add_theme_constant_override("separation", 4)
+
+	var label := Label.new()
+	label.text = text
+	label.add_theme_font_size_override("font_size", 10)
+	label.add_theme_color_override("font_color", NeonStyle.INK_3)
+	label.uppercase = true
+	container.add_child(label)
+
+	var sep := HSeparator.new()
+	var sep_style := StyleBoxFlat.new()
+	sep_style.bg_color = Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.30)
+	sep_style.set_content_margin_all(0)
+	sep.add_theme_stylebox_override("separator", sep_style)
+	container.add_child(sep)
+
+	return container
+
+func _on_combat_mode_selected(mode: String) -> void:
+	_selected_combat_mode = mode
+	_refresh_combat_mode_buttons()
+	_on_audio_ui_changed()
+
+func _refresh_combat_mode_buttons() -> void:
+	if _combat_mode_btns.is_empty():
+		return
+	for mode in _combat_mode_btns:
+		var btn: Button = _combat_mode_btns[mode]
+		if not is_instance_valid(btn):
+			continue
+		var is_active: bool = (mode == _selected_combat_mode)
+		NeonStyle.style_button(btn, NeonStyle.CYAN if is_active else NeonStyle.INK_4, is_active)
+		btn.custom_minimum_size.y = 30
 
 func _ensure_top_hud_stat_chips() -> void:
 	var top_hbox := gold_label.get_parent()

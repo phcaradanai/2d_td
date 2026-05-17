@@ -171,6 +171,9 @@ func _ready() -> void:
 	combat_audio_service.name = "CombatAudioService"
 	add_child(combat_audio_service)
 	combat_audio_service.setup(audio_manager)
+	if save_manager:
+		var _initial_mode: String = save_manager.get_audio_settings().get("audio_combat_mode", "balanced")
+		combat_audio_service.set_combat_mode(_initial_mode)
 
 	if main_menu:
 		main_menu.set_version(VERSION)
@@ -839,7 +842,6 @@ func _connect_signals() -> void:
 		game_hud.back_to_map_requested.connect(_on_level_select_requested)
 		game_hud.next_level_requested.connect(start_next_level)
 		game_hud.audio_settings_changed.connect(_on_audio_settings_changed)
-		game_hud.test_audio_requested.connect(_on_test_audio_requested)
 		game_hud.reset_audio_requested.connect(_on_reset_audio_requested)
 
 	if debug_panel:
@@ -2176,28 +2178,23 @@ func _auto_save_run_state() -> void:
 func _on_audio_settings_changed(settings: Dictionary) -> void:
 	if audio_manager:
 		audio_manager.apply_settings(settings)
+	if combat_audio_service:
+		combat_audio_service.set_combat_mode(settings.get("audio_combat_mode", "balanced"))
 	if save_manager:
 		save_manager.update_audio_settings(settings)
 
-func _on_test_audio_requested(type: String) -> void:
-	if audio_manager:
-		if type == "sfx":
-			audio_manager.play_sfx("ui_click")
-		elif type == "music":
-			# Normal test
-			audio_manager.play_music("menu")
-			# Also trigger diagnostics
-			audio_manager.print_bus_diagnostics()
-		elif type == "fallback_test":
-			audio_manager.play_music_fallback_test()
 
 func _on_reset_audio_requested() -> void:
 	if audio_manager:
 		audio_manager.reset_to_defaults()
+		var default_settings: Dictionary = audio_manager.get_settings()
+		default_settings["audio_combat_mode"] = "balanced"
+		if combat_audio_service:
+			combat_audio_service.set_combat_mode("balanced")
 		if game_hud:
-			game_hud.set_audio_settings_ui(audio_manager.get_settings())
+			game_hud.set_audio_settings_ui(default_settings)
 		if save_manager:
-			save_manager.update_audio_settings(audio_manager.get_settings())
+			save_manager.update_audio_settings(default_settings)
 
 func _play_ui_click() -> void:
 	if audio_manager:

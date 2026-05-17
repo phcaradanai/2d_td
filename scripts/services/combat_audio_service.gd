@@ -6,9 +6,10 @@ const _PoolScript = preload("res://scripts/services/audio_player_pool.gd")
 
 var _audio_manager: Node = null
 var _pool = null  # AudioPlayerPool instance
+var _combat_mode: String = _Config.DEFAULT_MODE
 
 # Seconds elapsed since each sfx_type was last played.
-# Default look-up returns the cooldown value itself so the first play always passes.
+# Default look-up returns the cooldown value so the first play always passes.
 var _cooldown_elapsed: Dictionary = {}
 
 # How many pool players are currently playing each sfx_type.
@@ -28,13 +29,20 @@ func setup(audio_manager: Node) -> void:
 # Public API
 # ---------------------------------------------------------------------------
 
+func set_combat_mode(mode: String) -> void:
+	if mode in _Config.VALID_MODES:
+		_combat_mode = mode
+
+func get_combat_mode() -> String:
+	return _combat_mode
+
 func play_tower_sfx(sfx_type: String, world_pos: Vector2, priority_override: int = -1) -> void:
 	_play(sfx_type, priority_override)
 
 func play_combat_event_sfx(sfx_type: String, world_pos: Vector2, priority_override: int = -1) -> void:
 	_play(sfx_type, priority_override)
 
-# Stubs — reserved for future looping/fade-channel support (flame streams, beams, etc.)
+# Stubs — reserved for future looping/fade-channel support (flame streams, beams).
 func start_loop(_loop_key: String, _sfx_type: String, _world_pos: Vector2) -> void:
 	pass
 
@@ -55,14 +63,16 @@ func _play(sfx_type: String, priority_override: int) -> void:
 	# High-priority sounds skip throttle and simultaneous checks.
 	if priority < _Config.PRIORITY_HIGH:
 		# Cooldown gate
-		var cooldown: float = _Config.COOLDOWNS.get(sfx_type, 0.0)
+		var mode_cooldowns: Dictionary = _Config.COOLDOWNS_BY_MODE.get(_combat_mode, {})
+		var cooldown: float = mode_cooldowns.get(sfx_type, 0.0)
 		if cooldown > 0.0:
 			var elapsed: float = _cooldown_elapsed.get(sfx_type, cooldown)
 			if elapsed < cooldown:
 				return
 
 		# Per-type simultaneous cap
-		var max_sim: int = _Config.MAX_SIMULTANEOUS.get(sfx_type, 0)
+		var mode_sims: Dictionary = _Config.MAX_SIMULTANEOUS_BY_MODE.get(_combat_mode, {})
+		var max_sim: int = mode_sims.get(sfx_type, 0)
 		if max_sim > 0 and _sim_counts.get(sfx_type, 0) >= max_sim:
 			return
 
@@ -70,9 +80,7 @@ func _play(sfx_type: String, priority_override: int) -> void:
 	if player == null:
 		if priority < _Config.PRIORITY_NORMAL:
 			return
-		# Important sounds are still dropped when the pool is fully busy.
-		# A future enhancement could evict the oldest low-priority player here.
-		return
+		return  # Pool full; future: evict oldest low-priority player
 
 	var stream := _get_stream(sfx_type)
 	if stream == null:
@@ -85,7 +93,7 @@ func _play(sfx_type: String, priority_override: int) -> void:
 	else:
 		player.pitch_scale = 1.0
 
-	# Volume: base variation + adaptive reduction for busy pool
+	# Volume: variation + adaptive reduction for dense combat
 	var vol_db := 0.0
 	var vol_var: float = _Config.VOLUME_VARIATION_DB.get(sfx_type, 0.0)
 	if vol_var > 0.0:
@@ -93,8 +101,7 @@ func _play(sfx_type: String, priority_override: int) -> void:
 
 	if priority < _Config.PRIORITY_HIGH:
 		var active: int = _pool.active_count()
-		# Walk from most-severe tier downward; take the first (worst) match.
-		var steps: Array = _Config.ADAPTIVE_STEPS
+		var steps: Array = _Config.ADAPTIVE_STEPS_BY_MODE.get(_combat_mode, [])
 		for i in range(steps.size() - 1, -1, -1):
 			if active >= steps[i][0]:
 				vol_db += steps[i][1]
