@@ -1,4 +1,8 @@
 extends Node2D
+class_name ImpactEffect
+
+const MAX_ACTIVE: int = 40
+static var _active_count: int = 0
 
 var color: Color = Color.WHITE
 var glow_color: Color = Color.WHITE
@@ -28,7 +32,14 @@ func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0, p_attack_typ
 	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.25)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	
-	tween.tween_callback(queue_free)
+	tween.tween_callback(_on_expire)
+
+func _ready() -> void:
+	ImpactEffect._active_count += 1
+
+func _on_expire() -> void:
+	ImpactEffect._active_count -= 1
+	queue_free()
 
 func _draw() -> void:
 	if attack_type == "void_bloom":

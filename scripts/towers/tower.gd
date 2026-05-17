@@ -84,6 +84,9 @@ var _cloaked_targets: Array = []
 var _enemies_in_range_cache: Array = []
 var _stale_fire_rate_keys: Array = []
 var debug_draw_target_line: bool = false
+## Set true in the inspector only when tracing targeting/cloaking.
+## Off by default so combat scans don't flood the debugger at 200 lines/sec.
+static var _verbose_targeting: bool = false
 
 # Aim Visuals
 ## Aim line + target-marker crosshair on creeps.
@@ -222,6 +225,10 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 	
 	_ensure_sprite_node()
 	apply_level_visuals()
+	# Register with TargetingService so support/trickery/disruptor scans use the cached list.
+	var _ts := get_node_or_null("/root/TargetingService")
+	if _ts:
+		_ts.register_tower(self)
 
 ## Minimal setup for catalog/debug preview. Configures visual identity and
 ## stats without registering into gameplay systems.
@@ -1756,7 +1763,7 @@ func find_target() -> Node2D:
 	var target_pool = enemies
 	if _visible_targets.size() > 0:
 		target_pool = _visible_targets
-		if OS.is_debug_build() and _cloaked_targets.size() > 0:
+		if OS.is_debug_build() and _verbose_targeting and _cloaked_targets.size() > 0:
 			print("[Targeting] Tower ", visual_type, " found ", _visible_targets.size(), " visible targets and ", _cloaked_targets.size(), " cloaked target. Targeting visible first.")
 		var preferred = select_first_target(_visible_targets)
 		for cloaked in _cloaked_targets:
@@ -1768,7 +1775,7 @@ func find_target() -> Node2D:
 		for cloaked in _cloaked_targets:
 			if cloaked.has_method("notify_stealth_targetable"):
 				cloaked.notify_stealth_targetable()
-		if OS.is_debug_build():
+		if OS.is_debug_build() and _verbose_targeting:
 			print("[Targeting] Tower ", visual_type, " has only cloaked targets. Cloaked target allowed.")
 
 	match target_mode:
@@ -1927,7 +1934,9 @@ func _find_clone_target_at_world(world_pos: Vector2) -> Node2D:
 
 func _get_trickery_overlay_candidates() -> Array:
 	var candidates: Array = []
-	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+	var _ts_ref := get_node_or_null("/root/TargetingService")
+	var _tower_list: Array = _ts_ref.get_towers() if _ts_ref else get_tree().get_nodes_in_group("placed_towers")
+	for candidate in _tower_list:
 		if candidate == self or not is_instance_valid(candidate):
 			continue
 		if _is_non_cloneable_support_tower(candidate):
@@ -2067,7 +2076,9 @@ func _process_support_aura(delta: float) -> void:
 
 func _refresh_support_targets() -> void:
 	var candidates: Array = []
-	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+	var _ts_ref := get_node_or_null("/root/TargetingService")
+	var _tower_list: Array = _ts_ref.get_towers() if _ts_ref else get_tree().get_nodes_in_group("placed_towers")
+	for candidate in _tower_list:
 		if _is_valid_support_target(candidate):
 			candidates.append(candidate)
 	candidates.sort_custom(Callable(self, "_sort_support_candidates"))
@@ -2241,7 +2252,9 @@ func _is_valid_clone_target(tower: Variant) -> bool:
 
 func _assign_best_clone_target() -> void:
 	var candidates: Array = []
-	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+	var _ts_ref := get_node_or_null("/root/TargetingService")
+	var _tower_list: Array = _ts_ref.get_towers() if _ts_ref else get_tree().get_nodes_in_group("placed_towers")
+	for candidate in _tower_list:
 		if _is_valid_clone_target(candidate):
 			candidates.append(candidate)
 	if candidates.is_empty():
@@ -2305,7 +2318,9 @@ func clear_manual_clone_target() -> void:
 	queue_redraw()
 
 func _find_selected_trickery_waiting_for_target() -> Node2D:
-	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+	var _ts_ref := get_node_or_null("/root/TargetingService")
+	var _tower_list: Array = _ts_ref.get_towers() if _ts_ref else get_tree().get_nodes_in_group("placed_towers")
+	for candidate in _tower_list:
 		if candidate == self or not is_instance_valid(candidate):
 			continue
 		if not candidate.has_method("try_set_manual_clone_target"):
@@ -2364,7 +2379,9 @@ func _is_clone_recently_used(tower: Variant) -> bool:
 func _is_claimed_by_other_trickery(tower: Variant) -> bool:
 	if tower == null or not is_instance_valid(tower):
 		return false
-	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+	var _ts_ref := get_node_or_null("/root/TargetingService")
+	var _tower_list: Array = _ts_ref.get_towers() if _ts_ref else get_tree().get_nodes_in_group("placed_towers")
+	for candidate in _tower_list:
 		if candidate == self or not is_instance_valid(candidate):
 			continue
 		if not candidate.has_method("get_clone_current_target"):
@@ -2504,11 +2521,16 @@ func get_attack_type() -> String:
 	return attack_type
 
 func _exit_tree() -> void:
+	var _ts := get_node_or_null("/root/TargetingService")
+	if _ts:
+		_ts.unregister_tower(self)
 	_clear_support_targets()
 	clone_manual_target = null
 	_remove_clone_from_current_target()
 	# Clean modifiers this tower may have applied to other towers through stale references.
-	for candidate in get_tree().get_nodes_in_group("placed_towers"):
+	var _ts_ref := get_node_or_null("/root/TargetingService")
+	var _tower_list: Array = _ts_ref.get_towers() if _ts_ref else get_tree().get_nodes_in_group("placed_towers")
+	for candidate in _tower_list:
 		if is_instance_valid(candidate) and candidate != self and candidate.has_method("remove_damage_modifier"):
 			candidate.remove_damage_modifier(self)
 

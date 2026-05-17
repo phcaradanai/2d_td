@@ -4,13 +4,24 @@
 ## All draw functions draw in LOCAL space.  The node's global_rotation is
 ## set to (target – origin).angle(), so +X in local space always points
 ## toward the target.  lend = Vector2(distance, 0) is the local-space target.
+class_name AttackVFX
 extends Node2D
+
+## Maximum simultaneously active attack-VFX nodes.
+## Beyond this budget, new spawns are skipped (visuals only — gameplay is unaffected).
+const MAX_ACTIVE: int = 60
+## Shared counter across all AttackVFX instances.  Incremented in _ready(),
+## decremented just before queue_free() so the budget is always accurate.
+static var _active_count: int = 0
 
 var vfx_type:  String = "rapid_tracer"
 var color:     Color  = Color.WHITE
 var distance:  float  = 100.0
 var elapsed:   float  = 0.0
 var duration:  float  = 0.12
+
+func _ready() -> void:
+	AttackVFX._active_count += 1
 
 func setup(p_type: String, p_origin: Vector2, p_target: Vector2,
            p_color: Color, p_duration: float = 0.0) -> void:
@@ -39,6 +50,7 @@ static func _default_dur(t: String) -> float:
 func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed >= duration:
+		AttackVFX._active_count -= 1
 		queue_free()
 		return
 	queue_redraw()

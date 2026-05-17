@@ -2554,17 +2554,17 @@ func _validate_wave_design(wave_data: Dictionary, traits: Array[String], total_c
 	
 	var wave_name = wave_data.get("name", "Unknown")
 	
-	if traits.has("Shield"):
-		if total_count < 6:
-			print("[WaveDesign] WARNING: Isolated Bulwark in wave '%s' (total_count=%d). Shield aura has low value." % [wave_name, total_count])
-		else:
-			print("[WaveDesign] PASS: Bulwark escorted in wave '%s' (total_count=%d)." % [wave_name, total_count])
+	# if traits.has("Shield"):
+	# 	if total_count < 6:
+	# 		print("[WaveDesign] WARNING: Isolated Bulwark in wave '%s' (total_count=%d). Shield aura has low value." % [wave_name, total_count])
+	# 	else:
+	# 		print("[WaveDesign] PASS: Bulwark escorted in wave '%s' (total_count=%d)." % [wave_name, total_count])
 			
-	if traits.has("Anti-Hero"):
-		if total_count < 4:
-			print("[WaveDesign] WARNING: Isolated Hunter in wave '%s' (total_count=%d). No distraction/pressure units." % [wave_name, total_count])
-		else:
-			print("[WaveDesign] PASS: Hunter joined pack in wave '%s' (total_count=%d)." % [wave_name, total_count])
+	# if traits.has("Anti-Hero"):
+	# 	if total_count < 4:
+	# 		print("[WaveDesign] WARNING: Isolated Hunter in wave '%s' (total_count=%d). No distraction/pressure units." % [wave_name, total_count])
+	# 	else:
+	# 		print("[WaveDesign] PASS: Hunter joined pack in wave '%s' (total_count=%d)." % [wave_name, total_count])
 
 func _get_wave_source_for_preview(level_id: int) -> Array:
 	if level_id <= 0:

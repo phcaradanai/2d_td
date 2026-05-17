@@ -22,18 +22,27 @@ const C_VULN   := Color(0.80, 0.08, 0.88, 0.75)   # magenta     — vulnerabilit
 
 var owner_enemy: Node = null
 var _t: float = 0.0          # animation clock (advances with delta)
+## Visibility is re-evaluated every VISIBILITY_CHECK_INTERVAL seconds.
+## The animation clock (_t) still advances every frame for smooth glyphs.
+## Immediate re-evaluation is triggered by enemy_modifier_changed signal.
+const VISIBILITY_CHECK_INTERVAL := 0.15
+var _visibility_timer: float = 0.0
 
 # ── Setup / teardown ─────────────────────────────────────────────────────────
 
 func setup(enemy: Node) -> void:
 	owner_enemy = enemy
 	z_index = 15
+	add_to_group("status_vfx")
 	# Immediate redraw when a modifier changes (slow, root, vuln, armor).
 	if enemy.has_signal("enemy_modifier_changed"):
 		if not enemy.enemy_modifier_changed.is_connected(_on_modifier_changed):
 			enemy.enemy_modifier_changed.connect(_on_modifier_changed)
 
 func _on_modifier_changed(_en: Node, _key: String, _val: Variant) -> void:
+	# Force an immediate visibility re-check and redraw when a status changes.
+	_visibility_timer = 0.0
+	visible = _has_any_active()
 	queue_redraw()
 
 # ── Process ───────────────────────────────────────────────────────────────────
@@ -43,9 +52,14 @@ func _process(delta: float) -> void:
 		queue_free()
 		return
 	_t += delta * TAU   # one full cycle per second; scales correctly at x2/x3
-	var any := _has_any_active()
-	visible = any
-	if any:
+	# Re-check visibility at throttled interval — not every frame — to avoid
+	# ~5 property reads × 30+ creeps × 60 fps = 9000+ reads/sec.
+	# Immediate re-check is triggered by _on_modifier_changed on signal.
+	_visibility_timer -= delta
+	if _visibility_timer <= 0.0:
+		_visibility_timer = VISIBILITY_CHECK_INTERVAL
+		visible = _has_any_active()
+	if visible:
 		queue_redraw()   # smooth icon animation while active
 
 # ── State helpers ─────────────────────────────────────────────────────────────

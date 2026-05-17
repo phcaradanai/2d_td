@@ -95,15 +95,15 @@ func validate_level(level_id: String, config: Dictionary, waves: Array) -> bool:
 		ok = false
 
 	# Logging
-	if ok:
-		var path_count = paths.size() if not paths.is_empty() else 1
-		print("[LevelValidation] level=%s ok=true paths=%d build_spots=%d waves=%d" % [level_id, path_count, buildable.size(), waves.size()])
-	else:
-		print("[LevelValidation] level=%s FAILED" % level_id)
-		for err in errors:
-			print("  [ERROR] %s" % err)
+	# if ok:
+	# 	var path_count = paths.size() if not paths.is_empty() else 1
+	# 	print("[LevelValidation] level=%s ok=true paths=%d build_spots=%d waves=%d" % [level_id, path_count, buildable.size(), waves.size()])
+	# else:
+	# 	print("[LevelValidation] level=%s FAILED" % level_id)
+	# 	for err in errors:
+	# 		print("  [ERROR] %s" % err)
 	
-	for wrn in warnings:
-		print("  [WaveDesign] warning: %s" % wrn)
+	# for wrn in warnings:
+	# 	print("  [WaveDesign] warning: %s" % wrn)
 		
 	return ok

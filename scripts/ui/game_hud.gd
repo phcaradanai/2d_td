@@ -171,7 +171,7 @@ var tower_detail_collapsed: bool = true
 var tower_detail_has_selection: bool = false
 
 const SHOW_DAMAGE_PANEL := true
-const DAMAGE_PANEL_REFRESH_INTERVAL := 0.20
+const DAMAGE_PANEL_REFRESH_INTERVAL := 0.50
 const LEFT_DRAWER_WIDTH := 310.0
 const LEFT_TAB_RAIL_WIDTH := 58.0
 const RIGHT_DRAWER_WIDTH := LEFT_DRAWER_WIDTH
@@ -186,6 +186,7 @@ var damage_stats_details: RichTextLabel = null
 var damage_stats_expanded: bool = false
 var _damage_stats_dirty: bool = true
 var _damage_stats_refresh_elapsed: float = 0.0
+var _last_affordability_gold: int = -999
 
 var enemy_role_tooltips = {
 	"Fast": "reaches base quickly",
@@ -1352,6 +1353,9 @@ func set_gold(value: int) -> void:
 	_update_tower_affordability(value)
 
 func _update_tower_affordability(current_gold: int) -> void:
+	if current_gold == _last_affordability_gold:
+		return
+	_last_affordability_gold = current_gold
 	for tower_id in dynamic_tower_buttons.keys():
 		var btn: Button = dynamic_tower_buttons[tower_id]
 		if btn == null or not is_instance_valid(btn):

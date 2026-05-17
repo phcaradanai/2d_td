@@ -1,4 +1,8 @@
 extends Node2D
+class_name SplashEffect
+
+const MAX_ACTIVE: int = 30
+static var _active_count: int = 0
 
 var radius: float = 50.0
 var color: Color = Color(1.0, 0.4, 0.1, 0.6)
@@ -11,6 +15,13 @@ var _redraw_timer: float = 0.0
 const REDRAW_INTERVAL := 0.033  # ~30 Hz
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
+
+func _ready() -> void:
+	SplashEffect._active_count += 1
+
+func _on_expire() -> void:
+	SplashEffect._active_count -= 1
+	queue_free()
 
 func setup(p_radius: float, p_color: Color = Color(1.0, 0.4, 0.1, 0.6)) -> void:
 	radius = p_radius
@@ -26,7 +37,7 @@ func _process(delta: float) -> void:
 
 	elapsed += delta
 	if elapsed >= lifetime:
-		queue_free()
+		_on_expire()
 		return
 
 	modulate.a = 1.0 - (elapsed / lifetime)

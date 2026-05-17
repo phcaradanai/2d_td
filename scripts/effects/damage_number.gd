@@ -1,4 +1,10 @@
+class_name DamageNumber
 extends Node2D
+
+## Maximum simultaneously active damage-number labels.
+## Past this cap, new numbers are skipped — gameplay totals are unaffected.
+const MAX_ACTIVE: int = 20
+static var _active_count: int = 0
 
 @export var duration: float = 0.6
 @export var travel_distance: float = 40.0
@@ -20,6 +26,7 @@ func setup_text(text: String, color: Color = Color.WHITE, font_size: int = 14) -
 	_apply_label_style()
 
 func _ready() -> void:
+	DamageNumber._active_count += 1
 	if label == null:
 		label = Label.new()
 		label.name = "Label"
@@ -50,7 +57,11 @@ func _ready() -> void:
 	tween.tween_property(self, "modulate:a", 0.0, duration - fade_delay)\
 		.set_delay(fade_delay)
 	
-	tween.chain().tween_callback(queue_free)
+	tween.chain().tween_callback(_on_expire)
+
+func _on_expire() -> void:
+	DamageNumber._active_count -= 1
+	queue_free()
 
 func _apply_label_style() -> void:
 	if label == null:

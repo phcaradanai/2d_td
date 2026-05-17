@@ -1,4 +1,8 @@
 extends PathFollow2D
+## Set true only when tracing combat feature internals.
+## Off by default — healer/disruptor/runner ticks fire every few hundred ms;
+## with 10+ special enemies on wave 27 this generates thousands of log lines/min.
+static var _verbose_combat: bool = false
 
 signal died(enemy, reward_gold)
 signal reached_base(enemy, damage, global_pos)
@@ -171,7 +175,8 @@ func _resolve_visual_root() -> Node2D:
 	if n is Node2D:
 		return n
 
-	push_warning("[Enemy] No Body/VisualRoot/Model/Sprite found. Using self as visual root: %s" % name)
+	if OS.is_debug_build():
+		push_warning("[Enemy] No Body/VisualRoot/Model/Sprite found. Using self as visual root: %s" % name)
 	return self
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
 @onready var death_pop_scene: PackedScene = preload("res://scenes/effects/DeathPopEffect.tscn")
@@ -1991,7 +1996,7 @@ func _trigger_runner_dash(reason: String = "burst") -> void:
 		vfx_controller.play_runner_burst()
 	_spawn_impact_particle(Color(1.0, 0.46, 0.08, 0.56))
 	enemy_modifier_changed.emit(self , "runner_dash", runner_dash_speed_multiplier)
-	if OS.is_debug_build():
+	if OS.is_debug_build() and _verbose_combat:
 		print("[RunnerRole] dash reason=%s speed=%.1f reduction=%.2f" % [reason, speed, runner_dash_damage_reduction])
 
 func _try_runner_hit_dash() -> void:
@@ -2037,7 +2042,7 @@ func _process_healer_aura() -> void:
 					healed.emit(enemy, applied, self )
 					enemy_healed.emit(enemy, self , applied, hp_before, hp_after)
 					enemy_modifier_changed.emit(enemy, "healed", applied)
-					if OS.is_debug_build():
+					if OS.is_debug_build() and _verbose_combat:
 						print("[EnemyFeature][Healer] source=%s target=%s amount=%.1f hp=%.1f/%.1f" % [
 							enemy_type,
 							enemy.get_enemy_type() if enemy.has_method("get_enemy_type") else str(enemy.name),
@@ -2052,7 +2057,8 @@ func _process_healer_aura() -> void:
 func _process_disrupt_aura() -> void:
 	var radius = float(skill_params.get("radius", 150.0))
 	var penalty = clampf(float(skill_params.get("fire_rate_penalty", 0.5)), 0.05, 1.0)
-	var towers = get_tree().get_nodes_in_group("towers")
+	var _ts_dis := get_node_or_null("/root/TargetingService")
+	var towers: Array = _ts_dis.get_towers() if _ts_dis else get_tree().get_nodes_in_group("towers")
 	var currently_affected: Array[Node] = []
 	for tower in towers:
 		if not is_instance_valid(tower) or not tower.has_method("apply_fire_rate_modifier"):
@@ -2062,7 +2068,7 @@ func _process_disrupt_aura() -> void:
 			currently_affected.append(tower)
 			disrupted_towers[tower.get_instance_id()] = tower
 			disrupted_tower.emit(tower, penalty, self )
-			if OS.is_debug_build():
+			if OS.is_debug_build() and _verbose_combat:
 				var effective = tower.get_effective_fire_rate() if tower.has_method("get_effective_fire_rate") else 0.0
 				print("[EnemyFeature][Disruptor] source=%s tower=%s penalty=%.2f effective_interval=%.2f" % [enemy_type, str(tower.name), penalty, effective])
 	for key in disrupted_towers.keys():
@@ -2199,7 +2205,7 @@ func _update_hunter_target() -> void:
 			nearest_hero = hero
 
 	if nearest_hero != null:
-		if hunter_state == HunterState.PATHING and OS.is_debug_build():
+		if hunter_state == HunterState.PATHING and OS.is_debug_build() and _verbose_combat:
 			print("[HunterAI] aggro hero distance=%.1f" % nearest_dist)
 		hunter_target = nearest_hero
 	else:
@@ -2436,7 +2442,7 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 		var shielded_damage: float = final_damage * (1.0 - active_shield_reduction)
 		shield_applied.emit(self , final_damage, shielded_damage, active_shield_source)
 		final_damage = shielded_damage
-		if OS.is_debug_build():
+		if OS.is_debug_build() and _verbose_combat:
 			print("[EnemyFeature][Shield] target=%s source=%s original=%.1f final=%.1f reduction=%.2f" % [
 				enemy_type,
 				active_shield_source.get_enemy_type() if active_shield_source and active_shield_source.has_method("get_enemy_type") else "unknown",
@@ -2516,7 +2522,7 @@ func _process_formation_speed(delta: float) -> void:
 			enemy_modifier_changed.emit(self , "formation_speed_multiplier", formation_target_multiplier)
 			if vfx_controller and (tags.has("fast") or tags.has("runner") or enemy_type in ["fast", "runner", "hunter", "fast_flyer"]):
 				vfx_controller.play_runner_burst()
-			if OS.is_debug_build():
+			if OS.is_debug_build() and _verbose_combat:
 				print("[SpawnFormation] release throttle enemy=%s base_speed=%.1f effective_speed=%.1f" % [enemy_type, base_speed, speed])
 	if formation_speed_multiplier != formation_target_multiplier:
 		if formation_speed_multiplier > formation_target_multiplier:
@@ -2586,6 +2592,9 @@ func flash_body() -> void:
 func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
 	if not SHOW_FLOATING_DAMAGE_NUMBERS:
 		return
+	# Budget cap — skip new labels when too many are already alive.
+	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
+		return
 	if damage_number_scene:
 		var dn = damage_number_scene.instantiate()
 		get_tree().current_scene.add_child(dn)
@@ -2640,7 +2649,7 @@ func notify_stealth_deferred(preferred_target: Node) -> void:
 	stealth_targeting_deferred.emit(self , preferred_target)
 	if vfx_controller:
 		vfx_controller.mark_cloaked_deferred(preferred_target)
-	if OS.is_debug_build():
+	if OS.is_debug_build() and _verbose_combat:
 		print("[EnemyFeature][Cloaked] deferred=%s preferred=%s" % [enemy_type, preferred_target.get_enemy_type() if preferred_target and preferred_target.has_method("get_enemy_type") else str(preferred_target)])
 
 func notify_stealth_targetable() -> void:

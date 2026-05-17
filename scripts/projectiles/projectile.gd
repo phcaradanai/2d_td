@@ -457,7 +457,7 @@ func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
 	if not _allow_impact_fx():
 		return
-	if impact_effect_scene:
+	if impact_effect_scene and ImpactEffect._active_count < ImpactEffect.MAX_ACTIVE:
 		var effect = impact_effect_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 		if effects_container:
@@ -467,13 +467,13 @@ func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angl
 		else:
 			get_tree().current_scene.add_child(effect)
 			effect.global_position = hit_pos
-		
+
 		var scale_val = 0.8
 		if attack_type == "slow": scale_val = 1.2
-		
+
 		# Set rotation for directional sparks
 		effect.rotation = hit_angle
-		
+
 		if effect.has_method("setup"):
 			effect.setup(color, scale_val, attack_type, vfx_glow_color, vfx_accent_color)
 
@@ -494,7 +494,7 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 	_spawn_impact_effect(hit_pos, vfx_core_color, rotation)
 
 	# Spawn visual effect at hit position
-	if not PERFORMANCE_MODE and splash_effect_scene:
+	if not PERFORMANCE_MODE and splash_effect_scene and SplashEffect._active_count < SplashEffect.MAX_ACTIVE:
 		var effect = splash_effect_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 		if effects_container:
@@ -616,6 +616,8 @@ func _spawn_elemental_debug_text(hit_pos: Vector2, info: Dictionary) -> void:
 		return
 	var text := str(info.get("text", ""))
 	if text == "":
+		return
+	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
 		return
 	var effect = damage_number_scene.instantiate()
 	var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")

@@ -102,6 +102,11 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 	if target.has_method("get_hit_origin"):
 		tgt_pos = target.get_hit_origin()
 
+	# Budget cap — skip spawn if too many VFX are already alive.
+	# Gameplay damage/targeting is unaffected; this is a visuals-only guard.
+	if AttackVFX._active_count >= AttackVFX.MAX_ACTIVE:
+		return
+
 	var vfx_type := resolve_vfx_type(tower)
 
 	# Element-aware color (calls tower's own helper; falls back to white).
