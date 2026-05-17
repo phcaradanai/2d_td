@@ -81,6 +81,7 @@ var vfx_accent_color: Color = Color.WHITE
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
+@onready var combat_audio_service := get_tree().current_scene.get_node_or_null("CombatAudioService")
 @onready var splash_effect_scene: PackedScene = preload("res://scenes/effects/SplashEffect.tscn")
 @onready var impact_effect_scene: PackedScene = preload("res://scenes/effects/ImpactEffect.tscn")
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
@@ -381,8 +382,8 @@ func hit_target() -> void:
 			if _is_beam_projectile():
 				_apply_laser_pierce(hit_global, final_damage)
 
-			if audio_manager:
-				audio_manager.play_sfx("projectile_hit")
+			if combat_audio_service:
+				combat_audio_service.play_combat_event_sfx("projectile_hit", global_position)
 
 	queue_free()
 
@@ -484,11 +485,11 @@ func _allow_impact_fx() -> bool:
 
 func apply_area_effect(hit_pos: Vector2) -> void:
 	if attack_type == "splash":
-		if audio_manager:
-			audio_manager.play_sfx("splash_hit")
+		if combat_audio_service:
+			combat_audio_service.play_combat_event_sfx("splash_hit", hit_pos)
 	elif attack_type == "slow":
-		if audio_manager:
-			audio_manager.play_sfx("projectile_hit")
+		if combat_audio_service:
+			combat_audio_service.play_combat_event_sfx("projectile_hit", hit_pos)
 
 	_spawn_impact_effect(hit_pos, vfx_core_color, rotation)
 

@@ -19,6 +19,7 @@ const WAVE_PREVIEW_HELPER_SCRIPT = preload("res://scripts/main/wave_preview_help
 const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_plan_helper.gd")
 const GAMEPLAY_CONTROLLER_BINDER_SCRIPT = preload("res://scripts/main/gameplay_controller_binder.gd")
 const DAMAGE_STATS_TRACKER_SCRIPT = preload("res://scripts/core/damage_stats_tracker.gd")
+const COMBAT_AUDIO_SERVICE_SCRIPT = preload("res://scripts/services/combat_audio_service.gd")
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -119,6 +120,7 @@ const STARTER_TOWER_IDS := ["basic_tower_t1", "neutral_cannon_tower"]
 
 var sandbox_layer: CanvasLayer = null
 var sandbox_panel: PanelContainer = null
+var combat_audio_service: Node = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -163,6 +165,12 @@ func _ready() -> void:
 		audio_manager.apply_settings(audio_settings)
 		if game_hud:
 			game_hud.set_audio_settings_ui(audio_settings)
+
+	# Combat Audio Service — throttled, pooled SFX for tower/projectile attacks
+	combat_audio_service = COMBAT_AUDIO_SERVICE_SCRIPT.new()
+	combat_audio_service.name = "CombatAudioService"
+	add_child(combat_audio_service)
+	combat_audio_service.setup(audio_manager)
 
 	if main_menu:
 		main_menu.set_version(VERSION)

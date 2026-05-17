@@ -167,6 +167,7 @@ var projectile_container: Node2D = null
 @onready var glow: Node2D = $Glow
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
+@onready var combat_audio_service := get_tree().current_scene.get_node_or_null("CombatAudioService")
 
 # Visual references (Legacy ColorRects)
 @onready var barrel1: ColorRect = $Head/Barrel1
@@ -2172,8 +2173,8 @@ func shoot() -> void:
 		play_fire_recoil()
 		TowerAttackVFX.spawn_attack_vfx(self, current_target)
 		
-		if audio_manager:
-			audio_manager.play_sfx(sfx_name)
+		if combat_audio_service:
+			combat_audio_service.play_tower_sfx(sfx_name, global_position)
 
 	var clone_source := _get_active_clone_source()
 	if is_instance_valid(clone_source) and clone_source.has_method("notify_clone_target_fired"):
@@ -2280,8 +2281,8 @@ func _perform_aura_attack() -> void:
 					var impact_scale := 0.85 if aura_vfx_type == "void_bloom" else 0.6
 					effect.setup(tower_color, impact_scale, aura_vfx_type, secondary_color, accent_color)
 	
-	if not enemies.is_empty() and audio_manager:
-		audio_manager.play_sfx("tower_shoot_sawblade")
+	if not enemies.is_empty() and combat_audio_service:
+		combat_audio_service.play_tower_sfx("tower_shoot_sawblade", global_position)
 
 func _build_attack_status_effects() -> Array:
 	var effects: Array = []
