@@ -313,7 +313,6 @@ func _refresh_start_wave_ui() -> void:
 		wave_manager.is_wave_running,
 		level_cleared,
 		locked_label,
-		active_wave_number,
 		current_wave,
 		has_next_wave,
 		gameplay_status,
@@ -454,8 +453,6 @@ func _setup_game_from_level() -> void:
 		wave_manager.reset_waves()
 		_log_wave_intel_source()
 		
-		if OS.is_debug_build() and level_validator:
-			level_validator.validate_level(level_manager.level_id, level_manager.get_config_as_dict(), wave_manager.waves)
 
 	if build_manager:
 		build_manager.configure_from_level(level_manager)
@@ -473,7 +470,7 @@ func _setup_game_from_level() -> void:
 		if debug_starting_gold_override >= 0 and is_debug_auto_play_allowed():
 			gold_to_apply = debug_starting_gold_override
 			debug_starting_gold_override = -1
-			print("[AUTO_CLEAR] Applied debug-only starting_gold override: ", gold_to_apply)
+			DebugLog.trace("economy", "[AUTO_CLEAR] Applied debug-only starting_gold override: %d" % gold_to_apply)
 		game_manager.apply_level_config(gold_to_apply, level_manager.starting_lives)
 		game_manager.reset_runtime_state()
 		game_manager.set_total_waves(wave_manager.get_total_waves())
@@ -2554,18 +2551,6 @@ func _validate_wave_design(wave_data: Dictionary, traits: Array[String], total_c
 	
 	var wave_name = wave_data.get("name", "Unknown")
 	
-	# if traits.has("Shield"):
-	# 	if total_count < 6:
-	# 		print("[WaveDesign] WARNING: Isolated Bulwark in wave '%s' (total_count=%d). Shield aura has low value." % [wave_name, total_count])
-	# 	else:
-	# 		print("[WaveDesign] PASS: Bulwark escorted in wave '%s' (total_count=%d)." % [wave_name, total_count])
-			
-	# if traits.has("Anti-Hero"):
-	# 	if total_count < 4:
-	# 		print("[WaveDesign] WARNING: Isolated Hunter in wave '%s' (total_count=%d). No distraction/pressure units." % [wave_name, total_count])
-	# 	else:
-	# 		print("[WaveDesign] PASS: Hunter joined pack in wave '%s' (total_count=%d)." % [wave_name, total_count])
-
 func _get_wave_source_for_preview(level_id: int) -> Array:
 	if level_id <= 0:
 		return []

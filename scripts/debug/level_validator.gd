@@ -3,7 +3,7 @@ extends Node
 # Level Validator
 # Checks level configurations and waves for design standards and errors.
 
-func validate_level(level_id: String, config: Dictionary, waves: Array) -> bool:
+func validate_level( config: Dictionary, waves: Array) -> bool:
 	var ok = true
 	var errors = []
 	var warnings = []
@@ -66,7 +66,6 @@ func validate_level(level_id: String, config: Dictionary, waves: Array) -> bool:
 	for i in range(waves.size()):
 		var wave = waves[i]
 		var groups = wave.get("groups", [])
-		var has_escort = false
 		var bulwarks = []
 		var hunters = []
 		var normal_count = 0
@@ -94,16 +93,4 @@ func validate_level(level_id: String, config: Dictionary, waves: Array) -> bool:
 		errors.append("Invalid area_id: %d (max 4)" % area_id)
 		ok = false
 
-	# Logging
-	# if ok:
-	# 	var path_count = paths.size() if not paths.is_empty() else 1
-	# 	print("[LevelValidation] level=%s ok=true paths=%d build_spots=%d waves=%d" % [level_id, path_count, buildable.size(), waves.size()])
-	# else:
-	# 	print("[LevelValidation] level=%s FAILED" % level_id)
-	# 	for err in errors:
-	# 		print("  [ERROR] %s" % err)
-	
-	# for wrn in warnings:
-	# 	print("  [WaveDesign] warning: %s" % wrn)
-		
 	return ok

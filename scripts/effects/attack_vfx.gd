@@ -24,7 +24,7 @@ func _ready() -> void:
 	AttackVFX._active_count += 1
 
 func setup(p_type: String, p_origin: Vector2, p_target: Vector2,
-           p_color: Color, p_duration: float = 0.0) -> void:
+		   p_color: Color, p_duration: float = 0.0) -> void:
 	vfx_type = p_type
 	color    = p_color
 	global_position = p_origin
@@ -62,18 +62,18 @@ func _draw() -> void:
 
 	match vfx_type:
 		"rapid_tracer":     _draw_rapid_tracer(t, a, lend)
-		"cannon_blast":     _draw_cannon_blast(t, a, lend)
+		"cannon_blast":     _draw_cannon_blast(t, a)
 		"precision_beam":   _draw_precision_beam(t, a, lend)
 		"flame_cone":       _draw_flame_cone(t, a, lend)
-		"electric_arc":     _draw_electric_arc(t, a, lend, false)
-		"chain_lightning":  _draw_electric_arc(t, a, lend, true)
+		"electric_arc":     _draw_electric_arc( a, lend, false)
+		"chain_lightning":  _draw_electric_arc( a, lend, true)
 		"magic_enchant":    _draw_magic_enchant(t, a, lend)
 		"water_jet":        _draw_water_jet(t, a, lend)
 		"frost_beam":       _draw_frost_beam(t, a, lend)
 		"poison_spray":     _draw_poison_spray(t, a, lend)
 		"spore_puff":       _draw_spore_puff(t, a, lend)
 		"void_rift":        _draw_void_rift(t, a, lend)
-		"earth_impact":     _draw_earth_impact(t, a, lend)
+		"earth_impact":     _draw_earth_impact(t, a)
 		"steam_burst":      _draw_steam_burst(t, a, lend)
 		"light_pulse":      _draw_light_pulse(t, a, lend)
 		"nature_vine":      _draw_nature_vine(t, a, lend)
@@ -109,7 +109,7 @@ func _draw_rapid_tracer(t: float, a: float, lend: Vector2) -> void:
 	draw_circle(Vector2.ZERO, 3.5 * (1.0 - t), _c(a))
 	draw_circle(Vector2.ZERO, 1.8 * (1.0 - t), Color(1.0, 1.0, 1.0, a * 0.75))
 
-func _draw_cannon_blast(t: float, a: float, lend: Vector2) -> void:
+func _draw_cannon_blast(t: float, a: float) -> void:
 	# Expanding disk + forward-concentrated rays.
 	var r := 7.0 + t * 16.0
 	draw_circle(Vector2.ZERO, r, _c(a * 0.25))
@@ -157,7 +157,7 @@ func _draw_flame_cone(t: float, a: float, lend: Vector2) -> void:
 		var ey  := (float(i % 2) * 2.0 - 1.0) * 3.5
 		draw_circle(Vector2(cl * ef, ey), 2.2 * (1.0 - t), Color(1.0, 0.62, 0.1, a * 0.65))
 
-func _draw_electric_arc(t: float, a: float, lend: Vector2, heavy: bool) -> void:
+func _draw_electric_arc(a: float, lend: Vector2, heavy: bool) -> void:
 	# Jagged lightning from muzzle to target, flickers via deterministic tick hash.
 	var n_pts := clampi(int(distance / 22.0) + 2, 3, 8)
 	var pts   := _jag_pts(lend, n_pts)
@@ -247,7 +247,7 @@ func _draw_void_rift(t: float, a: float, lend: Vector2) -> void:
 	draw_line(Vector2.ZERO, lend * 0.55, _c(a * 0.48), 2.2, true)
 	draw_circle(lend * 0.55, 3.5 * (1.0 - t), _c(a * 0.65))
 
-func _draw_earth_impact(t: float, a: float, lend: Vector2) -> void:
+func _draw_earth_impact(t: float, a: float) -> void:
 	# Fan of stone shards + gravel core.
 	for i in range(6):
 		var spread := -0.55 + float(i) * 0.22

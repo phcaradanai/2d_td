@@ -181,8 +181,8 @@ func _draw_foundation_tile(rect: Rect2) -> void:
 	var p = rect.position + Vector2(2, 2)
 	var e = rect.end - Vector2(2, 2)
 	var acc = Color(0.2, 0.9, 1.0, 0.6 * pulse) # Pulsing accents
-	draw_polyline([p + Vector2(s, 0), p, p + Vector2(0, s)], acc, 2.0)
-	draw_polyline([e - Vector2(s, 0), e, e - Vector2(0, s)], acc, 2.0)
+	draw_polyline(PackedVector2Array([p + Vector2(s, 0), p, p + Vector2(0, s)]), acc, 2.0)
+	draw_polyline(PackedVector2Array([e - Vector2(s, 0), e, e - Vector2(0, s)]), acc, 2.0)
 	# Center Detail
 	draw_circle(rect.get_center(), 2.0, Color(0.2, 0.9, 1.0, 0.2))
 
@@ -1229,11 +1229,11 @@ func _draw_chevron(pos: Vector2, dir: Vector2, color: Color) -> void:
 	var back = pos - dir * 6.0
 	
 	# Glow layer
-	draw_polyline([back + perp * 10.0, tip, back - perp * 10.0], _with_alpha(color, color.a * 0.2), 6.0, true)
+	draw_polyline(PackedVector2Array([back + perp * 10.0, tip, back - perp * 10.0]), _with_alpha(color, color.a * 0.2), 6.0, true)
 	# Main line
-	draw_polyline([back + perp * 8.0, tip, back - perp * 8.0], color, 3.5, true)
+	draw_polyline(PackedVector2Array([back + perp * 8.0, tip, back - perp * 8.0]), color, 3.5, true)
 	# High contrast center
-	draw_polyline([back + perp * 8.0, tip, back - perp * 8.0], _with_alpha(Color.WHITE, color.a * 0.6), 1.0, true)
+	draw_polyline(PackedVector2Array([back + perp * 8.0, tip, back - perp * 8.0]), _with_alpha(Color.WHITE, color.a * 0.6), 1.0, true)
 
 func _preview_has_base_at(base_pos: Vector2) -> bool:
 	if preview_alpha <= 0.01:

@@ -180,13 +180,10 @@ func start_next_wave() -> void:
 		formation_planner = formation_planner_script.new(enemies_config)
 	var plan = formation_planner.build_plan(wave_data, current_wave_index - 1)
 	
-	if OS.is_debug_build():
-		print("[FORMATION] wave=%d groups=%d events=%d duration=%.2fs" % [
-			active_wave_number, 
-			wave_data.get("groups", []).size(),
-			plan.get("events", []).size(),
-			plan.get("total_duration", 0.0)
-		])
+	DebugLog.trace("formation", "[FORMATION] wave=%d groups=%d events=%d duration=%.2fs" % [
+		active_wave_number, wave_data.get("groups", []).size(),
+		plan.get("events", []).size(), plan.get("total_duration", 0.0)
+	])
 	
 	await spawn_wave_events(plan.get("events", []), current_gen)
 	
@@ -239,7 +236,7 @@ func spawn_enemy_from_event(event: Dictionary) -> void:
 
 func spawn_wave_groups(_groups: Array, _gen: int) -> void:
 	# Deprecated in favor of spawn_wave_events but kept for reference/safety
-	push_warning("spawn_wave_groups called but replaced by spawn_wave_events")
+	DebugLog.warn_once("spawn_wave_groups_deprecated", "[WaveManager] spawn_wave_groups() is deprecated — use spawn_wave_events()")
 
 func _wait_unpaused(seconds: float, gen: int) -> void:
 	var elapsed := 0.0
@@ -281,13 +278,10 @@ func spawn_enemy(group_data: Dictionary) -> Node:
 		enemy.died.connect(_on_enemy_died)
 		enemy.reached_base.connect(_on_enemy_reached_base)
 	
-	if OS.is_debug_build():
-		var spawn_pos = path_node.curve.get_point_position(0)
-		var f_id = group_data.get("formation_id", "none")
-		var pos_type = group_data.get("tactical_position", "middle")
-		print("[FORMATION] spawn enemy=%s lane=%s t=%.2f position=%s formation=%s" % [
-			enemy_type, path_id, (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0, pos_type, f_id
-		])
+	DebugLog.trace("formation", "[FORMATION] spawn enemy=%s lane=%s t=%.2f position=%s formation=%s" % [
+		enemy_type, path_id, (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0,
+		group_data.get("tactical_position", "middle"), group_data.get("formation_id", "none")
+	])
 		
 	path_node.add_child(enemy)
 	if not is_debug_probe:
@@ -456,8 +450,7 @@ func _apply_economy_tower_kill_effects(source_id: String, reward: int) -> void:
 		var bonus := int(round(float(reward) * float(ECONOMY_KILL_GOLD_BONUS_PERCENT[source_id])))
 		if bonus > 0:
 			game_manager.add_gold(bonus)
-			if OS.is_debug_build():
-				print("[Economy][GoldTower] source=%s base=%d bonus=%d" % [source_id, reward, bonus])
+			DebugLog.trace("economy", "[Economy][GoldTower] source=%s base=%d bonus=%d" % [source_id, reward, bonus])
 
 	if ECONOMY_KILL_LIFE_COUNTER_REQUIRED.has(source_id):
 		var required : int = max(1, int(ECONOMY_KILL_LIFE_COUNTER_REQUIRED[source_id]))
@@ -526,8 +519,7 @@ func _respawn_leaked_enemy(enemy: Node, hp_remaining: float) -> void:
 		"leak_respawn": true
 	})
 	_apply_respawn_health(respawned, hp_remaining)
-	if OS.is_debug_build():
-		print("[LeakRespawn] enemy=%s path=%s hp=%.1f" % [enemy_type, path_id, hp_remaining])
+	DebugLog.trace("formation", "[LeakRespawn] enemy=%s path=%s hp=%.1f" % [enemy_type, path_id, hp_remaining])
 
 func _get_path_id_for_enemy(enemy: Node) -> String:
 	if enemy == null or not is_instance_valid(enemy):

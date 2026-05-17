@@ -121,7 +121,6 @@ func build_plan(wave_data: Dictionary, wave_index: int = 0) -> Dictionary:
 	var path_offset_index := 0
 	for path_id in path_ids:
 		# Skip paths already handled by explicit formations
-		var skip := false
 		for f in plan["formations"]:
 			if f.get("path") == path_id:
 				# This is a bit complex if one path has multiple formations.
@@ -675,7 +674,6 @@ func _build_explicit_formation(f_data: Dictionary, start_offset: float) -> Dicti
 	var path_id := str(f_data.get("path_id", "default"))
 	var groups := _normalize_groups(f_data.get("enemy_groups", []))
 	var repeat := int(f_data.get("repeat_count", 1))
-	var unit_spacing := float(f_data.get("unit_spacing", 0.2))
 	var group_spacing := float(f_data.get("group_spacing", 1.0))
 	
 	var events := []

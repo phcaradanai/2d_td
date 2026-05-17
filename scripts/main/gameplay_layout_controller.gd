@@ -91,18 +91,6 @@ func fit_map_to_playfield(playfield_rect: Rect2) -> void:
 	var camera_pos = content_center - (playfield_rect.get_center() / fit_zoom)
 	camera.position = camera_pos
 	
-	if OS.is_debug_build():
-		var window_size := Vector2.ZERO
-		if get_view_size.is_valid():
-			window_size = get_view_size.call()
-		var unused_x = playfield_rect.size.x - (content_bounds.size.x * fit_zoom)
-		var unused_y = playfield_rect.size.y - (content_bounds.size.y * fit_zoom)
-		print("[LAYOUT_DEBUG] window_size=", window_size)
-		print("[LAYOUT_DEBUG] center_frame_rect=", playfield_rect)
-		print("[LAYOUT_DEBUG] content_bounds=", content_bounds)
-		print("[LAYOUT_DEBUG] camera_zoom=", fit_zoom)
-		print("[LAYOUT_DEBUG] camera_position=", camera_pos)
-		print("[LAYOUT_DEBUG] unused_px_h=", unused_x, " unused_px_v=", unused_y)
 	# Reset map_root transform (we use camera now)
 	map_root.scale = Vector2.ONE
 	map_root.position = Vector2.ZERO

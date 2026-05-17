@@ -175,8 +175,7 @@ func _resolve_visual_root() -> Node2D:
 	if n is Node2D:
 		return n
 
-	if OS.is_debug_build():
-		push_warning("[Enemy] No Body/VisualRoot/Model/Sprite found. Using self as visual root: %s" % name)
+	DebugLog.warn_once("enemy_no_visual_" + name, "[Enemy] No Body/VisualRoot/Model/Sprite found, using self: %s" % name)
 	return self
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
 @onready var death_pop_scene: PackedScene = preload("res://scenes/effects/DeathPopEffect.tscn")

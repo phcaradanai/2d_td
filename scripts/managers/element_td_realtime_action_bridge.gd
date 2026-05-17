@@ -442,7 +442,7 @@ func _pick_upgrade_id(tower: Node2D) -> String:
 	if options.is_empty():
 		return ""
 	if options.size() > 1:
-		push_warning("Element TD runtime does not support branch-transform upgrades. Keep combo choice in the shop. Tower=%s options=%s" % [_get_tower_id(tower), str(options)])
+		DebugLog.warn_once("branch_transform_" + _get_tower_id(tower), "Element TD runtime does not support branch-transform upgrades. Keep combo choice in the shop. Tower=%s options=%s" % [_get_tower_id(tower), str(options)])
 		return ""
 	return options[0]
 

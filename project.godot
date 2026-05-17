@@ -24,6 +24,7 @@ run/max_fps=60
 PerformanceBudget="*res://scripts/core/performance_budget.gd"
 PerfOverlay="*res://scripts/ui/perf_overlay.gd"
 TargetingService="*res://scripts/services/targeting_service.gd"
+DebugLog="*res://scripts/services/debug_log.gd"
 
 [display]
 

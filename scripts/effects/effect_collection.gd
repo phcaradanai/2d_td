@@ -410,7 +410,7 @@ func _spawn_effect_preview(parent: Node2D, def: Dictionary, scale_factor: float 
 	var script_res := load(script_path)
 
 	if script_res == null:
-		push_warning("[EffectGallery] Missing effect script: %s" % script_path)
+		DebugLog.warn_once("fx_missing_script_" + script_path, "[EffectGallery] Missing effect script: %s" % script_path)
 		return null
 
 	var node := Node2D.new()

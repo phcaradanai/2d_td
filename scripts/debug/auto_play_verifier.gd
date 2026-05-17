@@ -235,12 +235,6 @@ func _auto_clear_start_wave() -> void:
 		_log("[AUTO_CLEAR] Cannot start wave: no next wave")
 		return
 	
-	var btn_text = "unknown"
-	if main and main.get_node_or_null("GameHUD"):
-		var hud = main.get_node("GameHUD")
-		if "start_wave_button" in hud and hud.start_wave_button:
-			btn_text = hud.start_wave_button.text
-			
 	_log("[AUTO_CLEAR] Before start Wave %d:" % current_wave)
 	_log(" - game current_wave_index=%d" % wave_manager.current_wave_index)
 	_log(" - auto_clear_current_wave_number=%d" % current_wave)

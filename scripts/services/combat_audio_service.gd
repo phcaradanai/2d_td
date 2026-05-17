@@ -40,10 +40,10 @@ func set_combat_mode(mode: String) -> void:
 func get_combat_mode() -> String:
 	return _combat_mode
 
-func play_tower_sfx(sfx_type: String, world_pos: Vector2, priority_override: int = -1) -> void:
+func play_tower_sfx(sfx_type: String, priority_override: int = -1) -> void:
 	_play(sfx_type, priority_override)
 
-func play_combat_event_sfx(sfx_type: String, world_pos: Vector2, priority_override: int = -1) -> void:
+func play_combat_event_sfx(sfx_type: String,  priority_override: int = -1) -> void:
 	_play(sfx_type, priority_override)
 
 # Stubs — reserved for future looping/fade-channel support (flame streams, beams).

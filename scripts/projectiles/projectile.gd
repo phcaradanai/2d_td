@@ -251,9 +251,9 @@ func _draw() -> void:
 		_draw_bolt(color, 10.0)
 
 func _draw_bolt(color: Color, length: float) -> void:
-	var pts = [Vector2(length, 0), Vector2(-length/2, -3), Vector2(-length/2, 3)]
+	var pts := PackedVector2Array([Vector2(length, 0), Vector2(-length/2.0, -3), Vector2(-length/2.0, 3)])
 	draw_colored_polygon(pts, color)
-	draw_polyline(pts + [pts[0]], Color.WHITE, 1.0)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), Color.WHITE, 1.0)
 	# Glow
 	draw_line(Vector2(-length, 0), Vector2(length, 0), Color(vfx_glow_color.r, vfx_glow_color.g, vfx_glow_color.b, 0.4), 4.0)
 
@@ -277,9 +277,9 @@ func _draw_performance_projectile() -> void:
 		_draw_bolt(vfx_core_color, length)
 
 func _draw_elemental_droplet() -> void:
-	var pts = [Vector2(8, 0), Vector2(-5, -4), Vector2(-8, 0), Vector2(-5, 4)]
+	var pts := PackedVector2Array([Vector2(8, 0), Vector2(-5, -4), Vector2(-8, 0), Vector2(-5, 4)])
 	draw_colored_polygon(pts, vfx_core_color)
-	draw_polyline(pts + [pts[0]], vfx_glow_color, 1.0)
+	draw_polyline(pts + PackedVector2Array([pts[0]]), vfx_glow_color, 1.0)
 	draw_circle(Vector2(-2, 0), 2.5, Color.WHITE)
 
 func _draw_flame_stream() -> void:

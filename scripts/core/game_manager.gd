@@ -16,8 +16,7 @@ signal wave_rewarded(amount: int)
 func apply_level_config(p_gold: int, p_lives: int) -> void:
 	starting_gold = p_gold
 	starting_lives = p_lives
-	# High visibility log for level switching audit
-	print(">>> [GameManager] APPLY CONFIG: starting_gold=%d, starting_lives=%d" % [starting_gold, starting_lives])
+	DebugLog.trace("economy", "[GameManager] APPLY CONFIG: starting_gold=%d, starting_lives=%d" % [starting_gold, starting_lives])
 
 # Legacy alias for backward compatibility if needed, but we should use apply_level_config
 func set_starting_stats(p_gold: int, p_lives: int) -> void:

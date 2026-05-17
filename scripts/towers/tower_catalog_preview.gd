@@ -250,7 +250,7 @@ func _configure_fx_layer() -> void:
 
 func _show_fallback(reason: String) -> void:
 	fallback_reason = reason
-	push_warning("[TowerCatalogPreview] Fallback for '%s': %s" % [tower_id, reason])
+	DebugLog.warn_once("catalog_fallback_" + tower_id, "[TowerCatalogPreview] Fallback for '%s': %s" % [tower_id, reason])
 
 	var label := Label.new()
 	label.text = "[Fallback]\n%s\n%s" % [tower_id, reason]

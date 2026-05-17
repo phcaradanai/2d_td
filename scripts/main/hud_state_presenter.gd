@@ -69,7 +69,6 @@ func refresh_start_wave_button(
 	wave_running: bool = false,
 	level_cleared: bool = false,
 	locked_label: String = "",
-	active_wave_number: int = 0,
 	current_wave: int = 0,
 	has_next_wave: bool = true,
 	gameplay_status: String = "",
