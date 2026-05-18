@@ -20,6 +20,9 @@ const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_pla
 const GAMEPLAY_CONTROLLER_BINDER_SCRIPT = preload("res://scripts/main/gameplay_controller_binder.gd")
 const DAMAGE_STATS_TRACKER_SCRIPT = preload("res://scripts/core/damage_stats_tracker.gd")
 const COMBAT_AUDIO_SERVICE_SCRIPT = preload("res://scripts/services/combat_audio_service.gd")
+const LEVEL_ACCESS_SERVICE_SCRIPT = preload("res://scripts/services/level_access_service.gd")
+const REMOTE_ACCESS_CONFIG_PATH = "res://scripts/services/remote_access_config_service.gd"
+const DEMO_GATE_MODAL_PATH = "res://scripts/ui/demo_gate_modal.gd"
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -121,6 +124,9 @@ const STARTER_TOWER_IDS := ["basic_tower_t1", "neutral_cannon_tower"]
 var sandbox_layer: CanvasLayer = null
 var sandbox_panel: PanelContainer = null
 var combat_audio_service: Node = null
+var level_access_service: Node = null        # [DemoGate] Level/wave access control
+var remote_access_config_service: Node = null # [DemoGate] Remote OTA config fetcher
+var _demo_gate_modal: CanvasLayer = null      # [DemoGate] Shared locked/complete modal
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -175,10 +181,42 @@ func _ready() -> void:
 		var _initial_mode: String = save_manager.get_audio_settings().get("audio_combat_mode", "balanced")
 		combat_audio_service.set_combat_mode(_initial_mode)
 
+	# [DemoGate] Remote OTA config — fetches access rules from backend, caches locally.
+	var _rac_script = load(REMOTE_ACCESS_CONFIG_PATH)
+	if _rac_script:
+		remote_access_config_service = _rac_script.new()
+		remote_access_config_service.name = "RemoteAccessConfigService"
+		add_child(remote_access_config_service)
+		remote_access_config_service.config_updated.connect(_on_access_config_updated)
+		remote_access_config_service.fetch_failed.connect(_on_access_config_fetch_failed)
+	else:
+		push_error("[DemoGate] Failed to load RemoteAccessConfigService script.")
+
+	# [DemoGate] Level access service — delegates to remote config when bound.
+	level_access_service = LEVEL_ACCESS_SERVICE_SCRIPT.new()
+	level_access_service.name = "LevelAccessService"
+	add_child(level_access_service)
+	if remote_access_config_service:
+		level_access_service.bind_remote_config(remote_access_config_service)
+
+	# [DemoGate] Shared modal (locked level + demo complete + maintenance + force-update).
+	var _modal_script = load(DEMO_GATE_MODAL_PATH)
+	if _modal_script:
+		_demo_gate_modal = _modal_script.new()
+		_demo_gate_modal.name = "DemoGateModal"
+		_demo_gate_modal.back_to_menu.connect(return_to_menu)
+		add_child(_demo_gate_modal)
+	else:
+		push_error("[DemoGate] Failed to load DemoGateModal script.")
+
 	if main_menu:
 		main_menu.set_version(VERSION)
 	if game_hud:
 		game_hud.set_version(VERSION)
+
+	# [DemoGate] Kick off the remote fetch after the scene is fully ready.
+	# call_deferred so all child nodes finish _ready() before the HTTP node is used.
+	call_deferred("_fetch_remote_access_config")
 
 	if OS.is_debug_build():
 		var script = load(BALANCE_SOLVER_SCRIPT)
@@ -1063,6 +1101,57 @@ func _unhandled_input(event: InputEvent) -> void:
 		else:
 			_touch_points.erase(event.index)
 
+# --- Remote Access Config Handlers [DemoGate] --------------------------------
+
+func _fetch_remote_access_config() -> void:
+	if remote_access_config_service == null:
+		return
+	var player_id = ""
+	if save_manager and save_manager.has_method("get_player_name"):
+		player_id = save_manager.get_player_name()
+	remote_access_config_service.fetch_remote_config(player_id)
+
+func _on_access_config_updated(source: String) -> void:
+	if OS.is_debug_build():
+		print("[DemoGate] Config updated from: ", source)
+
+	# Refresh the access status chip on the main menu.
+	var version = 1
+	if remote_access_config_service:
+		version = remote_access_config_service.get_config_version()
+	if main_menu and main_menu.has_method("set_access_status"):
+		main_menu.set_access_status(source, version)
+
+	# If the player is on the menu, check for blocking states immediately.
+	if current_state == GameState.MENU:
+		_check_blocking_access_states()
+
+	# Refresh level select cards to reflect any rule change.
+	if current_state == GameState.LEVEL_SELECT and level_select and save_manager:
+		level_select.update_ui(save_manager)
+
+func _on_access_config_fetch_failed(reason: String) -> void:
+	if OS.is_debug_build():
+		print("[DemoGate] Remote fetch failed: ", reason)
+	# Update status UI to show offline/cached state.
+	if remote_access_config_service and main_menu and main_menu.has_method("set_access_status"):
+		var src = remote_access_config_service.get_config_source()
+		var ver = remote_access_config_service.get_config_version()
+		main_menu.set_access_status(src, ver)
+
+## Check for maintenance or force-update and show the appropriate blocking modal.
+func _check_blocking_access_states() -> void:
+	if level_access_service == null or _demo_gate_modal == null:
+		return
+	if level_access_service.is_force_update():
+		_demo_gate_modal.show_force_update()
+		return
+	if level_access_service.is_maintenance_enabled():
+		var announcement = ""
+		if remote_access_config_service:
+			announcement = remote_access_config_service.get_announcement()
+		_demo_gate_modal.show_maintenance(announcement)
+
 # --- Session Flow ---
 
 func return_to_menu() -> void:
@@ -1133,6 +1222,17 @@ func _on_leaderboard_requested(level_id: String) -> void:
 
 func start_game(level_path: String) -> void:
 	# [MetaLayer] A level was chosen from the selector — this is a new run, discard any existing save.
+	# [DemoGate] Enforce access before touching any game state.
+	var _level_id_str := level_path.get_file().get_basename()
+	var _level_num := level_id_to_int(_level_id_str)
+	if level_access_service and not level_access_service.can_play_level(_level_num):
+		if OS.is_debug_build():
+			print("[DemoGate] start_game blocked for level %d." % _level_num)
+		if _demo_gate_modal:
+			var _cfg_for_modal := get_level_config(_level_id_str)
+			var _level_name : String = _cfg_for_modal.get("name", _level_id_str.replace("level_", "Level "))
+			_demo_gate_modal.show_locked(_level_name)
+		return
 	if save_game_service:
 		save_game_service.delete_save()
 	start_level(level_path)
@@ -1455,7 +1555,15 @@ func _refresh_ui_for_phase() -> void:
 					main_menu.set_has_save(save_game_service.has_valid_save())
 				if main_menu.has_method("set_player_name") and save_manager:
 					main_menu.set_player_name(save_manager.get_player_name())
+				# [DemoGate] Update access status chip with current source/version.
+				if remote_access_config_service and main_menu.has_method("set_access_status"):
+					main_menu.set_access_status(
+						remote_access_config_service.get_config_source(),
+						remote_access_config_service.get_config_version()
+					)
 			get_tree().paused = false
+			# [DemoGate] Check maintenance / force-update after menu is visible.
+			call_deferred("_check_blocking_access_states")
 
 		GameState.LEVEL_SELECT:
 			if level_select:
@@ -1802,6 +1910,25 @@ func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> voi
 	# [MetaLayer] Auto-save run state after each wave clear (safe point: gold/wave updated)
 	_auto_save_run_state()
 
+	# [DemoGate] If the demo wave cap was just reached, intercept before the next wave.
+	if level_access_service and level_access_service.is_demo_wave_cap_reached(wave_number):
+		if OS.is_debug_build():
+			print("[DemoGate] Demo wave cap reached at wave %d — showing Demo Complete." % wave_number)
+		# Stop enemies and prevent further wave progression.
+		if wave_manager:
+			wave_manager.reset_waves()
+		var _summary := {
+			"level_id": current_level_id,
+			"waves_cleared": wave_number,
+			"gold": game_manager.gold if game_manager else 0,
+			"lives": game_manager.lives if game_manager else 0,
+		}
+		get_tree().create_timer(2.0).timeout.connect(func():
+			if _demo_gate_modal:
+				_demo_gate_modal.show_demo_complete(_summary)
+		)
+		return
+
 	# Keep the reward moment visual-only; planning controls unlock immediately.
 	get_tree().create_timer(2.5).timeout.connect(func():
 		if current_state == GameState.BUILD:
@@ -1894,10 +2021,13 @@ func _on_game_over() -> void:
 	
 	if save_manager and level_manager:
 		improvements = save_manager.update_level_record(level_manager.level_id, summary)
-		if leaderboard_service:
+		# [DemoGate] Only submit to leaderboard when permitted.
+		var _lb_allowed : bool = (level_access_service == null or level_access_service.can_submit_leaderboard())
+		if leaderboard_service and _lb_allowed:
 			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
 		# [MetaLayer] Submit to online leaderboard (async, no crash if offline)
-		_submit_online_score(summary)
+		if _lb_allowed:
+			_submit_online_score(summary)
 
 	if game_hud:
 		game_hud.show_run_summary(summary, improvements, rank)
@@ -1938,11 +2068,14 @@ func _on_victory() -> void:
 	if save_manager and level_manager:
 		improvements = save_manager.update_level_record(level_manager.level_id, summary)
 		if level_select: level_select.update_ui(save_manager)
-		
-		if leaderboard_service:
+
+		# [DemoGate] Only submit to leaderboard when permitted.
+		var _lb_ok : bool = (level_access_service == null or level_access_service.can_submit_leaderboard())
+		if leaderboard_service and _lb_ok:
 			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
 		# [MetaLayer] Submit to online leaderboard (async, no crash if offline)
-		_submit_online_score(summary)
+		if _lb_ok:
+			_submit_online_score(summary)
 
 		# If first time clear, check for next level unlock
 		if improvements.get("first_time_clear", false):
@@ -2028,6 +2161,26 @@ func _restore_run_from_save() -> void:
 	if not FileAccess.file_exists(level_path):
 		push_warning("[MetaLayer] Continue: level file not found: %s" % level_path)
 		return
+
+	# [DemoGate] Block save/resume that points to a locked level or wave beyond the demo cap.
+	if level_access_service:
+		var _save_level_num := level_id_to_int(level_id)
+		var _save_wave := int(data.get("current_wave", 0))
+		var _blocked := false
+		if not level_access_service.can_play_level(_save_level_num):
+			_blocked = true
+		elif not level_access_service.can_play_wave(_save_level_num, _save_wave):
+			_blocked = true
+		if _blocked:
+			push_warning("[DemoGate] Continue blocked: save requires full version (level=%d wave=%d)." % [_save_level_num, _save_wave])
+			# Return to menu and show a message — do NOT delete the save.
+			return_to_menu()
+			if main_menu and main_menu.has_method("show_notification"):
+				main_menu.show_notification("This save requires the Full Version.")
+			elif game_hud:
+				show_wave_feedback("This save requires the Full Version.", Color(1, 0.7, 0.2))
+			return
+
 	# Start the level fresh (resets managers), then overlay the saved state.
 	start_level(level_path)
 	_apply_saved_run_state(data)

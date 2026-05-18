@@ -21,6 +21,8 @@ const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 @onready var credits_panel: PanelContainer = $Root/CreditsPanel
 @onready var credits_close_button: Button = $Root/CreditsPanel/MarginContainer/VBoxContainer/CloseCreditsButton
 
+var _access_status_label: Label = null
+
 func _ready() -> void:
 	_apply_neon_terminal_layout()
 	play_button.pressed.connect(_on_play_pressed)
@@ -129,6 +131,44 @@ func _apply_neon_terminal_layout() -> void:
 
 	if credits_panel:
 		credits_panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, true))
+
+## Update the small access-config status line shown on the main menu.
+## source: "remote" | "cache" | "default"
+## version: config_version integer from the backend
+func set_access_status(source: String, version: int) -> void:
+	if _access_status_label == null:
+		_build_access_status_label()
+	if _access_status_label == null:
+		return
+	var text: String
+	if source == "remote":
+		text = "Access Config: Online v%d" % version
+		_access_status_label.add_theme_color_override("font_color", Color(0.302, 0.851, 0.902, 0.75))
+	elif source == "cache":
+		text = "Access Config: Cached v%d" % version
+		_access_status_label.add_theme_color_override("font_color", Color(1.000, 0.710, 0.278, 0.75))
+	else:
+		text = "Access Config: Default"
+		_access_status_label.add_theme_color_override("font_color", Color(0.420, 0.502, 0.533, 0.75))
+	_access_status_label.text = text
+
+func _build_access_status_label() -> void:
+	var root_node = get_node_or_null("Root")
+	if root_node == null:
+		return
+	_access_status_label = Label.new()
+	_access_status_label.name = "AccessStatusLabel"
+	_access_status_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
+	_access_status_label.vertical_alignment = VERTICAL_ALIGNMENT_BOTTOM
+	_access_status_label.add_theme_font_size_override("font_size", 10)
+	_access_status_label.add_theme_color_override("font_color", Color(0.420, 0.502, 0.533, 0.75))
+	_access_status_label.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_RIGHT)
+	_access_status_label.offset_left   = -220
+	_access_status_label.offset_top    = -28
+	_access_status_label.offset_right  = -8
+	_access_status_label.offset_bottom = -8
+	_access_status_label.mouse_filter  = Control.MOUSE_FILTER_IGNORE
+	root_node.add_child(_access_status_label)
 
 func show_menu() -> void:
 	show()

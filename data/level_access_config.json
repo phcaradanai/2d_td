@@ -1,0 +1,7 @@
+{
+  "demo_enabled": true,
+  "max_demo_level": 1,
+  "max_demo_wave": 20,
+  "allow_leaderboard_submit": false,
+  "allowed_modes_demo": ["normal"]
+}

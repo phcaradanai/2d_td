@@ -191,7 +191,7 @@ func setup(config: Dictionary) -> void:
 	enemy_category = normalize_enemy_category(config.get("category", ENEMY_CATEGORY_LAND))
 	display_name = config.get("name", "Enemy")
 	visual_type = config.get("visual_type", "basic")
-	tags = config.get("tags", [])
+	tags = Array(config.get("tags", []))
 	skill_id = config.get("skill", "")
 	skill_params = config.get("skill_params", {})
 	

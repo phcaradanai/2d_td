@@ -5,6 +5,7 @@ signal back_pressed()
 signal leaderboard_requested(level_id: String)
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+const DEMO_GATE_MODAL_PATH = "res://scripts/ui/demo_gate_modal.gd"
 
 @onready var back_button: Button = $Root/BackButton
 
@@ -21,6 +22,8 @@ var right_vbox: VBoxContainer = null
 var mission_info_labels: Dictionary = {}
 var notification_label: Label = null
 var leaderboard_button: Button = null
+
+var _demo_gate_modal: CanvasLayer = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -207,51 +210,130 @@ func _create_level_card(level_id: String) -> Control:
 	
 	return root
 
+func _get_level_access_service() -> Node:
+	var main = get_tree().current_scene
+	if main and main.has_node("LevelAccessService"):
+		return main.get_node("LevelAccessService")
+	return null
+
+func _get_demo_gate_modal() -> CanvasLayer:
+	if _demo_gate_modal == null or not is_instance_valid(_demo_gate_modal):
+		var script = load(DEMO_GATE_MODAL_PATH)
+		if script == null:
+			push_error("[LevelSelect] Failed to load DemoGateModal script.")
+			return null
+		_demo_gate_modal = script.new()
+		_demo_gate_modal.name = "DemoGateModal"
+		_demo_gate_modal.back_to_menu.connect(func(): back_pressed.emit())
+		_demo_gate_modal.unlock_requested.connect(_on_unlock_requested)
+		add_child(_demo_gate_modal)
+	return _demo_gate_modal
+
+func _on_unlock_requested() -> void:
+	# Placeholder — wire to real purchase backend when available.
+	if OS.is_debug_build():
+		print("[LevelSelect] Unlock requested (no purchase backend yet).")
+
 func _update_dynamic_level_card(level_id: String, container: Control, save_manager: Node) -> void:
 	var btn = container.get_node("Button")
 	var label = container.get_node("Label")
 	var stars_label = container.get_node("Stars")
 	var lock_icon = btn.get_node("LockIcon")
 	var perfect_badge = btn.get_node("PerfectBadge")
-	
+
 	var record = save_manager.get_level_record(level_id)
-	var unlocked = save_manager.is_level_unlocked(level_id)
-	
-	btn.disabled = not unlocked
-	lock_icon.visible = not unlocked
-	
-	if not unlocked:
+	var progression_unlocked = save_manager.is_level_unlocked(level_id)
+
+	# Check demo access (level number from "level_XX" → int)
+	var level_num := int(level_id.split("_")[1])
+	var access_service = _get_level_access_service()
+	var demo_locked := false
+	if access_service and access_service.is_demo_enabled():
+		demo_locked = not access_service.can_play_level(level_num)
+
+	# ── Premium-locked (demo gate) ────────────────────────────────────────────
+	if demo_locked:
+		btn.disabled = false  # Allow click so we can show the modal
+		btn.text = ""
+		btn.modulate = Color(0.55, 0.45, 0.75, 0.85)  # Muted purple-tinted
+		stars_label.hide()
+		perfect_badge.hide()
+
+		lock_icon.visible = true
+		lock_icon.text = "Full Version\nUnlock to Play"
+		lock_icon.add_theme_color_override("font_color", NeonStyle.WARN)
+		lock_icon.add_theme_font_size_override("font_size", 11)
+
+		# Neon amber trim on button
+		var premium_style = StyleBoxFlat.new()
+		premium_style.bg_color = Color(0.08, 0.06, 0.02, 0.92)
+		premium_style.set_border_width_all(1)
+		premium_style.border_color = Color(NeonStyle.WARN.r, NeonStyle.WARN.g, NeonStyle.WARN.b, 0.55)
+		premium_style.set_corner_radius_all(4)
+		btn.add_theme_stylebox_override("normal", premium_style)
+		btn.add_theme_stylebox_override("hover", premium_style)
+		btn.add_theme_stylebox_override("pressed", premium_style)
+		btn.add_theme_stylebox_override("disabled", premium_style)
+
+		label.text = "Full Version"
+		label.add_theme_color_override("font_color", NeonStyle.WARN)
+
+		# Reconnect button press to show the modal
+		if not btn.pressed.is_connected(_show_locked_modal.bind(level_id)):
+			# Disconnect existing select signal first to avoid double-firing
+			var existing = func(): _select_level("res://data/levels/%s.json" % level_id)
+			if btn.pressed.is_connected(existing):
+				btn.pressed.disconnect(existing)
+			btn.pressed.connect(_show_locked_modal.bind(level_id))
+		return
+
+	# ── Progression-locked (normal sequential lock) ───────────────────────────
+	if not progression_unlocked:
+		btn.disabled = not progression_unlocked
+		lock_icon.visible = true
+		lock_icon.text = "SECURE"
+		lock_icon.add_theme_color_override("font_color", NeonStyle.TEXT_DIM)
+		lock_icon.add_theme_font_size_override("font_size", 13)
 		btn.text = ""
 		btn.modulate = Color(0.4, 0.4, 0.5, 0.6)
-		label.text = "---" # Cleaner than 'LOCKED' redundancy
+		label.text = "---"
 		label.modulate = Color(0.3, 0.3, 0.4)
 		stars_label.hide()
 		perfect_badge.hide()
+		return
+
+	# ── Accessible level ──────────────────────────────────────────────────────
+	lock_icon.visible = false
+	btn.disabled = false
+	btn.text = level_id.replace("level_", "L")
+	btn.modulate = Color(1, 1, 1)
+	label.modulate = Color(1, 1, 1)
+	stars_label.show()
+
+	var stars_count = record.get("best_stars", 0)
+	for i in range(3):
+		var star = stars_label.get_child(i)
+		if star.has_method("set"):
+			star.filled = (i < stars_count)
+
+	var is_perfect = record.get("perfect_clear", false)
+	perfect_badge.visible = is_perfect
+
+	if record.get("completed", false):
+		btn.modulate = Color(0.8, 1.0, 0.9)
+		if is_perfect:
+			btn.modulate = Color(1.0, 0.95, 0.7)
+		label.text = "Best: " + str(record.get("best_score", 0))
+		label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
 	else:
-		btn.text = level_id.replace("level_", "L")
-		btn.modulate = Color(1, 1, 1)
-		label.modulate = Color(1, 1, 1)
-		stars_label.show()
-		
-		var stars_count = record.get("best_stars", 0)
-		for i in range(3):
-			var star = stars_label.get_child(i)
-			if star.has_method("set"):
-				star.filled = (i < stars_count)
-		
-		var is_perfect = record.get("perfect_clear", false)
-		perfect_badge.visible = is_perfect
-		
-		if record.get("completed", false):
-			btn.modulate = Color(0.8, 1.0, 0.9) # Subtle success tint
-			if is_perfect:
-				btn.modulate = Color(1.0, 0.95, 0.7) # Golden tint
-			label.text = "Best: " + str(record.get("best_score", 0))
-			label.add_theme_color_override("font_color", Color(0.5, 0.8, 1.0))
-		else:
-			label.text = "NEW MISSION"
-			label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0)) # Electric cyan for new missions
-			btn.modulate = Color(0.9, 1.0, 1.1)
+		label.text = "NEW MISSION"
+		label.add_theme_color_override("font_color", Color(0.3, 0.9, 1.0))
+		btn.modulate = Color(0.9, 1.0, 1.1)
+
+func _show_locked_modal(level_id: String) -> void:
+	var config = _load_config(level_id)
+	var level_name = config.get("name", level_id.replace("level_", "Level "))
+	_get_demo_gate_modal().show_locked(level_name)
 
 func _update_selection_visuals() -> void:
 	for level_id in level_container_map:
@@ -664,25 +746,38 @@ func _select_level(path: String) -> void:
 
 func _update_play_button_state() -> void:
 	if play_button == null or selected_level_path == "": return
-	
+
 	var level_id = selected_level_path.get_file().get_basename()
+	var level_num = int(level_id.split("_")[1])
 	var save_manager = get_tree().current_scene.get_node_or_null("SaveManager")
-	
+
 	if save_manager:
 		var unlocked = save_manager.is_level_unlocked(level_id)
 		var record = save_manager.get_level_record(level_id)
 		var completed = record.get("completed", false)
-		
-		play_button.disabled = not unlocked
+
+		# Check demo gate
+		var access_service = _get_level_access_service()
+		var demo_locked := false
+		if access_service and access_service.is_demo_enabled():
+			demo_locked = not access_service.can_play_level(level_num)
+
 		if leaderboard_button: leaderboard_button.disabled = false
 
-		if not unlocked:
+		if demo_locked:
+			play_button.disabled = true
+			play_button.text = "FULL VERSION REQUIRED"
+			play_button.modulate = Color(NeonStyle.WARN.r, NeonStyle.WARN.g, NeonStyle.WARN.b, 0.85)
+		elif not unlocked:
+			play_button.disabled = true
 			play_button.text = "MISSION LOCKED"
 			play_button.modulate = Color(1, 0.4, 0.4)
 		elif completed:
+			play_button.disabled = false
 			play_button.text = "RE-DEPLOY"
 			play_button.modulate = Color(0.7, 1.0, 0.7)
 		else:
+			play_button.disabled = false
 			play_button.text = "START MISSION"
 			play_button.modulate = Color(0.8, 1.0, 0.8)
 

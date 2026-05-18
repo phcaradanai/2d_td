@@ -1,0 +1,16 @@
+{
+  "config_version": 1,
+  "mode": "demo",
+  "demo_enabled": true,
+  "max_demo_level": 1,
+  "max_demo_wave": 20,
+  "enabled_levels": [1],
+  "enabled_modes": ["normal"],
+  "allow_save_resume": true,
+  "allow_leaderboard_submit": false,
+  "allow_sandbox": false,
+  "maintenance_enabled": false,
+  "force_update": false,
+  "min_supported_build": 1,
+  "announcement": ""
+}
