@@ -16,7 +16,7 @@ signal config_updated(source: String)
 signal fetch_failed(reason: String)
 
 
-const BUNDLED_API_URL = "http://aovu1d8v7xwbm2ox287iskkc.165.22.240.130.sslip.io"
+const BUNDLED_API_URL = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"
 const DEV_CONFIG_PATH = "user://remote_access_config_dev.json"
 const CACHE_PATH      = "user://remote_access_config.json"
 const DEFAULT_PATH    = "res://data/default_access_config.json"
