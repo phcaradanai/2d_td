@@ -21,6 +21,7 @@ var _local_full_unlocked: bool   = false
 var _local_max_demo_level: int   = 1
 var _local_max_demo_wave: int    = 60
 var _local_allow_lb: bool        = false
+var _local_enabled_levels: Array = [1]
 
 func _ready() -> void:
 	_load_local_config()
@@ -39,6 +40,13 @@ func _load_local_config() -> void:
 	_local_max_demo_level = int(parsed.get("max_demo_level", 1))
 	_local_max_demo_wave  = int(parsed.get("max_demo_wave", 60))
 	_local_allow_lb       = bool(parsed.get("allow_leaderboard_submit", false))
+	var raw_levels = parsed.get("enabled_levels", null)
+	if raw_levels is String and raw_levels == "all":
+		pass  # handled in can_play_level
+	elif raw_levels is Array:
+		_local_enabled_levels = raw_levels
+	else:
+		_local_enabled_levels = [1]
 
 # ── Access queries ────────────────────────────────────────────────────────────
 
@@ -47,7 +55,7 @@ func can_play_level(level_id: int) -> bool:
 		return _remote.can_play_level(level_id)
 	if _local_full_unlocked or not _local_demo_enabled:
 		return true
-	return level_id <= _local_max_demo_level
+	return level_id in _local_enabled_levels
 
 func can_play_wave(level_id: int, wave_number: int) -> bool:
 	if _remote:
@@ -98,8 +106,8 @@ func get_locked_reason(level_id: int, wave_number: int = -1) -> String:
 		return _remote.get_locked_reason(level_id, wave_number)
 	if _local_full_unlocked or not _local_demo_enabled:
 		return ""
-	if level_id > _local_max_demo_level:
-		return "This level requires the Full Version."
+	if not can_play_level(level_id):
+		return "This level is not included in your current access profile."
 	if wave_number > 0 and wave_number > _local_max_demo_wave:
 		return "Wave %d is beyond the demo limit (Wave %d)." % [wave_number, _local_max_demo_wave]
 	return ""
@@ -114,7 +122,11 @@ func is_demo_wave_cap_reached(wave_number: int) -> bool:
 func get_max_demo_level() -> int:
 	if _remote:
 		return _remote.get_max_demo_level()
-	return _local_max_demo_level
+	var best := 1
+	for v in _local_enabled_levels:
+		if int(v) > best:
+			best = int(v)
+	return best
 
 # ── Identity / access metadata (for UI display) ───────────────────────────────
 

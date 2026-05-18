@@ -119,13 +119,13 @@ func _apply_mode(mode: int, extra: String, summary: Dictionary) -> void:
 	if mode == MODE_LOCKED:
 		set_blocking(false)
 		set_panel_accent(_C_WARN)
-		set_title("FULL VERSION REQUIRED")
-		_mode_header.text = "[ FULL VERSION ]"
+		set_title("ACCESS RESTRICTED")
+		_mode_header.text = "[ ACCESS RESTRICTED ]"
 		_mode_header.add_theme_color_override("font_color", _C_WARN)
-		_mode_title.text = "FULL VERSION"
+		_mode_title.text = "ACCESS RESTRICTED"
 		_mode_title.add_theme_color_override("font_color", _C_WARN)
-		_body_label.text = (extra + " is only available in the Full Version.") if extra != "" \
-			else "This level requires the Full Version."
+		_body_label.text = (extra + " is not included in your current access profile.") if extra != "" \
+			else "This level is not included in your current access profile."
 		_cta_button.text = "UNLOCK FULL VERSION"
 		_apply_btn_style(_cta_button, _C_WARN)
 		_apply_btn_style(_back_button, _C_CYAN)

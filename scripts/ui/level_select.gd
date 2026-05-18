@@ -253,6 +253,9 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 
 	# ── Premium-locked (demo gate) ────────────────────────────────────────────
 	if demo_locked:
+		if OS.is_debug_build():
+			var reason = access_service.get_locked_reason(level_num) if access_service else "unknown"
+			print("[LevelSelect] BLOCKED level=%d (%s) reason=%s" % [level_num, level_id, reason])
 		btn.disabled = false  # Allow click so we can show the modal
 		btn.text = ""
 		btn.modulate = Color(0.55, 0.45, 0.75, 0.85)  # Muted purple-tinted
@@ -260,7 +263,7 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 		perfect_badge.hide()
 
 		lock_icon.visible = true
-		lock_icon.text = "Full Version\nUnlock to Play"
+		lock_icon.text = "Restricted\nUnlock to Play"
 		lock_icon.add_theme_color_override("font_color", NeonStyle.WARN)
 		lock_icon.add_theme_font_size_override("font_size", 11)
 
@@ -275,7 +278,7 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 		btn.add_theme_stylebox_override("pressed", premium_style)
 		btn.add_theme_stylebox_override("disabled", premium_style)
 
-		label.text = "Full Version"
+		label.text = "Restricted"
 		label.add_theme_color_override("font_color", NeonStyle.WARN)
 
 		# Reconnect button press to show the modal
@@ -766,7 +769,7 @@ func _update_play_button_state() -> void:
 
 		if demo_locked:
 			play_button.disabled = true
-			play_button.text = "FULL VERSION REQUIRED"
+			play_button.text = "ACCESS RESTRICTED"
 			play_button.modulate = Color(NeonStyle.WARN.r, NeonStyle.WARN.g, NeonStyle.WARN.b, 0.85)
 		elif not unlocked:
 			play_button.disabled = true

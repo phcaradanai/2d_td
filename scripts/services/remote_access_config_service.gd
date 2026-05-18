@@ -123,11 +123,20 @@ func is_force_update() -> bool:
 
 func can_play_level(level_id: int) -> bool:
 	if is_maintenance_enabled() or is_force_update():
+		if OS.is_debug_build():
+			_print_block(level_id, "maintenance_or_force_update")
 		return false
 	if not is_demo_enabled():
 		return true
-	var enabled: Array = _config.get("enabled_levels", [1])
-	return level_id in enabled
+	var enabled_raw = _config.get("enabled_levels", [1])
+	# Handle "all" string — full access
+	if enabled_raw is String and enabled_raw == "all":
+		return true
+	var enabled: Array = enabled_raw if enabled_raw is Array else [1]
+	var ok := level_id in enabled
+	if not ok and OS.is_debug_build():
+		_print_block(level_id, "not_in_enabled_levels")
+	return ok
 
 func can_play_wave(level_id: int, wave_number: int) -> bool:
 	if not can_play_level(level_id):
@@ -165,10 +174,21 @@ func get_locked_reason(level_id: int, wave_number: int = -1) -> String:
 	if not is_demo_enabled():
 		return ""
 	if not can_play_level(level_id):
-		return "This level requires the Full Version."
+		return "This level is not included in your current access profile."
 	if wave_number > 0 and not can_play_wave(level_id, wave_number):
 		return "Wave %d is beyond the demo limit (Wave %d)." % [wave_number, _get_max_wave()]
 	return ""
+
+func _print_block(level_id: int, reason: String) -> void:
+	var enabled_raw = _config.get("enabled_levels", [])
+	print("[RemoteAccessConfig] BLOCKED level=%d reason=%s mode=%s enabled_levels=%s max_wave=%d source=%s resolved_from=%s" % [
+		level_id, reason,
+		str(_config.get("mode", "demo")),
+		str(enabled_raw),
+		_get_max_wave(),
+		_config_source,
+		_resolved_from
+	])
 
 ## Fetch fresh config from backend.  Includes full identity payload if
 ## RuntimeIdentityService is bound.  Safe to call while offline.

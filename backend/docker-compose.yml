@@ -6,11 +6,13 @@ services:
       context: ./leaderboard-api
       dockerfile: Dockerfile
     restart: unless-stopped
+    networks:
+      - public_network
     ports:
       - "${API_PORT:-8080}"
     environment:
       PORT: "8080"
-      DATABASE_URL: "postgres://lb_user:${POSTGRES_PASSWORD:-td_password}@postgres:5432/leaderboard?sslmode=disable"
+      DATABASE_URL: postgres://${POSTGRES_USER:-admin}:${POSTGRES_PASSWORD:-pg!@1234}@postgres-g2n7i3fz45pwcoztfrzu3lxj-162924326188:5432/${POSTGRES_DB:-clone_line_db}?sslmode=disable
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://admin-web}"
       MAX_LEVEL1_WAVE: "60"
       ADMIN_TOKEN: "${ADMIN_TOKEN:-change-me-now}"
@@ -25,6 +27,7 @@ services:
       timeout: 5s
       retries: 3
       start_period: 10s
+    
 
   admin-web:
     build:
@@ -33,27 +36,13 @@ services:
       args:
         VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8080}"
     restart: unless-stopped
+    networks:
+      - public_network
     ports:
       - "${ADMIN_WEB_PORT:-3000}"
     depends_on:
       - leaderboard-api
 
-  postgres:
-    image: postgres:16-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_USER: lb_user
-      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-td_password}"
-      POSTGRES_DB: leaderboard
-    ports:
-      - "${POSTGRES_PORT:-5432}:5432"
-    volumes:
-      - postgres_data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U lb_user -d leaderboard"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-volumes:
-  postgres_data:
+networks:
+  public_network:
+    external: true
