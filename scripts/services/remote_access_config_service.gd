@@ -11,8 +11,10 @@ extends Node
 ##
 ## All callers must use LevelAccessService — never this service directly.
 
+signal config_changed(config: Dictionary)
 signal config_updated(source: String)
 signal fetch_failed(reason: String)
+
 
 const BUNDLED_API_URL = "http://aovu1d8v7xwbm2ox287iskkc.165.22.240.130.sslip.io"
 const DEV_CONFIG_PATH = "user://remote_access_config_dev.json"
@@ -20,6 +22,7 @@ const CACHE_PATH      = "user://remote_access_config.json"
 const DEFAULT_PATH    = "res://data/default_access_config.json"
 const REQUEST_TIMEOUT = 8.0
 const BUILD_NUMBER    = 1
+const DEFAULT_ACCESS_CONFIG_PATH := "res://data/default_access_config.json"
 
 enum _State { IDLE, FETCHING }
 
@@ -93,13 +96,17 @@ func get_announcement() -> String:
 	return str(_config.get("announcement", ""))
 
 func get_max_demo_level() -> int:
-	var enabled: Array = _config.get("enabled_levels", [1])
-	if enabled is Array and not enabled.is_empty():
-		var best = 1
-		for v in enabled:
-			if int(v) > best:
-				best = int(v)
+	var enabled_raw = _config.get("enabled_levels", [1])
+
+	if enabled_raw is String and enabled_raw == "all":
+		return 999
+
+	if enabled_raw is Array and not enabled_raw.is_empty():
+		var best := 1
+		for v in enabled_raw:
+			best = max(best, int(v))
 		return best
+
 	return int(_config.get("max_demo_level", 1))
 
 func is_demo_enabled() -> bool:
@@ -126,17 +133,24 @@ func can_play_level(level_id: int) -> bool:
 		if OS.is_debug_build():
 			_print_block(level_id, "maintenance_or_force_update")
 		return false
+
 	if not is_demo_enabled():
 		return true
+
 	var enabled_raw = _config.get("enabled_levels", [1])
-	# Handle "all" string — full access
-	if enabled_raw is String and enabled_raw == "all":
-		return true
-	var enabled: Array = enabled_raw if enabled_raw is Array else [1]
-	var ok := level_id in enabled
-	if not ok and OS.is_debug_build():
+
+	if enabled_raw is String:
+		return enabled_raw == "all"
+
+	if enabled_raw is Array:
+		for v in enabled_raw:
+			if int(v) == int(level_id):
+				return true
+
+	if OS.is_debug_build():
 		_print_block(level_id, "not_in_enabled_levels")
-	return ok
+
+	return false
 
 func can_play_wave(level_id: int, wave_number: int) -> bool:
 	if not can_play_level(level_id):
@@ -211,30 +225,46 @@ func fetch_remote_config() -> void:
 
 # ── HTTP callback ─────────────────────────────────────────────────────────────
 
-func _on_request_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
-	_state = _State.IDLE
-	var ok = (result == HTTPRequest.RESULT_SUCCESS) and (response_code >= 200) and (response_code < 300)
-	if not ok:
-		var reason = "HTTP %d (result=%d)" % [response_code, result]
-		push_warning("[RemoteAccessConfig] Fetch failed: %s" % reason)
-		fetch_failed.emit(reason)
-		return
-
-	var parsed = JSON.parse_string(body.get_string_from_utf8())
-	if not parsed is Dictionary:
-		push_warning("[RemoteAccessConfig] Response parse failed.")
-		fetch_failed.emit("JSON parse error")
-		return
-
-	_ingest_response(parsed)
-	_save_cache(parsed)
-
-	if OS.is_debug_build():
-		print("[RemoteAccessConfig] v%d mode=%s full=%s resolved_from=%s tags=%s" % [
-			get_config_version(), _config.get("mode", "demo"),
-			str(_is_full_unlocked()), _resolved_from, str(_tags)
+func _on_request_completed(
+	result: int,
+	response_code: int,
+	_headers: PackedStringArray,
+	body: PackedByteArray
+) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS:
+		push_warning("[DemoGate] Remote fetch failed: HTTP %d (result=%d)" % [
+			response_code,
+			result
 		])
+		_load_default_access_config("remote_request_failed", result, response_code)
+		return
 
+	if response_code < 200 or response_code >= 300:
+		push_warning("[DemoGate] Remote fetch failed: HTTP %d (result=%d)" % [
+			response_code,
+			result
+		])
+		_load_default_access_config("remote_http_error", result, response_code)
+		return
+
+	var text := body.get_string_from_utf8()
+	var json := JSON.new()
+	var parse_err := json.parse(text)
+	if parse_err != OK:
+		push_warning("[DemoGate] Remote config JSON parse failed line=%d error=%s" % [
+			json.get_error_line(),
+			json.get_error_message()
+		])
+		_load_default_access_config("remote_invalid_json", result, response_code)
+		return
+
+	var data = json.data
+	if typeof(data) != TYPE_DICTIONARY:
+		push_warning("[DemoGate] Remote config is not Dictionary")
+		_load_default_access_config("remote_invalid_shape", result, response_code)
+		return
+
+	_apply_config(data, "remote")
 # ── Internals ─────────────────────────────────────────────────────────────────
 
 func _build_access_url() -> String:
@@ -299,8 +329,18 @@ func _try_load_file(path: String, source: String) -> bool:
 	return true
 
 func _apply_config(data: Dictionary, source: String) -> void:
-	_config = data
+	_config = _normalize_access_config(data)
 	_config_source = source
+
+	if OS.is_debug_build():
+		print("[DemoGate] Applied access config source=%s resolved_from=%s mode=%s enabled_levels=%s max_demo_wave=%s" % [
+			_config_source,
+			_resolved_from,
+			str(_config.get("mode", "demo")),
+			str(_config.get("enabled_levels", [])),
+			str(_config.get("max_demo_wave", _config.get("max_wave", 60)))
+		])
+
 	config_updated.emit(source)
 
 func _apply_safe_defaults() -> void:
@@ -346,3 +386,105 @@ func force_demo_for_debug() -> void:
 	_entitlement["full_version_unlocked"] = false
 	config_updated.emit("debug")
 	print("[RemoteAccessConfig] DEBUG: reset to demo mode.")
+
+func _load_default_access_config(reason: String, result: int = -1, response_code: int = 0) -> void:
+	var text := FileAccess.get_file_as_string(DEFAULT_ACCESS_CONFIG_PATH)
+	if text.is_empty():
+		push_error("[DemoGate] Failed to read default access config: %s" % DEFAULT_ACCESS_CONFIG_PATH)
+		_apply_builtin_safe_default(reason, result, response_code)
+		return
+
+	var json := JSON.new()
+	var parse_err := json.parse(text)
+	if parse_err != OK:
+		push_error("[DemoGate] Failed to parse default access config: %s line=%d error=%s" % [
+			DEFAULT_ACCESS_CONFIG_PATH,
+			json.get_error_line(),
+			json.get_error_message()
+		])
+		_apply_builtin_safe_default(reason, result, response_code)
+		return
+
+	var data = json.data
+	if typeof(data) != TYPE_DICTIONARY:
+		push_error("[DemoGate] Default access config is not a Dictionary: %s" % DEFAULT_ACCESS_CONFIG_PATH)
+		_apply_builtin_safe_default(reason, result, response_code)
+		return
+
+	if OS.is_debug_build():
+		print("[DemoGate] Using default_access_config fallback reason=%s result=%d http=%d" % [
+			reason,
+			result,
+			response_code
+		])
+
+	_apply_config(data.duplicate(true), "local_default")
+
+func _apply_builtin_safe_default(reason: String, result: int = -1, response_code: int = 0) -> void:
+	var fallback := {
+		"config_version": 1,
+		"mode": "demo",
+		"demo_enabled": true,
+		"max_demo_level": 1,
+		"max_demo_wave": 60,
+		"enabled_levels": [1],
+		"enabled_modes": ["normal"],
+		"allow_save_resume": true,
+		"allow_leaderboard_submit": false,
+		"allow_sandbox": false,
+		"maintenance_enabled": false,
+		"force_update": false,
+		"min_supported_build": 1,
+		"announcement": ""
+	}
+
+	push_warning("[DemoGate] Using built-in safe default reason=%s result=%d http=%d" % [
+		reason,
+		result,
+		response_code
+	])
+
+	_apply_config(fallback, "builtin_default")
+
+func _normalize_access_config(data: Dictionary) -> Dictionary:
+	var out := data.duplicate(true)
+
+	if out.has("enabled_levels"):
+		var raw = out.get("enabled_levels")
+
+		if raw is String:
+			if raw == "all":
+				out["enabled_levels"] = "all"
+			else:
+				var parsed_levels: Array[int] = []
+				for part in raw.split(",", false):
+					var n := int(str(part).strip_edges())
+					if n > 0 and not parsed_levels.has(n):
+						parsed_levels.append(n)
+				out["enabled_levels"] = parsed_levels if not parsed_levels.is_empty() else [1]
+
+		elif raw is Array:
+			var levels: Array[int] = []
+			for v in raw:
+				var n := int(v)
+				if n > 0 and not levels.has(n):
+					levels.append(n)
+			out["enabled_levels"] = levels if not levels.is_empty() else [1]
+
+		else:
+			out["enabled_levels"] = [1]
+	else:
+		out["enabled_levels"] = [1]
+
+	if out.has("max_wave") and not out.has("max_demo_wave"):
+		out["max_demo_wave"] = int(out.get("max_wave", 60))
+	else:
+		out["max_demo_wave"] = int(out.get("max_demo_wave", 60))
+
+	out["max_wave"] = int(out.get("max_wave", out.get("max_demo_wave", 60)))
+	out["config_version"] = int(out.get("config_version", 1))
+	out["demo_enabled"] = bool(out.get("demo_enabled", true))
+	out["maintenance_enabled"] = bool(out.get("maintenance_enabled", false))
+	out["force_update"] = bool(out.get("force_update", false))
+
+	return out

@@ -1250,10 +1250,14 @@ func start_game(level_path: String) -> void:
 	if level_access_service and not level_access_service.can_play_level(_level_num):
 		if OS.is_debug_build():
 			var _reason : String = level_access_service.get_locked_reason(_level_num) if level_access_service else "unknown"
-			print("[DemoGate] start_game blocked level=%d reason=%s mode=%s source=%s" % [
-				_level_num, _reason,
-				level_access_service.get_access_mode() if level_access_service else "?",
-				level_access_service.get_access_source() if level_access_service else "?"
+			print("[DemoGate] start_game BLOCKED path=%s base=%s level_num=%d reason=%s mode=%s source=%s resolved_from=%s" % [
+				level_path,
+				_level_id_str,
+				_level_num,
+				_reason,
+				level_access_service.get_access_mode(),
+				level_access_service.get_access_source(),
+				level_access_service.get_resolved_from()
 			])
 		if _demo_gate_modal:
 			var _cfg_for_modal := get_level_config(_level_id_str)
