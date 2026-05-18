@@ -2,28 +2,25 @@ extends Node
 ## Level Access Service
 ##
 ## Single point-of-truth for all level/wave/feature access checks.
-## UI and gameplay code call only this service — never RemoteAccessConfigService
-## directly.
+## UI and gameplay code call ONLY this service.
 ##
-## When RemoteAccessConfigService is bound (via bind_remote_config), all queries
-## delegate there.  Without it the service reads the bundled local config file
-## as a standalone fallback (useful for unit tests and offline-only builds).
+## When RemoteAccessConfigService is bound (via bind_remote_config), every
+## query delegates there.  Without it the service reads the bundled local
+## config file as a standalone offline fallback.
 
 const LOCAL_CONFIG_PATH = "res://data/level_access_config.json"
 
-# ── Remote delegate ───────────────────────────────────────────────────────────
-var _remote: Node = null  # RemoteAccessConfigService instance, or null
+var _remote: Node = null   # RemoteAccessConfigService, or null
 
-## Wire RemoteAccessConfigService.  Call once from main.gd after both nodes exist.
 func bind_remote_config(service: Node) -> void:
 	_remote = service
 
-# ── Local fallback state (used only when _remote is null) ────────────────────
-var _local_demo_enabled: bool = true
-var _local_full_unlocked: bool = false
-var _local_max_demo_level: int = 1
-var _local_max_demo_wave: int = 20
-var _local_allow_lb: bool = false
+# ── Local fallback state ───────────────────────────────────────────────────────
+var _local_demo_enabled: bool    = true
+var _local_full_unlocked: bool   = false
+var _local_max_demo_level: int   = 1
+var _local_max_demo_wave: int    = 60
+var _local_allow_lb: bool        = false
 
 func _ready() -> void:
 	_load_local_config()
@@ -40,10 +37,10 @@ func _load_local_config() -> void:
 		return
 	_local_demo_enabled   = bool(parsed.get("demo_enabled", true))
 	_local_max_demo_level = int(parsed.get("max_demo_level", 1))
-	_local_max_demo_wave  = int(parsed.get("max_demo_wave", 20))
+	_local_max_demo_wave  = int(parsed.get("max_demo_wave", 60))
 	_local_allow_lb       = bool(parsed.get("allow_leaderboard_submit", false))
 
-# ── Public API — identical signatures as before ───────────────────────────────
+# ── Access queries ────────────────────────────────────────────────────────────
 
 func can_play_level(level_id: int) -> bool:
 	if _remote:
@@ -68,8 +65,6 @@ func is_full_version_unlocked() -> bool:
 
 func set_full_version_unlocked(value: bool) -> void:
 	_local_full_unlocked = value
-	if OS.is_debug_build():
-		print("[LevelAccessService] local full_version_unlocked = ", value)
 
 func can_submit_leaderboard() -> bool:
 	if _remote:
@@ -83,19 +78,16 @@ func is_demo_enabled() -> bool:
 		return _remote.is_demo_enabled()
 	return _local_demo_enabled and not _local_full_unlocked
 
-## True when the game is in maintenance mode and all play should be blocked.
 func is_maintenance_enabled() -> bool:
 	if _remote:
 		return _remote.is_maintenance_enabled()
 	return false
 
-## True when the client build is too old and must update before playing.
 func is_force_update() -> bool:
 	if _remote:
 		return _remote.is_force_update()
 	return false
 
-## True when save/resume is allowed by the current config.
 func can_save_resume() -> bool:
 	if _remote:
 		return _remote.can_save_resume()
@@ -119,13 +111,49 @@ func is_demo_wave_cap_reached(wave_number: int) -> bool:
 		return false
 	return wave_number >= _local_max_demo_wave
 
-## max_demo_level exposed so level_select.gd can read it for card styling.
 func get_max_demo_level() -> int:
 	if _remote:
-		return int(_remote._config.get("max_demo_level", 1))
+		return _remote.get_max_demo_level()
 	return _local_max_demo_level
 
+# ── Identity / access metadata (for UI display) ───────────────────────────────
+
+## Current access mode: "demo", "full", or a custom profile key.
+func get_access_mode() -> String:
+	if _remote:
+		if _remote.is_full_mode_global():
+			return "full"
+		return str(_remote._config.get("mode", "demo"))
+	if _local_full_unlocked or not _local_demo_enabled:
+		return "full"
+	return "demo"
+
+## Source of the active config: "remote", "cache", or "default".
+func get_access_source() -> String:
+	if _remote:
+		return _remote.get_config_source()
+	return "local"
+
+## Backend tags assigned to this runtime (e.g. ["tester", "qa"]).
+func get_tags() -> Array:
+	if _remote:
+		return _remote.get_tags()
+	return []
+
+## Which override rule produced this config (e.g. "install_id_override").
+func get_resolved_from() -> String:
+	if _remote:
+		return _remote.get_resolved_from()
+	return ""
+
+## Config version integer, for display in the identity panel.
+func get_config_version() -> int:
+	if _remote:
+		return _remote.get_config_version()
+	return 1
+
 # ── Debug helpers ─────────────────────────────────────────────────────────────
+
 func unlock_full_version_for_debug() -> void:
 	if not OS.is_debug_build():
 		return
@@ -141,4 +169,3 @@ func reset_to_demo_for_debug() -> void:
 		_remote.force_demo_for_debug()
 	else:
 		set_full_version_unlocked(false)
-	print("[LevelAccessService] Reset to demo mode.")

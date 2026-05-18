@@ -20,9 +20,10 @@ const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_pla
 const GAMEPLAY_CONTROLLER_BINDER_SCRIPT = preload("res://scripts/main/gameplay_controller_binder.gd")
 const DAMAGE_STATS_TRACKER_SCRIPT = preload("res://scripts/core/damage_stats_tracker.gd")
 const COMBAT_AUDIO_SERVICE_SCRIPT = preload("res://scripts/services/combat_audio_service.gd")
-const LEVEL_ACCESS_SERVICE_SCRIPT = preload("res://scripts/services/level_access_service.gd")
-const REMOTE_ACCESS_CONFIG_PATH = "res://scripts/services/remote_access_config_service.gd"
-const DEMO_GATE_MODAL_PATH = "res://scripts/ui/demo_gate_modal.gd"
+const LEVEL_ACCESS_SERVICE_SCRIPT  = preload("res://scripts/services/level_access_service.gd")
+const REMOTE_ACCESS_CONFIG_PATH    = "res://scripts/services/remote_access_config_service.gd"
+const RUNTIME_IDENTITY_PATH        = "res://scripts/services/runtime_identity_service.gd"
+const DEMO_GATE_MODAL_PATH         = "res://scripts/ui/demo_gate_modal.gd"
 
 enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
 enum AutoClearState {
@@ -124,7 +125,8 @@ const STARTER_TOWER_IDS := ["basic_tower_t1", "neutral_cannon_tower"]
 var sandbox_layer: CanvasLayer = null
 var sandbox_panel: PanelContainer = null
 var combat_audio_service: Node = null
-var level_access_service: Node = null        # [DemoGate] Level/wave access control
+var runtime_identity_service: Node = null     # [Identity] Stable install/session/runtime IDs
+var level_access_service: Node = null         # [DemoGate] Level/wave access control
 var remote_access_config_service: Node = null # [DemoGate] Remote OTA config fetcher
 var _demo_gate_modal: CanvasLayer = null      # [DemoGate] Shared locked/complete modal
 
@@ -181,6 +183,15 @@ func _ready() -> void:
 		var _initial_mode: String = save_manager.get_audio_settings().get("audio_combat_mode", "balanced")
 		combat_audio_service.set_combat_mode(_initial_mode)
 
+	# [Identity] Runtime identity — stable install_id + fresh session_id each launch.
+	var _ris_script = load(RUNTIME_IDENTITY_PATH)
+	if _ris_script:
+		runtime_identity_service = _ris_script.new()
+		runtime_identity_service.name = "RuntimeIdentityService"
+		add_child(runtime_identity_service)
+	else:
+		push_error("[Identity] Failed to load RuntimeIdentityService script.")
+
 	# [DemoGate] Remote OTA config — fetches access rules from backend, caches locally.
 	var _rac_script = load(REMOTE_ACCESS_CONFIG_PATH)
 	if _rac_script:
@@ -189,6 +200,8 @@ func _ready() -> void:
 		add_child(remote_access_config_service)
 		remote_access_config_service.config_updated.connect(_on_access_config_updated)
 		remote_access_config_service.fetch_failed.connect(_on_access_config_fetch_failed)
+		if runtime_identity_service:
+			remote_access_config_service.bind_identity_service(runtime_identity_service)
 	else:
 		push_error("[DemoGate] Failed to load RemoteAccessConfigService script.")
 
@@ -1106,10 +1119,19 @@ func _unhandled_input(event: InputEvent) -> void:
 func _fetch_remote_access_config() -> void:
 	if remote_access_config_service == null:
 		return
-	var player_id = ""
-	if save_manager and save_manager.has_method("get_player_name"):
-		player_id = save_manager.get_player_name()
-	remote_access_config_service.fetch_remote_config(player_id)
+	if runtime_identity_service:
+		# Register runtime first so backend assigns a runtime_id, then fetch config.
+		runtime_identity_service.registered.connect(
+			func(_rid: String): remote_access_config_service.fetch_remote_config(),
+			CONNECT_ONE_SHOT
+		)
+		runtime_identity_service.registration_failed.connect(
+			func(_reason: String): remote_access_config_service.fetch_remote_config(),
+			CONNECT_ONE_SHOT
+		)
+		runtime_identity_service.register_runtime()
+	else:
+		remote_access_config_service.fetch_remote_config()
 
 func _on_access_config_updated(source: String) -> void:
 	if OS.is_debug_build():

@@ -22,6 +22,7 @@ const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 @onready var credits_close_button: Button = $Root/CreditsPanel/MarginContainer/VBoxContainer/CloseCreditsButton
 
 var _access_status_label: Label = null
+var _identity_panel: CanvasLayer = null   # RuntimeIdentityPanel, lazy-created
 
 func _ready() -> void:
 	_apply_neon_terminal_layout()
@@ -132,6 +133,8 @@ func _apply_neon_terminal_layout() -> void:
 	if credits_panel:
 		credits_panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, true))
 
+	_build_identity_button()
+
 ## Update the small access-config status line shown on the main menu.
 ## source: "remote" | "cache" | "default"
 ## version: config_version integer from the backend
@@ -151,6 +154,51 @@ func set_access_status(source: String, version: int) -> void:
 		text = "Access Config: Default"
 		_access_status_label.add_theme_color_override("font_color", Color(0.420, 0.502, 0.533, 0.75))
 	_access_status_label.text = text
+
+## Open the runtime identity panel (shows IDs + access config for admin use).
+func open_identity_panel() -> void:
+	if _identity_panel == null or not is_instance_valid(_identity_panel):
+		var script = load("res://scripts/ui/runtime_identity_panel.gd")
+		if script == null:
+			push_warning("[MainMenu] RuntimeIdentityPanel script not found.")
+			return
+		_identity_panel = script.new()
+		_identity_panel.name = "RuntimeIdentityPanel"
+		get_parent().add_child(_identity_panel)   # sibling of MainMenu in scene
+	var main = get_tree().current_scene
+	var identity_svc = main.get_node_or_null("RuntimeIdentityService")
+	var access_svc   = main.get_node_or_null("LevelAccessService")
+	_identity_panel.refresh(identity_svc, access_svc)
+	_identity_panel.show()
+
+func _build_identity_button() -> void:
+	var root_node = get_node_or_null("Root")
+	if root_node == null:
+		return
+	var btn = Button.new()
+	btn.name = "IdentityInfoButton"
+	btn.text = "ID"
+	btn.tooltip_text = "Runtime Identity & Access Info"
+	btn.add_theme_font_size_override("font_size", 10)
+	btn.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
+	btn.offset_left   = 8
+	btn.offset_top    = -28
+	btn.offset_right  = 40
+	btn.offset_bottom = -8
+	btn.mouse_filter  = Control.MOUSE_FILTER_STOP
+	# Minimal styling
+	var s = StyleBoxFlat.new()
+	s.bg_color = Color(0.043, 0.059, 0.090, 0.70)
+	s.set_border_width_all(1)
+	s.border_color = Color(0.302, 0.851, 0.902, 0.28)
+	s.set_corner_radius_all(3)
+	btn.add_theme_stylebox_override("normal",   s)
+	btn.add_theme_stylebox_override("hover",    s)
+	btn.add_theme_stylebox_override("pressed",  s)
+	btn.add_theme_stylebox_override("focus",    StyleBoxEmpty.new())
+	btn.add_theme_color_override("font_color", Color(0.420, 0.502, 0.533, 0.85))
+	btn.pressed.connect(open_identity_panel)
+	root_node.add_child(btn)
 
 func _build_access_status_label() -> void:
 	var root_node = get_node_or_null("Root")
