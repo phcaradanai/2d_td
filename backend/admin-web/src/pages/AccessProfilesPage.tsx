@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type AccessProfile } from '../api/client';
+import { api, type AccessProfile, normalizeProfiles } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import Modal from '../components/Modal';
 
@@ -29,8 +29,8 @@ export default function AccessProfilesPage() {
   const fetchProfiles = useCallback(async () => {
     setLoading(true);
     try {
-      const data = await api.get<{ items: AccessProfile[] }>('/api/admin/access-profiles');
-      setProfiles(data.items || []);
+      const data = await api.get<{ items: Record<string, unknown>[] }>('/api/admin/access-profiles');
+      setProfiles(normalizeProfiles(data.items || []));
     } catch (e: unknown) {
       toast((e as Error).message, 'err');
     } finally {
@@ -84,7 +84,8 @@ export default function AccessProfilesPage() {
       return;
     }
     try {
-      await api.patch(`/api/admin/access-profiles/${editItem.profile_key}`, {
+      const key = editItem.profile_key ?? (editItem as unknown as Record<string, unknown>).ProfileKey as string ?? '';
+      await api.patch(`/api/admin/access-profiles/${key}`, {
         name: newName,
         config_json: JSON.parse(newConfig),
         is_active: true,
@@ -99,7 +100,7 @@ export default function AccessProfilesPage() {
 
   const toggleActive = async (profile: AccessProfile) => {
     try {
-      const config = JSON.parse(profile.config_json);
+      const config = JSON.parse(profile.config_json ?? '{}');
       await api.patch(`/api/admin/access-profiles/${profile.profile_key}`, {
         name: profile.name,
         config_json: config,
@@ -114,12 +115,17 @@ export default function AccessProfilesPage() {
 
   const openEdit = (p: AccessProfile) => {
     setEditItem(p);
-    setNewName(p.name);
+    setNewName(p.name ?? '');
+    const raw = p.config_json ?? '{}';
     try {
-      setNewConfig(JSON.stringify(JSON.parse(p.config_json), null, 2));
+      setNewConfig(JSON.stringify(JSON.parse(raw), null, 2));
     } catch {
-      setNewConfig(p.config_json);
+      setNewConfig(raw || '{}');
     }
+  };
+  const closeEdit = () => {
+    setEditItem(null);
+    setJsonError('');
   };
 
   return (
@@ -201,12 +207,12 @@ export default function AccessProfilesPage() {
           <label>Config JSON</label>
           <textarea
             className={jsonError ? 'invalid' : ''}
-            value={newConfig}
+            value={newConfig ?? ''}
             onChange={(e) => { setNewConfig(e.target.value); validateJson(e.target.value); }}
             rows={12}
           />
           {jsonError && <div className="json-error">{jsonError}</div>}
-          {!jsonError && newConfig.length > 0 && <div className="json-ok">Valid JSON</div>}
+          {!jsonError && (newConfig ?? '').length > 0 && <div className="json-ok">Valid JSON</div>}
         </div>
         <div className="form-actions">
           <button className="btn-ok" onClick={handleCreate}>Create Profile</button>
@@ -215,7 +221,7 @@ export default function AccessProfilesPage() {
       </Modal>
 
       {/* Edit modal */}
-      <Modal open={!!editItem} onClose={() => setEditItem(null)} title={`Edit: ${editItem?.profile_key}`}>
+      <Modal open={!!editItem} onClose={closeEdit} title={`Edit: ${editItem?.profile_key ?? (editItem as unknown as Record<string, unknown>)?.ProfileKey ?? ''}`}>
         <div className="form-group">
           <label>Name</label>
           <input value={newName} onChange={(e) => setNewName(e.target.value)} />
@@ -224,16 +230,16 @@ export default function AccessProfilesPage() {
           <label>Config JSON</label>
           <textarea
             className={jsonError ? 'invalid' : ''}
-            value={newConfig}
+            value={newConfig ?? ''}
             onChange={(e) => { setNewConfig(e.target.value); validateJson(e.target.value); }}
             rows={12}
           />
           {jsonError && <div className="json-error">{jsonError}</div>}
-          {!jsonError && newConfig.length > 0 && <div className="json-ok">Valid JSON</div>}
+          {!jsonError && (newConfig ?? '').length > 0 && <div className="json-ok">Valid JSON</div>}
         </div>
         <div className="form-actions">
           <button className="btn-ok" onClick={handleUpdate}>Save Changes</button>
-          <button onClick={() => setEditItem(null)}>Cancel</button>
+          <button onClick={closeEdit}>Cancel</button>
         </div>
       </Modal>
     </div>

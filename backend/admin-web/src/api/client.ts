@@ -171,3 +171,21 @@ export interface DashboardSummary {
   recent_installs: RuntimeInstance[];
   recent_redemptions: { token_code: string; install_id: string; redeemed_at: string }[];
 }
+
+// PascalCase → snake_case field fallbacks handled in normalizeAccessProfile below.
+
+export function normalizeAccessProfile(raw: Record<string, unknown>): AccessProfile {
+  return {
+    id: (raw.id ?? raw.ID ?? 0) as number,
+    profile_key: (raw.profile_key ?? raw.ProfileKey ?? '') as string,
+    name: (raw.name ?? raw.Name ?? '') as string,
+    config_json: (raw.config_json ?? raw.ConfigJSON ?? '{}') as string,
+    is_active: (raw.is_active ?? raw.IsActive ?? false) as boolean,
+    created_at: (raw.created_at ?? raw.CreatedAt ?? '') as string,
+    updated_at: (raw.updated_at ?? raw.UpdatedAt ?? '') as string,
+  };
+}
+
+export function normalizeProfiles(rawItems: Record<string, unknown>[]): AccessProfile[] {
+  return rawItems.map(normalizeAccessProfile);
+}

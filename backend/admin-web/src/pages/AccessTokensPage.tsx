@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { api, type AccessToken, type AccessProfile, type TokenRedemption } from '../api/client';
+import { api, type AccessToken, type AccessProfile, type TokenRedemption, normalizeProfiles } from '../api/client';
 import { useToast } from '../context/ToastContext';
 import Modal from '../components/Modal';
 
@@ -52,10 +52,10 @@ export default function AccessTokensPage() {
     try {
       const [tokenData, profileData] = await Promise.all([
         api.get<{ items: AccessToken[] }>('/api/admin/tokens'),
-        api.get<{ items: AccessProfile[] }>('/api/admin/access-profiles'),
+        api.get<{ items: Record<string, unknown>[] }>('/api/admin/access-profiles'),
       ]);
       setTokens(tokenData.items || []);
-      setProfiles(profileData.items || []);
+      setProfiles(normalizeProfiles(profileData.items || []));
     } catch (e: unknown) {
       toast((e as Error).message, 'err');
     } finally {

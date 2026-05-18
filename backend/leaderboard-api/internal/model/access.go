@@ -7,13 +7,13 @@ import (
 
 // Identity holds the fields sent by the game client to identify itself.
 type Identity struct {
-	RuntimeID        string
-	InstallID        string
-	RuntimeSessionID string
-	PlayerID         string
-	BuildID          string
-	Platform         string
-	GameVersion      string
+	RuntimeID        string `json:"runtime_id"`
+	InstallID        string `json:"install_id"`
+	RuntimeSessionID string `json:"runtime_session_id"`
+	PlayerID         string `json:"player_id"`
+	BuildID          string `json:"build_id"`
+	Platform         string `json:"platform"`
+	GameVersion      string `json:"game_version"`
 }
 
 // AccessConfig is the resolved set of rules sent back to the game client.
@@ -53,38 +53,38 @@ type Entitlement struct {
 
 // ResolvedAccess is the complete result of access resolution.
 type ResolvedAccess struct {
-	ConfigVersion int
-	ResolvedFrom  string
-	ProfileKey    string
-	Tags          []string
-	Config        *AccessConfig
+	ConfigVersion int           `json:"config_version"`
+	ResolvedFrom  string        `json:"resolved_from"`
+	ProfileKey    string        `json:"profile_key"`
+	Tags          []string      `json:"tags"`
+	Config        *AccessConfig `json:"config"`
 }
 
 // AccessProfile is a named, reusable access config stored in the database.
 type AccessProfile struct {
-	ID         int64
-	ProfileKey string
-	Name       string
-	ConfigJSON string
-	IsActive   bool
-	CreatedAt  time.Time
-	UpdatedAt  time.Time
+	ID         int64     `json:"id"`
+	ProfileKey string    `json:"profile_key"`
+	Name       string    `json:"name"`
+	ConfigJSON string    `json:"config_json"`
+	IsActive   bool      `json:"is_active"`
+	CreatedAt  time.Time `json:"created_at"`
+	UpdatedAt  time.Time `json:"updated_at"`
 }
 
 // AccessOverride associates an access profile (and optional JSON patch) with
 // a specific target (install_id, player_id, runtime_id, tag, build_id, or global).
 type AccessOverride struct {
-	ID           int64
-	TargetType   string
-	TargetValue  string
-	ProfileKey   *string
-	OverrideJSON *string
-	Priority     int
-	IsActive     bool
-	StartsAt     *time.Time
-	EndsAt       *time.Time
-	CreatedAt    time.Time
-	UpdatedAt    time.Time
+	ID           int64      `json:"id"`
+	TargetType   string     `json:"target_type"`
+	TargetValue  string     `json:"target_value"`
+	ProfileKey   *string    `json:"profile_key"`
+	OverrideJSON *string    `json:"override_json"`
+	Priority     int        `json:"priority"`
+	IsActive     bool       `json:"is_active"`
+	StartsAt     *time.Time `json:"starts_at"`
+	EndsAt       *time.Time `json:"ends_at"`
+	CreatedAt    time.Time  `json:"created_at"`
+	UpdatedAt    time.Time  `json:"updated_at"`
 }
 
 // CanPlayLevel returns whether the given level ID is allowed by this config.
