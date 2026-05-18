@@ -20,8 +20,9 @@ export default function DataTable<T>({ columns, rows, rowKey, emptyMessage, load
   const [sortDir, setSortDir] = useState<'asc' | 'desc'>('asc');
 
   const sorted = useMemo(() => {
-    if (!sortKey) return rows;
-    return [...rows].sort((a, b) => {
+    if (!sortKey) return rows || [];
+    const safe = rows || [];
+    return [...safe].sort((a, b) => {
       const va = (a as Record<string, unknown>)[sortKey];
       const vb = (b as Record<string, unknown>)[sortKey];
       if (va == null && vb == null) return 0;
@@ -42,7 +43,7 @@ export default function DataTable<T>({ columns, rows, rowKey, emptyMessage, load
   };
 
   if (loading) return <div className="loading">Loading...</div>;
-  if (!rows.length) return <div className="empty-state">{emptyMessage || 'No data'}</div>;
+  if (!rows || !rows.length) return <div className="empty-state">{emptyMessage || 'No data'}</div>;
 
   return (
     <div className="table-wrap">
