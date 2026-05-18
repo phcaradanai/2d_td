@@ -31,7 +31,8 @@
       "Bash(npm install *)",
       "Bash(npx tsc *)",
       "Bash(npx vite *)",
-      "Bash(go build *)"
+      "Bash(go build *)",
+      "Bash(docker compose *)"
     ]
   }
 }

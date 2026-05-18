@@ -19,7 +19,7 @@ type Identity struct {
 // AccessConfig is the resolved set of rules sent back to the game client.
 type AccessConfig struct {
 	Mode                   string          `json:"mode"`
-	EnabledLevels          json.RawMessage `json:"enabled_levels"`          // [1,2,3] or "all"
+	EnabledLevels          json.RawMessage `json:"enabled_levels"` // [1,2,3] or "all"
 	MaxWave                int             `json:"max_wave"`
 	AllowLeaderboardSubmit bool            `json:"allow_leaderboard_submit"`
 	AllowSaveResume        bool            `json:"allow_save_resume"`
