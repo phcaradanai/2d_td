@@ -12,17 +12,26 @@ import (
 	"unicode/utf8"
 
 	"leaderboard/internal/config"
+	"leaderboard/internal/model"
 	"leaderboard/internal/ratelimit"
+	"leaderboard/internal/service"
 )
 
 // Handler holds the DB and config needed by leaderboard endpoints.
 type Handler struct {
-	db  *sql.DB
-	cfg config.Config
+	db       *sql.DB
+	cfg      config.Config
+	resolver *service.AccessResolver // optional; nil = no access checks
 }
 
 func New(db *sql.DB, cfg config.Config) *Handler {
 	return &Handler{db: db, cfg: cfg}
+}
+
+// WithResolver attaches an access resolver for leaderboard validation.
+func (h *Handler) WithResolver(r *service.AccessResolver) *Handler {
+	h.resolver = r
+	return h
 }
 
 // ---- request / response types ----
@@ -39,6 +48,10 @@ type submitReq struct {
 	Elements        map[string]interface{} `json:"elements"`
 	ClientRunID     string                 `json:"client_run_id"`
 	ClientCreatedAt int64                  `json:"client_created_at"`
+	// Optional identity fields for access validation
+	InstallID   string `json:"install_id,omitempty"`
+	RuntimeID   string `json:"runtime_id,omitempty"`
+	BuildID     string `json:"build_id,omitempty"`
 }
 
 type submitResp struct {
@@ -92,6 +105,43 @@ func (h *Handler) Submit(w http.ResponseWriter, r *http.Request) {
 	if len(req.LevelID) > 64 {
 		jsonError(w, http.StatusBadRequest, "level_id too long")
 		return
+	}
+
+	// Access validation — if a resolver is attached, check leaderboard permission.
+	if h.resolver != nil {
+		identity := model.Identity{
+			InstallID: strings.TrimSpace(req.InstallID),
+			RuntimeID: strings.TrimSpace(req.RuntimeID),
+			BuildID:   strings.TrimSpace(req.BuildID),
+		}
+		resolved, rerr := h.resolver.Resolve(r.Context(), identity)
+		if rerr == nil {
+			cfg := resolved.Config
+			if !cfg.AllowLeaderboardSubmit {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+					"ok": false,
+					"error": map[string]string{
+						"code":    "access_denied",
+						"message": "Leaderboard submission is not allowed for this demo access.",
+					},
+				})
+				return
+			}
+			if cfg.Mode != "full" && req.WaveReached > cfg.MaxWave {
+				w.Header().Set("Content-Type", "application/json")
+				w.WriteHeader(http.StatusForbidden)
+				json.NewEncoder(w).Encode(map[string]any{ //nolint:errcheck
+					"ok": false,
+					"error": map[string]string{
+						"code":    "access_denied",
+						"message": "Wave count exceeds demo limit.",
+					},
+				})
+				return
+			}
+		}
 	}
 
 	// Clamp numeric fields

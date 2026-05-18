@@ -1,0 +1,57 @@
+version: "3.9"
+
+services:
+  leaderboard-api:
+    build:
+      context: ./leaderboard-api
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${API_PORT:-8080}:8080"
+    environment:
+      PORT: "8080"
+      DATABASE_URL: "postgres://td_user:${POSTGRES_PASSWORD:-td_password}@postgres:5432/td_leaderboard?sslmode=disable"
+      CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-http://localhost:3000,http://admin-web}"
+      MAX_LEVEL1_WAVE: "60"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-change-me-now}"
+      DEFAULT_ACCESS_PROFILE: "${DEFAULT_ACCESS_PROFILE:-demo}"
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  admin-web:
+    build:
+      context: ./admin-web
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8080}"
+    restart: unless-stopped
+    ports:
+      - "${ADMIN_WEB_PORT:-3000}:80"
+    depends_on:
+      - leaderboard-api
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: td_user
+      POSTGRES_PASSWORD: "${POSTGRES_PASSWORD:-td_password}"
+      POSTGRES_DB: td_leaderboard
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U td_user -d td_leaderboard"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  postgres_data:

@@ -27,7 +27,11 @@
       "Bash(/Applications/Godot.app/Contents/MacOS/Godot --headless --check-only --script \"res://scripts/towers/tower_catalog_preview.gd\")",
       "Bash(sips -g pixelWidth -g pixelHeight /tmp/tower_catalog_preview.png)",
       "Bash(sips -z 800 600 /tmp/tower_catalog_preview.png --out /tmp/tower_catalog_small.png)",
-      "mcp__ide__getDiagnostics"
+      "mcp__ide__getDiagnostics",
+      "Bash(npm install *)",
+      "Bash(npx tsc *)",
+      "Bash(npx vite *)",
+      "Bash(go build *)"
     ]
   }
 }

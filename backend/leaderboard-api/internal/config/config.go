@@ -6,10 +6,13 @@ import (
 )
 
 type Config struct {
-	Port          string
-	DatabaseURL   string
-	CORSOrigins   string
-	MaxLevel1Wave int
+	Port                 string
+	DatabaseURL          string
+	CORSOrigins          string
+	MaxLevel1Wave        int
+	AdminToken           string
+	DefaultAccessProfile string
+	PublicBaseURL        string
 }
 
 func Load() Config {
@@ -20,10 +23,13 @@ func Load() Config {
 		}
 	}
 	return Config{
-		Port:          getenv("PORT", "8080"),
-		DatabaseURL:   os.Getenv("DATABASE_URL"),
-		CORSOrigins:   getenv("CORS_ALLOWED_ORIGINS", "*"),
-		MaxLevel1Wave: maxWave,
+		Port:                 getenv("PORT", "8080"),
+		DatabaseURL:          os.Getenv("DATABASE_URL"),
+		CORSOrigins:          getenv("CORS_ALLOWED_ORIGINS", "*"),
+		MaxLevel1Wave:        maxWave,
+		AdminToken:           getenv("ADMIN_TOKEN", "change-me-now"),
+		DefaultAccessProfile: getenv("DEFAULT_ACCESS_PROFILE", "demo"),
+		PublicBaseURL:        os.Getenv("PUBLIC_BASE_URL"),
 	}
 }
 

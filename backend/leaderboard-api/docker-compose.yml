@@ -11,6 +11,9 @@ services:
       DATABASE_URL: "postgres://lb_user:${POSTGRES_PASSWORD}@postgres:5432/leaderboard?sslmode=disable"
       CORS_ALLOWED_ORIGINS: "${CORS_ALLOWED_ORIGINS:-*}"
       MAX_LEVEL1_WAVE: "60"
+      ADMIN_TOKEN: "${ADMIN_TOKEN:-change-me-now}"
+      DEFAULT_ACCESS_PROFILE: "${DEFAULT_ACCESS_PROFILE:-demo}"
+      PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-}"
     depends_on:
       postgres:
         condition: service_healthy

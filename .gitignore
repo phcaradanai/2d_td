@@ -11,3 +11,16 @@ Thumbs.db
 # Build artifacts
 builds/
 export/
+
+# Node / Frontend
+node_modules/
+dist/
+*.tsbuildinfo
+
+# Go backend
+/backend/leaderboard-api/server
+
+# Environment / secrets
+.env
+.env.local
+.env.*.local
