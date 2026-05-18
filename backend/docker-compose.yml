@@ -7,7 +7,7 @@ services:
       dockerfile: Dockerfile
     restart: unless-stopped
     ports:
-      - "${API_PORT:-8080}:8080"
+      - "${API_PORT:-8080}"
     environment:
       PORT: "8080"
       DATABASE_URL: "postgres://td_user:${POSTGRES_PASSWORD:-td_password}@postgres:5432/td_leaderboard?sslmode=disable"
@@ -34,7 +34,7 @@ services:
         VITE_API_BASE_URL: "${VITE_API_BASE_URL:-http://localhost:8080}"
     restart: unless-stopped
     ports:
-      - "${ADMIN_WEB_PORT:-3000}:80"
+      - "${ADMIN_WEB_PORT:-3000}"
     depends_on:
       - leaderboard-api
 
