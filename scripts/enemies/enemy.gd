@@ -2522,7 +2522,11 @@ func flash_body() -> void:
 	)
 
 func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
-	if not SHOW_FLOATING_DAMAGE_NUMBERS:
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("allow_floating_damage_number"):
+		if not perf_service.allow_floating_damage_number():
+			return
+	elif not SHOW_FLOATING_DAMAGE_NUMBERS:
 		return
 	# Budget cap — skip new labels when too many are already alive.
 	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
@@ -2711,6 +2715,9 @@ func _spawn_bleed_particle() -> void:
 	p.global_position = global_position + offset
 
 func _spawn_impact_particle(color: Color) -> void:
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("get_budget") and not bool(perf_service.get_budget("allow_minor_impacts")):
+		return
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = get_tree().current_scene
 	

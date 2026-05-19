@@ -63,10 +63,11 @@ func _process(delta: float) -> void:
 
 func _refresh_label() -> void:
 	var pb: Node = get_node_or_null("/root/PerformanceBudget")
+	var pbs: Node = get_node_or_null("/root/PerformanceBudgetService")
 
 	var fps  := Engine.get_frames_per_second()
 	var f_ms := 1000.0 / maxf(float(fps), 1.0)
-	var qual : String = pb.get_quality_name() if pb else "?"
+	var qual : String = pbs.get_quality_name() if pbs and pbs.has_method("get_quality_name") else (pb.get_quality_name() if pb else "?")
 
 	# Node group sizes (get_nodes_in_group is O(n) but only called at 0.25 s intervals).
 	var creep_count  := get_tree().get_nodes_in_group("enemies").size()
@@ -76,14 +77,18 @@ func _refresh_label() -> void:
 
 	var atk_vfx := AttackVFX._active_count
 	var dmg_num := DamageNumber._active_count
+	var status_icons := get_tree().get_nodes_in_group("status_icons").size()
 
 	# Godot process time from the performance monitor (microseconds → ms).
 	var proc_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
+	var physics_ms := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
+	var draw_calls := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+	var atk_budget := int(pbs.get_budget("max_attack_vfx_active")) if pbs and pbs.has_method("get_budget") else AttackVFX.MAX_ACTIVE
 
 	# Colour helpers.
 	var c_fps  := "00ff88" if fps >= 50 else ("ffcc00" if fps >= 35 else "ff4444")
-	var c_qual := "00ccff" if qual == "HIGH" else ("ffcc00" if qual == "MED" else "ff4444")
-	var c_avfx := "00ff88" if atk_vfx < AttackVFX.MAX_ACTIVE * 0.8 else ("ffcc00" if atk_vfx < AttackVFX.MAX_ACTIVE else "ff4444")
+	var c_qual := "00ccff" if qual == "HIGH" else ("ffcc00" if qual == "BALANCED" or qual == "MED" else "ff4444")
+	var c_avfx := "00ff88" if atk_vfx < atk_budget * 0.8 else ("ffcc00" if atk_vfx < atk_budget else "ff4444")
 	var c_dn   := "00ff88" if dmg_num < DamageNumber.MAX_ACTIVE * 0.8 else ("ffcc00" if dmg_num < DamageNumber.MAX_ACTIVE else "ff4444")
 
 	_label.text = (
@@ -91,15 +96,18 @@ func _refresh_label() -> void:
 		+ "──────────────────────\n"
 		+ "[color=#%s]FPS  %d  (%.1f ms)[/color]\n" % [c_fps, fps, f_ms]
 		+ "Process  [color=#ffee88]%.2f ms[/color]\n" % proc_ms
+		+ "Physics  [color=#ffee88]%.2f ms[/color]\n" % physics_ms
+		+ "Draws    [color=#ffffff]%d[/color]\n" % draw_calls
 		+ "Quality  [color=#%s]%s[/color]\n" % [c_qual, qual]
 		+ "──────────────────────\n"
 		+ "Creeps        [color=#ffffff]%d[/color]\n" % creep_count
 		+ "Towers        [color=#ffffff]%d[/color]\n" % tower_count
 		+ "Projectiles   [color=#ffffff]%d[/color]\n" % proj_count
 		+ "──────────────────────\n"
-		+ "Attack VFX    [color=#%s]%d / %d[/color]\n" % [c_avfx, atk_vfx, AttackVFX.MAX_ACTIVE]
+		+ "Attack VFX    [color=#%s]%d / %d[/color]\n" % [c_avfx, atk_vfx, atk_budget]
 		+ "Dmg Numbers   [color=#%s]%d / %d[/color]\n" % [c_dn, dmg_num, DamageNumber.MAX_ACTIVE]
 		+ "Status VFX    [color=#ffffff]%d[/color]\n" % get_tree().get_nodes_in_group("status_vfx").size()
+		+ "Status Icons   [color=#ffffff]%d[/color]\n" % status_icons
 		+ "──────────────────────\n"
 		+ "[color=#555555]Verbose targeting off\n"
 		+ "Verbose combat    off[/color]"

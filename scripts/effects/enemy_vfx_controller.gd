@@ -352,6 +352,9 @@ func _on_enemy_modifier_changed(enemy: Node, modifier_name: String, value: Varia
 		play_runner_burst()
 
 func _spawn_impact(mode: String, color: Color, duration: float, amount: float = 0.0, debug_text: String = "") -> void:
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("get_budget") and not bool(perf_service.get_budget("allow_minor_impacts")):
+		return
 	var impact = ImpactScript.new()
 	impact.name = "ImpactVFX"
 	if mode == "split_burst":

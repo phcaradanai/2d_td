@@ -1306,6 +1306,10 @@ func _perform_aura_attack() -> void:
 	var secondary_color := _get_aura_secondary_color()
 	var accent_color := _get_aura_accent_color()
 	var quality_name := _get_fx_quality_name()
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	var allow_minor_impacts := true
+	if perf_service != null and perf_service.has_method("get_budget"):
+		allow_minor_impacts = bool(perf_service.get_budget("allow_minor_impacts"))
 	var toxic_vfx_spawned := 0
 	var toxic_vfx_limit := _get_toxic_vfx_limit(quality_name)
 	
@@ -1313,14 +1317,14 @@ func _perform_aura_attack() -> void:
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = get_tree().current_scene
 	
-	if visual_type == "sawblade":
+	if allow_minor_impacts and visual_type == "sawblade":
 		var effect = Node2D.new()
 		effect.set_script(load("res://scripts/effects/sawblade_aoe_effect.gd"))
 		container.add_child(effect)
 		effect.global_position = global_position
 		if effect.has_method("setup"):
 			effect.setup(tower_color, attack_range)
-	elif visual_type in ["support_halo", "void_orb", "ember_bloom", "root_cage",
+	elif allow_minor_impacts and visual_type in ["support_halo", "void_orb", "ember_bloom", "root_cage",
 			"voodoo_totem", "chaos_orb", "void_vortex", "void_flower",
 			"spore_cap", "toxin_vial", "bio_vine", "storm_turbine"]:
 		# These aura types must NOT use a giant scaled muzzle flash.
@@ -1357,7 +1361,7 @@ func _perform_aura_attack() -> void:
 				container.add_child(av_node)
 				av_node.setup(av_type, get_muzzle_global_position(),
 						get_target_hit_anchor_global_position(_nearest), tower_color)
-	elif muzzle_flash_scene:
+	elif allow_minor_impacts and muzzle_flash_scene:
 		var flash = muzzle_flash_scene.instantiate()
 		container.add_child(flash)
 		flash.global_position = get_muzzle_global_position()
@@ -1380,14 +1384,14 @@ func _perform_aura_attack() -> void:
 			_apply_attack_status_effects_to_enemy(enemy)
 
 			if aura_vfx_type == "toxic_bloom":
-				if toxic_vfx_spawned < toxic_vfx_limit:
+				if allow_minor_impacts and toxic_vfx_spawned < toxic_vfx_limit:
 					_spawn_disease_attack_vfx(enemy_pos, container, tower_color, secondary_color, accent_color, quality_name)
 					toxic_vfx_spawned += 1
 				continue
 				
 			# Small impact effect on each enemy
 			var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
-			if impact_scene:
+			if allow_minor_impacts and impact_scene:
 				var effect = impact_scene.instantiate()
 				var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 				if effects_container:

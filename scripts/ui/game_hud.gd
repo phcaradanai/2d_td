@@ -13,6 +13,9 @@ signal target_mode_changed(mode: String)
 signal main_menu_requested()
 signal audio_settings_changed(settings: Dictionary)
 signal display_settings_changed(settings: Dictionary)
+signal performance_settings_changed(settings: Dictionary)
+signal settings_requested()
+signal pause_level_select_requested()
 signal reset_audio_requested()
 signal next_level_requested()
 signal back_to_map_requested()
@@ -91,6 +94,9 @@ var sell_tower_button: Button = null
 @onready var center_restart_button: Button = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterRestartButton
 @onready var center_next_level_button: Button = get_node_or_null("Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterNextLevelButton")
 @onready var center_menu_button: Button = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterMenuButton
+var center_settings_button: Button = null
+var center_level_select_button: Button = null
+var return_level_select_confirm_panel: PanelContainer = null
 
 # Summary Stats
 @onready var stats_container: VBoxContainer = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/StatsContainer
@@ -123,6 +129,11 @@ var current_ui_state: HUDState = HUDState.GAMEPLAY
 @onready var reset_audio_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/ResetAudioButton
 @onready var close_settings_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/CloseSettingsButton
 var window_mode_option_button: OptionButton = null
+var visual_quality_option_button: OptionButton = null
+var attack_vfx_option_button: OptionButton = null
+var floating_damage_option_button: OptionButton = null
+var status_effects_option_button: OptionButton = null
+var screen_shake_option_button: OptionButton = null
 
 # Wave Intel Panel
 var wave_intel_panel: PanelContainer = null
@@ -352,13 +363,21 @@ var _display_mode_options: Array[Dictionary] = [
 ]
 var _selected_window_mode: String = "borderless"
 var updating_display_ui: bool = false
+var updating_performance_ui: bool = false
+var _performance_settings := {
+	"visual_quality": "auto",
+	"attack_vfx": "normal",
+	"floating_damage_numbers": "off",
+	"status_effects": "icons_only",
+	"screen_shake": "off",
+}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
 	
 	start_wave_button.pressed.connect(func(): start_wave_requested.emit())
 	_configure_start_wave_button_layout()
-	settings_button.pressed.connect(func(): set_panel_active(settings_panel, true, true))
+	settings_button.pressed.connect(func(): settings_requested.emit())
 	pause_button.pressed.connect(func(): pause_requested.emit())
 	
 	restart_button.pressed.connect(_on_restart_pressed)
@@ -401,6 +420,8 @@ func _ready() -> void:
 			
 	if center_next_level_button:
 		center_next_level_button.pressed.connect(func(): next_level_requested.emit())
+	_ensure_pause_navigation_buttons()
+	_ensure_return_to_level_select_confirm()
 	
 	center_menu_button.pressed.connect(func(): 
 		if center_menu_button.text == "Main Menu":
@@ -1205,6 +1226,50 @@ func _refresh_window_mode_options() -> void:
 	window_mode_option_button.select(selected_index)
 	updating_display_ui = false
 
+func set_performance_settings_ui(settings: Dictionary) -> void:
+	updating_performance_ui = true
+	for key in _performance_settings.keys():
+		if settings.has(key):
+			_performance_settings[key] = str(settings[key])
+	_refresh_performance_options()
+	updating_performance_ui = false
+
+func _on_performance_option_selected(_index: int, key: String, option_button: OptionButton) -> void:
+	if updating_performance_ui or option_button == null:
+		return
+	_performance_settings[key] = str(option_button.get_item_metadata(option_button.selected))
+	performance_settings_changed.emit(_performance_settings.duplicate(true))
+
+func _refresh_performance_options() -> void:
+	_select_option_metadata(visual_quality_option_button, str(_performance_settings.get("visual_quality", "auto")))
+	_select_option_metadata(attack_vfx_option_button, str(_performance_settings.get("attack_vfx", "normal")))
+	_select_option_metadata(floating_damage_option_button, str(_performance_settings.get("floating_damage_numbers", "off")))
+	_select_option_metadata(status_effects_option_button, str(_performance_settings.get("status_effects", "icons_only")))
+	_select_option_metadata(screen_shake_option_button, str(_performance_settings.get("screen_shake", "off")))
+
+func _select_option_metadata(option_button: OptionButton, metadata: String) -> void:
+	if option_button == null:
+		return
+	for i in range(option_button.item_count):
+		if str(option_button.get_item_metadata(i)) == metadata:
+			option_button.select(i)
+			return
+	option_button.select(0)
+
+func _make_settings_option_row(label_text: String, option_defs: Array, key: String) -> Array:
+	var label := Label.new()
+	label.text = label_text
+	NeonStyle.apply_terminal_label(label, 12, NeonStyle.INK_2)
+	var option := OptionButton.new()
+	option.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	option.custom_minimum_size = Vector2(220, 32)
+	for i in range(option_defs.size()):
+		var def: Array = option_defs[i]
+		option.add_item(str(def[1]))
+		option.set_item_metadata(i, str(def[0]))
+	option.item_selected.connect(_on_performance_option_selected.bind(key, option))
+	return [label, option]
+
 func _setup_settings_panel() -> void:
 	if not is_instance_valid(settings_panel):
 		return
@@ -1259,6 +1324,40 @@ func _setup_settings_panel() -> void:
 	vbox.add_child(display_grid)
 	vbox.move_child(display_grid, 3)
 	_refresh_window_mode_options()
+
+	var perf_hdr := _make_settings_section_header("PERFORMANCE")
+	vbox.add_child(perf_hdr)
+	vbox.move_child(perf_hdr, 4)
+
+	var perf_grid := GridContainer.new()
+	perf_grid.name = "PerformanceSettingsGrid"
+	perf_grid.columns = 2
+	perf_grid.add_theme_constant_override("h_separation", 14)
+	perf_grid.add_theme_constant_override("v_separation", 6)
+
+	var visual_row := _make_settings_option_row("Visual Quality", [["auto", "Auto"], ["low", "Low"], ["balanced", "Balanced"], ["high", "High"]], "visual_quality")
+	visual_quality_option_button = visual_row[1]
+	perf_grid.add_child(visual_row[0])
+	perf_grid.add_child(visual_quality_option_button)
+	var attack_row := _make_settings_option_row("Attack VFX", [["minimal", "Minimal"], ["normal", "Normal"], ["full", "Full"]], "attack_vfx")
+	attack_vfx_option_button = attack_row[1]
+	perf_grid.add_child(attack_row[0])
+	perf_grid.add_child(attack_vfx_option_button)
+	var damage_row := _make_settings_option_row("Floating Damage Numbers", [["off", "Off"], ["limited", "Limited"], ["full", "Full"]], "floating_damage_numbers")
+	floating_damage_option_button = damage_row[1]
+	perf_grid.add_child(damage_row[0])
+	perf_grid.add_child(floating_damage_option_button)
+	var status_row := _make_settings_option_row("Status Effects", [["icons_only", "Icons Only"], ["icons_minimal_pulse", "Icons + Minimal Pulse"]], "status_effects")
+	status_effects_option_button = status_row[1]
+	perf_grid.add_child(status_row[0])
+	perf_grid.add_child(status_effects_option_button)
+	var shake_row := _make_settings_option_row("Screen Shake", [["off", "Off"], ["minimal", "Minimal"], ["full", "Full"]], "screen_shake")
+	screen_shake_option_button = shake_row[1]
+	perf_grid.add_child(shake_row[0])
+	perf_grid.add_child(screen_shake_option_button)
+	vbox.add_child(perf_grid)
+	vbox.move_child(perf_grid, 5)
+	_refresh_performance_options()
 
 	# ── Style GridContainer (sliders + mute checks) ───────────────────────────
 	var grid: GridContainer = $Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer
@@ -3309,12 +3408,15 @@ func set_paused(paused: bool) -> void:
 		pause_button.text = "Resume"
 		set_status("Paused")
 		show_center_message("PAUSED", true)
+		_set_pause_navigation_visible(true)
 		if dim_overlay:
 			dim_overlay.show()
 			dim_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	else:
 		current_ui_state = HUDState.GAMEPLAY
 		pause_button.text = "Pause"
+		_set_pause_navigation_visible(false)
+		_hide_return_to_level_select_confirm()
 		hide_center_message()
 		if dim_overlay:
 			dim_overlay.hide()
@@ -3729,6 +3831,7 @@ func show_center_message(title: String, show_buttons: bool = true) -> void:
 	center_restart_button.visible = show_buttons
 	if center_next_level_button:
 		center_next_level_button.hide()
+	_set_pause_navigation_visible(show_buttons and get_tree().paused)
 	
 	# If paused, this button should go to Menu, else it's "Back to Map" from summary
 	center_menu_button.text = "Main Menu" if get_tree().paused else "Back to Map"
@@ -3736,6 +3839,113 @@ func show_center_message(title: String, show_buttons: bool = true) -> void:
 
 func hide_center_message() -> void:
 	set_panel_active(center_message_panel, false)
+	_set_pause_navigation_visible(false)
+
+func _ensure_pause_navigation_buttons() -> void:
+	var container = center_restart_button.get_parent()
+	if container == null:
+		return
+	if center_settings_button == null:
+		center_settings_button = Button.new()
+		center_settings_button.name = "CenterSettingsButton"
+		center_settings_button.text = "Settings"
+		center_settings_button.custom_minimum_size = Vector2(240, 44)
+		center_settings_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		center_settings_button.pressed.connect(func(): settings_requested.emit())
+		container.add_child(center_settings_button)
+		container.move_child(center_settings_button, center_restart_button.get_index() + 1)
+	if center_level_select_button == null:
+		center_level_select_button = Button.new()
+		center_level_select_button.name = "CenterLevelSelectButton"
+		center_level_select_button.text = "Back to Level Select"
+		center_level_select_button.custom_minimum_size = Vector2(240, 44)
+		center_level_select_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		center_level_select_button.pressed.connect(show_return_to_level_select_confirm)
+		container.add_child(center_level_select_button)
+		container.move_child(center_level_select_button, center_settings_button.get_index() + 1)
+	NeonStyle.style_button(center_settings_button, NeonStyle.CYAN, false)
+	NeonStyle.style_button(center_level_select_button, NeonStyle.WARN, false)
+	_set_pause_navigation_visible(false)
+
+func _set_pause_navigation_visible(visible_value: bool) -> void:
+	if center_settings_button:
+		center_settings_button.visible = visible_value
+	if center_level_select_button:
+		center_level_select_button.visible = visible_value
+
+func _ensure_return_to_level_select_confirm() -> void:
+	if return_level_select_confirm_panel != null:
+		return
+	var root_node := get_node_or_null("Root")
+	if root_node == null:
+		return
+	return_level_select_confirm_panel = PanelContainer.new()
+	return_level_select_confirm_panel.name = "ReturnLevelSelectConfirmPanel"
+	return_level_select_confirm_panel.process_mode = Node.PROCESS_MODE_ALWAYS
+	return_level_select_confirm_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	return_level_select_confirm_panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.BG_1, NeonStyle.WARN, true))
+	return_level_select_confirm_panel.set_anchors_and_offsets_preset(Control.PRESET_CENTER)
+	return_level_select_confirm_panel.custom_minimum_size = Vector2(430, 220)
+	return_level_select_confirm_panel.offset_left = -215
+	return_level_select_confirm_panel.offset_top = -110
+	return_level_select_confirm_panel.offset_right = 215
+	return_level_select_confirm_panel.offset_bottom = 110
+	root_node.add_child(return_level_select_confirm_panel)
+
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 20)
+	margin.add_theme_constant_override("margin_right", 20)
+	margin.add_theme_constant_override("margin_top", 18)
+	margin.add_theme_constant_override("margin_bottom", 18)
+	return_level_select_confirm_panel.add_child(margin)
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 12)
+	margin.add_child(vbox)
+	var title := Label.new()
+	title.text = "Return to Level Select?"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	NeonStyle.apply_terminal_label(title, 17, NeonStyle.WARN, true)
+	vbox.add_child(title)
+	var body := Label.new()
+	body.text = "Current wave progress will be lost."
+	body.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	NeonStyle.apply_terminal_label(body, 13, NeonStyle.INK_2)
+	vbox.add_child(body)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	vbox.add_child(row)
+	var cancel_btn := Button.new()
+	cancel_btn.name = "CancelButton"
+	cancel_btn.text = "Cancel"
+	cancel_btn.custom_minimum_size = Vector2(150, 38)
+	cancel_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	NeonStyle.style_button(cancel_btn, NeonStyle.INK_3, false)
+	cancel_btn.pressed.connect(_hide_return_to_level_select_confirm)
+	row.add_child(cancel_btn)
+	var return_btn := Button.new()
+	return_btn.name = "ReturnButton"
+	return_btn.text = "Return"
+	return_btn.custom_minimum_size = Vector2(150, 38)
+	return_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	NeonStyle.style_button(return_btn, NeonStyle.WARN, true)
+	return_btn.pressed.connect(func():
+		_hide_return_to_level_select_confirm()
+		pause_level_select_requested.emit())
+	row.add_child(return_btn)
+	return_level_select_confirm_panel.hide()
+
+func show_return_to_level_select_confirm() -> void:
+	_ensure_return_to_level_select_confirm()
+	if return_level_select_confirm_panel:
+		return_level_select_confirm_panel.show()
+		var cancel_btn := return_level_select_confirm_panel.get_node_or_null("MarginContainer/VBoxContainer/HBoxContainer/CancelButton")
+		if cancel_btn is Control:
+			(cancel_btn as Control).grab_focus()
+
+func _hide_return_to_level_select_confirm() -> void:
+	if return_level_select_confirm_panel:
+		return_level_select_confirm_panel.hide()
 
 func show_game_over() -> void:
 	set_status("Game Over")

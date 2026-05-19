@@ -17,6 +17,13 @@ var save_data: Dictionary = {
 		},
 		"display": {
 			"window_mode": "borderless"
+		},
+		"performance": {
+			"visual_quality": "auto",
+			"attack_vfx": "normal",
+			"floating_damage_numbers": "off",
+			"status_effects": "icons_only",
+			"screen_shake": "off"
 		}
 	}
 }
@@ -214,6 +221,21 @@ func update_display_settings(settings: Dictionary) -> void:
 	save_data["settings"]["display"] = settings
 	save_to_disk()
 
+func get_performance_settings() -> Dictionary:
+	if not save_data["settings"].has("performance"):
+		save_data["settings"]["performance"] = {
+			"visual_quality": "auto",
+			"attack_vfx": "normal",
+			"floating_damage_numbers": "off",
+			"status_effects": "icons_only",
+			"screen_shake": "off"
+		}
+	return save_data["settings"]["performance"]
+
+func update_performance_settings(settings: Dictionary) -> void:
+	save_data["settings"]["performance"] = settings
+	save_to_disk()
+
 func clear_save() -> void:
 	save_data = {
 		"player_name": "Player",
@@ -230,6 +252,13 @@ func clear_save() -> void:
 			},
 			"display": {
 				"window_mode": "borderless"
+			},
+			"performance": {
+				"visual_quality": "auto",
+				"attack_vfx": "normal",
+				"floating_damage_numbers": "off",
+				"status_effects": "icons_only",
+				"screen_shake": "off"
 			}
 		}
 	}

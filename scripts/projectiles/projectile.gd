@@ -118,6 +118,7 @@ func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_
 	_apply_generic_projectile_visual_mode()
 
 func _ready() -> void:
+	add_to_group("projectiles")
 	_apply_generic_projectile_visual_mode()
 
 func _apply_generic_projectile_visual_mode() -> void:
@@ -478,6 +479,9 @@ func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angl
 			effect.setup(color, scale_val, attack_type, vfx_glow_color, vfx_accent_color)
 
 func _allow_impact_fx() -> bool:
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("get_budget"):
+		return bool(perf_service.get_budget("allow_minor_impacts"))
 	var pb := get_node_or_null("/root/PerformanceBudget")
 	if pb != null and pb.has_method("get_quality_name"):
 		return str(pb.get_quality_name()) != "LOW"
@@ -614,6 +618,10 @@ func _spawn_elemental_debug_text(hit_pos: Vector2, info: Dictionary) -> void:
 		return
 	if not _claim_elemental_debug_text_slot():
 		return
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("allow_floating_damage_number"):
+		if not perf_service.allow_floating_damage_number():
+			return
 	var text := str(info.get("text", ""))
 	if text == "":
 		return

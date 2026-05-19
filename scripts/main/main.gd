@@ -21,6 +21,9 @@ const GAMEPLAY_CONTROLLER_BINDER_SCRIPT = preload("res://scripts/main/gameplay_c
 const DAMAGE_STATS_TRACKER_SCRIPT = preload("res://scripts/core/damage_stats_tracker.gd")
 const COMBAT_AUDIO_SERVICE_SCRIPT = preload("res://scripts/services/combat_audio_service.gd")
 const DISPLAY_MODE_SERVICE_SCRIPT = preload("res://scripts/services/display_mode_service.gd")
+const SETTINGS_SERVICE_SCRIPT = preload("res://scripts/services/settings_service.gd")
+const SCENE_NAVIGATION_SERVICE_SCRIPT = preload("res://scripts/services/scene_navigation_service.gd")
+const SETTINGS_MENU_SCENE = preload("res://scenes/ui/settings_menu.tscn")
 const LEVEL_ACCESS_SERVICE_SCRIPT  = preload("res://scripts/services/level_access_service.gd")
 const REMOTE_ACCESS_CONFIG_PATH    = "res://scripts/services/remote_access_config_service.gd"
 const RUNTIME_IDENTITY_PATH        = "res://scripts/services/runtime_identity_service.gd"
@@ -127,6 +130,9 @@ var sandbox_layer: CanvasLayer = null
 var sandbox_panel: PanelContainer = null
 var combat_audio_service: Node = null
 var display_mode_service: Node = null
+var settings_service: Node = null
+var scene_navigation_service: Node = null
+var settings_menu: CanvasLayer = null
 var runtime_identity_service: Node = null     # [Identity] Stable install/session/runtime IDs
 var level_access_service: Node = null         # [DemoGate] Level/wave access control
 var remote_access_config_service: Node = null # [DemoGate] Remote OTA config fetcher
@@ -196,6 +202,41 @@ func _ready() -> void:
 	display_mode_service.apply_settings(display_settings, false)
 	if game_hud and game_hud.has_method("set_display_settings_ui"):
 		game_hud.set_display_settings_ui(display_mode_service.get_current_settings())
+
+	var performance_budget_service := get_node_or_null("/root/PerformanceBudgetService")
+	if performance_budget_service:
+		var performance_settings: Dictionary = save_manager.get_performance_settings() if save_manager and save_manager.has_method("get_performance_settings") else performance_budget_service.get_default_settings()
+		performance_budget_service.apply_settings(performance_settings)
+		if game_hud and game_hud.has_method("set_performance_settings_ui"):
+			game_hud.set_performance_settings_ui(performance_budget_service.get_settings())
+
+	settings_service = SETTINGS_SERVICE_SCRIPT.new()
+	settings_service.name = "SettingsService"
+	add_child(settings_service)
+	settings_service.bind({
+		"save_manager": save_manager,
+		"audio_manager": audio_manager,
+		"display_mode_service": display_mode_service,
+		"performance_budget_service": performance_budget_service,
+	})
+	settings_service.load_and_apply()
+
+	settings_menu = SETTINGS_MENU_SCENE.instantiate()
+	settings_menu.name = "SettingsMenu"
+	add_child(settings_menu)
+	if settings_menu.has_method("bind_settings_service"):
+		settings_menu.bind_settings_service(settings_service)
+
+	scene_navigation_service = SCENE_NAVIGATION_SERVICE_SCRIPT.new()
+	scene_navigation_service.name = "SceneNavigationService"
+	add_child(scene_navigation_service)
+	scene_navigation_service.bind({
+		"go_to_main_menu": Callable(self, "return_to_menu"),
+		"go_to_level_select": Callable(self, "_on_level_select_requested"),
+		"restart_current_level": Callable(self, "restart_level"),
+		"stop_auto_next_wave_countdown": Callable(self, "_stop_auto_next_wave_countdown"),
+		"clear_transient_combat_ui": Callable(self, "_clear_transient_combat_ui"),
+	})
 
 	# [Identity] Runtime identity — stable install_id + fresh session_id each launch.
 	var _ris_script = load(RUNTIME_IDENTITY_PATH)
@@ -881,6 +922,8 @@ func _connect_signals() -> void:
 		# [MetaLayer] New meta-progression menu signals
 		main_menu.new_game_pressed.connect(_on_new_game_pressed)
 		main_menu.continue_pressed.connect(_on_continue_requested)
+		if main_menu.has_signal("settings_pressed"):
+			main_menu.settings_pressed.connect(_on_settings_requested)
 		main_menu.leaderboard_pressed.connect(_on_leaderboard_from_menu_requested)
 		main_menu.quit_pressed.connect(func(): get_tree().quit())
 
@@ -897,6 +940,10 @@ func _connect_signals() -> void:
 		game_hud.cancel_build_requested.connect(_on_cancel_build_requested)
 		game_hud.pause_requested.connect(_on_pause_requested)
 		game_hud.restart_requested.connect(restart_level)
+		if game_hud.has_signal("settings_requested"):
+			game_hud.settings_requested.connect(_on_settings_requested)
+		if game_hud.has_signal("pause_level_select_requested"):
+			game_hud.pause_level_select_requested.connect(_on_pause_level_select_requested)
 		game_hud.upgrade_tower_requested.connect(_on_upgrade_tower_requested)
 		game_hud.sell_tower_requested.connect(_on_sell_tower_requested)
 		if game_hud.has_signal("element_choice_requested"):
@@ -909,6 +956,8 @@ func _connect_signals() -> void:
 		game_hud.audio_settings_changed.connect(_on_audio_settings_changed)
 		if game_hud.has_signal("display_settings_changed"):
 			game_hud.display_settings_changed.connect(_on_display_settings_changed)
+		if game_hud.has_signal("performance_settings_changed"):
+			game_hud.performance_settings_changed.connect(_on_performance_settings_changed)
 		game_hud.reset_audio_requested.connect(_on_reset_audio_requested)
 
 	if debug_panel:
@@ -1246,6 +1295,22 @@ func _on_level_select_back() -> void:
 	_clear_route_preview()
 	_play_ui_click()
 
+func _on_settings_requested() -> void:
+	if settings_menu and settings_menu.has_method("open"):
+		settings_menu.open()
+	_play_ui_click()
+
+func _on_pause_level_select_requested() -> void:
+	_stop_auto_next_wave_countdown()
+	_clear_gameplay_state()
+	if scene_navigation_service and scene_navigation_service.has_method("go_to_level_select_safe"):
+		scene_navigation_service.go_to_level_select_safe()
+	else:
+		_clear_transient_combat_ui()
+		_resume_game()
+		_on_level_select_requested()
+	_play_ui_click()
+
 func _on_leaderboard_requested(level_id: String) -> void:
 	if leaderboard_panel == null:
 		var canvas_layer = CanvasLayer.new()
@@ -1398,6 +1463,18 @@ func _clear_gameplay_state() -> void:
 		_setup_hero_ui()
 	elif hero_panel:
 		hero_panel.hide()
+
+func _clear_transient_combat_ui() -> void:
+	_clear_route_preview()
+	if settings_menu:
+		settings_menu.hide()
+	if game_hud:
+		if game_hud.has_method("set_paused"):
+			game_hud.set_paused(false)
+		if game_hud.has_method("hide_center_message"):
+			game_hud.hide_center_message()
+		if game_hud.has_method("clear_wave_intel"):
+			game_hud.clear_wave_intel()
 
 func _setup_hero_ui() -> void:
 	if hero_panel:
@@ -2406,6 +2483,17 @@ func _on_display_mode_service_changed(settings: Dictionary) -> void:
 		game_hud.set_display_settings_ui(settings)
 	if save_manager:
 		save_manager.update_display_settings(settings)
+
+func _on_performance_settings_changed(settings: Dictionary) -> void:
+	var performance_budget_service := get_node_or_null("/root/PerformanceBudgetService")
+	var applied_settings := settings
+	if performance_budget_service:
+		performance_budget_service.apply_settings(settings)
+		applied_settings = performance_budget_service.get_settings()
+	if save_manager and save_manager.has_method("update_performance_settings"):
+		save_manager.update_performance_settings(applied_settings)
+	if game_hud and game_hud.has_method("set_performance_settings_ui"):
+		game_hud.set_performance_settings_ui(applied_settings)
 
 func _play_ui_click() -> void:
 	if audio_manager:

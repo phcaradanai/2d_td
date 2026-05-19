@@ -2,6 +2,7 @@ extends CanvasLayer
 
 signal new_game_pressed()
 signal continue_pressed()
+signal settings_pressed()
 signal leaderboard_pressed()
 signal quit_pressed()
 
@@ -14,6 +15,7 @@ const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 @onready var player_name_input: LineEdit = $Root/NameContainer/PlayerNameInput
 @onready var play_button: Button = $Root/VBoxContainer/PlayButton
 @onready var continue_button: Button = $Root/VBoxContainer/ContinueButton
+@onready var settings_button: Button = $Root/VBoxContainer/SettingsButton
 @onready var leaderboard_button: Button = $Root/VBoxContainer/LeaderboardButton
 @onready var credits_button: Button = $Root/VBoxContainer/CreditsButton
 @onready var quit_button: Button = $Root/VBoxContainer/QuitButton
@@ -32,6 +34,8 @@ func _ready() -> void:
 
 	if leaderboard_button:
 		leaderboard_button.pressed.connect(func(): leaderboard_pressed.emit())
+	if settings_button:
+		settings_button.pressed.connect(func(): settings_pressed.emit())
 	if credits_button:
 		credits_button.pressed.connect(_on_credits_pressed)
 	if credits_close_button:
@@ -122,7 +126,7 @@ func _apply_neon_terminal_layout() -> void:
 		player_name_input.placeholder_text = "CALLSIGN"
 		NeonStyle.style_line_edit(player_name_input)
 
-	for btn in [play_button, continue_button, leaderboard_button, credits_button, quit_button, credits_close_button]:
+	for btn in [play_button, continue_button, settings_button, leaderboard_button, credits_button, quit_button, credits_close_button]:
 		if btn:
 			NeonStyle.style_button(btn, NeonStyle.CYAN, btn == play_button)
 			btn.custom_minimum_size.y = 44

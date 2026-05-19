@@ -2,7 +2,7 @@
 ## Lightweight status indicator layer attached to each creep.
 ## Reads existing enemy status state — zero new gameplay logic.
 ## All visuals are pure _draw() primitives: no particles, no spawned timers.
-## One Node2D per creep, one _draw() call per frame when active.
+## One Node2D per creep, throttled redraws when active.
 
 extends Node2D
 class_name CreepStatusVFX
@@ -26,7 +26,9 @@ var _t: float = 0.0          # animation clock (advances with delta)
 ## The animation clock (_t) still advances every frame for smooth glyphs.
 ## Immediate re-evaluation is triggered by enemy_modifier_changed signal.
 const VISIBILITY_CHECK_INTERVAL := 0.15
+const ACTIVE_REDRAW_INTERVAL := 0.25
 var _visibility_timer: float = 0.0
+var _redraw_timer: float = 0.0
 
 # ── Setup / teardown ─────────────────────────────────────────────────────────
 
@@ -60,7 +62,10 @@ func _process(delta: float) -> void:
 		_visibility_timer = VISIBILITY_CHECK_INTERVAL
 		visible = _has_any_active()
 	if visible:
-		queue_redraw()   # smooth icon animation while active
+		_redraw_timer -= delta
+		if _redraw_timer <= 0.0:
+			_redraw_timer = ACTIVE_REDRAW_INTERVAL
+			queue_redraw()
 
 # ── State helpers ─────────────────────────────────────────────────────────────
 
@@ -102,8 +107,15 @@ func _draw() -> void:
 		return
 	var st := _read_state()
 
-	_draw_body_ring(st)
+	if _allow_minimal_status_pulse():
+		_draw_body_ring(st)
 	_draw_icons(st)
+
+func _allow_minimal_status_pulse() -> bool:
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("get_budget"):
+		return bool(perf_service.get_budget("allow_continuous_auras"))
+	return false
 
 # ── Body ring (colored arc around enemy silhouette) ───────────────────────────
 

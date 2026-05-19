@@ -104,8 +104,13 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 
 	# Budget cap — skip spawn if too many VFX are already alive.
 	# Gameplay damage/targeting is unaffected; this is a visuals-only guard.
-	if AttackVFX._active_count >= AttackVFX.MAX_ACTIVE:
-		return
+	var perf_service := tower.get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("can_spawn_attack_vfx"):
+		if not perf_service.can_spawn_attack_vfx(AttackVFX._active_count):
+			return
+	else:
+		if AttackVFX._active_count >= AttackVFX.MAX_ACTIVE:
+			return
 
 	var vfx_type := resolve_vfx_type(tower)
 

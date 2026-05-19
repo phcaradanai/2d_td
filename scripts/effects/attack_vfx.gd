@@ -22,6 +22,7 @@ var duration:  float  = 0.12
 
 func _ready() -> void:
 	AttackVFX._active_count += 1
+	add_to_group("attack_vfx")
 
 func setup(p_type: String, p_origin: Vector2, p_target: Vector2,
 		   p_color: Color, p_duration: float = 0.0) -> void:

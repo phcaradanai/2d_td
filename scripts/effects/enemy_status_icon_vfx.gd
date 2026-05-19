@@ -5,6 +5,11 @@ var icon_type: String = "shield"
 var color: Color = Color.WHITE
 var label_text: String = ""
 var time: float = 0.0
+var redraw_elapsed: float = 0.0
+const REDRAW_INTERVAL := 0.25
+
+func _ready() -> void:
+	add_to_group("status_icons")
 
 func setup(p_icon_type: String, p_color: Color, p_label: String = "") -> void:
 	icon_type = p_icon_type
@@ -14,7 +19,10 @@ func setup(p_icon_type: String, p_color: Color, p_label: String = "") -> void:
 
 func _process(delta: float) -> void:
 	time += delta
-	queue_redraw()
+	redraw_elapsed += delta
+	if redraw_elapsed >= REDRAW_INTERVAL:
+		redraw_elapsed = 0.0
+		queue_redraw()
 
 func _draw() -> void:
 	var pulse := 0.65 + sin(time * 6.0) * 0.2
