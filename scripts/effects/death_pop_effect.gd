@@ -13,6 +13,9 @@ func setup(p_mode: String = "default", p_color: Color = Color(1.0, 0.2, 0.2, 0.8
 	particle_count = p_particle_count
 
 func _ready() -> void:
+	if PerformanceFirebreak.disable_death_effects:
+		queue_free()
+		return
 	# Hide legacy ColorRect if it exists
 	var rect = get_node_or_null("ColorRect")
 	if rect: rect.visible = false

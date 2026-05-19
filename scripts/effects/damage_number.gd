@@ -26,6 +26,9 @@ func setup_text(text: String, color: Color = Color.WHITE, font_size: int = 14) -
 	_apply_label_style()
 
 func _ready() -> void:
+	if PerformanceFirebreak.disable_damage_numbers:
+		queue_free()
+		return
 	DamageNumber._active_count += 1
 	if label == null:
 		label = Label.new()

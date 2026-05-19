@@ -10,6 +10,9 @@ var accent_color: Color = Color.WHITE
 var attack_type: String = "single"
 
 func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0, p_attack_type: String = "single", p_glow_color: Color = Color.WHITE, p_accent_color: Color = Color.WHITE) -> void:
+	if PerformanceFirebreak.disable_impact_effects:
+		_on_expire()
+		return
 	color = p_color
 	glow_color = p_glow_color
 	accent_color = p_accent_color
