@@ -61,7 +61,7 @@ func _process(delta: float) -> void:
 	if _visibility_timer <= 0.0:
 		_visibility_timer = VISIBILITY_CHECK_INTERVAL
 		visible = _has_any_active()
-	if visible:
+	if visible and not PerformanceFirebreak.disable_status_animations:
 		_redraw_timer -= delta
 		if _redraw_timer <= 0.0:
 			_redraw_timer = ACTIVE_REDRAW_INTERVAL

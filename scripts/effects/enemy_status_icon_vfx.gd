@@ -19,6 +19,8 @@ func setup(p_icon_type: String, p_color: Color, p_label: String = "") -> void:
 
 func _process(delta: float) -> void:
 	time += delta
+	if PerformanceFirebreak.disable_status_animations:
+		return
 	redraw_elapsed += delta
 	if redraw_elapsed >= REDRAW_INTERVAL:
 		redraw_elapsed = 0.0

@@ -50,7 +50,7 @@ class PreviewFxLayer:
 		queue_redraw()
 
 	func _process(delta: float) -> void:
-		if paused:
+		if paused or PerformanceFirebreak.disable_catalog_vfx:
 			return
 		_pulse_time += delta
 		if _is_support_style():
