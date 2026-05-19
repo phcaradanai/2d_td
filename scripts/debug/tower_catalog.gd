@@ -537,8 +537,8 @@ func _replay_attack_vfx() -> void:
 	vfx_node.set_script(script)
 	vfx_viewport.add_child(vfx_node)
 	vfx_node.setup(
-		_side_dummy_tower.global_position,
-		_side_dummy_target.global_position,
+		_side_dummy_tower.position,
+		_side_dummy_target.position,
 		color
 	)
 	vfx_node.configure({})
