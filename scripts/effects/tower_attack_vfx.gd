@@ -81,7 +81,9 @@ static func resolve_vfx_type(tower: Node2D) -> String:
 
 ## Main entry point.  Call from tower.shoot() in place of spawn_muzzle_flash().
 static func spawn_attack_vfx(tower: Node2D, target: Node2D,
-                              _context: Dictionary = {}) -> void:
+							  _context: Dictionary = {}) -> void:
+	if PerformanceFirebreak.disable_all_attack_vfx:
+		return
 	if not is_instance_valid(tower) or not is_instance_valid(target):
 		return
 

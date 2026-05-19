@@ -54,7 +54,8 @@ func _process(delta: float) -> void:
 		AttackVFX._active_count -= 1
 		queue_free()
 		return
-	queue_redraw()
+	if not PerformanceFirebreak.disable_all_attack_vfx:
+		queue_redraw()
 
 func _draw() -> void:
 	var t   := clampf(elapsed / maxf(duration, 0.001), 0.0, 1.0)

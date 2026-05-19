@@ -4,6 +4,8 @@ class_name TowerAttackVFXService
 extends RefCounted
 
 static func spawn(tower: Node2D, target: Node2D) -> void:
+	if PerformanceFirebreak.disable_all_attack_vfx:
+		return
 	if not is_instance_valid(tower) or not is_instance_valid(target):
 		return
 	if not TowerAttackVFXPool.can_spawn():
