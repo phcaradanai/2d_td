@@ -2532,6 +2532,7 @@ func flash_body() -> void:
 	)
 
 func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
+	if PerformanceFirebreak.disable_damage_numbers: return
 	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("allow_floating_damage_number"):
 		if not perf_service.allow_floating_damage_number():
@@ -2613,17 +2614,18 @@ func _clear_disrupted_towers() -> void:
 		vfx_controller.clear_all_disrupted_towers()
 
 func spawn_death_effect(death_global: Vector2) -> void:
-	if death_pop_scene:
-		var effect = death_pop_scene.instantiate()
-		if effect.has_method("setup"):
-			if enemy_type == "swarm" or tags.has("swarm"):
-				# [VISUAL-OPT] Duration reduced 0.52→0.32 for snappier, cheaper swarm death.
-				effect.setup("swarm_death", swarm_core_glow_color, 0.32, swarm_death_particle_count)
-			else:
-				# [VISUAL-OPT] Explicit low particle count for all non-swarm deaths.
-				effect.setup("default", Color(0.9, 0.9, 0.9, 0.8), 0.28, 4)
-		get_tree().current_scene.add_child(effect)
-		effect.global_position = death_global
+	if not PerformanceFirebreak.disable_death_effects:
+		if death_pop_scene:
+			var effect = death_pop_scene.instantiate()
+			if effect.has_method("setup"):
+				if enemy_type == "swarm" or tags.has("swarm"):
+					# [VISUAL-OPT] Duration reduced 0.52→0.32 for snappier, cheaper swarm death.
+					effect.setup("swarm_death", swarm_core_glow_color, 0.32, swarm_death_particle_count)
+				else:
+					# [VISUAL-OPT] Explicit low particle count for all non-swarm deaths.
+					effect.setup("default", Color(0.9, 0.9, 0.9, 0.8), 0.28, 4)
+			get_tree().current_scene.add_child(effect)
+			effect.global_position = death_global
 
 func reach_base() -> void:
 	if reached_base_flag: return
@@ -2664,6 +2666,7 @@ func _trigger_swarm_hit_reaction() -> void:
 func _spawn_swarm_hit_effect(hit_global: Vector2) -> void:
 	if death_pop_scene == null:
 		return
+	if PerformanceFirebreak.disable_death_effects: return
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = get_tree().current_scene
 	var effect = death_pop_scene.instantiate()

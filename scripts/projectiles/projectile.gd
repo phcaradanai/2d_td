@@ -456,6 +456,7 @@ func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 	return best_target
 
 func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
+	if PerformanceFirebreak.disable_impact_effects: return
 	if not _allow_impact_fx():
 		return
 	if ImpactEffect._active_count < ImpactEffect.MAX_ACTIVE:
@@ -630,17 +631,18 @@ func _spawn_elemental_debug_text(hit_pos: Vector2, info: Dictionary) -> void:
 		return
 	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
 		return
-	var effect = damage_number_scene.instantiate()
-	var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-	if effects_container:
-		effects_container.add_child(effect)
-	else:
-		get_tree().current_scene.add_child(effect)
-	effect.global_position = hit_pos + Vector2(0, -22)
-	if effect.has_method("setup_text"):
-		effect.setup_text(text, _get_elemental_debug_color(multiplier), 12)
-	elif effect.has_method("setup"):
-		effect.setup(int(round(abs(multiplier * 100.0))), _get_elemental_debug_color(multiplier))
+	if not PerformanceFirebreak.disable_damage_numbers:
+		var effect = damage_number_scene.instantiate()
+		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+		if effects_container:
+			effects_container.add_child(effect)
+		else:
+			get_tree().current_scene.add_child(effect)
+		effect.global_position = hit_pos + Vector2(0, -22)
+		if effect.has_method("setup_text"):
+			effect.setup_text(text, _get_elemental_debug_color(multiplier), 12)
+		elif effect.has_method("setup"):
+			effect.setup(int(round(abs(multiplier * 100.0))), _get_elemental_debug_color(multiplier))
 
 func _is_elemental_debug_text_enabled() -> bool:
 	var scene := get_tree().current_scene
