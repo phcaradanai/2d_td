@@ -615,6 +615,7 @@ func _make_side_separator() -> ColorRect:
 	sep.color = Color(0.2, 0.5, 0.7, 0.3)
 	return sep
 
+# show_effects_preview=true triggers PreviewFxLayer — status icons or support aura based on tower's attack_type
 func _show_status_preview() -> void:
 	if _side_preview == null:
 		return
@@ -625,6 +626,7 @@ func _show_status_preview() -> void:
 		false
 	)
 
+# show_effects_preview=true triggers PreviewFxLayer — same flag, visual differs by tower attack_type/_is_support_style()
 func _show_support_preview() -> void:
 	if _side_preview == null:
 		return
