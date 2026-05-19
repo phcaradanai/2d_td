@@ -36,10 +36,15 @@ func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0, p_attack_typ
 
 func _ready() -> void:
 	ImpactEffect._active_count += 1
+	add_to_group("impact_vfx_pool")
 
 func _on_expire() -> void:
 	ImpactEffect._active_count -= 1
-	queue_free()
+	var pool := get_node_or_null("/root/ImpactVFXPool")
+	if pool != null and has_meta("pooled"):
+		pool.release(self)
+	else:
+		queue_free()
 
 func _draw() -> void:
 	if attack_type == "void_bloom":

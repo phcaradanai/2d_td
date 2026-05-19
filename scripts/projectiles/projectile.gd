@@ -458,16 +458,19 @@ func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
 	if not _allow_impact_fx():
 		return
-	if impact_effect_scene and ImpactEffect._active_count < ImpactEffect.MAX_ACTIVE:
-		var effect = impact_effect_scene.instantiate()
+	if ImpactEffect._active_count < ImpactEffect.MAX_ACTIVE:
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if effects_container:
-			effects_container.add_child(effect)
-			# MUST set global_position AFTER add_child
-			effect.global_position = hit_pos
+		var parent_node: Node = effects_container if effects_container else get_tree().current_scene
+		var imp_pool := get_node_or_null("/root/ImpactVFXPool")
+		var effect: Node
+		if imp_pool != null:
+			effect = imp_pool.acquire(parent_node)
+		elif impact_effect_scene:
+			effect = impact_effect_scene.instantiate()
+			parent_node.add_child(effect)
 		else:
-			get_tree().current_scene.add_child(effect)
-			effect.global_position = hit_pos
+			return
+		effect.global_position = hit_pos
 
 		var scale_val = 0.8
 		if attack_type == "slow": scale_val = 1.2

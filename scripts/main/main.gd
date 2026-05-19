@@ -1432,8 +1432,12 @@ func _clear_gameplay_state() -> void:
 			if is_instance_valid(proj) and not proj.has_meta("pooled"):
 				proj.queue_free()
 	if effects_container:
+		var imp_pool := get_node_or_null("/root/ImpactVFXPool")
+		if imp_pool != null:
+			imp_pool.release_active()
 		for effect in effects_container.get_children():
-			effect.queue_free()
+			if is_instance_valid(effect) and not effect.has_meta("pooled"):
+				effect.queue_free()
 
 	if current_hero:
 		current_hero.queue_free()
