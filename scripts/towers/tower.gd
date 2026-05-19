@@ -87,6 +87,10 @@ var debug_draw_target_line: bool = false
 ## Set true in the inspector only when tracing targeting/cloaking.
 ## Off by default so combat scans don't flood the debugger at 200 lines/sec.
 static var _verbose_targeting: bool = false
+## Throttle for procedural-draw towers: redraw at 15 Hz instead of 60 Hz.
+## Selected towers still get full-rate redraws for the selection ring.
+const PROCEDURAL_DRAW_INTERVAL: float = 0.067
+var _procedural_draw_timer: float = 0.0
 
 # Aim Visuals
 ## Aim line + target-marker crosshair on creeps.
@@ -905,6 +909,8 @@ func set_selected(value: bool) -> void:
 	if not value and _trickery_dragging_target:
 		_cancel_trickery_drag_targeting()
 	is_selected = value
+	if value:
+		_procedural_draw_timer = 0.0  # Force immediate redraw when selected
 	_update_support_overlay_z_lift()
 	apply_level_visuals()
 	queue_redraw()
@@ -1147,9 +1153,14 @@ func _process(delta: float) -> void:
 		shoot()
 		shoot_cooldown = get_effective_fire_rate()
 	
-	# Redraw needed for selection highlight, range, OR procedural turret rotation
-	if is_selected or debug_draw_range or (not use_sprite and is_valid_target(current_target)):
+	# Full-rate redraw for selected/debug towers; throttled to 15 Hz for others.
+	if is_selected or debug_draw_range:
 		queue_redraw()
+	elif not use_sprite and is_valid_target(current_target):
+		_procedural_draw_timer -= delta
+		if _procedural_draw_timer <= 0.0:
+			_procedural_draw_timer = PROCEDURAL_DRAW_INTERVAL
+			queue_redraw()
 
 func _update_aim_indicator(delta: float) -> void:
 	if not show_aim_indicator or aim_visual == null:
