@@ -223,6 +223,10 @@ func fetch_remote_config() -> void:
 	if OS.is_debug_build():
 		print("[RemoteAccessConfig] GET ", url)
 
+## Alias used by UI/controllers that talk in access-refresh terms.
+func refresh_remote_access() -> void:
+	fetch_remote_config()
+
 # ── HTTP callback ─────────────────────────────────────────────────────────────
 
 func _on_request_completed(
@@ -231,12 +235,13 @@ func _on_request_completed(
 	_headers: PackedStringArray,
 	body: PackedByteArray
 ) -> void:
+	_state = _State.IDLE
 	if result != HTTPRequest.RESULT_SUCCESS:
 		push_warning("[DemoGate] Remote fetch failed: HTTP %d (result=%d)" % [
 			response_code,
 			result
 		])
-		_load_default_access_config("remote_request_failed", result, response_code)
+		_keep_current_config_after_fetch_failure("remote_request_failed", result, response_code)
 		return
 
 	if response_code < 200 or response_code >= 300:
@@ -244,7 +249,7 @@ func _on_request_completed(
 			response_code,
 			result
 		])
-		_load_default_access_config("remote_http_error", result, response_code)
+		_keep_current_config_after_fetch_failure("remote_http_error", result, response_code)
 		return
 
 	var text := body.get_string_from_utf8()
@@ -255,16 +260,17 @@ func _on_request_completed(
 			json.get_error_line(),
 			json.get_error_message()
 		])
-		_load_default_access_config("remote_invalid_json", result, response_code)
+		_keep_current_config_after_fetch_failure("remote_invalid_json", result, response_code)
 		return
 
 	var data = json.data
 	if typeof(data) != TYPE_DICTIONARY:
 		push_warning("[DemoGate] Remote config is not Dictionary")
-		_load_default_access_config("remote_invalid_shape", result, response_code)
+		_keep_current_config_after_fetch_failure("remote_invalid_shape", result, response_code)
 		return
 
-	_apply_config(data, "remote")
+	_save_cache(data)
+	_ingest_response(data, "remote")
 # ── Internals ─────────────────────────────────────────────────────────────────
 
 func _build_access_url() -> String:
@@ -285,7 +291,7 @@ func _build_access_url() -> String:
 	var query = "&".join(params)
 	return "%s/api/v1/game/access%s" % [base, ("?" + query) if not query.is_empty() else ""]
 
-func _ingest_response(parsed: Dictionary) -> void:
+func _ingest_response(parsed: Dictionary, source: String = "remote") -> void:
 	# Support both flat and enveloped {access:{}, entitlement:{}} formats.
 	var access_data: Dictionary = {}
 	if parsed.has("access") and parsed["access"] is Dictionary:
@@ -310,7 +316,7 @@ func _ingest_response(parsed: Dictionary) -> void:
 	_resolved_from = str(access_data.get("resolved_from", ""))
 	var raw_tags   = access_data.get("tags", [])
 	_tags = raw_tags if raw_tags is Array else []
-	_apply_config(access_data, "remote")
+	_apply_config(access_data, source)
 
 func _try_load_file(path: String, source: String) -> bool:
 	if not FileAccess.file_exists(path):
@@ -323,9 +329,7 @@ func _try_load_file(path: String, source: String) -> bool:
 	var parsed = JSON.parse_string(text)
 	if not parsed is Dictionary:
 		return false
-	_ingest_response(parsed)
-	# Override the source tag set by _ingest_response (which would say "remote").
-	_config_source = source
+	_ingest_response(parsed, source)
 	return true
 
 func _apply_config(data: Dictionary, source: String) -> void:
@@ -333,14 +337,14 @@ func _apply_config(data: Dictionary, source: String) -> void:
 	_config_source = source
 
 	if OS.is_debug_build():
-		print("[DemoGate] Applied access config source=%s resolved_from=%s mode=%s enabled_levels=%s max_demo_wave=%s" % [
+		print("[DemoGate] Applied access config source=%s resolved_from=%s enabled_levels=%s max_wave=%s" % [
 			_config_source,
 			_resolved_from,
-			str(_config.get("mode", "demo")),
-			str(_config.get("enabled_levels", [])),
-			str(_config.get("max_demo_wave", _config.get("max_wave", 60)))
+			_format_enabled_levels_for_log(_config.get("enabled_levels", [])),
+			str(_config.get("max_wave", _config.get("max_demo_wave", 60)))
 		])
 
+	config_changed.emit(_config.duplicate(true))
 	config_updated.emit(source)
 
 func _apply_safe_defaults() -> void:
@@ -419,6 +423,27 @@ func _load_default_access_config(reason: String, result: int = -1, response_code
 		])
 
 	_apply_config(data.duplicate(true), "local_default")
+
+func _keep_current_config_after_fetch_failure(reason: String, result: int = -1, response_code: int = 0) -> void:
+	if _config.is_empty():
+		_load_default_access_config(reason, result, response_code)
+		return
+	fetch_failed.emit(reason)
+	if OS.is_debug_build():
+		print("[DemoGate] Keeping access config source=%s reason=%s result=%d http=%d" % [
+			_config_source,
+			reason,
+			result,
+			response_code
+		])
+
+func _format_enabled_levels_for_log(enabled_levels) -> String:
+	if enabled_levels is Array:
+		var parts: Array[String] = []
+		for v in enabled_levels:
+			parts.append(str(int(v)))
+		return "[%s]" % ",".join(parts)
+	return str(enabled_levels)
 
 func _apply_builtin_safe_default(reason: String, result: int = -1, response_code: int = 0) -> void:
 	var fallback := {

@@ -55,7 +55,10 @@ func can_play_level(level_id: int) -> bool:
 		return _remote.can_play_level(level_id)
 	if _local_full_unlocked or not _local_demo_enabled:
 		return true
-	return level_id in _local_enabled_levels
+	for v in _local_enabled_levels:
+		if int(v) == int(level_id):
+			return true
+	return false
 
 func can_play_wave(level_id: int, wave_number: int) -> bool:
 	if _remote:

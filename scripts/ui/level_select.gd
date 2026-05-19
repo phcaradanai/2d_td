@@ -3,6 +3,7 @@ extends CanvasLayer
 signal level_selected(level_path: String)
 signal back_pressed()
 signal leaderboard_requested(level_id: String)
+signal access_refresh_requested()
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 const DEMO_GATE_MODAL_PATH = "res://scripts/ui/demo_gate_modal.gd"
@@ -22,8 +23,10 @@ var right_vbox: VBoxContainer = null
 var mission_info_labels: Dictionary = {}
 var notification_label: Label = null
 var leaderboard_button: Button = null
+var refresh_access_button: Button = null
 
 var _demo_gate_modal: CanvasLayer = null
+var _access_config_service: Node = null
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -67,6 +70,33 @@ func update_ui(save_manager: Node) -> void:
 				elif area_id == 3: area_name = "COMMAND SECTOR"
 				elif area_id == 4: area_name = "WARFRONT SECTOR"
 				header.text = "AREA %d: %s" % [area_id, area_name]
+
+	if selected_level_path != "":
+		_update_play_button_state()
+
+func bind_access_config_service(service: Node) -> void:
+	if _access_config_service == service:
+		return
+	_access_config_service = service
+	if _access_config_service == null:
+		return
+	if _access_config_service.has_signal("config_changed") and not _access_config_service.config_changed.is_connected(_on_access_config_changed):
+		_access_config_service.config_changed.connect(_on_access_config_changed)
+	if _access_config_service.has_signal("config_updated") and not _access_config_service.config_updated.is_connected(_on_access_config_updated):
+		_access_config_service.config_updated.connect(_on_access_config_updated)
+
+func _on_access_config_changed(_config: Dictionary) -> void:
+	_refresh_level_cards_from_current_save()
+
+func _on_access_config_updated(_source: String) -> void:
+	_refresh_level_cards_from_current_save()
+
+func _refresh_level_cards_from_current_save() -> void:
+	if not is_inside_tree():
+		return
+	var sm = get_tree().current_scene.get_node_or_null("SaveManager")
+	if sm:
+		update_ui(sm)
 
 func _generate_dynamic_ui(save_manager: Node) -> void:
 	if dynamic_list_container == null: return
@@ -113,7 +143,7 @@ func _create_level_card(level_id: String) -> Control:
 	btn.text = level_id.replace("level_", "L")
 	NeonStyle.style_button(btn, NeonStyle.CYAN, false)
 	btn.add_theme_font_size_override("font_size", 24)
-	btn.pressed.connect(func(): _select_level("res://data/levels/%s.json" % level_id))
+	_replace_button_press(btn, func(): _select_level("res://data/levels/%s.json" % level_id))
 	root.add_child(btn)
 	
 	# Progression Link (Connector line to previous level)
@@ -234,6 +264,14 @@ func _on_unlock_requested() -> void:
 	if OS.is_debug_build():
 		print("[LevelSelect] Unlock requested (no purchase backend yet).")
 
+func _replace_button_press(btn: Button, callback: Callable) -> void:
+	for connection in btn.pressed.get_connections():
+		var existing: Callable = connection.get("callable", Callable())
+		if existing.is_valid() and btn.pressed.is_connected(existing):
+			btn.pressed.disconnect(existing)
+	if callback.is_valid():
+		btn.pressed.connect(callback)
+
 func _update_dynamic_level_card(level_id: String, container: Control, save_manager: Node) -> void:
 	var btn = container.get_node("Button")
 	var label = container.get_node("Label")
@@ -282,17 +320,13 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 		label.add_theme_color_override("font_color", NeonStyle.WARN)
 
 		# Reconnect button press to show the modal
-		if not btn.pressed.is_connected(_show_locked_modal.bind(level_id)):
-			# Disconnect existing select signal first to avoid double-firing
-			var existing = func(): _select_level("res://data/levels/%s.json" % level_id)
-			if btn.pressed.is_connected(existing):
-				btn.pressed.disconnect(existing)
-			btn.pressed.connect(_show_locked_modal.bind(level_id))
+		_replace_button_press(btn, _show_locked_modal.bind(level_id))
 		return
 
 	# ── Progression-locked (normal sequential lock) ───────────────────────────
 	if not progression_unlocked:
 		btn.disabled = not progression_unlocked
+		_replace_button_press(btn, Callable())
 		lock_icon.visible = true
 		lock_icon.text = "SECURE"
 		lock_icon.add_theme_color_override("font_color", NeonStyle.TEXT_DIM)
@@ -309,6 +343,7 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 	lock_icon.visible = false
 	btn.disabled = false
 	btn.text = level_id.replace("level_", "L")
+	_replace_button_press(btn, func(): _select_level("res://data/levels/%s.json" % level_id))
 	btn.modulate = Color(1, 1, 1)
 	label.modulate = Color(1, 1, 1)
 	stars_label.show()
@@ -435,10 +470,18 @@ func _setup_clean_layout() -> void:
 	var header_spacer_r = Control.new()
 	header_spacer_r.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	header.add_child(header_spacer_r)
+
+	refresh_access_button = Button.new()
+	refresh_access_button.text = "REFRESH ACCESS"
+	refresh_access_button.custom_minimum_size = Vector2(148, 38)
+	NeonStyle.style_button(refresh_access_button, NeonStyle.CYAN, false)
+	refresh_access_button.add_theme_font_size_override("font_size", 12)
+	refresh_access_button.pressed.connect(func(): access_refresh_requested.emit())
+	header.add_child(refresh_access_button)
 	
 	# Dummy node to balance header if needed, or just let title be center-ish
 	var dummy = Control.new()
-	dummy.custom_minimum_size.x = 120
+	dummy.custom_minimum_size.x = 8
 	header.add_child(dummy)
 	
 	# Main horizontal split

@@ -211,6 +211,8 @@ func _ready() -> void:
 	add_child(level_access_service)
 	if remote_access_config_service:
 		level_access_service.bind_remote_config(remote_access_config_service)
+		if level_select and level_select.has_method("bind_access_config_service"):
+			level_select.bind_access_config_service(remote_access_config_service)
 
 	# [DemoGate] Shared modal (locked level + demo complete + maintenance + force-update).
 	var _modal_script = load(DEMO_GATE_MODAL_PATH)
@@ -872,6 +874,8 @@ func _connect_signals() -> void:
 		level_select.level_selected.connect(start_game)
 		level_select.back_pressed.connect(_on_level_select_back)
 		level_select.leaderboard_requested.connect(_on_leaderboard_requested)
+		if level_select.has_signal("access_refresh_requested"):
+			level_select.access_refresh_requested.connect(_fetch_remote_access_config)
 
 	if game_hud:
 		game_hud.start_wave_requested.connect(_on_start_wave_requested)
@@ -1122,16 +1126,16 @@ func _fetch_remote_access_config() -> void:
 	if runtime_identity_service:
 		# Register runtime first so backend assigns a runtime_id, then fetch config.
 		runtime_identity_service.registered.connect(
-			func(_rid: String): remote_access_config_service.fetch_remote_config(),
+			func(_rid: String): remote_access_config_service.refresh_remote_access(),
 			CONNECT_ONE_SHOT
 		)
 		runtime_identity_service.registration_failed.connect(
-			func(_reason: String): remote_access_config_service.fetch_remote_config(),
+			func(_reason: String): remote_access_config_service.refresh_remote_access(),
 			CONNECT_ONE_SHOT
 		)
 		runtime_identity_service.register_runtime()
 	else:
-		remote_access_config_service.fetch_remote_config()
+		remote_access_config_service.refresh_remote_access()
 
 func _on_access_config_updated(source: String) -> void:
 	if OS.is_debug_build():
@@ -1185,6 +1189,7 @@ func return_to_menu() -> void:
 		audio_manager.play_music("menu")
 
 func _on_level_select_requested() -> void:
+	_fetch_remote_access_config()
 	set_game_phase(GameState.LEVEL_SELECT)
 	_clear_route_preview()
 	_play_ui_click()
