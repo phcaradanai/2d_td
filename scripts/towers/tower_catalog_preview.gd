@@ -231,6 +231,14 @@ func set_preview_options(p_show_range: bool, p_show_projectile: bool, p_show_eff
 		_fx_layer.paused = preview_paused
 	queue_redraw()
 
+func get_vfx_viewport() -> SubViewport:
+	return _viewport
+
+func disable_simulation() -> void:
+	if _fx_layer:
+		_fx_layer.preview_projectile = false
+		_fx_layer.preview_effects = false
+
 func _get_tower_world_position() -> Vector2:
 	if show_projectile_preview or show_effects_preview:
 		return Vector2(-preview_size.x / maxf(camera_zoom, 0.1) * 0.18, 8)
