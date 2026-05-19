@@ -1,0 +1,6 @@
+## vapor_t2_attack_vfx.gd
+## Inherits T1 identity. Override configure() or _draw_vfx() for dedicated T2 design.
+extends "res://scripts/vfx/towers/vapor_t1_attack_vfx.gd"
+
+func configure(data: Dictionary) -> void:
+	super.configure(data)
