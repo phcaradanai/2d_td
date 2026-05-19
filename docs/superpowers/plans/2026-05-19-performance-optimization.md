@@ -717,21 +717,7 @@ The following are already optimized; re-touching them will break things:
 
 - [ ] **Step 2: Document results**
 
-  Add a section at the bottom of this file under `## Results`:
-  ```markdown
-  ## Results
-
-  Test condition: Wave 12, 24 towers, 35 enemies alive, rapid + cannon + chain towers active.
-
-  | Metric          | Before | After |
-  |-----------------|--------|-------|
-  | FPS             | xx     | xx    |
-  | Frame ms        | x.x    | x.x   |
-  | Process ms      | x.x    | x.x   |
-  | Draw calls      | xxx    | xxx   |
-  | Node count      | xxxx   | xxxx  |
-  | Projectiles     | xx     | xx    |
-  ```
+  Fill in the Results table below (already added at the end of this file).
 
 - [ ] **Step 3: Commit results**
 
@@ -768,4 +754,28 @@ The following are already optimized; re-touching them will break things:
 - `ProjectilePool.acquire(container)` → returns `Node` → stored as `var projectile: Node` in tower.gd ✓
 - `ProjectilePool.release(proj)` → takes `Node` → called with `self` from projectile.gd ✓  
 - `ImpactVFXPool.acquire(container)` → returns `Node` → stored as `var effect: Node` in projectile.gd ✓
-- `_ensure_cast_beam()` / `_ensure_target_links()` → void helpers called before access ✓
+- `_ensure_target_links()` → void helper called before access ✓ (`_ensure_cast_beam()` removed — cast_beam had no call sites)
+
+---
+
+## Results
+
+> Fill in after running the game at wave 10+ with F10 overlay open. Press F10, wait for peak combat, screenshot or transcribe numbers.
+
+Test condition: Wave ___, ___ towers, ___ enemies alive.
+
+| Metric       | Before (baseline) | After (all tasks) |
+|--------------|-------------------|--------------------|
+| FPS          |                   |                    |
+| Frame ms     |                   |                    |
+| Process ms   |                   |                    |
+| Physics ms   |                   |                    |
+| Draw calls   |                   |                    |
+| Node count   |                   |                    |
+| Projectiles  |                   |                    |
+
+**Expected gains (theoretical):**
+- Draw calls: −30–40% (tower procedural draw throttle, 15 Hz vs 60 Hz)
+- Node count: −80–120 nodes per wave (lazy CastBeam/TargetLinks, ~2 nodes × 40–60 basic enemies)
+- GC frame spikes: eliminated (ProjectilePool + ImpactVFXPool — no instantiate/free per shot or hit)
+- Process ms: −5–15% (DOT tick at 0.1 s, 10× fewer iterations per enemy)
