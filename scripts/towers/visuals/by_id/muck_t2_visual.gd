@@ -3,10 +3,10 @@ extends RefCounted
 # Tower: Muck Tower 2
 # Role: Tar pool — slowing sticky muck on impact
 # Elements: darkness, water, earth
-# Visual source: wrapper → fallback/tar_pool_tower_visual.gd
-# TODO: Replace fallback wrapper with a custom silhouette that communicates role.
+# Visual source: tier fallback wrapper → by_id/muck_t1_visual.gd
+# Tier 2 intentionally reuses the tier 1 premium model until a dedicated T2 silhouette is produced.
 
-const _Fallback = preload("res://scripts/towers/visuals/fallback/tar_pool_tower_visual.gd")
+const _Fallback = preload("res://scripts/towers/visuals/by_id/muck_t1_visual.gd")
 
 static func draw_contour(t: Node2D) -> void:
 	_Fallback.draw_contour(t)

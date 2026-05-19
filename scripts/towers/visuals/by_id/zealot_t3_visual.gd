@@ -3,10 +3,10 @@ extends RefCounted
 # Tower: Zealot Tower 3
 # Role: Melee fanatic — high AoE damage to all nearby
 # Elements: water, fire, earth
-# Visual source: wrapper → fallback/strike_blades_tower_visual.gd
-# TODO: Replace fallback wrapper with a custom silhouette that communicates role.
+# Visual source: tier fallback wrapper → by_id/zealot_t1_visual.gd
+# Tier 3 intentionally reuses the tier 1 premium model until a dedicated T3 silhouette is produced.
 
-const _Fallback = preload("res://scripts/towers/visuals/fallback/strike_blades_tower_visual.gd")
+const _Fallback = preload("res://scripts/towers/visuals/by_id/zealot_t1_visual.gd")
 
 static func draw_contour(t: Node2D) -> void:
 	_Fallback.draw_contour(t)

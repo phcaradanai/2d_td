@@ -3,10 +3,10 @@ extends RefCounted
 # Tower: Gunpowder Tower 2
 # Role: Mortar — high AoE splash on impact
 # Elements: darkness, earth
-# Visual source: wrapper → fallback/heavy_mortar_tower_visual.gd
-# TODO: Replace fallback wrapper with a custom silhouette that communicates role.
+# Visual source: tier fallback wrapper → by_id/gunpowder_t1_visual.gd
+# Tier 2 intentionally reuses the tier 1 premium model until a dedicated T2 silhouette is produced.
 
-const _Fallback = preload("res://scripts/towers/visuals/fallback/heavy_mortar_tower_visual.gd")
+const _Fallback = preload("res://scripts/towers/visuals/by_id/gunpowder_t1_visual.gd")
 
 static func draw_contour(t: Node2D) -> void:
 	_Fallback.draw_contour(t)

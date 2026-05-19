@@ -3,10 +3,10 @@ extends RefCounted
 # Tower: Enchantment Tower 2
 # Role: Support aura — boosts nearby tower damage
 # Elements: light, nature, earth
-# Visual source: wrapper → fallback/support_halo_tower_visual.gd
-# TODO: Replace fallback wrapper with a custom silhouette that communicates role.
+# Visual source: tier fallback wrapper → by_id/enchantment_t1_visual.gd
+# Tier 2 intentionally reuses the tier 1 premium model until a dedicated T2 silhouette is produced.
 
-const _Fallback = preload("res://scripts/towers/visuals/fallback/support_halo_tower_visual.gd")
+const _Fallback = preload("res://scripts/towers/visuals/by_id/enchantment_t1_visual.gd")
 
 static func draw_contour(t: Node2D) -> void:
 	_Fallback.draw_contour(t)

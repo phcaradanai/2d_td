@@ -3,10 +3,10 @@ extends RefCounted
 # Tower: Electricity Tower 3
 # Role: Chain lightning — arcs to multiple targets
 # Elements: light, fire
-# Visual source: wrapper → fallback/lightning_tower_visual.gd
-# TODO: Replace fallback wrapper with a custom silhouette that communicates role.
+# Visual source: tier fallback wrapper → by_id/electricity_t1_visual.gd
+# Tier 3 intentionally reuses the tier 1 premium model until a dedicated T3 silhouette is produced.
 
-const _Fallback = preload("res://scripts/towers/visuals/fallback/lightning_tower_visual.gd")
+const _Fallback = preload("res://scripts/towers/visuals/by_id/electricity_t1_visual.gd")
 
 static func draw_contour(t: Node2D) -> void:
 	_Fallback.draw_contour(t)
