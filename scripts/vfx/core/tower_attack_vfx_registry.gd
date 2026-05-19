@@ -138,5 +138,5 @@ const _SCRIPTS: Dictionary = {
 	"zealot_t3":         preload("res://scripts/vfx/towers/zealot_t3_attack_vfx.gd"),
 }
 
-static func get_script(tower_id: String) -> GDScript:
+static func get_vfx_script(tower_id: String) -> GDScript:
 	return _SCRIPTS.get(tower_id, null)

@@ -114,7 +114,7 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 
 	# New per-id system: try registry first.
 	var tower_id: String = str(tower.get("tower_id")) if "tower_id" in tower else ""
-	if tower_id != "" and TowerAttackVFXRegistry.get_script(tower_id) != null:
+	if tower_id != "" and TowerAttackVFXRegistry.get_vfx_script(tower_id) != null:
 		TowerAttackVFXService.spawn(tower, target)
 		return
 

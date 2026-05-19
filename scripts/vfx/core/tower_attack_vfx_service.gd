@@ -22,7 +22,7 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 		if target.has_method("get_hit_origin") else target.global_position
 
 	var tower_id: String = str(tower.get("tower_id")) if "tower_id" in tower else ""
-	var script: GDScript = TowerAttackVFXRegistry.get_script(tower_id)
+	var script: GDScript = TowerAttackVFXRegistry.get_vfx_script(tower_id)
 	if script == null:
 		return  # caller falls back to legacy system
 
