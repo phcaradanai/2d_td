@@ -352,7 +352,134 @@ func _get_first_level_value(cfg: Dictionary, key: String, fallback: float) -> Va
 func _build_toolbar() -> void:
 	_zoom_controller.setup(content_vbox, scroll_container)
 
+	var search := LineEdit.new()
+	search.placeholder_text = "Search tower..."
+	search.custom_minimum_size = Vector2(160, 0)
+	search.text_changed.connect(func(val: String) -> void:
+		_controller.search_text = val
+		_controller.filters_changed.emit()
+	)
+	top_toolbar.add_child(search)
+
+	top_toolbar.add_child(_make_toolbar_sep())
+
+	var elem_opt := OptionButton.new()
+	for entry in [["All", "all"], ["Light", "light"], ["Darkness", "darkness"],
+			["Water", "water"], ["Fire", "fire"], ["Nature", "nature"], ["Earth", "earth"]]:
+		elem_opt.add_item(entry[0])
+		elem_opt.set_item_metadata(elem_opt.item_count - 1, entry[1])
+	elem_opt.item_selected.connect(func(idx: int) -> void:
+		_controller.element_filter = elem_opt.get_item_metadata(idx)
+		_controller.filters_changed.emit()
+	)
+	top_toolbar.add_child(elem_opt)
+
+	var tier_opt := OptionButton.new()
+	for entry in [["All Tiers", "all"], ["T1", "t1"], ["T2", "t2"], ["T3", "t3"], ["Pure", "pure"]]:
+		tier_opt.add_item(entry[0])
+		tier_opt.set_item_metadata(tier_opt.item_count - 1, entry[1])
+	tier_opt.item_selected.connect(func(idx: int) -> void:
+		_controller.tier_filter = tier_opt.get_item_metadata(idx)
+		_controller.filters_changed.emit()
+	)
+	top_toolbar.add_child(tier_opt)
+
+	var atk_opt := OptionButton.new()
+	for entry in [["All Types", "all"], ["Single", "single"], ["Splash", "splash"],
+			["Slow", "slow"], ["Support", "support"], ["Aura", "aura"]]:
+		atk_opt.add_item(entry[0])
+		atk_opt.set_item_metadata(atk_opt.item_count - 1, entry[1])
+	atk_opt.item_selected.connect(func(idx: int) -> void:
+		_controller.attack_filter = atk_opt.get_item_metadata(idx)
+		_controller.filters_changed.emit()
+	)
+	top_toolbar.add_child(atk_opt)
+
+	top_toolbar.add_child(_make_toolbar_sep())
+
+	top_toolbar.add_child(_make_toolbar_toggle("Models", true, func(v: bool) -> void:
+		_controller.show_models = v
+	))
+	top_toolbar.add_child(_make_toolbar_toggle("Attack VFX", true, func(v: bool) -> void:
+		_controller.show_attack_vfx = v
+		if not v:
+			_clear_attack_vfx_nodes()
+	))
+	top_toolbar.add_child(_make_toolbar_toggle("Status FX", true, func(v: bool) -> void:
+		_controller.show_status_fx = v
+	))
+	top_toolbar.add_child(_make_toolbar_toggle("Support FX", true, func(v: bool) -> void:
+		_controller.show_support_fx = v
+	))
+
+	top_toolbar.add_child(_make_toolbar_sep())
+
+	top_toolbar.add_child(_make_toolbar_toggle("Auto Play", false, func(v: bool) -> void:
+		_controller.set_auto_play(v)
+	))
+	top_toolbar.add_child(_make_toolbar_toggle("Pause", false, func(v: bool) -> void:
+		_controller.set_paused(v)
+	))
+
+	var replay_btn := Button.new()
+	replay_btn.text = "Replay"
+	replay_btn.pressed.connect(func() -> void:
+		_controller.replay_selected_requested.emit()
+	)
+	top_toolbar.add_child(replay_btn)
+
+	top_toolbar.add_child(_make_toolbar_sep())
+
+	var zoom_out_btn := Button.new()
+	zoom_out_btn.text = "−"
+	zoom_out_btn.custom_minimum_size = Vector2(28, 0)
+	zoom_out_btn.pressed.connect(func() -> void: _zoom_controller.zoom_out())
+	top_toolbar.add_child(zoom_out_btn)
+
+	var zoom_in_btn := Button.new()
+	zoom_in_btn.text = "+"
+	zoom_in_btn.custom_minimum_size = Vector2(28, 0)
+	zoom_in_btn.pressed.connect(func() -> void: _zoom_controller.zoom_in())
+	top_toolbar.add_child(zoom_in_btn)
+
+	var zoom_reset_btn := Button.new()
+	zoom_reset_btn.text = "1×"
+	zoom_reset_btn.pressed.connect(func() -> void: _zoom_controller.reset_zoom())
+	top_toolbar.add_child(zoom_reset_btn)
+
+	var fit_btn := Button.new()
+	fit_btn.text = "Fit"
+	fit_btn.pressed.connect(func() -> void: _zoom_controller.fit_grid())
+	top_toolbar.add_child(fit_btn)
+
+	top_toolbar.add_child(_make_toolbar_sep())
+
+	var fps_label := Label.new()
+	fps_label.add_theme_font_size_override("font_size", 12)
+	fps_label.add_theme_color_override("font_color", Color(0.45, 0.65, 0.45))
+	fps_label.text = "FPS: --"
+	_controller._fps_label = fps_label
+	top_toolbar.add_child(fps_label)
+
+	var vfx_label := Label.new()
+	vfx_label.add_theme_font_size_override("font_size", 12)
+	vfx_label.add_theme_color_override("font_color", Color(0.45, 0.65, 0.85))
+	vfx_label.text = "VFX: 0"
+	_controller._vfx_count_label = vfx_label
+	top_toolbar.add_child(vfx_label)
+
 func _build_side_panel_placeholder() -> void:
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.03, 0.05, 0.09, 0.95)
+	style.border_color = Color(0.15, 0.45, 0.65, 0.5)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 10
+	style.content_margin_bottom = 10
+	selected_tower_panel.add_theme_stylebox_override("panel", style)
+
 	var placeholder := Label.new()
 	placeholder.name = "Placeholder"
 	placeholder.text = "Click a tower to inspect"
@@ -368,3 +495,18 @@ func _on_card_selected(_tower_id: String, _cfg: Dictionary) -> void:
 
 func _replay_attack_vfx() -> void:
 	pass
+
+func _make_toolbar_sep() -> VSeparator:
+	return VSeparator.new()
+
+func _make_toolbar_toggle(label: String, initial: bool, callback: Callable) -> CheckButton:
+	var btn := CheckButton.new()
+	btn.text = label
+	btn.button_pressed = initial
+	btn.add_theme_font_size_override("font_size", 12)
+	btn.toggled.connect(func(v: bool) -> void: callback.call(v))
+	return btn
+
+func _clear_attack_vfx_nodes() -> void:
+	for node in get_tree().get_nodes_in_group("attack_vfx"):
+		node.queue_free()
