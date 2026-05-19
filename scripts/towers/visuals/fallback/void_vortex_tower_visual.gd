@@ -5,11 +5,11 @@ class_name TowerVisualVoidVortex
 # Keep this file visual-only. Safe to edit silhouette, contour, colors, and lightweight draw calls.
 
 static func draw_contour(t: Node2D) -> void:
-	var lvl = t.tree_tier
-	var size = 20.0
+	var _lvl = t.tree_tier
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2.ZERO, 20)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Drowning (Darkness+Water+Nature) — abyssal vortex
 	var vv_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.3)
 	for i in range(4):

@@ -129,7 +129,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_poly(t, _regular_poly(Vector2.ZERO, 23.0, 8, PI / 8.0), OUTLINE)
 
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Slow/splash field rings.
 	_arc(t, Vector2.ZERO, 34.0, -2.72, -0.36, WATER_COL, 2.1)
 	_arc(t, Vector2.ZERO, 31.0, 0.24, 2.62, NATURE_COL, 1.8)

@@ -145,7 +145,6 @@ func _inject_combo_family(elements: Array, combo_type: String, shop_order: int) 
 func _build_combo_tower_config(tower_id: String, display_base: String, elements: Array, combo_type: String, tier: int, shop_order: int, cost: int, upgrade_cost: int, next_ids: Array[String]) -> Dictionary:
 	var attack_profile := _combo_attack_profile(elements, combo_type)
 	var tier_scale := 1.0 + float(tier - 1) * (0.78 if combo_type == "dual" else 0.86)
-	var combo_count := elements.size()
 	var base_damage := float(attack_profile.get("damage", 20.0)) * tier_scale
 	var base_range := int(attack_profile.get("range", 165)) + (tier - 1) * 16
 	var base_fire_rate : float = max(0.24, float(attack_profile.get("fire_rate", 0.9)) * (1.0 - float(tier - 1) * 0.07))
@@ -363,7 +362,7 @@ func local_to_cell(local_pos: Vector2) -> Vector2i:
 	return Vector2i(floor(p.x / grid_size), floor(p.y / grid_size))
 
 func cell_to_local_center(cell: Vector2i) -> Vector2:
-	return grid_origin + Vector2(cell.x * grid_size + grid_size/2, cell.y * grid_size + grid_size/2)
+	return grid_origin + Vector2(cell.x * grid_size + grid_size / 2.0, cell.y * grid_size + grid_size / 2.0)
 
 func is_in_bounds(cell: Vector2i) -> bool:
 	return cell.x >= 0 and cell.x < grid_cols and cell.y >= 0 and cell.y < grid_rows

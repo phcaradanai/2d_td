@@ -38,7 +38,6 @@ var role_icon: Node = null
 var heal_cast_icon: Node = null
 # Dynamic status-effect indicators (slow/root/burn/poison/vuln).
 var status_effects_vfx: Node = null
-var _heal_cast_hide_timer: SceneTreeTimer = null
 var _last_heal_cast_msec: int = 0
 var role_color: Color = Color(0.25, 0.85, 1.0)
 var linked_towers: Array[Node] = []
@@ -105,7 +104,7 @@ func play_heal_cast() -> void:
 	_last_heal_cast_msec = now_msec
 	_show_heal_cast_icon()
 
-func play_heal_received(amount: float) -> void:
+func play_heal_received(_amount: float) -> void:
 	# Healing is already represented by one pooled cast icon on the healer.
 	# Avoid spawning per-target impact nodes during dense support waves.
 	pass

@@ -25,7 +25,7 @@ class GameState:
 	var lives: int = 0
 	var wave_index: int = 0
 	var towers: Array = [] # { type, cell, level, cooldown }
-	var log: Array = []
+	var action_log: Array = []
 	var plan: Dictionary = {
 		"initial_actions": [],
 		"wave_actions": {} # "1": [actions]
@@ -37,7 +37,7 @@ class GameState:
 		new_state.lives = lives
 		new_state.wave_index = wave_index
 		new_state.towers = towers.duplicate(true)
-		new_state.log = log.duplicate()
+		new_state.action_log = action_log.duplicate()
 		new_state.plan = plan.duplicate(true)
 		return new_state
 
@@ -174,7 +174,7 @@ func solve_from_state(state, level_id: String) -> Dictionary:
 	_build_level_curves()
 
 	# Clear plan and logs of the starting state if we want a fresh verification
-	state.log.clear()
+	state.action_log.clear()
 	state.plan.wave_actions.clear()
 
 	return _solve_from_state_with_beam([state])

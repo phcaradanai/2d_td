@@ -87,14 +87,14 @@ static func _draw_flame_petal(t: Node2D, center: Vector2, angle: float, outer: f
 	])
 	_draw_poly(t, pts, color)
 
-static func _draw_prism_ray(t: Node2D, angle: float, len: float, color: Color) -> void:
+static func _draw_prism_ray(t: Node2D, angle: float, ray_len: float, color: Color) -> void:
 	var dir := Vector2.RIGHT.rotated(angle)
 	var side := dir.orthogonal()
 	var pts := _scaled([
 		dir * 11.0,
-		dir * len + side * 2.6,
-		dir * (len + 6.0),
-		dir * len - side * 2.6,
+		dir * ray_len + side * 2.6,
+		dir * (ray_len + 6.0),
+		dir * ray_len - side * 2.6,
 	])
 	_draw_poly(t, pts, color)
 
@@ -121,7 +121,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2.ZERO, _r(23.0))
 	TowerVisualDrawUtils._draw_contour_poly(t, _regular_poly(Vector2.ZERO, 16.5, 6, PI / 6.0))
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Slow radius / flare field, static so it does not add particle or per-frame node cost.
 	_draw_arc_outline(t, Vector2.ZERO, 35.0, -0.18, 1.45, AURA_COL, 2.3)
 	_draw_arc_outline(t, Vector2.ZERO, 35.0, 1.92, 3.55, Color(1.0, 0.78, 0.20, 0.27), 2.1)

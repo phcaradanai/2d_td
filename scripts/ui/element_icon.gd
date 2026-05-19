@@ -139,10 +139,10 @@ func _draw_token_frame(center: Vector2, radius: float, color: Color) -> void:
 	_draw_closed_polyline(outer, _tone(color, 0.78), maxf(1.25, radius * 0.075))
 	_draw_closed_polyline(inner, _tone(color, 0.25), maxf(1.0, radius * 0.035))
 
-func _regular_poly(center: Vector2, radius: float, sides: int, rotation: float = 0.0) -> PackedVector2Array:
+func _regular_poly(center: Vector2, radius: float, sides: int, poly_rotation: float = 0.0) -> PackedVector2Array:
 	var points := PackedVector2Array()
 	for i in range(sides):
-		var angle := (float(i) / float(sides)) * TAU - PI / 2.0 + rotation
+		var angle := (float(i) / float(sides)) * TAU - PI / 2.0 + poly_rotation
 		points.append(center + Vector2(cos(angle), sin(angle)) * radius)
 	return points
 

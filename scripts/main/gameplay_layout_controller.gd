@@ -132,17 +132,17 @@ func get_map_content_bounds() -> Rect2:
 				max_cell.x = max(max_cell.x, cell.x)
 				max_cell.y = max(max_cell.y, cell.y)
 
-			var bounds := Rect2(
+			var focus_bounds := Rect2(
 				Vector2(min_cell.x * gs, min_cell.y * gs),
 				Vector2((max_cell.x - min_cell.x + 1) * gs, (max_cell.y - min_cell.y + 1) * gs)
 			)
 			var margin_x := float(level_manager.level_data.get("camera_focus_margin_cells_x", 2.0)) * float(gs)
 			var margin_y := float(level_manager.level_data.get("camera_focus_margin_cells_y", 1.5)) * float(gs)
-			bounds = bounds.grow_side(SIDE_LEFT, margin_x)
-			bounds = bounds.grow_side(SIDE_RIGHT, margin_x)
-			bounds = bounds.grow_side(SIDE_TOP, margin_y)
-			bounds = bounds.grow_side(SIDE_BOTTOM, margin_y)
-			return bounds
+			focus_bounds = focus_bounds.grow_side(SIDE_LEFT, margin_x)
+			focus_bounds = focus_bounds.grow_side(SIDE_RIGHT, margin_x)
+			focus_bounds = focus_bounds.grow_side(SIDE_TOP, margin_y)
+			focus_bounds = focus_bounds.grow_side(SIDE_BOTTOM, margin_y)
+			return focus_bounds
 
 	var points: Array[Vector2] = []
 
@@ -172,12 +172,12 @@ func get_map_content_bounds() -> Rect2:
 		max_p.x = max(max_p.x, p.x)
 		max_p.y = max(max_p.y, p.y)
 
-	var bounds = Rect2(min_p, max_p - min_p)
-	bounds = bounds.grow_side(SIDE_LEFT, 64)
-	bounds = bounds.grow_side(SIDE_RIGHT, 48)
-	bounds = bounds.grow_side(SIDE_TOP, 48)
-	bounds = bounds.grow_side(SIDE_BOTTOM, 48)
-	return bounds
+	var content_bounds = Rect2(min_p, max_p - min_p)
+	content_bounds = content_bounds.grow_side(SIDE_LEFT, 64)
+	content_bounds = content_bounds.grow_side(SIDE_RIGHT, 48)
+	content_bounds = content_bounds.grow_side(SIDE_TOP, 48)
+	content_bounds = content_bounds.grow_side(SIDE_BOTTOM, 48)
+	return content_bounds
 
 func cells_from_level_arrays(raw: Variant) -> Array[Vector2i]:
 	var out: Array[Vector2i] = []

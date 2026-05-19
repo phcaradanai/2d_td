@@ -91,7 +91,7 @@ func get_area_id_for_level(level_id_str: String) -> int:
 	var parts = level_id_str.split("_")
 	if parts.size() < 2: return 1
 	var num = int(parts[1])
-	return int((num - 1) / LEVELS_PER_AREA) + 1
+	return int(float(num - 1) / float(LEVELS_PER_AREA)) + 1
 
 func is_area_unlocked(area_id: int) -> bool:
 	if area_id <= 1: return true

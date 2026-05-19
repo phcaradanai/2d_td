@@ -118,7 +118,7 @@ static func draw_contour(t: Node2D) -> void:
 	# Rear lens ring only. Forward muzzle orb removed for cleaner silhouette.
 	_outline_circle(t, Vector2(-10, 0), 7.0)
 
-static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	var light := main_color.lightened(0.35)
 	var soft := Color(main_color.r, main_color.g, main_color.b, 0.42)
 	var deep := main_color.darkened(0.38)

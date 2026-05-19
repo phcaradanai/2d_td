@@ -165,7 +165,7 @@ func log_enemy_leak(enemy_type: String, hp_remaining: float, pos: Vector2, progr
 	}
 	metrics["leak_events"].append(leak_event)
 
-func log_damage(source_type: String, amount: float, attack_type: String, enemy_type: String) -> void:
+func log_damage(source_type: String, amount: float, attack_type: String, _enemy_type: String) -> void:
 	if not is_active: return
 	
 	if source_type == "hero":
@@ -422,7 +422,6 @@ func get_balance_analysis() -> Dictionary:
 	var hero_used = metrics.get("hero_deploy_count", 0) > 0
 	
 	# Pressure (Leaks/Lives)
-	var lives_lost = metrics.get("lives_lost", 0)
 	var perfect_clear = metrics.get("perfect_clear", true)
 	
 	# Danger Wave

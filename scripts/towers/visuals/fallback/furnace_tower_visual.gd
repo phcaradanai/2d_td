@@ -6,12 +6,12 @@ class_name TowerVisualFurnace
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-16,-16,32,32))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(0,-7,28+lvl*3,14))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(20+lvl*3,-9,10,18))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Fire — furnace body with plasma nozzle
 	t.draw_rect(Rect2(-16,-16,32,32), main_color.darkened(0.5))
 	t.draw_rect(Rect2(-12,-12,24,24), Color(0.08,0.02,0.0,1.0))

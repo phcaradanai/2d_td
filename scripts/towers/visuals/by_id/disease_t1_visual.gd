@@ -107,7 +107,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_line(t, Vector2(0, -16), Vector2(0, -25), 3.0)
 	_outline_line(t, Vector2(0, 16), Vector2(0, 25), 3.0)
 
-static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var darkness := Color(0.34, 0.12, 0.48, 1.0)
 	var nature := Color(0.42, 0.92, 0.28, 1.0)
 	if el_colors.size() > 0:

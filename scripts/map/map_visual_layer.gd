@@ -96,7 +96,6 @@ func _generate_decorations() -> void:
 	var rng = RandomNumberGenerator.new()
 	rng.seed = seed_val
 	
-	var gs = level_manager.grid_size
 	var cols = level_manager.grid_cols
 	var rows = level_manager.grid_rows
 	var visual_road_cells: Dictionary = {}
@@ -466,7 +465,7 @@ func _draw_cheap_build_tile(cell: Vector2i, road_cells: Dictionary, accent: Colo
 	if west:  draw_line(Vector2(pos.x + i, pos.y + i), Vector2(pos.x + i, pos.y + gs - i), ec, 1.0)
 	if east:  draw_line(Vector2(pos.x + gs - i, pos.y + i), Vector2(pos.x + gs - i, pos.y + gs - i), ec, 1.0)
 
-func _draw_guide_lane_cell(cell: Vector2i, road_cells: Dictionary, accent: Color) -> void:
+func _draw_guide_lane_cell(cell: Vector2i, road_cells: Dictionary, _accent: Color) -> void:
 	if PERFORMANCE_MODE:
 		_draw_cheap_guide_tile(cell, road_cells)
 		return
@@ -1136,7 +1135,6 @@ func _draw_spawn_portal(pos: Vector2, radius: float, color: Color, active: bool 
 	var active_boost = preview_alpha if active else 0.0
 	var ring_color = color
 	ring_color.a = lerp(0.45, 0.95, active_boost)
-	var active_cyan = _with_alpha(PATH_EDGE_CYAN, 0.38 * active_boost)
 	
 	# Tech Ring Base
 	draw_arc(pos, radius * 1.1, 0, TAU, 32, Color(0.1, 0.1, 0.1, 0.8), 6.0)
@@ -1182,7 +1180,6 @@ func _draw_energy_core(pos: Vector2, radius: float, color: Color, active: bool =
 	var active_boost = preview_alpha if active else 0.0
 	
 	# Containment Field (Shield)
-	var shield_pulse = 1.0 + sin(time * 2.0) * 0.05
 	draw_arc(pos, radius * 1.4, 0, TAU, 48, _with_alpha(PATH_EDGE_CYAN, 0.15 + active_boost * 0.1), 1.5)
 	
 	# Hexagonal Containment

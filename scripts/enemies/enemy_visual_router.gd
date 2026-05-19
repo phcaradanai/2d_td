@@ -106,8 +106,6 @@ static func _draw_status_overlays_full(enemy: Node2D, size: float) -> void:
 	var shield: float    = float(enemy.get("shield_remaining"))
 	var slow: float      = float(enemy.get("active_slow_percent"))
 	var flash: bool      = bool(enemy.get("is_flashing"))
-	var is_runner: bool  = bool(enemy.get("is_runner"))
-	var is_hunter: bool  = bool(enemy.get("is_hunter"))
 	var pulse_time: float = float(enemy.get("pulse_time"))
 	var hit_color: Color = enemy.get("hit_flash_color")
 	var hit_alpha: float = clampf(float(enemy.get("hit_flash_alpha")), 0.0, 0.22)

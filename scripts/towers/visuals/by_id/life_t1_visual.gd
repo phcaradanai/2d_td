@@ -142,8 +142,8 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	var leaf_dark := nature_color.darkened(0.46)
 	var metal := Color(0.030, 0.040, 0.030, 0.94)
 	var deep := Color(0.012, 0.020, 0.014, 0.96)
-	var gold_glow := Color(sacred.r, sacred.g, sacred.b, 0.30)
-	var green_glow := Color(vine.r, vine.g, vine.b, 0.24)
+	var _gold_glow := Color(sacred.r, sacred.g, sacred.b, 0.30)
+	var _green_glow := Color(vine.r, vine.g, vine.b, 0.24)
 
 	# Soft holy/nature aura language, static only.
 	t.draw_circle(Vector2.ZERO, 22.0 + float(lvl) * 1.2, Color(vine.r, vine.g, vine.b, 0.055))

@@ -5,8 +5,8 @@ class_name TowerVisualLightning
 # Keep this file visual-only. Safe to edit silhouette, contour, colors, and lightweight draw calls.
 
 static func draw_contour(t: Node2D) -> void:
-	var lvl = t.tree_tier
-	var size = 20.0
+	var _lvl = t.tree_tier
+	var _size = 20.0
 	match t._get_tower_visual_family():
 		"jinx":
 			TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(-14,-18),Vector2(8,-18),Vector2(18,-8),Vector2(10,0),Vector2(18,8),Vector2(8,18),Vector2(-14,18),Vector2(-4,0)]))
@@ -24,7 +24,7 @@ static func draw_contour(t: Node2D) -> void:
 				TowerVisualDrawUtils._draw_contour_line(t, Vector2.ZERO, tip, 3.0)
 				TowerVisualDrawUtils._draw_contour_circle(t, tip, 4)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Electricity / Jinx / Periodic — shared chain-like VFX, distinct silhouettes.
 	var spike_tip_color := secondary_color if el_colors.size() >= 2 else core_color
 	match t._get_tower_visual_family():

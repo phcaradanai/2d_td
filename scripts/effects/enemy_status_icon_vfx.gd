@@ -8,8 +8,11 @@ var time: float = 0.0
 var redraw_elapsed: float = 0.0
 const REDRAW_INTERVAL := 0.25
 
+var _comfort: Node = null
+
 func _ready() -> void:
 	add_to_group("status_icons")
+	_comfort = get_node_or_null("/root/VisualComfort")
 
 func setup(p_icon_type: String, p_color: Color, p_label: String = "") -> void:
 	icon_type = p_icon_type
@@ -107,7 +110,6 @@ func _draw_bulwark_id_icon(pulse: float) -> void:
 
 func _cap_alpha(value: float) -> float:
 	var cap := 0.75
-	var comfort := get_node_or_null("/root/VisualComfort")
-	if comfort != null and comfort.has_method("get_status_icon_alpha"):
-		cap = float(comfort.get_status_icon_alpha())
+	if _comfort != null and _comfort.has_method("get_status_icon_alpha"):
+		cap = float(_comfort.get_status_icon_alpha())
 	return minf(value, cap)

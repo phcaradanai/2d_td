@@ -2,8 +2,11 @@
 class_name TowerEffectCatalogController
 extends Node
 
+@warning_ignore("unused_signal")
 signal filters_changed
+@warning_ignore("unused_signal")
 signal replay_selected_requested
+@warning_ignore("unused_signal")
 signal vfx_toggle_changed(vfx_type: String, enabled: bool)
 signal auto_play_tick
 

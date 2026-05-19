@@ -154,7 +154,7 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 		water_color = el_colors[2]
 
 	var ice := Color(0.68, 0.96, 1.0, 1.0)
-	var ice_soft := Color(0.38, 0.84, 1.0, 0.72)
+	var _ice_soft := Color(0.38, 0.84, 1.0, 0.72)
 	var shadow := Color(0.015, 0.020, 0.036, 0.94)
 	var dark_ice := Color(0.16, 0.18, 0.34, 0.96)
 

@@ -2,7 +2,7 @@ extends Control
 class_name HUDStatChip
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
-const CreditIconDraw = preload("res://scripts/ui/credit_icon_draw.gd")
+const CreditIconDrawScript = preload("res://scripts/ui/credit_icon_draw.gd")
 
 @export var icon_kind: String = "status":
 	set(value):
@@ -107,10 +107,10 @@ func _draw_icon(center: Vector2, color: Color, alpha: float) -> void:
 		_:
 			_draw_status(center, color, alpha)
 
-func _draw_coin(center: Vector2, color: Color, alpha: float) -> void:
-	CreditIconDraw.draw_coin(self, center, alpha, 8.0)
+func _draw_coin(center: Vector2, _color: Color, alpha: float) -> void:
+	CreditIconDrawScript.draw_coin(self, center, alpha, 8.0)
 
-func _draw_core(center: Vector2, color: Color, alpha: float) -> void:
+func _draw_core(center: Vector2, _color: Color, alpha: float) -> void:
 	var c := _icon_color(NeonStyle.CYAN_2, alpha)
 	var points := PackedVector2Array([
 		center + Vector2(0.0, 8.0),
@@ -148,7 +148,7 @@ func _draw_next(center: Vector2, color: Color, alpha: float) -> void:
 	draw_line(center + Vector2(-2.0, -4.0), center + Vector2(3.0, 0.0), c, 1.2, true)
 	draw_line(center + Vector2(3.0, 0.0), center + Vector2(-2.0, 4.0), c, 1.2, true)
 
-func _draw_interest(center: Vector2, color: Color, alpha: float) -> void:
+func _draw_interest(center: Vector2, _color: Color, alpha: float) -> void:
 	var c := _icon_color(NeonStyle.EL_INTEREST, alpha)
 	var diamond := PackedVector2Array([
 		center + Vector2(0.0, -8.0),

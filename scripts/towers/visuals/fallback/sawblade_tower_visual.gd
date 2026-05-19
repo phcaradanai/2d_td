@@ -16,7 +16,7 @@ static func draw_contour(t: Node2D) -> void:
 		pts.append(Vector2.RIGHT.rotated(angle) * r)
 	TowerVisualDrawUtils._draw_contour_poly(t, pts)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Rotating saw — aura damage (LEGACY - used by darkness towers currently)
 	var blade_size = size + lvl * 2.0
 	# Hub

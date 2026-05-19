@@ -81,8 +81,7 @@ func _save_report(report: Dictionary) -> void:
 	var filename = TELEMETRY_DIR + current_level_id + "_" + str(Time.get_unix_time_from_system()) + ".json"
 	var file = FileAccess.open(filename, FileAccess.WRITE)
 	if file:
-		var json = JSON.new()
-		file.store_string(json.stringify(report, "\t"))
+		file.store_string(JSON.stringify(report, "\t"))
 		file.close()
 		if OS.is_debug_build():
 			print("[Telemetry] Saved report to %s" % filename)

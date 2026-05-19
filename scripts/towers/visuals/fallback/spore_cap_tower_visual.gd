@@ -5,8 +5,8 @@ class_name TowerVisualSporeCap
 # Keep this file visual-only. Safe to edit silhouette, contour, colors, and lightweight draw calls.
 
 static func draw_contour(t: Node2D) -> void:
-	var lvl = t.tree_tier
-	var size = 20.0
+	var _lvl = t.tree_tier
+	var _size = 20.0
 	if t._get_tower_visual_family() == "disease":
 		TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(-16,-14),Vector2(0,-22),Vector2(16,-14),Vector2(14,10),Vector2(0,20),Vector2(-14,10)]))
 		for i in range(4):
@@ -16,7 +16,7 @@ static func draw_contour(t: Node2D) -> void:
 		TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-6,0,12,16))
 		TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(-20,0),Vector2(-14,-12),Vector2(-6,-20),Vector2(0,-22),Vector2(6,-20),Vector2(14,-12),Vector2(20,0)]))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	if t._get_tower_visual_family() == "disease":
 		var disease_pts = PackedVector2Array([Vector2(-16,-14),Vector2(0,-22),Vector2(16,-14),Vector2(14,10),Vector2(0,20),Vector2(-14,10)])
 		t.draw_colored_polygon(disease_pts, Color(main_color.r,main_color.g,main_color.b,0.42))

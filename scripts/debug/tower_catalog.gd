@@ -347,8 +347,6 @@ func _get_first_level_value(cfg: Dictionary, key: String, fallback: float) -> Va
 		return cfg["levels"][0].get(key, fallback)
 	return cfg.get(key, fallback)
 
-# stubs — fully implemented in Tasks 5, 6, 7
-
 func _build_toolbar() -> void:
 	_zoom_controller.setup(content_vbox, scroll_container)
 

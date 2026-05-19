@@ -6,11 +6,11 @@ class_name TowerVisualSteamBoiler
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-16,-14,32,28))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(0,-6,24+lvl*2,12))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Vapor (Water+Fire) — steam boiler with vents
 	t.draw_rect(Rect2(-16,-14,32,28), main_color.darkened(0.3))
 	t.draw_rect(Rect2(-12,-10,24,20), Color(0.04,0.06,0.08,1.0))

@@ -52,11 +52,11 @@ static func _scale_poly(points: PackedVector2Array, amount: float) -> PackedVect
 	var out := PackedVector2Array()
 	for p in points:
 		var dir := p - center
-		var len := dir.length()
-		if len <= 0.001:
+		var segment_len := dir.length()
+		if segment_len <= 0.001:
 			out.append(p)
 		else:
-			out.append(center + dir.normalized() * max(0.0, len + amount))
+			out.append(center + dir.normalized() * max(0.0, segment_len + amount))
 	return out
 
 static func _regular_poly(center: Vector2, radius: float, sides: int, rotation := 0.0) -> PackedVector2Array:
@@ -131,7 +131,7 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_line(t, Vector2(-17, -18), Vector2(-6, -18), 3.0)
 	TowerVisualDrawUtils._draw_contour_line(t, Vector2(-17, 18), Vector2(-6, 18), 3.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	var water := main_color.lightened(0.16)
 	var water_bright := main_color.lightened(0.42)
 	var earth := secondary_color.darkened(0.08) if secondary_color.a > 0.01 else Color(0.54, 0.42, 0.24, 1.0)

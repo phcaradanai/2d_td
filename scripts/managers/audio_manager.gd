@@ -280,31 +280,31 @@ func play_generated_test_tone() -> void:
 	await get_tree().create_timer(0.6).timeout
 	player.queue_free()
 
-func play_sfx(name: String, force: bool = false) -> void:
+func play_sfx(sfx_name: String, force: bool = false) -> void:
 	if OS.has_feature("web") and not audio_unlocked:
-		if force: if OS.is_debug_build(): print("[AudioManager] play_sfx blocked before unlock: ", name)
+		if force: if OS.is_debug_build(): print("[AudioManager] play_sfx blocked before unlock: ", sfx_name)
 		return
 
-	if not resolved_sfx.has(name):
-		var base = sfx_paths.get(name, "")
+	if not resolved_sfx.has(sfx_name):
+		var base = sfx_paths.get(sfx_name, "")
 		if base != "":
 			var found = find_audio_file(base, sfx_extensions)
-			if found != "": resolved_sfx[name] = found
+			if found != "": resolved_sfx[sfx_name] = found
 			else: 
-				if force: if OS.is_debug_build(): print("[AudioManager] SFX file not found for: ", name)
+				if force: if OS.is_debug_build(): print("[AudioManager] SFX file not found for: ", sfx_name)
 				return
 		else: 
-			if force: if OS.is_debug_build(): print("[AudioManager] Unknown SFX key: ", name)
+			if force: if OS.is_debug_build(): print("[AudioManager] Unknown SFX key: ", sfx_name)
 			return
 	
-	var stream = _get_sfx_stream(name)
+	var stream = _get_sfx_stream(sfx_name)
 	if stream == null: 
-		if force: if OS.is_debug_build(): print("[AudioManager] Failed to get SFX stream for: ", name)
+		if force: if OS.is_debug_build(): print("[AudioManager] Failed to get SFX stream for: ", sfx_name)
 		return
 		
 	if OS.has_feature("web"):
-		var path = resolved_sfx.get(name, "")
-		_play_web_one_shot(stream, BUS_SFX, 6.0 if force else 0.0, name, path, force)
+		var path = resolved_sfx.get(sfx_name, "")
+		_play_web_one_shot(stream, BUS_SFX, 6.0 if force else 0.0, sfx_name, path, force)
 		return
 
 	var sfx_player = AudioStreamPlayer.new()
@@ -316,7 +316,7 @@ func play_sfx(name: String, force: bool = false) -> void:
 	
 	if force:
 		if OS.is_debug_build(): print("[AudioManager] FORCE play_sfx name=%s path=%s stream=%s class=%s playing=%s" % 
-			[name, stream.resource_path, stream, stream.get_class(), sfx_player.playing])
+			[sfx_name, stream.resource_path, stream, stream.get_class(), sfx_player.playing])
 
 func _play_web_one_shot(
 	stream: AudioStream,
@@ -344,48 +344,48 @@ func _play_web_one_shot(
 	if is_instance_valid(player):
 		player.queue_free()
 
-func play_sfx_on_bus(name: String, bus_name: String) -> void:
-	if OS.is_debug_build(): print("[AudioManager] play_sfx_on_bus name=%s bus=%s" % [name, bus_name])
-	var stream = _get_sfx_stream(name)
+func play_sfx_on_bus(sfx_name: String, bus_name: String) -> void:
+	if OS.is_debug_build(): print("[AudioManager] play_sfx_on_bus name=%s bus=%s" % [sfx_name, bus_name])
+	var stream = _get_sfx_stream(sfx_name)
 	if stream:
-		var path = resolved_sfx.get(name, "")
-		_play_web_one_shot(stream, bus_name, 6.0, name, path, true)
+		var path = resolved_sfx.get(sfx_name, "")
+		_play_web_one_shot(stream, bus_name, 6.0, sfx_name, path, true)
 
 
-func _get_sfx_stream(name: String) -> AudioStream:
-	if sfx_cache.has(name): return sfx_cache[name]
-	var path = resolved_sfx.get(name, "")
+func _get_sfx_stream(sfx_name: String) -> AudioStream:
+	if sfx_cache.has(sfx_name): return sfx_cache[sfx_name]
+	var path = resolved_sfx.get(sfx_name, "")
 	if path == "": 
-		if OS.is_debug_build(): print("[AudioManager] _get_sfx_stream missing path for: ", name)
+		if OS.is_debug_build(): print("[AudioManager] _get_sfx_stream missing path for: ", sfx_name)
 		return null
 	var stream = load(path)
 	if stream:
-		sfx_cache[name] = stream
+		sfx_cache[sfx_name] = stream
 		return stream
 	if OS.is_debug_build(): print("[AudioManager] _get_sfx_stream failed to load path: ", path)
 	return null
 
-func play_music(name: String, force: bool = false) -> void:
+func play_music(music_name: String, force: bool = false) -> void:
 	if OS.has_feature("web") and not audio_unlocked:
-		pending_music_name = name
-		if OS.is_debug_build(): print("[AudioManager] play_music deferred before unlock: ", name)
+		pending_music_name = music_name
+		if OS.is_debug_build(): print("[AudioManager] play_music deferred before unlock: ", music_name)
 		return
 
-	if not resolved_music.has(name):
-		var base = music_paths.get(name, "")
+	if not resolved_music.has(music_name):
+		var base = music_paths.get(music_name, "")
 		if base != "":
 			var found = find_audio_file(base, music_extensions)
-			if found != "": resolved_music[name] = found
+			if found != "": resolved_music[music_name] = found
 			else: 
-				if force: if OS.is_debug_build(): print("[AudioManager] Music file not found for: ", name)
+				if force: if OS.is_debug_build(): print("[AudioManager] Music file not found for: ", music_name)
 				return
 		else: 
-			if force: if OS.is_debug_build(): print("[AudioManager] Unknown Music key: ", name)
+			if force: if OS.is_debug_build(): print("[AudioManager] Unknown Music key: ", music_name)
 			return
 	
-	var stream = _get_music_stream(name)
+	var stream = _get_music_stream(music_name)
 	if stream == null:
-		if force: if OS.is_debug_build(): print("[AudioManager] Failed to get Music stream for: ", name)
+		if force: if OS.is_debug_build(): print("[AudioManager] Failed to get Music stream for: ", music_name)
 		music_player.stop()
 		return
 		
@@ -406,7 +406,7 @@ func play_music(name: String, force: bool = false) -> void:
 	music_player.stream = stream
 	music_player.playback_type = AudioServer.PLAYBACK_TYPE_STREAM
 	music_player.play()
-	current_music_name = name
+	current_music_name = music_name
 	
 	if force:
 		if OS.is_debug_build(): print("[AudioManager] FORCE play_music name=%s path=%s stream=%s class=%s playing=%s" % 
@@ -432,15 +432,15 @@ func play_music_fallback_test() -> void:
 	if OS.is_debug_build(): print("[AudioManager] Fallback Test: stream=%s bus=%s vol=%.2f playing=%s" % 
 		[stream.resource_path, music_player.bus, music_player.volume_db, music_player.playing])
 
-func _get_music_stream(name: String) -> AudioStream:
-	if music_cache.has(name): return music_cache[name]
-	var path = resolved_music.get(name, "")
+func _get_music_stream(music_name: String) -> AudioStream:
+	if music_cache.has(music_name): return music_cache[music_name]
+	var path = resolved_music.get(music_name, "")
 	if path == "": 
-		if OS.is_debug_build(): print("[AudioManager] _get_music_stream missing path for: ", name)
+		if OS.is_debug_build(): print("[AudioManager] _get_music_stream missing path for: ", music_name)
 		return null
 	var stream = load(path)
 	if stream:
-		music_cache[name] = stream
+		music_cache[music_name] = stream
 		return stream
 	if OS.is_debug_build(): print("[AudioManager] _get_music_stream failed to load path: ", path)
 	return null

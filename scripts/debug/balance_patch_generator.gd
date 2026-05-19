@@ -565,12 +565,12 @@ func apply_patch(patch: Dictionary) -> bool:
 	var diff := build_patch_diff(level_id, original_waves, patched_waves, enemies)
 	lines.append(format_patch_diff(level_id, diff))
 	if not bool(diff.get("changed", false)) or before_hash == expected_hash:
-		var acceptance := _evaluate_patch_acceptance(false, false, false, false)
-		lines.append(_format_acceptance(acceptance))
+		var noop_acceptance := _evaluate_patch_acceptance(false, false, false, false)
+		lines.append(_format_acceptance(noop_acceptance))
 		lines.append("[BALANCE_PATCH_NOOP]\nPatch applied but level data did not change.")
 		last_operation_log = "\n".join(lines)
 		last_error = "File patch was a no-op."
-		last_patch_acceptance = acceptance
+		last_patch_acceptance = noop_acceptance
 		return false
 
 	var validation := _validate_waves(level_id, patched_waves, enemies)
@@ -583,29 +583,29 @@ func apply_patch(patch: Dictionary) -> bool:
 	lines.append(dominant)
 	var dominant_pass := _dominant_strategy_passed(dominant)
 	if not dominant_pass:
-		var acceptance := _evaluate_patch_acceptance(true, dominant_pass, false, false)
-		lines.append(_format_acceptance(acceptance))
+		var dominant_acceptance := _evaluate_patch_acceptance(true, dominant_pass, false, false)
+		lines.append(_format_acceptance(dominant_acceptance))
 		lines.append(_format_escalation(generate_stage_2_patch(patch)))
 		lines.append("[BALANCE_PATCH_APPLY]\napplied=false\nwrite_verified=false\nreason=dominant_strategy_still_clears")
 		lines.append("[BALANCE_PATCH_NOT_COMMITTED]\nreason=dominant_strategy_still_clears")
 		last_operation_log = "\n".join(lines)
 		last_error = "Dominant strategy still clears. Generate/apply Stage 2 patch."
-		last_patch_acceptance = acceptance
+		last_patch_acceptance = dominant_acceptance
 		return false
 
 	var mixed := run_mixed_defense_test(level_id, patch, null, patched_waves)
 	lines.append(mixed)
 	var mixed_pass := _mixed_defense_passed(mixed)
 	if not mixed_pass:
-		var acceptance := _evaluate_patch_acceptance(true, dominant_pass, mixed_pass, false)
-		lines.append(_format_acceptance(acceptance))
+		var mixed_acceptance := _evaluate_patch_acceptance(true, dominant_pass, mixed_pass, false)
+		lines.append(_format_acceptance(mixed_acceptance))
 		var softened_patch := generate_softened_patch(patch)
 		lines.append(format_softening(patch, softened_patch))
 		lines.append("[BALANCE_PATCH_APPLY]\napplied=false\nwrite_verified=false\nreason=mixed_defense_failed")
 		lines.append("[BALANCE_PATCH_NOT_COMMITTED]\nreason=mixed_defense_failed")
 		last_operation_log = "\n".join(lines)
 		last_error = "Mixed defense validation failed."
-		last_patch_acceptance = acceptance
+		last_patch_acceptance = mixed_acceptance
 		return false
 
 	var backup_dir := _backup_files(level_id, [waves_path])
@@ -940,7 +940,7 @@ func _apply_changes_to_waves(waves: Array, patch: Dictionary, enemies: Dictionar
 						target_threat *= 1.1 # Slight bump for counter waves
 
 					if change_type == "composition_synergy_boost":
-						var min_roles = int(change.get("min_roles", 4))
+						var _min_roles = int(change.get("min_roles", 4))
 						# Handled in composition generator
 						target_threat *= 1.15
 
@@ -1092,7 +1092,7 @@ func _formation_intent(formation: String, path_formations: Dictionary) -> String
 		"stealth_probe", "stealth_mask": return "Stealth behavior is explicit and reported."
 		_: return "Readable role-aware formation pressure."
 
-func _suggest_formation_for_enemy(enemy_type: String, groups: Array, dominant_tower: String = "", enemies: Dictionary = {}) -> String:
+func _suggest_formation_for_enemy(_enemy_type: String, groups: Array, dominant_tower: String = "", enemies: Dictionary = {}) -> String:
 	var types := []
 	for group in groups:
 		if group is Dictionary:
@@ -1284,7 +1284,6 @@ func _simulate_fixed_strategy(level_id: String, towers: Array[Dictionary], waves
 		level = {}
 	var lives := int(level.get("starting_lives", 20))
 	var gold_start := int(level.get("starting_gold", 0))
-	var gold := gold_start
 	var gold_spent := _tower_setup_cost(towers, patch)
 	var gold_earned := 0
 	var damage_by_tower_type: Dictionary = {}
@@ -1298,7 +1297,7 @@ func _simulate_fixed_strategy(level_id: String, towers: Array[Dictionary], waves
 			var leak_enemy := str(result.get("leak_enemy", "unknown"))
 			var leaks_by_enemy_type := {}
 			leaks_by_enemy_type[leak_enemy] = 1
-			var remaining: int = max(0, gold_start + gold_earned - gold_spent)
+			var leak_remaining: int = max(0, gold_start + gold_earned - gold_spent)
 			return {
 				"clear": false,
 				"lives_end": lives - 1,
@@ -1307,8 +1306,8 @@ func _simulate_fixed_strategy(level_id: String, towers: Array[Dictionary], waves
 				"gold_start": gold_start,
 				"gold_earned_total": gold_earned,
 				"gold_spent_total": gold_spent,
-				"gold_remaining": remaining,
-				"gold_remaining_ratio": float(remaining) / max(1.0, float(gold_start + gold_earned)),
+				"gold_remaining": leak_remaining,
+				"gold_remaining_ratio": float(leak_remaining) / max(1.0, float(gold_start + gold_earned)),
 				"damage_by_tower_type": damage_by_tower_type,
 				"top_damage_tower": _top_damage_tower(damage_by_tower_type),
 				"fail_wave": waves_completed + 1,
@@ -1317,7 +1316,6 @@ func _simulate_fixed_strategy(level_id: String, towers: Array[Dictionary], waves
 				"hero_used": false
 			}
 		var delta := int(result.get("gold_delta", 0))
-		gold += delta
 		gold_earned += delta
 		waves_completed += 1
 	var remaining: int = max(0, gold_start + gold_earned - gold_spent)
@@ -1803,7 +1801,6 @@ func _generate_spawn_groups(composition: Array, wave_index: int) -> Array:
 		return priority_a < priority_b
 	)
 	
-	var current_time := 0.0
 	for comp in sorted:
 		var interval := 1.2
 		if "fast" in ENEMY_ROLES.get(comp.type, []): interval = 0.6
@@ -1839,7 +1836,7 @@ func _is_composition_boring(composition: Array, wave_index: int, total_waves: in
 		
 	# Check density (approximate)
 	var min_density := 8
-	if wave_index > total_waves / 2: min_density = 15
+	if float(wave_index) > float(total_waves) / 2.0: min_density = 15
 	if total_enemies < min_density:
 		return true
 		

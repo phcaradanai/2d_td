@@ -6,7 +6,7 @@ class_name TowerVisualCannon
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-6, -14, 32 + lvl * 4, 28))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-14, -16, 14, 32))
 

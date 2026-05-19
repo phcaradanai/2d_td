@@ -10,7 +10,6 @@ var cfg: Dictionary = {}
 var _is_selected: bool = false
 var _card_panel: PanelContainer = null
 var _vfx_badge_label: Label = null
-var _tier_badge_label: Label = null
 
 var _normal_style: StyleBoxFlat = null
 var _selected_style: StyleBoxFlat = null

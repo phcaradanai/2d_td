@@ -325,7 +325,7 @@ func is_position_on_enemy_path(pos: Vector2, footprint: float = DEFAULT_TOWER_FO
 	return false
 
 func cell_to_world_center(cell: Vector2i) -> Vector2:
-	return grid_origin + Vector2(cell.x * grid_size + grid_size / 2, cell.y * grid_size + grid_size / 2)
+	return grid_origin + Vector2(cell.x * grid_size + grid_size / 2.0, cell.y * grid_size + grid_size / 2.0)
 
 func world_to_cell(world_pos: Vector2) -> Vector2i:
 	var local_pos = world_pos - grid_origin

@@ -52,7 +52,7 @@ static func _draw_stroked_circle(t: Node2D, center: Vector2, radius: float, fill
 	t.draw_circle(center, radius + stroke_width, DETAIL_OUTLINE)
 	t.draw_circle(center, radius, fill)
 
-static func _draw_fire_element_token(t: Node2D, center: Vector2, radius: float, main_color: Color) -> void:
+static func _draw_fire_element_token(t: Node2D, center: Vector2, radius: float, _main_color: Color) -> void:
 	# Small fire token behind the furnace, adapted for Node2D drawing.
 	var token_color := Color(1.0, 0.36, 0.06, 1.0)
 	var outer := _regular_poly(center, radius * 0.94, 8, PI / 8.0)
@@ -118,10 +118,10 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-11, 0), 10.0)
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(2, 0), 8.0)
 
-static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
-	var fire := Color(1.0, 0.30, 0.035, 1.0)
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
+	var _fire := Color(1.0, 0.30, 0.035, 1.0)
 	var amber := Color(1.0, 0.64, 0.08, 1.0)
-	var molten := Color(1.0, 0.12, 0.015, 1.0)
+	var _molten := Color(1.0, 0.12, 0.015, 1.0)
 	var deep_metal := Color(0.13, 0.025, 0.012, 1.0)
 	var dark_metal := Color(0.055, 0.020, 0.014, 1.0)
 	var vent_len := 20.0 + float(lvl) * 2.0

@@ -71,6 +71,7 @@ func trigger_shockwave() -> void:
 	if main and main.has_method("shake_camera"):
 		main.shake_camera(12.0, 0.3)
 	
+	var _hit_count = 0
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
@@ -290,17 +291,17 @@ func _update_skill(delta: float) -> void:
 
 func cast_skill() -> void:
 	if skill_cooldown_current > 0: return
-	var hit_count = 0
+	var _hit_count = 0
 	var enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
 			# Guardian land-only: Rally Strike does not hit air enemies
 			if enemy.has_method("get_enemy_category") and enemy.get_enemy_category() != "land":
 				continue
-			if global_position.distance_to(enemy.global_position) <= skill_radius:
-				if enemy.has_method("take_damage"):
-					enemy.take_damage(int(skill_damage), enemy.global_position, "hero", "skill")
-					hit_count += 1
+				if global_position.distance_to(enemy.global_position) <= skill_radius:
+					if enemy.has_method("take_damage"):
+						enemy.take_damage(int(skill_damage), enemy.global_position, "hero", "skill")
+						_hit_count += 1
 	_play_skill_visual()
 	skill_cooldown_current = skill_cooldown_max
 	skill_cooldown_updated.emit(skill_cooldown_current, skill_cooldown_max)

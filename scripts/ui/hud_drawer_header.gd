@@ -181,27 +181,27 @@ func _draw_corner_ticks(rect: Rect2, color: Color) -> void:
 	draw_line(rect.position + Vector2(rect.size.x, rect.size.y), rect.position + Vector2(rect.size.x - tick, rect.size.y), color, 1.0, true)
 	draw_line(rect.position + Vector2(rect.size.x, rect.size.y), rect.position + Vector2(rect.size.x, rect.size.y - tick), color, 1.0, true)
 
-func _draw_icon(center: Vector2, alpha: float, scale: float = 1.0) -> void:
+func _draw_icon(center: Vector2, alpha: float, icon_scale: float = 1.0) -> void:
 	var c := Color(accent_color.r, accent_color.g, accent_color.b, alpha)
 	if icon_kind == "damage":
-		var w := 4.0 * scale
-		var base_y := center.y + 8.0 * scale
+		var w := 4.0 * icon_scale
+		var base_y := center.y + 8.0 * icon_scale
 		var heights: Array[float] = [7.0, 13.0, 10.0]
 		for i in range(3):
-			var h: float = heights[i] * scale
-			var x := center.x - 10.0 * scale + float(i) * 8.0 * scale
+			var h: float = heights[i] * icon_scale
+			var x := center.x - 10.0 * icon_scale + float(i) * 8.0 * icon_scale
 			draw_rect(Rect2(Vector2(x, base_y - h), Vector2(w, h)), Color(c.r, c.g, c.b, 0.24 * alpha), true)
 			draw_rect(Rect2(Vector2(x, base_y - h), Vector2(w, h)), c, false, 1.1)
-		draw_line(center + Vector2(-12.0, 9.0) * scale, center + Vector2(12.0, 9.0) * scale, c, 1.1, true)
-		draw_line(center + Vector2(-10.0, -8.0) * scale, center + Vector2(10.0, -8.0) * scale, Color(c.r, c.g, c.b, 0.45 * alpha), 1.0, true)
+		draw_line(center + Vector2(-12.0, 9.0) * icon_scale, center + Vector2(12.0, 9.0) * icon_scale, c, 1.1, true)
+		draw_line(center + Vector2(-10.0, -8.0) * icon_scale, center + Vector2(10.0, -8.0) * icon_scale, Color(c.r, c.g, c.b, 0.45 * alpha), 1.0, true)
 		return
-	var base := Rect2(center + Vector2(-9.0, 3.5) * scale, Vector2(18.0, 6.5) * scale)
+	var base := Rect2(center + Vector2(-9.0, 3.5) * icon_scale, Vector2(18.0, 6.5) * icon_scale)
 	draw_rect(base, Color(c.r, c.g, c.b, 0.16 * alpha), true)
 	draw_rect(base, c, false, 1.2)
-	draw_line(center + Vector2(-6.0, 3.5) * scale, center + Vector2(0.0, -9.0) * scale, c, 1.3, true)
-	draw_line(center + Vector2(6.0, 3.5) * scale, center + Vector2(0.0, -9.0) * scale, c, 1.3, true)
-	draw_line(center + Vector2(-10.0, 10.0) * scale, center + Vector2(10.0, 10.0) * scale, c, 1.1, true)
-	draw_circle(center + Vector2(0.0, -9.0) * scale, 2.5 * scale, c)
+	draw_line(center + Vector2(-6.0, 3.5) * icon_scale, center + Vector2(0.0, -9.0) * icon_scale, c, 1.3, true)
+	draw_line(center + Vector2(6.0, 3.5) * icon_scale, center + Vector2(0.0, -9.0) * icon_scale, c, 1.3, true)
+	draw_line(center + Vector2(-10.0, 10.0) * icon_scale, center + Vector2(10.0, 10.0) * icon_scale, c, 1.1, true)
+	draw_circle(center + Vector2(0.0, -9.0) * icon_scale, 2.5 * icon_scale, c)
 
 func _draw_chevron(center: Vector2, color: Color) -> void:
 	if expanded:

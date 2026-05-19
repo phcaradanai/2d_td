@@ -17,7 +17,9 @@ func _process(delta: float) -> void:
 		_cooldown_remaining = COOLDOWN
 		var vfx_count := get_tree().get_nodes_in_group("attack_vfx").size()
 		var node_count := get_tree().get_node_count()
-		var scene_name := get_tree().current_scene.name if get_tree().current_scene else "none"
+		var scene_name := "none"
+		if get_tree().current_scene:
+			scene_name = str(get_tree().current_scene.name)
 		print("[SPIKE] delta=%.1fms fps=%d nodes=%d active_vfx=%d scene=%s" % [
 			delta * 1000.0,
 			Engine.get_frames_per_second(),

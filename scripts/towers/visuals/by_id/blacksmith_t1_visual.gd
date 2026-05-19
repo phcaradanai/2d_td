@@ -115,10 +115,10 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_line(t, Vector2(10, -21), Vector2(22, -9), 3.2)
 	_outline_rect(t, Rect2(19, -13, 8, 5))
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, el_colors: Array[Color]) -> void:
 	var fire_c := _fire_color(el_colors, Color(1.0, 0.36, 0.08, 1.0))
 	var earth_c := _earth_color(el_colors, Color(0.58, 0.43, 0.20, 1.0))
-	var forge_hot := Color(1.0, 0.48, 0.08, 0.95)
+	var _forge_hot := Color(1.0, 0.48, 0.08, 0.95)
 	var forge_yellow := Color(1.0, 0.82, 0.25, 0.92)
 	var earth_glow := Color(earth_c.r, earth_c.g, earth_c.b, 0.34)
 	var fire_glow := Color(fire_c.r, fire_c.g, fire_c.b, 0.22)

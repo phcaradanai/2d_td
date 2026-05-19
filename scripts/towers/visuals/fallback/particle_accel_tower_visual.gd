@@ -6,7 +6,7 @@ class_name TowerVisualParticleAccel
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2.ZERO, 18)
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(0,-2,38+lvl*5,4))
 

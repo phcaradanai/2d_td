@@ -19,13 +19,13 @@ func _ready() -> void:
 ## Acquire an ImpactEffect and reparent it to `container`.
 func acquire(container: Node) -> Node:
 	if _free_list.is_empty():
-		var fx := ImpactScene.instantiate()
-		container.add_child(fx)
-		return fx
-	var fx : Node = _free_list.pop_back()
-	fx.reparent(container)
-	fx.visible = true
-	return fx
+		var new_fx := ImpactScene.instantiate()
+		container.add_child(new_fx)
+		return new_fx
+	var pooled_fx : Node = _free_list.pop_back()
+	pooled_fx.reparent(container)
+	pooled_fx.visible = true
+	return pooled_fx
 
 ## Return an ImpactEffect to the pool after its animation completes.
 func release(fx: Node) -> void:

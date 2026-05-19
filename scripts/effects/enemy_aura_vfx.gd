@@ -75,8 +75,8 @@ func _draw_role_ticks(color: Color, pulse: float) -> void:
 			a += sin(time * 0.7 + i) * 0.025
 		elif kind == KIND_SHIELD:
 			a += time * 0.08
-		var len := 6.0
-		var p1 := Vector2.RIGHT.rotated(a) * (radius - len)
+		var tick_len := 6.0
+		var p1 := Vector2.RIGHT.rotated(a) * (radius - tick_len)
 		var p2 := Vector2.RIGHT.rotated(a) * (radius + 2.0)
 		draw_line(p1, p2, Color(color.r, color.g, color.b, minf((0.12 + pulse * 0.06) * fade, 0.18)), 1.25)
 

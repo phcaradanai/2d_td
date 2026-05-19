@@ -8,6 +8,7 @@ signal quit_pressed()
 
 # Backward-compat aliases kept so existing connections in main.gd don't break.
 signal start_pressed()
+@warning_ignore("unused_signal")
 signal level_select_pressed()
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")

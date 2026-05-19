@@ -192,7 +192,7 @@ static func draw_contour(t: Node2D) -> void:
 		var pp := _poly(pts)
 		t.draw_polyline(pp, OUTLINE, _sf(6.6), true)
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	_draw_slow_field(t)
 	_draw_earth_base(t)
 	_draw_root_cage(t)

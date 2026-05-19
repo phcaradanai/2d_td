@@ -6,12 +6,12 @@ class_name TowerVisualSeismicDrill
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-14,-12,24,24))
 	TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(0,-8),Vector2(30+lvl*3,0),Vector2(0,8)]))
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(28+lvl*3,0), 5)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Quaker (Fire+Nature+Earth) — seismic drill head
 	t.draw_rect(Rect2(-14,-12,24,24), main_color.darkened(0.3))
 	var sd_sec = secondary_color if el_colors.size() >= 2 else main_color.lightened(0.2)

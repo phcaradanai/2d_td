@@ -50,12 +50,12 @@ func warn_rate(key: String, msg: String, interval_sec: float = 5.0) -> void:
 	push_warning(msg)
 
 ## Print only when the named flag is enabled AND we are in a debug build.
-func trace(flag: String, msg: String) -> void:
+func trace(flag_name: String, msg: String) -> void:
 	if not OS.is_debug_build():
 		return
-	if not _flags.get(flag, false):
+	if not _flags.get(flag_name, false):
 		return
-	print("[%s] %s" % [flag.to_upper(), msg])
+	print("[%s] %s" % [flag_name.to_upper(), msg])
 
 ## Enable or disable a named trace flag at runtime.
 func set_flag(flag_name: String, enabled: bool) -> void:

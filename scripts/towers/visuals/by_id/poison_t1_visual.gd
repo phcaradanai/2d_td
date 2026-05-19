@@ -153,7 +153,7 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 		water = el_colors[1]
 
 	var venom := Color(0.42, 1.00, 0.22, 1.0)
-	var venom_soft := Color(0.42, 1.00, 0.22, 0.42)
+	var _venom_soft := Color(0.42, 1.00, 0.22, 0.42)
 	var toxic_shadow := Color(0.07, 0.025, 0.095, 0.94)
 	var metal := Color(0.095, 0.105, 0.118, 0.95)
 	var dark_glass := Color(0.028, 0.018, 0.045, 0.94)

@@ -134,7 +134,7 @@ func run_healer_check() -> Dictionary:
 func run_disruptor_check() -> Dictionary:
 	_clear_children()
 	var tower = await _spawn_tower("basic_tower", Vector2.ZERO)
-	var target = await _spawn_enemy("tank", Vector2(70, 0))
+	var _target = await _spawn_enemy("tank", Vector2(70, 0))
 	tower.attack_range = 500.0
 	tower.damage = 0.0
 	var disruptor = await _spawn_enemy("disruptor", Vector2(50, 0))

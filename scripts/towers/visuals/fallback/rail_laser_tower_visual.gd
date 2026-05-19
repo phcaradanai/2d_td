@@ -6,12 +6,12 @@ class_name TowerVisualRailLaser
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-18,-14,32,28))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(0,-5,44+lvl*5,10))
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(42+lvl*5,0), 4)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Laser (Light+Darkness+Earth) — heavy rail-laser cannon
 	t.draw_rect(Rect2(-18,-14,32,28), main_color.darkened(0.4))
 	t.draw_rect(Rect2(-12,-10,20,20), Color(0.05,0.03,0.08,1.0))

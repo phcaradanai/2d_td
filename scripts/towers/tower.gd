@@ -6,7 +6,7 @@ signal fire_rate_modifier_changed(tower, source, value)
 signal target_selected(tower, target, reason)
 signal target_rejected(tower, target, reason)
 
-const TowerVisualRenderer = preload("res://scripts/towers/tower_visual_renderer.gd")
+const TowerVisualRendererScript = preload("res://scripts/towers/tower_visual_renderer.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -76,10 +76,15 @@ const TURRET_VISUAL_SIZE := 44.0
 var current_target: Node2D = null
 var target_mode: String = "first"
 var debug_draw_range: bool = false
-var _target_scan_timer: float = 0.0
-const TARGET_SCAN_INTERVAL: float = 0.1
-# Pre-allocated targeting arrays — cleared and reused each scan to avoid per-frame GC pressure
-var _visible_targets: Array = []
+var retarget_timer: float = 0.0
+var retarget_interval: float = 0.22
+var range_sq: float = 0.0
+var target_update_phase: int = 0
+var can_attack_air: bool = false
+var can_attack_ground: bool = true
+const TARGET_UPDATE_PHASE_COUNT: int = 4
+const RETARGET_JITTER_MAX: float = 0.05
+# Pre-allocated cloaked-target array — cleared and reused each scan to avoid per-frame GC pressure.
 var _cloaked_targets: Array = []
 var _enemies_in_range_cache: Array = []
 var _stale_fire_rate_keys: Array = []
@@ -226,6 +231,7 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 		support_value = float(config.get("support_value", 0.0))
 		support_limit = int(config.get("support_limit", 4))
 		_update_range_collision()
+		_configure_targeting_cache()
 	
 	_ensure_sprite_node()
 	apply_level_visuals()
@@ -323,6 +329,7 @@ func apply_level_stats() -> void:
 		support_value = float(data.get("support_value", config.get("support_value", support_value)))
 		support_limit = int(data.get("support_limit", config.get("support_limit", support_limit)))
 		_update_range_collision()
+		_configure_targeting_cache()
 		apply_level_visuals()
 		queue_redraw()
 
@@ -576,7 +583,7 @@ func _draw() -> void:
 	_draw_tower_rank_badge(Vector2(0, 30), tree_tier, _get_rank_accent_color())
 
 func _draw_base_plate() -> void:
-	TowerVisualRenderer.draw_base_plate(self)
+	TowerVisualRendererScript.draw_base_plate(self)
 
 func _get_visual_muzzle_local_position() -> Vector2:
 	var lvl := tree_tier
@@ -643,13 +650,13 @@ func _get_tower_visual_family() -> String:
 	return visual_type
 
 func _draw_turret_contour() -> void:
-	TowerVisualRenderer.draw_turret_contour(self)
+	TowerVisualRendererScript.draw_turret_contour(self)
 
 func _draw_element_core() -> void:
-	TowerVisualRenderer.draw_element_core(self)
+	TowerVisualRendererScript.draw_element_core(self)
 
 func _draw_turret_top() -> void:
-	TowerVisualRenderer.draw_turret_top(self)
+	TowerVisualRendererScript.draw_turret_top(self)
 
 func _update_range_collision() -> void:
 	if collision_shape and collision_shape.shape is CircleShape2D:
@@ -809,6 +816,8 @@ func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
 		support_type = str(new_config.get("support_type", "")).to_lower()
 		support_value = float(new_config.get("support_value", 0.0))
 		support_limit = int(new_config.get("support_limit", 4))
+		_update_range_collision()
+		_configure_targeting_cache()
 
 	next_upgrade_ids = _extract_string_array(new_config.get("next_upgrade_ids", []))
 	tree_tier = new_config.get("tier", tree_tier + 1)
@@ -1104,13 +1113,15 @@ func _process(delta: float) -> void:
 			queue_redraw()
 		return
 		
-	_target_scan_timer -= delta
-	if not is_valid_target(current_target):
+	retarget_timer -= delta
+	var cached_target_valid := _is_valid_cached_target(current_target)
+	var had_target := current_target != null
+	if not cached_target_valid:
 		current_target = null
-	if current_target == null or _target_scan_timer <= 0.0:
-		_target_scan_timer = TARGET_SCAN_INTERVAL
+	if _should_retarget(cached_target_valid, had_target):
 		update_target()
-	_update_aim_indicator(delta)
+		cached_target_valid = _is_valid_cached_target(current_target)
+	_update_aim_indicator(delta, cached_target_valid)
 	
 	idle_rotation += delta * 15.0 # Constant spin for visual flair
 	if (visual_type == "sawblade" or visual_type == "lightning") and Engine.get_process_frames() % 2 == 0:
@@ -1118,7 +1129,7 @@ func _process(delta: float) -> void:
 	
 	# Smooth visual rotation
 	if turret_pivot:
-		if is_valid_target(current_target):
+		if cached_target_valid:
 			# STANDARD: Use targeting origin (usually center) for rotation calculation 
 			# to avoid feedback loops if muzzle is offset and rotating
 			var source_pos = get_targeting_origin()
@@ -1149,24 +1160,22 @@ func _process(delta: float) -> void:
 	if shoot_cooldown > 0:
 		shoot_cooldown -= delta
 
-	if is_valid_target(current_target) and shoot_cooldown <= 0:
+	if cached_target_valid and shoot_cooldown <= 0:
 		shoot()
 		shoot_cooldown = get_effective_fire_rate()
 	
 	# Full-rate redraw for selected/debug towers; throttled to 15 Hz for others.
 	if is_selected or debug_draw_range:
 		queue_redraw()
-	elif not use_sprite and is_valid_target(current_target):
+	elif not use_sprite and cached_target_valid:
 		_procedural_draw_timer -= delta
 		if _procedural_draw_timer <= 0.0:
 			_procedural_draw_timer = PROCEDURAL_DRAW_INTERVAL
 			queue_redraw()
 
-func _update_aim_indicator(delta: float) -> void:
+func _update_aim_indicator(delta: float, target_active: bool) -> void:
 	if not show_aim_indicator or aim_visual == null:
 		return
-		
-	var target_active = is_valid_target(current_target)
 	
 	pass # aim indicator active
 	
@@ -1722,12 +1731,69 @@ func spawn_muzzle_flash(color: Color) -> void:
 					flash_scale = 0.85
 			flash.setup(color, flash_scale)
 
+func _configure_targeting_cache() -> void:
+	range_sq = attack_range * attack_range
+	can_attack_air = target_categories.has(ENEMY_CATEGORY_AIR)
+	can_attack_ground = target_categories.has(ENEMY_CATEGORY_LAND)
+	target_update_phase = int(get_instance_id() % TARGET_UPDATE_PHASE_COUNT)
+	retarget_interval = _calculate_retarget_interval()
+	_reset_retarget_timer(true)
+
+func _calculate_retarget_interval() -> float:
+	if _is_support_aura():
+		return 0.45
+	if attack_type == "aura":
+		return 0.35
+	if slow_percent > 0.0 or slow_duration > 0.0 or slow_radius > 0.0:
+		return 0.28
+	if fire_rate > 0.0 and fire_rate <= 0.18:
+		return 0.12
+	if visual_type == "rapid":
+		return 0.14
+	return 0.22
+
+func _reset_retarget_timer(with_jitter: bool = true) -> void:
+	retarget_timer = retarget_interval
+	if with_jitter:
+		retarget_timer += randf_range(0.0, RETARGET_JITTER_MAX)
+
+func _should_retarget(cached_target_valid: bool, had_target: bool) -> bool:
+	if had_target and not cached_target_valid:
+		return true
+	if current_target == null:
+		return shoot_cooldown <= 0.0 or retarget_timer <= 0.0
+	if retarget_timer > 0.0:
+		return false
+	return int(Engine.get_process_frames() % TARGET_UPDATE_PHASE_COUNT) == target_update_phase
+
 func update_target() -> void:
 	var next_target := find_target()
 	if next_target != current_target:
 		current_target = next_target
 		if current_target:
 			target_selected.emit(self, current_target, "selected_%s" % target_mode)
+	_reset_retarget_timer(true)
+
+func _is_valid_cached_target(enemy: Variant) -> bool:
+	if enemy == null or not is_instance_valid(enemy):
+		return false
+	if enemy.is_queued_for_deletion():
+		return false
+	if not enemy.has_method("is_alive") or not enemy.is_alive():
+		return false
+	if enemy.has_method("get_enemy_category"):
+		var category := str(enemy.get_enemy_category()).to_lower()
+		if category == ENEMY_CATEGORY_AIR:
+			if not can_attack_air:
+				return false
+		elif category == ENEMY_CATEGORY_LAND and not can_attack_ground:
+			return false
+	var target_pos = enemy.global_position
+	if enemy.has_method("get_aim_point"):
+		target_pos = enemy.get_aim_point()
+	elif enemy.has_method("get_hit_origin"):
+		target_pos = enemy.get_hit_origin()
+	return get_range_origin().distance_squared_to(target_pos) <= range_sq
 
 func is_valid_target(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy): return false
@@ -1742,15 +1808,19 @@ func is_valid_target(enemy: Variant) -> bool:
 		target_pos = enemy.get_aim_point()
 	elif enemy.has_method("get_hit_origin"):
 		target_pos = enemy.get_hit_origin()
-	var dist = get_range_origin().distance_to(target_pos)
-	return dist <= attack_range
+	return get_range_origin().distance_squared_to(target_pos) <= range_sq
 
 func can_target_enemy(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy):
 		return false
 	if not enemy.has_method("get_enemy_category"):
 		return true
-	return target_categories.has(str(enemy.get_enemy_category()).to_lower())
+	var category := str(enemy.get_enemy_category()).to_lower()
+	if category == ENEMY_CATEGORY_AIR:
+		return can_attack_air
+	if category == ENEMY_CATEGORY_LAND:
+		return can_attack_ground
+	return false
 
 func _normalize_target_categories(raw_categories) -> Array[String]:
 	var normalized: Array[String] = []
@@ -1771,54 +1841,104 @@ func find_target() -> Node2D:
 	var enemies = get_enemies_in_range()
 	if enemies.is_empty(): return null
 	
-	_visible_targets.clear()
 	_cloaked_targets.clear()
-
+	var source_pos := get_range_origin()
+	var priority_types := _target_priority_types()
+	var best_visible: Node2D = null
+	var best_visible_score := -INF
+	var best_cloaked: Node2D = null
+	var best_cloaked_score := -INF
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_cloaked") and enemy.is_cloaked():
 			_cloaked_targets.append(enemy)
+			var cloaked_score := _target_score(enemy, source_pos, priority_types)
+			if cloaked_score > best_cloaked_score:
+				best_cloaked_score = cloaked_score
+				best_cloaked = enemy
 		else:
-			_visible_targets.append(enemy)
+			var visible_score := _target_score(enemy, source_pos, priority_types)
+			if visible_score > best_visible_score:
+				best_visible_score = visible_score
+				best_visible = enemy
 
-	var target_pool = enemies
-	if _visible_targets.size() > 0:
-		target_pool = _visible_targets
+	if best_visible != null:
 		if OS.is_debug_build() and _verbose_targeting and _cloaked_targets.size() > 0:
-			print("[Targeting] Tower ", visual_type, " found ", _visible_targets.size(), " visible targets and ", _cloaked_targets.size(), " cloaked target. Targeting visible first.")
-		var preferred = select_first_target(_visible_targets)
+			print("[Targeting] Tower ", visual_type, " found visible targets and ", _cloaked_targets.size(), " cloaked target. Targeting visible first.")
 		for cloaked in _cloaked_targets:
 			target_rejected.emit(self, cloaked, "cloaked_deferred_visible_target_exists")
 			if cloaked.has_method("notify_stealth_deferred"):
-				cloaked.notify_stealth_deferred(preferred)
-	elif _cloaked_targets.size() > 0:
-		target_pool = _cloaked_targets
+				cloaked.notify_stealth_deferred(best_visible)
+		return best_visible
+
+	if best_cloaked != null:
 		for cloaked in _cloaked_targets:
 			if cloaked.has_method("notify_stealth_targetable"):
 				cloaked.notify_stealth_targetable()
 		if OS.is_debug_build() and _verbose_targeting:
 			print("[Targeting] Tower ", visual_type, " has only cloaked targets. Cloaked target allowed.")
+		return best_cloaked
+	return null
 
+func _target_priority_types() -> Array[String]:
 	match target_mode:
-		"first":
-			return select_first_target(target_pool)
-		"last":
-			return select_last_target(target_pool)
-		"nearest", "closest":
-			return select_nearest_target(target_pool)
-		"strongest":
-			return select_strongest_target(target_pool)
-		"weakest":
-			return select_weakest_target(target_pool)
-		"fastest":
-			return select_fastest_target(target_pool)
 		"air_first":
-			return select_priority_type_target(target_pool, ["flyer", "fast_flyer", "armored_flyer"])
+			return ["flyer", "fast_flyer", "armored_flyer"]
 		"support_first":
-			return select_priority_type_target(target_pool, ["healer", "disruptor"])
+			return ["healer", "disruptor"]
 		"shield_first":
-			return select_priority_type_target(target_pool, ["shieldbearer", "bulwark"])
+			return ["shieldbearer", "bulwark"]
+	return []
+
+func _target_score(enemy: Node2D, source_pos: Vector2, priority_types: Array[String]) -> float:
+	var priority_bonus := 0.0
+	if not priority_types.is_empty() and _enemy_type_matches(enemy, priority_types):
+		priority_bonus = 1000000000.0
+	match target_mode:
+		"last":
+			return priority_bonus - _enemy_path_progress(enemy)
+		"nearest", "closest":
+			return priority_bonus - source_pos.distance_squared_to(enemy.global_position)
+		"strongest":
+			return priority_bonus + _enemy_current_hp(enemy)
+		"weakest":
+			return priority_bonus - _enemy_current_hp(enemy)
+		"fastest":
+			return priority_bonus + _enemy_movement_speed(enemy)
 		_:
-			return select_first_target(target_pool)
+			return priority_bonus + _enemy_first_score(enemy)
+
+func _enemy_first_score(enemy: Node2D) -> float:
+	return _enemy_path_progress(enemy) * _enemy_priority_score(enemy)
+
+func _enemy_path_progress(enemy: Node2D) -> float:
+	if enemy.has_method("get_path_progress"):
+		return float(enemy.get_path_progress())
+	return 0.0
+
+func _enemy_priority_score(enemy: Node2D) -> float:
+	if enemy.has_method("get_priority_score"):
+		return float(enemy.get_priority_score())
+	return 1.0
+
+func _enemy_current_hp(enemy: Node2D) -> float:
+	if enemy.has_method("get_current_hp"):
+		return float(enemy.get_current_hp())
+	return 0.0
+
+func _enemy_movement_speed(enemy: Node2D) -> float:
+	if enemy.has_method("get_movement_speed"):
+		return float(enemy.get_movement_speed())
+	if enemy.has_method("get_speed"):
+		return float(enemy.get_speed())
+	return _enemy_first_score(enemy)
+
+func _enemy_type_matches(enemy: Node2D, priority_types: Array[String]) -> bool:
+	var etype := ""
+	if enemy.has_method("get_enemy_type"):
+		etype = str(enemy.get_enemy_type())
+	elif "enemy_type" in enemy:
+		etype = str(enemy.enemy_type)
+	return etype in priority_types
 
 func get_enemies_in_range() -> Array:
 	_enemies_in_range_cache.clear()
@@ -1832,7 +1952,7 @@ func get_enemies_in_range() -> Array:
 	else:
 		all_enemies = get_tree().get_nodes_in_group("enemies")
 	for enemy in all_enemies:
-		if is_valid_target(enemy):
+		if _is_valid_cached_target(enemy):
 			_enemies_in_range_cache.append(enemy)
 	return _enemies_in_range_cache
 

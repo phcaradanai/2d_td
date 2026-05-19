@@ -5,12 +5,12 @@ class_name TowerVisualVoodooTotem
 # Keep this file visual-only. Safe to edit silhouette, contour, colors, and lightweight draw calls.
 
 static func draw_contour(t: Node2D) -> void:
-	var lvl = t.tree_tier
-	var size = 20.0
+	var _lvl = t.tree_tier
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-8,-22,16,44))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-10,-26,20,16))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Voodoo (Darkness+Fire+Nature) — cursed totem pole
 	t.draw_rect(Rect2(-8,-22,16,44), main_color.darkened(0.3))
 	t.draw_rect(Rect2(-10,-26,20,16), main_color.darkened(0.2))

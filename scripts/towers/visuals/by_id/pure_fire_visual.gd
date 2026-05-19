@@ -6,7 +6,8 @@ extends RefCounted
 # Visual source: wrapper → fallback/furnace_tower_visual.gd
 # TODO: Replace fallback wrapper with a custom silhouette that communicates role.
 
-const _Fallback = preload("res://scripts/towers/visuals/fallback/furnace_tower_visual.gd")
+const _Fallback = preload("res://scripts/towers/visuals/by_id/fire_t1_visual.gd")
+
 
 static func draw_contour(t: Node2D) -> void:
 	_Fallback.draw_contour(t)

@@ -5,14 +5,14 @@ class_name TowerVisualSolarBloom
 # Keep this file visual-only. Safe to edit silhouette, contour, colors, and lightweight draw calls.
 
 static func draw_contour(t: Node2D) -> void:
-	var lvl = t.tree_tier
-	var size = 20.0
+	var _lvl = t.tree_tier
+	var _size = 20.0
 	for i in range(6):
 		var a = i * TAU/6.0 + t.idle_rotation * 0.2
 		TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(cos(a-0.35),sin(a-0.35))*6, Vector2(cos(a),sin(a))*20, Vector2(cos(a+0.35),sin(a+0.35))*6]))
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2.ZERO, 10)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Nova (Light+Fire+Nature) — solar flower reactor
 	for i in range(6):
 		var a = i * TAU/6.0 + t.idle_rotation * 0.2

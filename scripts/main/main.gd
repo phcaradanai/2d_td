@@ -478,7 +478,8 @@ func _setup_game_from_level() -> void:
 	_clear_gameplay_state()
 	_configure_auto_next_wave_from_level()
 	_configure_element_td_interest_from_level()
-	auto_next_wave_service.reset() if auto_next_wave_service else null
+	if auto_next_wave_service:
+		auto_next_wave_service.reset()
 	_stop_auto_next_wave_countdown()
 
 	# Hide old map visual layer — MazeMapRenderer handles lightweight drawing now
@@ -1644,9 +1645,9 @@ func _resume_game() -> void:
 		audio_manager.play_sfx("resume")
 
 func shake_camera(strength: float, duration: float = 1.0) -> void:
-	var camera = get_node_or_null("Camera2D")
-	if camera and camera.has_method("shake"):
-		camera.shake(strength, duration)
+	var active_camera = get_node_or_null("Camera2D")
+	if active_camera and active_camera.has_method("shake"):
+		active_camera.shake(strength, duration)
 
 func show_wave_feedback(text: String, color: Color = Color.WHITE) -> void:
 	if game_hud and game_hud.has_method("show_temporary_message"):
@@ -1947,7 +1948,8 @@ func _on_start_wave_requested() -> void:
 	if wave_manager == null or not wave_manager.has_next_wave():
 		return
 	_stop_auto_next_wave_countdown()
-	auto_next_wave_service.mark_first_wave_started() if auto_next_wave_service else null
+	if auto_next_wave_service:
+		auto_next_wave_service.mark_first_wave_started()
 	if audio_manager: audio_manager.unlock_audio()
 	wave_manager.start_next_wave()
 	if audio_manager:
@@ -2020,7 +2022,7 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		show_wave_feedback("Wave %d: %s" % [wave_number, wave_name], Color(1, 0.8, 0.2))
 		_refresh_gameplay_hud_state()
 
-func _on_wave_completed(wave_number: int, wave_name: String, reward: int) -> void:
+func _on_wave_completed(wave_number: int, _wave_name: String, reward: int) -> void:
 	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
 	else:
@@ -2857,10 +2859,8 @@ func _load_enemy_config_for_preview() -> Dictionary:
 func derive_wave_warnings(traits: Array[String]) -> Array[String]:
 	return WAVE_PREVIEW_HELPER_SCRIPT.derive_wave_warnings(traits)
 
-func _validate_wave_design(wave_data: Dictionary, traits: Array[String], total_count: int) -> void:
+func _validate_wave_design(_wave_data: Dictionary, _traits: Array[String], _total_count: int) -> void:
 	if not OS.is_debug_build(): return
-	
-	var wave_name = wave_data.get("name", "Unknown")
 	
 func _get_wave_source_for_preview(level_id: int) -> Array:
 	if level_id <= 0:
@@ -3040,7 +3040,7 @@ func debug_start_auto_verify_all_known_plans() -> void:
 		res["id"] = str(i)
 		results.append(res)
 
-	var report = balance_solver.generate_consolidated_report(results)
+	balance_solver.generate_consolidated_report(results)
 	print("[AUTO_SOLVER] Batch report generated.")
 	if debug_panel: debug_panel.update_verifier_status("Report Generated (All)", false)
 
@@ -3233,7 +3233,7 @@ func _solve_and_play(level_int: int) -> void:
 		print("[AUTO_SOLVER] Total candidates tested: ", res.get("total_candidates_tested", 0))
 		if debug_panel: debug_panel.update_verifier_status("FAIL L%d: Wave %d" % [level_int, res["wave"]], true)
 
-func get_auto_verify_plan_for_level(level_id: int) -> Dictionary:
+func get_auto_verify_plan_for_level(_level_id: int) -> Dictionary:
 	# Now returns empty because we search for plans instead
 	return {}
 
@@ -3247,7 +3247,6 @@ func start_auto_play_verification(plan: Dictionary) -> void:
 	auto_play_verifier.start_verification(plan)
 
 func _on_verifier_state_changed(state: int, msg: String) -> void:
-	var verifier_script = preload("res://scripts/debug/auto_play_verifier.gd")
 	var state_completed = 8 # AutoPlayState.COMPLETED
 	var state_failed = 9 # AutoPlayState.FAILED
 	

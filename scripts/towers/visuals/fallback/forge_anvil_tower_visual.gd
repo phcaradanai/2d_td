@@ -6,12 +6,12 @@ class_name TowerVisualForgeAnvil
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(-20,8),Vector2(20,8),Vector2(16,0),Vector2(8,-4),Vector2(8,-16),Vector2(-8,-16),Vector2(-8,-4),Vector2(-16,0)]))
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2.ZERO, 8)
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(8,-5,20+lvl*2,10))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Blacksmith (Fire+Earth) — forge anvil silhouette
 	var fa_pts = PackedVector2Array([Vector2(-20,8),Vector2(20,8),Vector2(16,0),Vector2(8,-4),Vector2(8,-16),Vector2(-8,-16),Vector2(-8,-4),Vector2(-16,0)])
 	t.draw_colored_polygon(fa_pts, main_color.darkened(0.3))

@@ -172,11 +172,9 @@ var _td_stat_dmg: Label = null
 var _td_stat_rng: Label = null
 var _td_stat_spd: Label = null
 var _td_stat_tgt: Label = null
-var _td_stat_eff: Label = null            # KINETIC / SPLASH / etc badge
 var _td_effect_section: Control = null    # whole EFFECT section (hide if empty)
 var _td_effect_title: Label = null        # effect-colored badge title
 var _td_effect_body: Label = null         # effect body + upgrade preview text
-var _td_header_row: HBoxContainer = null  # for showing/hiding when no tower
 var _td_header_panel: HUDDrawerHeaderControl = null
 var _td_chevron_label: Label = null
 var _td_content_nodes: Array[Control] = []
@@ -1524,7 +1522,10 @@ func set_gold(value: int) -> void:
 	gold_label.text = "✦ %d" % value
 	gold_label.add_theme_color_override("font_color", NeonStyle.WARN)
 	if old_text != gold_label.text:
-		pulse_label(credits_chip if credits_chip else gold_label)
+		if credits_chip:
+			pulse_label(credits_chip)
+		else:
+			pulse_label(gold_label)
 	if credits_chip:
 		credits_chip.set_value(str(value), NeonStyle.WARN, false)
 	_update_tower_affordability(value)
@@ -1820,11 +1821,11 @@ func _add_tower_section_hint(text: String) -> void:
 func _get_tower_section_visible_entries(section_key: String, entries: Array, unlocked_set: Dictionary) -> Array:
 	if section_key == "neutral" or section_key == "single":
 		return entries
-	var visible: Array = []
+	var visible_entries: Array = []
 	for entry in entries:
 		if unlocked_set.has(str(entry["id"])):
-			visible.append(entry)
-	return visible
+			visible_entries.append(entry)
+	return visible_entries
 
 func _should_show_section_unlock_hint(section_key: String, entries: Array, visible_entries: Array) -> bool:
 	if section_key == "dual" or section_key == "triple":
@@ -1856,7 +1857,7 @@ func _style_tower_shop_button(btn: Button, is_unlocked: bool) -> void:
 	btn.add_theme_color_override("font_hover_color",    NeonStyle.CYAN_2)
 	btn.add_theme_color_override("font_disabled_color", NeonStyle.INK_4)
 
-func _build_locked_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> String:
+func _build_locked_tooltip(_tower_id: String, cfg: Dictionary, cost: int) -> String:
 	var desc: String = str(cfg.get("description", ""))
 	var elements_text: String = _elements_full(cfg.get("elements", []))
 	var required_lvl: int = int(cfg.get("required_element_level", 1))
@@ -2568,7 +2569,6 @@ func _em_rebuild_center(element_id: String) -> void:
 	for c in _em_center_col.get_children():
 		c.queue_free()
 
-	var levels: Dictionary = _em_data.get("levels", {})
 	var el_col  := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68,0.5,1.0)
 	var meta_d  : Dictionary = ELEMENT_UI_META.get(element_id, {})
 
@@ -2655,9 +2655,9 @@ func _em_rebuild_center(element_id: String) -> void:
 
 func _em_build_unlock_preview(element_id: String, el_col: Color) -> void:
 	var preview := _em_get_unlock_preview_for_element(element_id)
-	var wrap := VBoxContainer.new()
-	wrap.add_theme_constant_override("separation", 8)
-	_em_center_col.add_child(wrap)
+	var unlock_wrap := VBoxContainer.new()
+	unlock_wrap.add_theme_constant_override("separation", 8)
+	_em_center_col.add_child(unlock_wrap)
 
 	var unlocked_now: Array = []
 	unlocked_now.append_array(preview.get("single_element", []))
@@ -2666,18 +2666,18 @@ func _em_build_unlock_preview(element_id: String, el_col: Color) -> void:
 
 	var now_title := _em_lbl("Unlocked Now", 13, Color(0.78,0.92,1.0))
 	now_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
-	wrap.add_child(now_title)
+	unlock_wrap.add_child(now_title)
 	if unlocked_now.is_empty():
 		var none := _em_lbl("No new tower unlocks at this level.", 12, Color(0.62,0.70,0.80))
 		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		wrap.add_child(none)
+		unlock_wrap.add_child(none)
 	else:
 		var grid := GridContainer.new()
 		grid.columns = 2
 		grid.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		grid.add_theme_constant_override("h_separation", 8)
 		grid.add_theme_constant_override("v_separation", 8)
-		wrap.add_child(grid)
+		unlock_wrap.add_child(grid)
 		for cfg in unlocked_now:
 			grid.add_child(_em_make_tower_card(cfg, el_col))
 
@@ -2982,9 +2982,9 @@ func _em_get_unlock_summary_names(element_id: String) -> Array[String]:
 	all.append_array(preview.get("triple_element", []))
 	var names: Array[String] = []
 	for cfg in all:
-		var name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name", "Tower"))))
-		if not names.has(name):
-			names.append(name)
+			var tower_name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name", "Tower"))))
+			if not names.has(tower_name):
+				names.append(tower_name)
 	return names
 
 func _em_option_type(element_id: String) -> String:
@@ -3012,10 +3012,10 @@ func _clear_dynamic_tower_buttons() -> void:
 
 func _format_tower_button_name(tower_id: String, cfg: Dictionary) -> String:
 	var combo_type: String = str(cfg.get("combo_type", "neutral")).capitalize()
-	var name: String = str(cfg.get("display_name", cfg.get("name", tower_id)))
+	var tower_name: String = str(cfg.get("display_name", cfg.get("name", tower_id)))
 	if combo_type != "Neutral":
-		return "%s • %s" % [_elements_short(cfg.get("elements", [])), name]
-	return name
+		return "%s • %s" % [_elements_short(cfg.get("elements", [])), tower_name]
+	return tower_name
 
 func _build_tower_tooltip(tower_id: String, cfg: Dictionary, cost: int) -> String:
 	return TowerEffectFormatter.build_tooltip(tower_id, cfg, cost, _elements_full)
@@ -3076,7 +3076,11 @@ func set_lives(value: int) -> void:
 	var live_color := NeonStyle.CYAN_2 if value >= 5 else NeonStyle.DANGER
 	lives_label.add_theme_color_override("font_color", live_color)
 	if old_text != lives_label.text:
-		pulse_label(core_chip if core_chip else lives_label, 1.2 if value < 5 else 1.1)
+		var pulse_amount := 1.2 if value < 5 else 1.1
+		if core_chip:
+			pulse_label(core_chip, pulse_amount)
+		else:
+			pulse_label(lives_label, pulse_amount)
 		# Flash red on damage, then restore
 		var flash_tween := create_tween()
 		lives_label.add_theme_color_override("font_color", NeonStyle.DANGER)
@@ -3102,9 +3106,12 @@ func set_current_wave(current_wave: int, total_waves: int) -> void:
 	else:
 		wave_label.text = "Wave: %d" % current_wave
 	if old_text != wave_label.text:
-		pulse_label(wave_chip if wave_chip else wave_label)
+		if wave_chip:
+			pulse_label(wave_chip)
+		else:
+			pulse_label(wave_label)
 	if wave_chip:
-		var chip_text := "WAVE %d/%d" % [current_wave, total_waves] if total_waves > 0 else "WAVE %d" % current_wave
+		var chip_text: String = "WAVE %d/%d" % [current_wave, total_waves] if total_waves > 0 else "WAVE %d" % current_wave
 		wave_chip.set_value(chip_text, NeonStyle.CYAN, false)
 
 func set_next_wave_preview(next_wave_number: int, wave_name: String, has_next_wave: bool) -> void:
@@ -3359,12 +3366,12 @@ func _ensure_start_wave_countdown_badge() -> void:
 	start_wave_countdown_badge.offset_bottom = 19.0
 	start_wave_countdown_badge.visible = false
 
-func _set_start_wave_countdown_badge(visible: bool, seconds: int) -> void:
+func _set_start_wave_countdown_badge(should_show: bool, seconds: int) -> void:
 	_ensure_start_wave_countdown_badge()
 	if start_wave_countdown_badge == null:
 		return
-	start_wave_countdown_badge.visible = visible
-	if visible:
+	start_wave_countdown_badge.visible = should_show
+	if should_show:
 		start_wave_countdown_badge.text = "%ds" % seconds
 
 func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_name: String, wave_running: bool, can_start: bool, level_cleared: bool, locked_label: String = "", countdown_active: bool = false, countdown_remaining: float = 0.0, manual_first_wave: bool = false) -> void:
@@ -4173,8 +4180,8 @@ func shake_node(node: Control, strength: float = 10.0) -> void:
 	var tween = create_tween()
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	for i in range(4):
-		var offset = Vector2(randf_range(-strength, strength), randf_range(-strength, strength))
-		tween.tween_property(node, "position", original_pos + offset, 0.04)
+		var shake_offset = Vector2(randf_range(-strength, strength), randf_range(-strength, strength))
+		tween.tween_property(node, "position", original_pos + shake_offset, 0.04)
 	tween.tween_property(node, "position", original_pos, 0.04)
 
 func _make_panel_separator() -> ColorRect:
@@ -4238,7 +4245,7 @@ func _make_right_panel_eyebrow(text: String, color: Color) -> HBoxContainer:
 func _register_tower_detail_content(node: Control) -> void:
 	_td_content_nodes.append(node)
 
-func _set_tower_detail_collapsed(collapsed: bool) -> void:
+func _set_tower_detail_collapsed(_collapsed: bool) -> void:
 	# Legacy drawer Tower Detail is disabled. Selected tower actions now live
 	# only in the floating tower card.
 	tower_detail_collapsed = true
@@ -4780,11 +4787,11 @@ func _create_wave_intel_separator() -> ColorRect:
 	separator.color = NeonStyle.LINE
 	return separator
 
-func _set_next_wave_intel_visible(visible: bool) -> void:
+func _set_next_wave_intel_visible(should_show: bool) -> void:
 	if wave_intel_next_title_label:
-		wave_intel_next_title_label.visible = visible
+		wave_intel_next_title_label.visible = should_show
 	if wave_intel_next_summary_label:
-		wave_intel_next_summary_label.visible = visible
+		wave_intel_next_summary_label.visible = should_show
 
 func clear_wave_intel() -> void:
 	if wave_intel_panel == null: return
@@ -4821,14 +4828,14 @@ func clear_wave_intel() -> void:
 		wave_intel_warnings_label.visible = false
 	_set_next_wave_intel_visible(false)
 
-func set_wave_intel_visible(visible: bool) -> void:
+func set_wave_intel_visible(should_show: bool) -> void:
 	if wave_intel_panel == null:
 		return
 	if _wi_wrapper:
-		_wi_wrapper.visible = visible
-		wave_intel_panel.visible = visible and not wave_intel_collapsed
+		_wi_wrapper.visible = should_show
+		wave_intel_panel.visible = should_show and not wave_intel_collapsed
 	else:
-		wave_intel_panel.visible = visible
+		wave_intel_panel.visible = should_show
 	_refresh_right_info_column_visibility()
 
 func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx: int, total_waves: int, is_running: bool) -> void:
@@ -4940,9 +4947,9 @@ func _format_wave_preview_summary(preview: Dictionary) -> String:
 		
 		for p_id in sorted_ids:
 			var info = lane_info[p_id]
-			var counts = info.get("counts", {})
+			var lane_counts = info.get("counts", {})
 			var lane_name = "Lane A" if str(p_id) == "default" else str(p_id).capitalize()
-			lane_parts.append("[%s]: %s" % [lane_name, _format_counts(counts)])
+			lane_parts.append("[%s]: %s" % [lane_name, _format_counts(lane_counts)])
 		if formation_lines != "":
 			lane_parts.append(formation_lines)
 		return "\n".join(lane_parts)
@@ -5017,5 +5024,5 @@ func _get_trait_description(trait_name: String) -> String:
 		_: return trait_name.capitalize()
 
 
-func _on_tower_build_selected(tower_id: String) -> void:
+func _on_tower_build_selected(_tower_id: String) -> void:
 	pass # Replace with function body.

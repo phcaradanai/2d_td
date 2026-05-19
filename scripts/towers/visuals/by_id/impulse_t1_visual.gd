@@ -100,7 +100,7 @@ static func draw_contour(t: Node2D) -> void:
 		var p := Vector2(cos(a), sin(a)) * 27.0
 		t.draw_circle(p * VISUAL_SCALE, 5.4 * VISUAL_SCALE, OUTLINE)
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Element colors are intentionally fixed to the role from towers_tree.json: water + fire + nature.
 	# Static impulse field; no self-rotation here, so catalog/tower renderer controls rotation consistently.
 	_draw_arc(t, Vector2.ZERO, 33.0, -0.25, 0.95, WATER, 1.8)

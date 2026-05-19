@@ -172,6 +172,11 @@ func _resolve_visual_root() -> Node2D:
 	var n := get_node_or_null("Body")
 	if n is Node2D:
 		return n
+	if n != null:
+		# Legacy enemy scenes keep Body as a hidden ColorRect while procedural
+		# visuals draw on this PathFollow2D. That is valid and should not warn
+		# once per spawned enemy.
+		return self
 
 	n = get_node_or_null("VisualRoot")
 	if n is Node2D:
@@ -185,7 +190,7 @@ func _resolve_visual_root() -> Node2D:
 	if n is Node2D:
 		return n
 
-	DebugLog.warn_once("enemy_no_visual_" + name, "[Enemy] No Body/VisualRoot/Model/Sprite found, using self: %s" % name)
+	DebugLog.warn_once("enemy_no_visual_root", "[Enemy] No Body/VisualRoot/Model/Sprite found, using self fallback.")
 	return self
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
 @onready var death_pop_scene: PackedScene = preload("res://scenes/effects/DeathPopEffect.tscn")

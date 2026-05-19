@@ -6,7 +6,7 @@ extends RefCounted
 
 static var enabled := true
 
-static var disable_all_attack_vfx := true
+static var disable_all_attack_vfx := false
 static var disable_catalog_vfx := true
 static var disable_damage_numbers := true
 static var disable_impact_effects := true

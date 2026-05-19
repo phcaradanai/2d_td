@@ -105,12 +105,12 @@ static func draw_contour(t: Node2D) -> void:
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-24, -9, 9, 18))
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-2, 0), 8.5)
 
-static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	var stone := main_color.darkened(0.08)
 	var stone_mid := main_color.darkened(0.24)
 	var stone_light := main_color.lightened(0.18)
 	var amber := Color(1.0, 0.56, 0.16, 0.92)
-	var quake_c := Color(main_color.r, main_color.g, main_color.b, 0.42)
+	var _quake_c := Color(main_color.r, main_color.g, main_color.b, 0.42)
 	var head_size := 15.0 + float(lvl) * 1.0
 
 	# Static ground tremor language: communicates land-only AoE without heavy VFX.

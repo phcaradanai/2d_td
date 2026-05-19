@@ -60,7 +60,7 @@ static func _stroked_polyline(t: Node2D, points: Array[Vector2], color: Color, w
 	t.draw_polyline(path, OUTLINE, width * VISUAL_SCALE + 2.2, true)
 	t.draw_polyline(path, color, width * VISUAL_SCALE, true)
 
-static func _circle(t: Node2D, center: Vector2, radius: float, color: Color, outline_width: float = 2.0) -> void:
+static func _circle(t: Node2D, center: Vector2, radius: float, color: Color, _outline_width: float = 2.0) -> void:
 	TowerVisualDrawUtils._draw_contour_circle(t, center * VISUAL_SCALE, radius * VISUAL_SCALE)
 	t.draw_circle(center * VISUAL_SCALE, radius * VISUAL_SCALE, color)
 
@@ -106,7 +106,7 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_circle(Vector2.ZERO, _r(31.0), OUTLINE)
 	TowerVisualDrawUtils._draw_contour_poly(t, _regular_poly(Vector2.ZERO, 25.0, 8, PI / 8.0))
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, el_colors: Array[Color]) -> void:
 	# Static premium economy silhouette: refinery body + mint lens + single-target emitter.
 
 	# Outer value-field rings: communicates economy without being an aura gameplay visual.

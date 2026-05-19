@@ -5,14 +5,14 @@ class_name TowerVisualRootCage
 # Keep this file visual-only. Safe to edit silhouette, contour, colors, and lightweight draw calls.
 
 static func draw_contour(t: Node2D) -> void:
-	var lvl = t.tree_tier
-	var size = 20.0
+	var _lvl = t.tree_tier
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2.ZERO, 10)
 	for i in range(5):
 		var a = i * TAU/5.0 + t.idle_rotation * 0.2
 		TowerVisualDrawUtils._draw_contour_line(t, Vector2.ZERO, Vector2(cos(a),sin(a)) * 22, 3.0)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Roots (Darkness+Nature+Earth) — thorn/root cage
 	t.draw_circle(Vector2.ZERO, 10, Color(0.04,0.07,0.02,1.0))
 	for i in range(5):

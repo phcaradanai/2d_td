@@ -115,7 +115,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_poly(t, PackedVector2Array([Vector2(-8, 18), Vector2(3, 25), Vector2(7, 14), Vector2(-2, 10)]))
 	_outline_circle(t, Vector2(-9, 0), 8.0)
 
-static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	var leaf := main_color.lightened(0.28)
 	var lime := Color(0.62, 1.0, 0.34, 0.92)
 	var sap := Color(0.18, 0.45, 0.16, 0.92)

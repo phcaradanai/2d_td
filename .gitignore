@@ -2,6 +2,7 @@
 .godot/
 *.import
 .claude/
+.superpowers/
 
 # OS-specific ignores
 .DS_Store

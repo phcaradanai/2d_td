@@ -166,7 +166,7 @@ static func draw_contour(t: Node2D) -> void:
 		TowerVisualDrawUtils._draw_contour_circle(t, _v(p), _r(3.2))
 
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, _size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, _size: float, el_colors: Array[Color]) -> void:
 	var light_col := DEFAULT_LIGHT
 	var earth_col := DEFAULT_EARTH
 	if el_colors.size() >= 1:

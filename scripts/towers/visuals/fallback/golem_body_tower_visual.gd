@@ -6,11 +6,11 @@ class_name TowerVisualGolemBody
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-18,-18,36,36))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(0,-12,24+lvl*2,24))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Flesh Golem (Water+Nature+Earth) — bulky organic golem
 	t.draw_rect(Rect2(-18,-18,36,36), main_color.darkened(0.3))
 	t.draw_rect(Rect2(-12,-12,24,24), Color(0.04,0.08,0.05,1.0))

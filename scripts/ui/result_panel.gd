@@ -198,7 +198,7 @@ func _setup_record_feedback(improvements: Dictionary, summary: Dictionary = {}) 
 		record_feedback.visible = false
 
 func _format_time(seconds: int) -> String:
-	var mins = int(seconds / 60)
+	var mins = int(float(seconds) / 60.0)
 	var secs = int(seconds % 60)
 	return "%02d:%02d" % [mins, secs]
 
@@ -682,7 +682,7 @@ func _on_balance_mixed_test_pressed() -> void:
 func _on_balance_rollback_pressed() -> void:
 	if DEBUG_ACCESS_SCRIPT.block_balance_tool("Rollback Last Patch"):
 		return
-	var ok: bool = balance_patch_generator.rollback_last_patch(_balance_level_id())
+	balance_patch_generator.rollback_last_patch(_balance_level_id())
 	_balance_set_output(balance_patch_generator.last_operation_log)
 
 func _on_balance_export_pressed() -> void:

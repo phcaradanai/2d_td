@@ -59,7 +59,6 @@ static func draw(enemy: Node2D, size: float) -> void:
 	var nature := _nature_color(Color(0.22, 0.94, 0.46, 0.95), health_state)
 	var lime := Color(0.72, 1.00, 0.52, 0.95)
 	var dark := Color(0.012, 0.025, 0.022, 0.96)
-	var trim := Color(0.035, 0.11, 0.065, 0.92)
 	var shadow := Color(0.0, 0.0, 0.0, 0.26)
 
 	# Keep animation cheap: two waves total, used only for subtle speed read.

@@ -105,7 +105,7 @@ static func draw_contour(t: Node2D) -> void:
 	# Rear neutral badge.
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-11, 0), 7.0)
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Subtle neutral aura: tells the player this is a non-element starter, not a magic tower.
 	t.draw_circle(Vector2.ZERO, 17.0, NEUTRAL_GLOW)
 	for r in [19.0, 24.0]:

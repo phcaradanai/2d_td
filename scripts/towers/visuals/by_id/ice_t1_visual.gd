@@ -148,9 +148,9 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 		light_color = el_colors[1]
 
 	var ice := Color(0.62, 0.94, 1.0, 0.96)
-	var ice_soft := Color(water_color.r, water_color.g, water_color.b, 0.38)
+	var _ice_soft := Color(water_color.r, water_color.g, water_color.b, 0.38)
 	var ice_glow := Color(water_color.r, water_color.g, water_color.b, 0.12)
-	var deep := Color(0.025, 0.08, 0.12, 0.90)
+	var _deep := Color(0.025, 0.08, 0.12, 0.90)
 	var shadow := Color(0.015, 0.030, 0.045, 0.92)
 	var shard_len := 30.0 + float(lvl) * 2.5
 

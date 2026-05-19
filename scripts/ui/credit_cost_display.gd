@@ -2,7 +2,7 @@ extends Control
 class_name CreditCostDisplay
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
-const CreditIconDraw = preload("res://scripts/ui/credit_icon_draw.gd")
+const CreditIconDrawScript = preload("res://scripts/ui/credit_icon_draw.gd")
 
 var cost: int = 0
 var affordable: bool = true
@@ -30,7 +30,7 @@ func _draw() -> void:
 	var start_x := maxf(0.0, size.x - total_width)
 	var center_y := size.y * 0.5
 	var icon_center := Vector2(start_x + icon_radius, center_y)
-	CreditIconDraw.draw_coin(self, icon_center, alpha, icon_radius)
+	CreditIconDrawScript.draw_coin(self, icon_center, alpha, icon_radius)
 	var text_color := Color(NeonStyle.WARN.r, NeonStyle.WARN.g, NeonStyle.WARN.b, alpha)
 	if not affordable:
 		text_color = Color(NeonStyle.DANGER.r, NeonStyle.DANGER.g * 0.72 + NeonStyle.WARN.g * 0.28, NeonStyle.DANGER.b, 0.82)

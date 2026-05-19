@@ -98,7 +98,7 @@ func _refresh_level_cards_from_current_save() -> void:
 	if sm:
 		update_ui(sm)
 
-func _generate_dynamic_ui(save_manager: Node) -> void:
+func _generate_dynamic_ui(_save_manager: Node) -> void:
 	if dynamic_list_container == null: return
 	
 	# Clear old nodes if any

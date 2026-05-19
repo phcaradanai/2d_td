@@ -6,12 +6,12 @@ class_name TowerVisualAcidVat
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-14,-10,28,20))
 	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(0,-6,22+lvl*2,12))
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(20+lvl*2,0), 4)
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Corrosion (Darkness+Water+Fire) — acid reactor
 	t.draw_rect(Rect2(-14,-10,28,20), main_color.darkened(0.4))
 	t.draw_rect(Rect2(-10,-6,20,16), Color(0.04,0.06,0.03,1.0))

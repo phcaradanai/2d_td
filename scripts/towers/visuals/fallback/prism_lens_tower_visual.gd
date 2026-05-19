@@ -6,7 +6,7 @@ class_name TowerVisualPrismLens
 
 static func draw_contour(t: Node2D) -> void:
 	var lvl = t.tree_tier
-	var size = 20.0
+	var _size = 20.0
 	match t._get_tower_visual_family():
 		"ice":
 			TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(0,-24),Vector2(12,-8),Vector2(8,16),Vector2(0,22),Vector2(-8,16),Vector2(-12,-8)]))
@@ -21,7 +21,7 @@ static func draw_contour(t: Node2D) -> void:
 			TowerVisualDrawUtils._draw_contour_rect(t, Rect2(0,-4,32+lvl*4,8))
 			TowerVisualDrawUtils._draw_contour_rect(t, Rect2(28+lvl*4,-6,8,12))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Light / Ice / Polar share lens attacks but keep different silhouettes.
 	match t._get_tower_visual_family():
 		"ice":

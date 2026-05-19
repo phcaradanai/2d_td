@@ -263,11 +263,11 @@ func _add_separator(parent: Control) -> void:
 	sep.add_theme_color_override("color", _C_LINE2)
 	parent.add_child(sep)
 
-func _make_label(text: String, size: int, color: Color, wrap: bool = false) -> Label:
+func _make_label(text: String, size: int, color: Color, should_wrap: bool = false) -> Label:
 	var lbl: Label = Label.new()
 	lbl.text = text
 	lbl.add_theme_font_size_override("font_size", size)
 	lbl.add_theme_color_override("font_color", color)
-	if wrap:
+	if should_wrap:
 		lbl.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	return lbl

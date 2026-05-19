@@ -5,11 +5,11 @@ class_name TowerVisualTrickery
 # Keep this file visual-only. Safe to edit silhouette, contour, colors, and lightweight draw calls.
 
 static func draw_contour(t: Node2D) -> void:
-	var lvl = t.tree_tier
-	var size = 20.0
+	var _lvl = t.tree_tier
+	var _size = 20.0
 	TowerVisualDrawUtils._draw_contour_poly(t, PackedVector2Array([Vector2(0, -22), Vector2(18, -4), Vector2(10, 18), Vector2(-10, 18), Vector2(-18, -4)]))
 
-static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core_color: Color, _lvl: int, size: float, el_colors: Array[Color]) -> void:
 	# Hologram prism — support/clone tower (Light + Darkness)
 	var prism_fill := main_color if not el_colors.is_empty() else Color(0.72, 0.42, 1.0)
 	var prism_edge := secondary_color.lightened(0.35) if el_colors.size() >= 2 else Color(0.95, 0.82, 1.0)

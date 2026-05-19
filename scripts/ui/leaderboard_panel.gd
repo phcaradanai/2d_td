@@ -10,7 +10,6 @@ var leaderboard_service: Node = null   # local fallback
 var online_client: Node = null         # LeaderboardClient (optional)
 
 var _current_level_id: String = "level_01"
-var _loading: bool = false
 
 func _ready() -> void:
 	close_button.pressed.connect(_on_close_button_pressed)
@@ -160,4 +159,4 @@ func _on_close_button_pressed() -> void:
 	close_pressed.emit()
 
 func _fmt_time(seconds: int) -> String:
-	return "%02d:%02d" % [int(seconds / 60), int(seconds % 60)]
+	return "%02d:%02d" % [int(float(seconds) / 60.0), int(seconds % 60)]

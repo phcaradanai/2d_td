@@ -168,7 +168,7 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_circle(_s(Vector2(0, 30)), _r(8.0), OUTLINE)
 
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, size: float, _el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Passive assault field — reads rapid strikes, not AoE gameplay.
 	_arc(t, Vector2.ZERO, 35.0, -2.75, -1.62, WATER, 1.7)
 	_arc(t, Vector2.ZERO, 35.0, -0.92, 0.18, FIRE, 1.7)
