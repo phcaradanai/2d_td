@@ -489,8 +489,15 @@ func _build_side_panel_placeholder() -> void:
 	placeholder.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	selected_tower_panel.add_child(placeholder)
 
-func _on_card_selected(_tower_id: String, _cfg: Dictionary) -> void:
-	pass
+func _on_card_selected(tower_id: String, cfg: Dictionary) -> void:
+	if _selected_card != null:
+		_selected_card.set_selected(false)
+	for card in _all_cards:
+		if card.tower_id == tower_id:
+			_selected_card = card
+			card.set_selected(true)
+			break
+	_populate_side_panel(tower_id, cfg)
 
 func _replay_attack_vfx() -> void:
 	pass
@@ -509,3 +516,121 @@ func _make_toolbar_toggle(label: String, initial: bool, callback: Callable) -> C
 func _clear_attack_vfx_nodes() -> void:
 	for node in get_tree().get_nodes_in_group("attack_vfx"):
 		node.queue_free()
+
+func _populate_side_panel(tower_id: String, cfg: Dictionary) -> void:
+	for child in selected_tower_panel.get_children():
+		child.queue_free()
+	_side_preview = null
+	_side_dummy_tower = null
+	_side_dummy_target = null
+	_side_vfx_nodes.clear()
+
+	var title := Label.new()
+	title.text = str(cfg.get("display_name", tower_id))
+	title.add_theme_font_size_override("font_size", 16)
+	title.add_theme_color_override("font_color", Color(0.85, 0.98, 1.0))
+	title.clip_text = true
+	selected_tower_panel.add_child(title)
+
+	selected_tower_panel.add_child(_make_side_stat("ID", tower_id, Color(0.5, 0.65, 0.8)))
+
+	var tier: int = int(cfg.get("tier", 1))
+	var tier_str := "T%d" % tier if tier <= 3 else ("Pure" if tier == 4 else "Tier %d" % tier)
+	selected_tower_panel.add_child(_make_side_stat("Tier", tier_str, TIER_BADGE_COLOR.get(tier, Color.WHITE)))
+
+	var elements: Array = cfg.get("elements", [])
+	if not elements.is_empty():
+		selected_tower_panel.add_child(_make_element_badge(elements))
+
+	selected_tower_panel.add_child(_make_side_stat("Attack", str(cfg.get("attack_type", "-")), Color(0.7, 0.82, 0.9)))
+	selected_tower_panel.add_child(_make_side_stat("Visual", str(cfg.get("visual_type", "-")), Color(0.6, 0.72, 0.85)))
+
+	var status_effect: String = str(cfg.get("status_effect", ""))
+	if status_effect != "" and status_effect != "null":
+		selected_tower_panel.add_child(_make_side_stat("Status FX", status_effect, Color(0.55, 0.95, 0.72)))
+
+	var support_type: String = str(cfg.get("support_type", ""))
+	if support_type != "" and support_type != "null":
+		selected_tower_panel.add_child(_make_side_stat("Support", support_type, Color(0.95, 0.78, 0.38)))
+
+	var vfx_path_label := Label.new()
+	vfx_path_label.text = "VFX path:"
+	vfx_path_label.add_theme_font_size_override("font_size", 11)
+	vfx_path_label.add_theme_color_override("font_color", Color(0.45, 0.55, 0.65))
+	selected_tower_panel.add_child(vfx_path_label)
+
+	var path_edit := LineEdit.new()
+	path_edit.text = "res://scripts/vfx/towers/%s_attack_vfx.gd" % tower_id
+	path_edit.editable = false
+	path_edit.add_theme_font_size_override("font_size", 10)
+	selected_tower_panel.add_child(path_edit)
+
+	var badge_text := _get_vfx_badge(tower_id, tier)
+	var badge_label := Label.new()
+	badge_label.text = "VFX status: " + badge_text
+	badge_label.add_theme_font_size_override("font_size", 12)
+	selected_tower_panel.add_child(badge_label)
+
+	selected_tower_panel.add_child(_make_side_separator())
+
+	var replay_atk := Button.new()
+	replay_atk.text = "▶  Replay Attack"
+	replay_atk.pressed.connect(_replay_attack_vfx)
+	selected_tower_panel.add_child(replay_atk)
+
+	var replay_status := Button.new()
+	replay_status.text = "◉  Replay Status"
+	replay_status.pressed.connect(_show_status_preview)
+	selected_tower_panel.add_child(replay_status)
+
+	var replay_support := Button.new()
+	replay_support.text = "⬡  Replay Support"
+	replay_support.pressed.connect(_show_support_preview)
+	selected_tower_panel.add_child(replay_support)
+
+	selected_tower_panel.add_child(_make_side_separator())
+
+	_side_preview = TowerCatalogPreview.new()
+	_side_preview.tower_id = tower_id
+	_side_preview.tower_config = cfg
+	_side_preview.preview_size = Vector2(300, 200)
+	_side_preview.camera_zoom = 1.2
+	_side_preview.show_range_ring = true
+	_side_preview.show_projectile_preview = false
+	_side_preview.show_effects_preview = false
+	_side_preview.custom_minimum_size = _side_preview.preview_size
+	selected_tower_panel.add_child(_side_preview)
+
+func _make_side_stat(key: String, value: String, color: Color) -> Label:
+	var label := Label.new()
+	label.text = "%s: %s" % [key, value]
+	label.add_theme_font_size_override("font_size", 13)
+	label.add_theme_color_override("font_color", color)
+	label.clip_text = true
+	return label
+
+func _make_side_separator() -> ColorRect:
+	var sep := ColorRect.new()
+	sep.custom_minimum_size.y = 1
+	sep.color = Color(0.2, 0.5, 0.7, 0.3)
+	return sep
+
+func _show_status_preview() -> void:
+	if _side_preview == null:
+		return
+	_side_preview.set_preview_options(
+		_side_preview.show_range_ring,
+		false,
+		true,
+		false
+	)
+
+func _show_support_preview() -> void:
+	if _side_preview == null:
+		return
+	_side_preview.set_preview_options(
+		_side_preview.show_range_ring,
+		false,
+		true,
+		false
+	)
