@@ -210,15 +210,6 @@ func _ensure_structure() -> void:
 	if owner_enemy != null and status_effects_vfx.has_method("setup"):
 		status_effects_vfx.setup(owner_enemy)
 
-func _ensure_cast_beam() -> void:
-	if cast_beam != null and is_instance_valid(cast_beam):
-		return
-	cast_beam = vfx_root.get_node_or_null("CastBeam")
-	if cast_beam == null:
-		cast_beam = BeamScript.new()
-		cast_beam.name = "CastBeam"
-		vfx_root.add_child(cast_beam)
-
 func _ensure_target_links() -> void:
 	if target_links != null and is_instance_valid(target_links):
 		return
