@@ -12,7 +12,7 @@ extends Node
 #   fetch_top_scores(level_id, limit) → emits top_scores_loaded(ok, items)
 #   retry_pending()          → retries any stored failed submissions
 
-const BUNDLED_API_URL: String = "http://aovu1d8v7xwbm2ox287iskkc.165.22.240.130.sslip.io"  # Set to your deployed API URL
+const BUNDLED_API_URL: String = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"  # Set to your deployed API URL
 const CONFIG_PATH: String = "user://leaderboard_config.json"
 const PENDING_PATH: String = "user://pending_leaderboard.json"
 const REQUEST_TIMEOUT: float = 10.0

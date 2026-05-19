@@ -17,7 +17,7 @@ signal registration_failed(reason: String)
 
 const CACHE_PATH     = "user://runtime_identity.json"
 const BUILD_ID       = "v1.0.0-RC1"   # must match VERSION in main.gd
-const BUNDLED_API_URL = "http://aovu1d8v7xwbm2ox287iskkc.165.22.240.130.sslip.io"
+const BUNDLED_API_URL = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"
 const DEV_CONFIG_PATH = "user://remote_access_config_dev.json"
 const REQUEST_TIMEOUT = 8.0
 
