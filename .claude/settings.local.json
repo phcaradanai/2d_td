@@ -36,7 +36,9 @@
       "Bash(docker compose *)",
       "Bash(sed -i '' 's/lock_icon.text = \"Full Version\\\\\\\\nUnlock to Play\"/lock_icon.text = \"Restricted\\\\\\\\nUnlock to Play\"/' scripts/ui/level_select.gd)",
       "Bash(sed -i '' 's/label.text = \"Full Version\"/label.text = \"Restricted\"/' scripts/ui/level_select.gd)",
-      "Bash(sed -i '' 's/play_button.text = \"FULL VERSION REQUIRED\"/play_button.text = \"ACCESS RESTRICTED\"/' scripts/ui/level_select.gd)"
+      "Bash(sed -i '' 's/play_button.text = \"FULL VERSION REQUIRED\"/play_button.text = \"ACCESS RESTRICTED\"/' scripts/ui/level_select.gd)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:writing-plans:*)"
     ]
   }
 }

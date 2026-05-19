@@ -8,7 +8,7 @@ extends CanvasLayer
 
 const LABEL_FONT_SIZE := 13
 const PANEL_WIDTH     := 230
-const PANEL_HEIGHT    := 270
+const PANEL_HEIGHT    := 285
 const PADDING         := 8.0
 
 var _visible_flag: bool = false
@@ -83,6 +83,7 @@ func _refresh_label() -> void:
 	var proc_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
 	var physics_ms := Performance.get_monitor(Performance.TIME_PHYSICS_PROCESS) * 1000.0
 	var draw_calls := int(Performance.get_monitor(Performance.RENDER_TOTAL_DRAW_CALLS_IN_FRAME))
+	var node_count := int(Performance.get_monitor(Performance.OBJECT_NODE_COUNT))
 	var atk_budget := int(pbs.get_budget("max_attack_vfx_active")) if pbs and pbs.has_method("get_budget") else AttackVFX.MAX_ACTIVE
 
 	# Colour helpers.
@@ -98,6 +99,7 @@ func _refresh_label() -> void:
 		+ "Process  [color=#ffee88]%.2f ms[/color]\n" % proc_ms
 		+ "Physics  [color=#ffee88]%.2f ms[/color]\n" % physics_ms
 		+ "Draws    [color=#ffffff]%d[/color]\n" % draw_calls
+		+ "Nodes    [color=#ffffff]%d[/color]\n" % node_count
 		+ "Quality  [color=#%s]%s[/color]\n" % [c_qual, qual]
 		+ "──────────────────────\n"
 		+ "Creeps        [color=#ffffff]%d[/color]\n" % creep_count
