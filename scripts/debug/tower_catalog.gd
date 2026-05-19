@@ -458,15 +458,14 @@ func _build_toolbar() -> void:
 	fps_label.add_theme_font_size_override("font_size", 12)
 	fps_label.add_theme_color_override("font_color", Color(0.45, 0.65, 0.45))
 	fps_label.text = "FPS: --"
-	_controller._fps_label = fps_label
 	top_toolbar.add_child(fps_label)
 
 	var vfx_label := Label.new()
 	vfx_label.add_theme_font_size_override("font_size", 12)
 	vfx_label.add_theme_color_override("font_color", Color(0.45, 0.65, 0.85))
 	vfx_label.text = "VFX: 0"
-	_controller._vfx_count_label = vfx_label
 	top_toolbar.add_child(vfx_label)
+	_controller.set_status_labels(fps_label, vfx_label)
 
 func _build_side_panel_placeholder() -> void:
 	var style := StyleBoxFlat.new()

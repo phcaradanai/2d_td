@@ -33,6 +33,10 @@ func setup_timer() -> void:
 	_auto_play_timer.timeout.connect(_on_auto_play_tick)
 	add_child(_auto_play_timer)
 
+func set_status_labels(fps: Label, vfx_count: Label) -> void:
+	_fps_label = fps
+	_vfx_count_label = vfx_count
+
 func _process(_delta: float) -> void:
 	if _fps_label:
 		_fps_label.text = "FPS: %d" % Engine.get_frames_per_second()
