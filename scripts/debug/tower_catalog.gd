@@ -500,7 +500,49 @@ func _on_card_selected(tower_id: String, cfg: Dictionary) -> void:
 	_populate_side_panel(tower_id, cfg)
 
 func _replay_attack_vfx() -> void:
-	pass
+	if _selected_card == null or _side_preview == null:
+		return
+	if not _controller.show_attack_vfx:
+		return
+	if PerformanceFirebreak.disable_all_attack_vfx:
+		return
+
+	var tower_id: String = _selected_card.tower_id
+	var script: GDScript = TowerAttackVFXRegistry.get_vfx_script(tower_id)
+	if script == null:
+		return
+
+	var vfx_viewport: SubViewport = _side_preview.get_vfx_viewport()
+	if vfx_viewport == null:
+		return
+
+	if _side_dummy_tower == null:
+		_side_dummy_tower = DummyTowerPreview.new()
+		_side_dummy_tower.position = Vector2(-80, 0)
+		vfx_viewport.add_child(_side_dummy_tower)
+
+	if _side_dummy_target == null:
+		_side_dummy_target = DummyTargetPreview.new()
+		_side_dummy_target.position = Vector2(80, 0)
+		vfx_viewport.add_child(_side_dummy_target)
+
+	var elements: Array = _selected_card.cfg.get("elements", [])
+	var color: Color = Color(0.45, 0.92, 1.0)
+	if not elements.is_empty():
+		color = ELEM_COLOR.get(str(elements[0]), color)
+
+	_side_dummy_tower.setup(tower_id, color)
+
+	var vfx_node := Node2D.new()
+	vfx_node.set_script(script)
+	vfx_viewport.add_child(vfx_node)
+	vfx_node.setup(
+		_side_dummy_tower.global_position,
+		_side_dummy_target.global_position,
+		color
+	)
+	vfx_node.configure({})
+	_side_vfx_nodes.append(vfx_node)
 
 func _make_toolbar_sep() -> VSeparator:
 	return VSeparator.new()
