@@ -1292,7 +1292,7 @@ func shoot() -> void:
 		TowerAttackVFX.spawn_attack_vfx(self, current_target)
 		
 		if combat_audio_service:
-			combat_audio_service.play_tower_sfx(sfx_name, global_position)
+			combat_audio_service.play_tower_sfx(sfx_name)
 
 	var clone_source := _get_active_clone_source()
 	if is_instance_valid(clone_source) and clone_source.has_method("notify_clone_target_fired"):
@@ -1400,7 +1400,7 @@ func _perform_aura_attack() -> void:
 					effect.setup(tower_color, impact_scale, aura_vfx_type, secondary_color, accent_color)
 	
 	if not enemies.is_empty() and combat_audio_service:
-		combat_audio_service.play_tower_sfx("tower_shoot_sawblade", global_position)
+		combat_audio_service.play_tower_sfx("tower_shoot_sawblade")
 
 func _build_attack_status_effects() -> Array:
 	var effects: Array = []

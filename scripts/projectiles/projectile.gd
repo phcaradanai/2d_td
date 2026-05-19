@@ -383,7 +383,7 @@ func hit_target() -> void:
 				_apply_laser_pierce(hit_global, final_damage)
 
 			if combat_audio_service:
-				combat_audio_service.play_combat_event_sfx("projectile_hit", global_position)
+				combat_audio_service.play_combat_event_sfx("projectile_hit")
 
 	queue_free()
 
@@ -486,10 +486,10 @@ func _allow_impact_fx() -> bool:
 func apply_area_effect(hit_pos: Vector2) -> void:
 	if attack_type == "splash":
 		if combat_audio_service:
-			combat_audio_service.play_combat_event_sfx("splash_hit", hit_pos)
+			combat_audio_service.play_combat_event_sfx("splash_hit")
 	elif attack_type == "slow":
 		if combat_audio_service:
-			combat_audio_service.play_combat_event_sfx("projectile_hit", hit_pos)
+			combat_audio_service.play_combat_event_sfx("projectile_hit")
 
 	_spawn_impact_effect(hit_pos, vfx_core_color, rotation)
 

@@ -1,7 +1,7 @@
 ## PerfOverlay — lightweight live diagnostics overlay.
 ##
 ## Registered as an autoload ("PerfOverlay") in project.godot.
-## Visible only in OS.is_debug_build() and only when toggled on (F11).
+## Visible only in OS.is_debug_build() and only when toggled on (F10).
 ## Reads live counters from PerformanceBudget and static VFX budgets.
 ## Zero runtime cost in release builds (process disabled in _ready).
 extends CanvasLayer
@@ -46,7 +46,7 @@ func _ready() -> void:
 
 func _input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F11:
+		if event.keycode == KEY_F10:
 			_visible_flag = not _visible_flag
 			if _panel:
 				_panel.visible = _visible_flag
@@ -87,7 +87,7 @@ func _refresh_label() -> void:
 	var c_dn   := "00ff88" if dmg_num < DamageNumber.MAX_ACTIVE * 0.8 else ("ffcc00" if dmg_num < DamageNumber.MAX_ACTIVE else "ff4444")
 
 	_label.text = (
-		"[b][color=#aaddff]■ PERF OVERLAY[/color][/b]  [color=#555555]F11[/color]\n"
+		"[b][color=#aaddff]■ PERF OVERLAY[/color][/b]  [color=#555555]F10[/color]\n"
 		+ "──────────────────────\n"
 		+ "[color=#%s]FPS  %d  (%.1f ms)[/color]\n" % [c_fps, fps, f_ms]
 		+ "Process  [color=#ffee88]%.2f ms[/color]\n" % proc_ms

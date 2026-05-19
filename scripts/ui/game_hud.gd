@@ -12,6 +12,7 @@ signal element_choice_requested(option: Variant)
 signal target_mode_changed(mode: String)
 signal main_menu_requested()
 signal audio_settings_changed(settings: Dictionary)
+signal display_settings_changed(settings: Dictionary)
 signal reset_audio_requested()
 signal next_level_requested()
 signal back_to_map_requested()
@@ -121,6 +122,7 @@ var current_ui_state: HUDState = HUDState.GAMEPLAY
 @onready var sfx_mute_check: CheckBox = $Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer/SfxMuteCheck
 @onready var reset_audio_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/ResetAudioButton
 @onready var close_settings_button: Button = $Root/SettingsPanel/MarginContainer/VBoxContainer/CloseSettingsButton
+var window_mode_option_button: OptionButton = null
 
 # Wave Intel Panel
 var wave_intel_panel: PanelContainer = null
@@ -343,6 +345,13 @@ const SHOP_ENABLED_TEXT_COLOR := NeonStyle.INK_1
 const SHOP_HEADER_COLOR       := NeonStyle.CYAN_2
 const SHOP_GOLD_COLOR         := NeonStyle.WARN
 var result_panel: Control = null
+var _display_mode_options: Array[Dictionary] = [
+	{"id": "windowed", "label": "Windowed"},
+	{"id": "borderless", "label": "Borderless"},
+	{"id": "fullscreen", "label": "Fullscreen"},
+]
+var _selected_window_mode: String = "borderless"
+var updating_display_ui: bool = false
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -1149,6 +1158,53 @@ func set_audio_settings_ui(settings: Dictionary) -> void:
 	_refresh_combat_mode_buttons()
 	updating_audio_ui = false
 
+func set_display_mode_options(options: Array) -> void:
+	_display_mode_options.clear()
+	for option in options:
+		if option is Dictionary and option.has("id") and option.has("label"):
+			_display_mode_options.append({
+				"id": str(option["id"]),
+				"label": str(option["label"]),
+			})
+	if _display_mode_options.is_empty():
+		_display_mode_options = [
+			{"id": "windowed", "label": "Windowed"},
+			{"id": "borderless", "label": "Borderless"},
+			{"id": "fullscreen", "label": "Fullscreen"},
+		]
+	_refresh_window_mode_options()
+
+func set_display_settings_ui(settings: Dictionary) -> void:
+	updating_display_ui = true
+	_selected_window_mode = str(settings.get("window_mode", "borderless"))
+	_refresh_window_mode_options()
+	updating_display_ui = false
+
+func _on_window_mode_selected(index: int) -> void:
+	if updating_display_ui or window_mode_option_button == null:
+		return
+	var mode := str(window_mode_option_button.get_item_metadata(index))
+	if mode.is_empty():
+		return
+	_selected_window_mode = mode
+	display_settings_changed.emit({"window_mode": _selected_window_mode})
+
+func _refresh_window_mode_options() -> void:
+	if window_mode_option_button == null:
+		return
+	updating_display_ui = true
+	window_mode_option_button.clear()
+	var selected_index := 0
+	for i in range(_display_mode_options.size()):
+		var option := _display_mode_options[i]
+		var mode := str(option.get("id", ""))
+		window_mode_option_button.add_item(str(option.get("label", mode.capitalize())))
+		window_mode_option_button.set_item_metadata(i, mode)
+		if mode == _selected_window_mode:
+			selected_index = i
+	window_mode_option_button.select(selected_index)
+	updating_display_ui = false
+
 func _setup_settings_panel() -> void:
 	if not is_instance_valid(settings_panel):
 		return
@@ -1175,12 +1231,34 @@ func _setup_settings_panel() -> void:
 	if title_node is Label:
 		NeonStyle.apply_terminal_label(title_node, 15, NeonStyle.CYAN_2, true)
 		title_node.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		title_node.text = "AUDIO SETTINGS"
+		title_node.text = "SETTINGS"
 
 	# ── Volume & Mute section header ──────────────────────────────────────────
 	var vol_hdr := _make_settings_section_header("VOLUME & MUTE")
 	vbox.add_child(vol_hdr)
 	vbox.move_child(vol_hdr, 1)
+
+	var display_hdr := _make_settings_section_header("DISPLAY")
+	vbox.add_child(display_hdr)
+	vbox.move_child(display_hdr, 2)
+
+	var display_grid := GridContainer.new()
+	display_grid.name = "DisplaySettingsGrid"
+	display_grid.columns = 2
+	display_grid.add_theme_constant_override("h_separation", 14)
+	display_grid.add_theme_constant_override("v_separation", 6)
+	var window_mode_label := Label.new()
+	window_mode_label.text = "Window Mode"
+	NeonStyle.apply_terminal_label(window_mode_label, 12, NeonStyle.INK_2)
+	display_grid.add_child(window_mode_label)
+	window_mode_option_button = OptionButton.new()
+	window_mode_option_button.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	window_mode_option_button.custom_minimum_size = Vector2(220, 32)
+	window_mode_option_button.item_selected.connect(_on_window_mode_selected)
+	display_grid.add_child(window_mode_option_button)
+	vbox.add_child(display_grid)
+	vbox.move_child(display_grid, 3)
+	_refresh_window_mode_options()
 
 	# ── Style GridContainer (sliders + mute checks) ───────────────────────────
 	var grid: GridContainer = $Root/SettingsPanel/MarginContainer/VBoxContainer/GridContainer
@@ -1206,13 +1284,13 @@ func _setup_settings_panel() -> void:
 
 	var combat_hdr := _make_settings_section_header("COMBAT AUDIO")
 	vbox.add_child(combat_hdr)
-	vbox.move_child(combat_hdr, 4)
+	vbox.move_child(combat_hdr, 6)
 
 	var density_label := Label.new()
 	density_label.text = "Tower SFX Density"
 	NeonStyle.apply_terminal_label(density_label, 12, NeonStyle.INK_2)
 	vbox.add_child(density_label)
-	vbox.move_child(density_label, 5)
+	vbox.move_child(density_label, 7)
 
 	var mode_row := HBoxContainer.new()
 	mode_row.add_theme_constant_override("separation", 6)
@@ -1230,7 +1308,7 @@ func _setup_settings_panel() -> void:
 		_combat_mode_btns[m[0]] = btn
 		btn.pressed.connect(_on_combat_mode_selected.bind(m[0]))
 	vbox.add_child(mode_row)
-	vbox.move_child(mode_row, 6)
+	vbox.move_child(mode_row, 8)
 
 	var hint_label := Label.new()
 	hint_label.text = "Balanced is recommended for cleaner late-game audio."
@@ -1238,7 +1316,7 @@ func _setup_settings_panel() -> void:
 	hint_label.add_theme_font_size_override("font_size", 10)
 	hint_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	vbox.add_child(hint_label)
-	vbox.move_child(hint_label, 7)
+	vbox.move_child(hint_label, 9)
 
 	# ── Bottom row: Reset + Close side-by-side ────────────────────────────────
 	# After moves: Reset(8), Close(9), Version(10)
@@ -1252,7 +1330,7 @@ func _setup_settings_panel() -> void:
 	bottom_row.add_child(reset_audio_button)
 	bottom_row.add_child(close_settings_button)
 	vbox.add_child(bottom_row)
-	vbox.move_child(bottom_row, 8)
+	vbox.move_child(bottom_row, max(0, vbox.get_child_count() - 2))
 
 	# Style Reset dim, Close prominent
 	NeonStyle.style_button(reset_audio_button, NeonStyle.INK_3, false)

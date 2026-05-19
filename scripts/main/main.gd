@@ -20,6 +20,7 @@ const AUTO_CLEAR_PLAN_HELPER_SCRIPT = preload("res://scripts/main/auto_clear_pla
 const GAMEPLAY_CONTROLLER_BINDER_SCRIPT = preload("res://scripts/main/gameplay_controller_binder.gd")
 const DAMAGE_STATS_TRACKER_SCRIPT = preload("res://scripts/core/damage_stats_tracker.gd")
 const COMBAT_AUDIO_SERVICE_SCRIPT = preload("res://scripts/services/combat_audio_service.gd")
+const DISPLAY_MODE_SERVICE_SCRIPT = preload("res://scripts/services/display_mode_service.gd")
 const LEVEL_ACCESS_SERVICE_SCRIPT  = preload("res://scripts/services/level_access_service.gd")
 const REMOTE_ACCESS_CONFIG_PATH    = "res://scripts/services/remote_access_config_service.gd"
 const RUNTIME_IDENTITY_PATH        = "res://scripts/services/runtime_identity_service.gd"
@@ -125,6 +126,7 @@ const STARTER_TOWER_IDS := ["basic_tower_t1", "neutral_cannon_tower"]
 var sandbox_layer: CanvasLayer = null
 var sandbox_panel: PanelContainer = null
 var combat_audio_service: Node = null
+var display_mode_service: Node = null
 var runtime_identity_service: Node = null     # [Identity] Stable install/session/runtime IDs
 var level_access_service: Node = null         # [DemoGate] Level/wave access control
 var remote_access_config_service: Node = null # [DemoGate] Remote OTA config fetcher
@@ -182,6 +184,18 @@ func _ready() -> void:
 	if save_manager:
 		var _initial_mode: String = save_manager.get_audio_settings().get("audio_combat_mode", "balanced")
 		combat_audio_service.set_combat_mode(_initial_mode)
+
+	# Display mode service — owns desktop window/borderless/fullscreen changes.
+	display_mode_service = DISPLAY_MODE_SERVICE_SCRIPT.new()
+	display_mode_service.name = "DisplayModeService"
+	add_child(display_mode_service)
+	display_mode_service.display_mode_changed.connect(_on_display_mode_service_changed)
+	if game_hud and game_hud.has_method("set_display_mode_options"):
+		game_hud.set_display_mode_options(display_mode_service.get_mode_options())
+	var display_settings: Dictionary = save_manager.get_display_settings() if save_manager else display_mode_service.get_default_settings()
+	display_mode_service.apply_settings(display_settings, false)
+	if game_hud and game_hud.has_method("set_display_settings_ui"):
+		game_hud.set_display_settings_ui(display_mode_service.get_current_settings())
 
 	# [Identity] Runtime identity — stable install_id + fresh session_id each launch.
 	var _ris_script = load(RUNTIME_IDENTITY_PATH)
@@ -893,6 +907,8 @@ func _connect_signals() -> void:
 		game_hud.back_to_map_requested.connect(_on_level_select_requested)
 		game_hud.next_level_requested.connect(start_next_level)
 		game_hud.audio_settings_changed.connect(_on_audio_settings_changed)
+		if game_hud.has_signal("display_settings_changed"):
+			game_hud.display_settings_changed.connect(_on_display_settings_changed)
 		game_hud.reset_audio_requested.connect(_on_reset_audio_requested)
 
 	if debug_panel:
@@ -1060,7 +1076,7 @@ func _unhandled_input(event: InputEvent) -> void:
 				restart_level()
 			elif event.keycode == KEY_F6:
 				_on_debug_god_mode_toggled(not game_manager.debug_god_mode if game_manager else false)
-			elif event.keycode == KEY_F11:
+			elif event.keycode == KEY_F11 and event.shift_pressed:
 				if auto_play_verifier:
 					_start_debug_auto_play()
 
@@ -2380,6 +2396,16 @@ func _on_reset_audio_requested() -> void:
 			game_hud.set_audio_settings_ui(default_settings)
 		if save_manager:
 			save_manager.update_audio_settings(default_settings)
+
+func _on_display_settings_changed(settings: Dictionary) -> void:
+	if display_mode_service:
+		display_mode_service.apply_settings(settings)
+
+func _on_display_mode_service_changed(settings: Dictionary) -> void:
+	if game_hud and game_hud.has_method("set_display_settings_ui"):
+		game_hud.set_display_settings_ui(settings)
+	if save_manager:
+		save_manager.update_display_settings(settings)
 
 func _play_ui_click() -> void:
 	if audio_manager:

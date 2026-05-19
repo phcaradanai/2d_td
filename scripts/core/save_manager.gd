@@ -14,6 +14,9 @@ var save_data: Dictionary = {
 			"music_muted": false,
 			"sfx_muted": false,
 			"audio_combat_mode": "balanced"
+		},
+		"display": {
+			"window_mode": "borderless"
 		}
 	}
 }
@@ -202,6 +205,15 @@ func update_audio_settings(settings: Dictionary) -> void:
 	save_data["settings"]["audio"] = settings
 	save_to_disk()
 
+func get_display_settings() -> Dictionary:
+	if not save_data["settings"].has("display"):
+		save_data["settings"]["display"] = {"window_mode": "borderless"}
+	return save_data["settings"]["display"]
+
+func update_display_settings(settings: Dictionary) -> void:
+	save_data["settings"]["display"] = settings
+	save_to_disk()
+
 func clear_save() -> void:
 	save_data = {
 		"player_name": "Player",
@@ -215,6 +227,9 @@ func clear_save() -> void:
 				"music_muted": false,
 				"sfx_muted": false,
 				"audio_combat_mode": "balanced"
+			},
+			"display": {
+				"window_mode": "borderless"
 			}
 		}
 	}
