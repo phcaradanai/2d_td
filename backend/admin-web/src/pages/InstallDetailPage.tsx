@@ -25,6 +25,7 @@ interface AccessEditor {
   ends_at: string;
 }
 
+
 const defaultEditor: AccessEditor = {
   mode: 'full',
   enabled_levels: 'all',
@@ -35,6 +36,33 @@ const defaultEditor: AccessEditor = {
   allow_challenge_mode: true,
   starts_at: '',
   ends_at: '',
+};
+
+const normalizeInstallDetail = (detail: InstallDetail): InstallDetail => ({
+  ...detail,
+  latest: detail.latest ?? null,
+  sessions: Array.isArray(detail.sessions) ? detail.sessions : [],
+  tags: Array.isArray(detail.tags) ? detail.tags : [],
+  overrides: Array.isArray(detail.overrides) ? detail.overrides : [],
+  resolved: detail.resolved
+    ? {
+        ...detail.resolved,
+        tags: Array.isArray(detail.resolved.tags) ? detail.resolved.tags : [],
+        config: detail.resolved.config ?? {},
+      }
+    : null,
+});
+
+const prettyJson = (value: unknown): string => {
+  if (value === null || value === undefined || value === '') return '';
+
+  try {
+    return typeof value === 'string'
+      ? JSON.stringify(JSON.parse(value), null, 2)
+      : JSON.stringify(value, null, 2);
+  } catch {
+    return String(value);
+  }
 };
 
 export default function InstallDetailPage() {
@@ -55,8 +83,8 @@ export default function InstallDetailPage() {
         api.get<InstallDetail>(`/api/admin/installs/${installId}`),
         api.get<{ items: AccessProfile[] }>('/api/admin/access-profiles'),
       ]);
-      setData(detail);
-      setProfiles(profileData.items || []);
+      setData(normalizeInstallDetail(detail));
+      setProfiles(Array.isArray(profileData.items) ? profileData.items : []);
       if (detail.resolved?.config) {
         const c = detail.resolved.config;
         setEditor({
@@ -152,7 +180,22 @@ export default function InstallDetailPage() {
   if (loading) return <div className="loading">Loading install detail...</div>;
   if (!data) return <div className="err-msg">Install not found</div>;
 
-  const { latest, sessions, tags, overrides, resolved } = data;
+  const latest = data.latest;
+  const sessions = Array.isArray(data.sessions) ? data.sessions : [];
+  const tags = Array.isArray(data.tags) ? data.tags : [];
+  const overrides = Array.isArray(data.overrides) ? data.overrides : [];
+  const resolved = data.resolved
+    ? {
+        ...data.resolved,
+        tags: Array.isArray(data.resolved.tags) ? data.resolved.tags : [],
+        config: data.resolved.config ?? {},
+      }
+    : null;
+  const activeProfiles = Array.isArray(profiles)
+    ? profiles.filter((p) => p?.is_active)
+    : [];
+
+  if (!latest) return <div className="err-msg">Install detail is missing latest runtime data</div>;
 
   return (
     <div>
@@ -221,7 +264,7 @@ export default function InstallDetailPage() {
         <div className="card-title">Quick Apply Profile</div>
         <p className="warn-note">Recommended: apply to install_id. Runtime_id overrides are temporary/debug only.</p>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 12 }}>
-          {profiles.filter(p => p.is_active).map(p => (
+          {activeProfiles.map(p => (
             <button key={p.profile_key} className="btn-sm btn-ok" onClick={() => applyProfile('install_id', installId!, p.profile_key)}>
               {p.profile_key}
             </button>
@@ -229,7 +272,7 @@ export default function InstallDetailPage() {
         </div>
         <div style={{ color: 'var(--ink3)', fontSize: 10, marginBottom: 6 }}>Debug: apply to runtime_id</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          {profiles.filter(p => p.is_active).map(p => (
+          {activeProfiles.map(p => (
             <button key={p.profile_key} className="btn-sm" onClick={() => applyProfile('runtime_id', latest.runtime_id, p.profile_key)}>
               {p.profile_key} (runtime)
             </button>
@@ -286,7 +329,7 @@ export default function InstallDetailPage() {
             </div>
             {o.override_json && (
               <pre style={{ background: 'var(--bg0)', padding: 6, fontSize: 11, overflow: 'auto', maxHeight: 100, marginTop: 4 }}>
-                {JSON.stringify(JSON.parse(o.override_json), null, 2)}
+                {prettyJson(o.override_json)}
               </pre>
             )}
           </div>
