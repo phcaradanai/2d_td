@@ -93,12 +93,14 @@ static func _draw_status_overlays_simple(enemy: Node2D, size: float) -> void:
 	var shield: float = float(enemy.get("shield_remaining"))
 	var slow: float   = float(enemy.get("active_slow_percent"))
 	var flash: bool   = bool(enemy.get("is_flashing"))
+	var hit_color: Color = enemy.get("hit_flash_color")
+	var hit_alpha: float = clampf(float(enemy.get("hit_flash_alpha")), 0.0, 0.22)
 	if shield > 0:
-		enemy.draw_arc(Vector2.ZERO, size*1.4, 0, TAU, 12, Color(0.4,0.8,1.0,0.5), 1.5)
+		enemy.draw_arc(Vector2.ZERO, size*1.4, 0, TAU, 12, Color(0.4,0.8,1.0,0.22), 1.5)
 	if slow > 0:
-		enemy.draw_circle(Vector2.ZERO, size*1.2, Color(0.6,0.9,1.0,0.2))
-	if flash:
-		enemy.draw_circle(Vector2.ZERO, size*1.5, Color(1,1,1,0.4))
+		enemy.draw_circle(Vector2.ZERO, size*1.2, Color(0.6,0.9,1.0,0.16))
+	if flash and hit_alpha > 0.01:
+		enemy.draw_circle(Vector2.ZERO, size*1.35, Color(hit_color.r, hit_color.g, hit_color.b, hit_alpha))
 
 static func _draw_status_overlays_full(enemy: Node2D, size: float) -> void:
 	var shield: float    = float(enemy.get("shield_remaining"))
@@ -107,14 +109,16 @@ static func _draw_status_overlays_full(enemy: Node2D, size: float) -> void:
 	var is_runner: bool  = bool(enemy.get("is_runner"))
 	var is_hunter: bool  = bool(enemy.get("is_hunter"))
 	var pulse_time: float = float(enemy.get("pulse_time"))
+	var hit_color: Color = enemy.get("hit_flash_color")
+	var hit_alpha: float = clampf(float(enemy.get("hit_flash_alpha")), 0.0, 0.22)
 
 	if shield > 0:
-		var p_pulse: float = sin(pulse_time*5.0)*0.1+0.9
-		enemy.draw_arc(Vector2.ZERO, size*1.4*p_pulse, 0, TAU, 16, Color(0.4,0.8,1.0,0.4), 1.5)
-		enemy.draw_circle(Vector2.ZERO, size*1.4, Color(0.4,0.8,1.0,0.08))
+		var p_pulse: float = sin(pulse_time*0.7)*0.025+0.985
+		enemy.draw_arc(Vector2.ZERO, size*1.4*p_pulse, 0, TAU, 16, Color(0.4,0.8,1.0,0.24), 1.5)
+		enemy.draw_circle(Vector2.ZERO, size*1.4, Color(0.4,0.8,1.0,0.045))
 	if slow > 0:
-		enemy.draw_circle(Vector2.ZERO, size*1.2, Color(0.6,0.9,1.0,0.25))
-		enemy.draw_arc(Vector2.ZERO, size*1.1, 0, TAU, 24, Color(0.6,0.9,1.0,0.4), 2.0)
-	if flash:
-		enemy.draw_circle(Vector2.ZERO, size*1.5, Color(1,1,1,0.4))
-		enemy.draw_arc(Vector2.ZERO, size*1.6, 0, TAU, 32, Color(1,1,1,0.6), 2.0)
+		enemy.draw_circle(Vector2.ZERO, size*1.2, Color(0.6,0.9,1.0,0.18))
+		enemy.draw_arc(Vector2.ZERO, size*1.1, 0, TAU, 24, Color(0.6,0.9,1.0,0.24), 1.5)
+	if flash and hit_alpha > 0.01:
+		enemy.draw_circle(Vector2.ZERO, size*1.35, Color(hit_color.r, hit_color.g, hit_color.b, hit_alpha))
+		enemy.draw_arc(Vector2.ZERO, size*1.45, 0, TAU, 24, Color(hit_color.r, hit_color.g, hit_color.b, hit_alpha * 0.75), 1.25)

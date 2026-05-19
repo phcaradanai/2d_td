@@ -46,12 +46,10 @@ func _draw_heal_received(t: float, a: float) -> void:
 		draw_string(ThemeDB.fallback_font, Vector2(10, -20 - t * 12.0), "+%d" % int(round(amount)), HORIZONTAL_ALIGNMENT_LEFT, -1, 12, Color(0.5, 1.0, 0.72, a))
 
 func _draw_shield_spark(t: float, a: float) -> void:
-	draw_arc(Vector2.ZERO, 16.0 + t * 10.0, -PI * 0.2, PI * 1.2, 24, Color(0.35, 0.9, 1.0, 0.75 * a), 3.0)
-	for i in range(6):
-		var angle := float(i) / 6.0 * TAU + time * 7.0
-		draw_line(Vector2.RIGHT.rotated(angle) * 8.0, Vector2.RIGHT.rotated(angle) * (18.0 + t * 10.0), Color(0.7, 1.0, 1.0, 0.55 * a), 1.0)
+	var alpha := minf(color.a, 0.24) * a
+	draw_arc(Vector2.ZERO, 12.0 + t * 8.0, -PI * 0.15, PI * 1.15, 18, Color(color.r, color.g, color.b, alpha), 1.5)
 	if OS.is_debug_build() and debug_text != "":
-		draw_string(ThemeDB.fallback_font, Vector2(8, -18), debug_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(0.7, 1.0, 1.0, a))
+		draw_string(ThemeDB.fallback_font, Vector2(8, -18), debug_text, HORIZONTAL_ALIGNMENT_LEFT, -1, 10, Color(color.r, color.g, color.b, minf(a, 0.65)))
 
 func _draw_split_burst(t: float, a: float) -> void:
 	for i in range(12):

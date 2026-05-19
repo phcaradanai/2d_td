@@ -96,6 +96,11 @@ var _draw_timer: float = 0.0
 var swarm_core_flicker_time: float = 0.0
 var swarm_pack_density: float = 0.0
 var swarm_pack_check_timer: float = 0.0
+var hit_flash_color: Color = Color(1.0, 0.62, 0.26, 0.0)
+var hit_flash_alpha: float = 0.0
+var _hit_flash_tween: Tween = null
+var _hit_pulse_tween: Tween = null
+var _hit_shake_tween: Tween = null
 const PERFORMANCE_VISUAL_MODE := true   # Simplified silhouette rendering for 60 FPS
 const ENEMY_VISUAL_REDRAW_INTERVAL := 0.125  # 8 FPS visual update (was 1/30 = 30 FPS)
 const ENEMY_OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.74)
@@ -2411,7 +2416,7 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	if damage_stats and damage_stats.has_method("record_damage"):
 		damage_stats.record_damage(source_id, final_damage)
 		
-	flash_body()
+	flash_body(source_id if source_id != "" else p_attack_type)
 	var dn_color = Color.WHITE
 	if shield_remaining > 0 and not is_bulwark:
 		dn_color = Color(0.4, 0.8, 1.0) # Light blue for shielded hits
@@ -2520,13 +2525,32 @@ func _process_tower_status_effects(delta: float) -> void:
 		for j in range(triggered_indexes.size() - 1, -1, -1):
 			delayed_damage_effects.remove_at(triggered_indexes[j])
 
-func flash_body() -> void:
-	is_flashing = true
+func flash_body(damage_context: String = "") -> void:
+	var comfort := get_node_or_null("/root/VisualComfort")
+	if comfort != null and comfort.has_method("should_skip_hit_flash") and comfort.should_skip_hit_flash():
+		return
+	if comfort != null and comfort.has_method("allow_flash"):
+		if not comfort.allow_flash("hit_%s" % get_instance_id()):
+			return
+	if not is_visible_in_tree():
+		return
+	if _hit_flash_tween != null and _hit_flash_tween.is_valid() and _hit_flash_tween.is_running():
+		return
+
+	if comfort != null and comfort.has_method("get_hit_flash_color"):
+		hit_flash_color = comfort.get_hit_flash_color(damage_context)
+	else:
+		hit_flash_color = Color(1.0, 0.62, 0.26, 0.20)
+	hit_flash_alpha = minf(hit_flash_color.a, 0.22)
+	is_flashing = hit_flash_alpha > 0.01
 	queue_redraw()
-	# Strong white flash
-	var tween = create_tween()
-	tween.tween_interval(0.06)
-	tween.tween_callback(func():
+
+	var duration := 0.08
+	if comfort != null and comfort.has_method("get_hit_flash_duration"):
+		duration = float(comfort.get_hit_flash_duration())
+	_hit_flash_tween = create_tween()
+	_hit_flash_tween.tween_property(self, "hit_flash_alpha", 0.0, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_hit_flash_tween.tween_callback(func():
 		is_flashing = false
 		queue_redraw()
 	)
@@ -2639,7 +2663,14 @@ func is_alive() -> bool:
 	return hp > 0 and not reached_base_flag and not is_dead_flag
 
 func _play_hit_pulse() -> void:
-	var tween = create_tween()
+	if PerformanceFirebreak.disable_cosmetic_tweens:
+		return
+	if not is_visible_in_tree():
+		return
+	if _hit_pulse_tween != null and _hit_pulse_tween.is_valid() and _hit_pulse_tween.is_running():
+		return
+	_hit_pulse_tween = create_tween()
+	var tween := _hit_pulse_tween
 	var is_swarm := enemy_type == "swarm" or tags.has("swarm")
 	var s = randf_range(1.08, 1.14) if is_swarm else randf_range(1.15, 1.25)
 	# Scale-squeeze on the PathFollow2D root is safe: PathFollow2D._update_transform()
@@ -2653,8 +2684,11 @@ func _play_hit_pulse() -> void:
 	# off the path after each hit (especially visible on control-family area hits).
 	var shake_target: Node2D = visual_root if (visual_root != null and visual_root != self) else null
 	if shake_target != null:
+		if _hit_shake_tween != null and _hit_shake_tween.is_valid() and _hit_shake_tween.is_running():
+			return
 		var original_pos := shake_target.position
-		var shake_tween := create_tween()
+		_hit_shake_tween = create_tween()
+		var shake_tween := _hit_shake_tween
 		var shake_strength := 1.4 if is_swarm else 3.0
 		var shake_dir := Vector2(randf_range(-1.0, 1.0), randf_range(-1.0, 1.0)).normalized() * shake_strength
 		shake_tween.tween_property(shake_target, "position", original_pos + shake_dir, 0.018 if is_swarm else 0.03)

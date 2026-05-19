@@ -6,7 +6,6 @@ var color: Color = Color(0.5, 0.8, 1.0, 1.0)
 var duration: float = 0.2
 var elapsed: float = 0.0
 var segments: Array[Vector2] = []
-var flicker_timer: float = 0.0
 
 func setup(p_start: Vector2, p_end: Vector2, p_color: Color = Color(0.5, 0.8, 1.0, 1.0)) -> void:
 	start_pos = p_start
@@ -36,12 +35,6 @@ func _generate_segments() -> void:
 
 func _process(delta: float) -> void:
 	elapsed += delta
-	flicker_timer += delta
-	
-	if flicker_timer > 0.04:
-		_generate_segments()
-		flicker_timer = 0.0
-		
 	if elapsed >= duration:
 		queue_free()
 		return
@@ -51,13 +44,13 @@ func _process(delta: float) -> void:
 func _draw() -> void:
 	if segments.size() < 2: return
 	
-	var alpha = 1.0 - (elapsed / duration)
+	var alpha = (1.0 - (elapsed / duration)) * 0.28
 	var c = color
 	c.a = alpha
 	
 	# Glow line
 	var glow_c = c
-	glow_c.a *= 0.4
+	glow_c.a = minf(glow_c.a * 0.4, 0.18)
 	draw_polyline(segments, glow_c, 6.0, true)
 	
 	# Core bolt

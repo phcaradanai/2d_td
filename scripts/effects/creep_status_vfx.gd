@@ -259,4 +259,4 @@ func _glyph_broken_shield(c: Vector2, col: Color) -> void:
 	# Diagonal crack
 	draw_line(c + Vector2(-s * 0.15, -s * 0.65),
 			  c + Vector2( s * 0.38,  s * 0.60),
-			  Color(1.0, 1.0, 1.0, 0.50), 1.4, true)
+			  Color(0.82, 0.92, 1.0, 0.20), 1.4, true)

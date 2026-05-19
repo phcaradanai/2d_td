@@ -111,8 +111,17 @@ func play_heal_received(amount: float) -> void:
 	pass
 
 func play_shield_spark(raw_damage: float, final_damage: float) -> void:
+	if owner_enemy == null or not is_instance_valid(owner_enemy):
+		return
+	var comfort := get_node_or_null("/root/VisualComfort")
+	if comfort != null and comfort.has_method("allow_shield_ripple"):
+		if not comfort.allow_shield_ripple("shield_%s" % owner_enemy.get_instance_id()):
+			return
 	var text := "%.0f>%.0f" % [raw_damage, final_damage] if OS.is_debug_build() else ""
-	_spawn_impact("shield_spark", Color(0.32, 0.9, 1.0), 0.42, 0.0, text)
+	var color := Color(0.42, 0.78, 1.0, 0.24)
+	if comfort != null and comfort.has_method("get_shield_color"):
+		color = comfort.get_shield_color("shield")
+	_spawn_impact("shield_spark", color, 0.34, 0.0, text)
 
 func play_split_burst(child_type: String, count: int) -> void:
 	_spawn_impact("split_burst", Color(0.9, 0.45, 1.0), 0.62, 0.0, "%s x%d" % [child_type, count])
@@ -152,7 +161,7 @@ func update_disrupted_towers(towers: Array) -> void:
 	linked_towers = towers.duplicate()
 	_ensure_target_links()
 	if target_links:
-		target_links.show_links(owner_enemy as Node2D, linked_towers, Color(1.0, 0.15, 0.8))
+		target_links.show_links(owner_enemy as Node2D, linked_towers, _get_link_color("disruptor"))
 		target_links.visible = debug_show_active_skill_targets
 	_sync_tower_icons()
 
@@ -160,7 +169,7 @@ func clear_disrupted_tower(tower: Node) -> void:
 	linked_towers.erase(tower)
 	_ensure_target_links()
 	if target_links:
-		target_links.show_links(owner_enemy as Node2D, linked_towers, Color(1.0, 0.15, 0.8))
+		target_links.show_links(owner_enemy as Node2D, linked_towers, _get_link_color("disruptor"))
 		target_links.visible = debug_show_active_skill_targets
 	_remove_tower_icon(tower)
 
@@ -368,6 +377,12 @@ func _spawn_impact(mode: String, color: Color, duration: float, amount: float = 
 	else:
 		vfx_root.add_child(impact)
 	impact.setup(mode, color, duration, amount, debug_text)
+
+func _get_link_color(effect_type: String) -> Color:
+	var comfort := get_node_or_null("/root/VisualComfort")
+	if comfort != null and comfort.has_method("get_link_color"):
+		return comfort.get_link_color(effect_type)
+	return Color(0.48, 0.78, 1.0, 0.28)
 
 func _show_status(icon_type: String, color: Color, text: String) -> void:
 	if status_icon == null or not is_instance_valid(status_icon):
