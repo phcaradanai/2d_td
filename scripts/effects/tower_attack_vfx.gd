@@ -112,6 +112,13 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 		if AttackVFX._active_count >= AttackVFX.MAX_ACTIVE:
 			return
 
+	# New per-id system: try registry first.
+	var tower_id: String = str(tower.get("tower_id")) if "tower_id" in tower else ""
+	if tower_id != "" and TowerAttackVFXRegistry.get_script(tower_id) != null:
+		TowerAttackVFXService.spawn(tower, target)
+		return
+
+	# Legacy visual_type dispatch (unchanged — runs for unknown tower_ids).
 	var vfx_type := resolve_vfx_type(tower)
 
 	# Element-aware color (calls tower's own helper; falls back to white).
