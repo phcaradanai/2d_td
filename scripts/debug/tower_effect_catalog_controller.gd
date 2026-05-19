@@ -23,6 +23,9 @@ var _fps_label: Label = null
 var _vfx_count_label: Label = null
 var _auto_play_timer: Timer = null
 
+func _ready() -> void:
+	setup_timer()
+
 func setup_timer() -> void:
 	_auto_play_timer = Timer.new()
 	_auto_play_timer.wait_time = 0.8
@@ -52,4 +55,4 @@ func set_paused(p: bool) -> void:
 
 func _on_auto_play_tick() -> void:
 	if not paused and auto_play_enabled:
-		emit_signal("auto_play_tick")
+		auto_play_tick.emit()
