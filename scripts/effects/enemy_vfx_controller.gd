@@ -150,6 +150,7 @@ func update_disrupted_towers(towers: Array) -> void:
 		if not towers.has(old_tower):
 			_remove_tower_icon(old_tower)
 	linked_towers = towers.duplicate()
+	_ensure_target_links()
 	if target_links:
 		target_links.show_links(owner_enemy as Node2D, linked_towers, Color(1.0, 0.15, 0.8))
 		target_links.visible = debug_show_active_skill_targets
@@ -157,6 +158,7 @@ func update_disrupted_towers(towers: Array) -> void:
 
 func clear_disrupted_tower(tower: Node) -> void:
 	linked_towers.erase(tower)
+	_ensure_target_links()
 	if target_links:
 		target_links.show_links(owner_enemy as Node2D, linked_towers, Color(1.0, 0.15, 0.8))
 		target_links.visible = debug_show_active_skill_targets
@@ -166,6 +168,7 @@ func clear_all_disrupted_towers() -> void:
 	for tower in linked_towers:
 		_remove_tower_icon(tower)
 	linked_towers.clear()
+	_ensure_target_links()
 	if target_links:
 		target_links.clear_links()
 
@@ -196,17 +199,6 @@ func _ensure_structure() -> void:
 		vfx_root.name = "VFXRoot"
 		vfx_root.z_index = 1
 		visual_root.add_child(vfx_root)
-	cast_beam = vfx_root.get_node_or_null("CastBeam")
-	if cast_beam == null:
-		cast_beam = BeamScript.new()
-		cast_beam.name = "CastBeam"
-		vfx_root.add_child(cast_beam)
-	target_links = vfx_root.get_node_or_null("TargetLinks")
-	if target_links == null:
-		target_links = BeamScript.new()
-		target_links.name = "TargetLinks"
-		vfx_root.add_child(target_links)
-
 	# Status-effect indicator layer (slow/root/burn/poison/vuln icons + rings).
 	status_effects_vfx = vfx_root.get_node_or_null("StatusEffectsVFX")
 	if status_effects_vfx == null:
@@ -217,6 +209,24 @@ func _ensure_structure() -> void:
 	# Setup is deferred so owner_enemy is guaranteed to be set by then.
 	if owner_enemy != null and status_effects_vfx.has_method("setup"):
 		status_effects_vfx.setup(owner_enemy)
+
+func _ensure_cast_beam() -> void:
+	if cast_beam != null and is_instance_valid(cast_beam):
+		return
+	cast_beam = vfx_root.get_node_or_null("CastBeam")
+	if cast_beam == null:
+		cast_beam = BeamScript.new()
+		cast_beam.name = "CastBeam"
+		vfx_root.add_child(cast_beam)
+
+func _ensure_target_links() -> void:
+	if target_links != null and is_instance_valid(target_links):
+		return
+	target_links = vfx_root.get_node_or_null("TargetLinks")
+	if target_links == null:
+		target_links = BeamScript.new()
+		target_links.name = "TargetLinks"
+		vfx_root.add_child(target_links)
 
 func _configure_role() -> void:
 	if owner_enemy == null:
