@@ -37,6 +37,7 @@ func acquire(container: Node) -> Node:
 	proj.reparent(container)
 	proj.visible = true
 	proj.set_process(true)
+	proj.set_physics_process(true)
 	return proj
 
 ## Return a projectile to the pool and reset its state.
@@ -71,3 +72,16 @@ func _reset_projectile(proj: Node) -> void:
 	proj.modulate = Color.WHITE
 	proj.rotation = 0.0
 	proj.scale = Vector2.ONE
+	proj.set("trail_points", [])
+	proj.set("damage", 0.0)
+	proj.set("speed", 500.0)
+	proj.set("attack_type", "single")
+	proj.set("effect_radius", 0.0)
+	proj.set("slow_percent", 0.0)
+	proj.set("slow_duration", 0.0)
+	proj.set("vulnerability_percent", 0.0)
+	proj.set("vulnerability_duration", 0.0)
+	proj.set("source_id", "")
+	proj.set("chain_range", 0.0)
+	proj.set("chain_falloff", 1.0)
+	proj.set("target_categories", ["land"])
