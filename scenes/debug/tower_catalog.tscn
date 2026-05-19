@@ -31,7 +31,7 @@ theme_override_constants/margin_bottom = 16
 
 [node name="MainVBox" type="VBoxContainer" parent="RootMargin" unique_id=1905082595]
 layout_mode = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 8
 
 [node name="Header" type="HBoxContainer" parent="RootMargin/MainVBox" unique_id=1922751304]
 layout_mode = 2
@@ -44,13 +44,13 @@ size_flags_horizontal = 3
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
 theme_override_font_sizes/font_size = 28
-text = "Tower Catalog"
+text = "Tower Effect Catalog"
 
 [node name="SubtitleLabel" type="Label" parent="RootMargin/MainVBox/Header/HeaderLeft" unique_id=304172565]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.65, 0.75, 1)
 theme_override_font_sizes/font_size = 14
-text = "Debug preview for tower models, roles, and element identity"
+text = "Debug VFX preview — all towers, attack / status / support effects"
 
 [node name="PreviewOnlyLabel" type="Label" parent="RootMargin/MainVBox/Header" unique_id=1321395903]
 layout_mode = 2
@@ -59,12 +59,33 @@ theme_override_font_sizes/font_size = 12
 text = "Preview only — not gameplay simulation"
 horizontal_alignment = 2
 
-[node name="ScrollContainer" type="ScrollContainer" parent="RootMargin/MainVBox" unique_id=865161609]
+[node name="TopToolbar" type="HBoxContainer" parent="RootMargin/MainVBox"]
+layout_mode = 2
+theme_override_constants/separation = 6
+custom_minimum_size = Vector2(0, 36)
+
+[node name="ContentArea" type="HBoxContainer" parent="RootMargin/MainVBox"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 8
 
-[node name="ContentVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ScrollContainer" unique_id=1735917624]
+[node name="ScrollContainer" type="ScrollContainer" parent="RootMargin/MainVBox/ContentArea" unique_id=865161609]
 layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+horizontal_scroll_mode = 1
+
+[node name="ContentVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ContentArea/ScrollContainer" unique_id=1735917624]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 0
 theme_override_constants/separation = 16
+
+[node name="SelectedTowerPanel" type="VBoxContainer" parent="RootMargin/MainVBox/ContentArea"]
+layout_mode = 2
+size_flags_horizontal = 0
+size_flags_vertical = 3
+custom_minimum_size = Vector2(320, 0)
+theme_override_constants/separation = 8
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1107839158]
