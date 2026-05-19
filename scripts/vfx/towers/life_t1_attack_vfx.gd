@@ -1,0 +1,7 @@
+extends "res://scripts/vfx/core/base_tower_attack_vfx.gd"
+func configure(_data: Dictionary) -> void:
+	lifetime = 0.20
+	palette_primary  = Color(0.45, 1.00, 0.60)
+	palette_secondary = Color(0.80, 1.00, 0.85)
+func _draw_vfx(t: float, a: float, _lend: Vector2) -> void:
+	_h_support_pulse(t, a)
