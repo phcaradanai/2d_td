@@ -108,6 +108,11 @@ var health_visual_state: int = HealthVisualState.HEALTH_OK
 # 0.25 s matches human-visible refresh; gameplay feel is unchanged.
 const SHIELD_AURA_INTERVAL := 0.25
 const DISRUPT_AURA_INTERVAL := 0.25
+## DOT tick interval — reduces per-frame damage array walks on all enemies.
+## Total damage-per-second is unchanged: damage_per_second × tick_delta = same DPS.
+const DOT_TICK_INTERVAL: float = 0.10
+var _dot_tick_timer: float = 0.0
+var _dot_tick_accum: float = 0.0
 var _shield_aura_timer: float = 0.0
 var _disrupt_aura_timer: float = 0.0
 
@@ -1843,8 +1848,13 @@ func _process(delta: float) -> void:
 			update_effective_speed()
 			enemy_modifier_changed.emit(self, "root", 0.0)
 
-	_process_tower_status_effects(delta)
-		
+	_dot_tick_timer -= delta
+	_dot_tick_accum += delta
+	if _dot_tick_timer <= 0.0:
+		_dot_tick_timer = DOT_TICK_INTERVAL
+		_process_tower_status_effects(_dot_tick_accum)
+		_dot_tick_accum = 0.0
+
 	# Skill Logic
 	if skill_id != "":
 		skill_timer -= delta
