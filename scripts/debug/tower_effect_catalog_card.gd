@@ -19,6 +19,12 @@ func setup(p_panel: PanelContainer, p_tower_id: String, p_cfg: Dictionary) -> vo
 	_card_panel = p_panel
 	tower_id = p_tower_id
 	cfg = p_cfg
+	_card_panel.mouse_filter = Control.MOUSE_FILTER_STOP
+	_card_panel.gui_input.connect(_on_panel_gui_input)
+
+func _on_panel_gui_input(event: InputEvent) -> void:
+	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
+		card_selected.emit(tower_id, cfg)
 
 func set_selected(selected: bool) -> void:
 	_is_selected = selected

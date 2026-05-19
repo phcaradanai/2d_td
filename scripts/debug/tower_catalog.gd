@@ -190,7 +190,9 @@ func _get_vfx_badge(tower_id: String, tier: int) -> String:
 		base_re.compile("_t\\d+$")
 		var t1_id := base_re.sub(tower_id, "_t1")
 		var t1_class := t1_id + "_attack_vfx"
-		if script.source_code.contains("extends " + t1_class):
+		# source_code is only populated in editor/debug mode; empty in exports.
+		# Badge may show "OK" instead of "T1 Fallback" in exported builds — acceptable for a debug tool.
+		if not script.source_code.is_empty() and script.source_code.contains("extends " + t1_class):
 			return "T1 Fallback"
 	return "OK"
 
@@ -281,10 +283,6 @@ func _make_tower_card(tower_id: String, cfg: Dictionary) -> PanelContainer:
 	card_script.card_selected.connect(_on_card_selected)
 	_all_cards.append(card_script)
 
-	card.gui_input.connect(func(event: InputEvent) -> void:
-		if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
-			card_script.card_selected.emit(tower_id, cfg)
-	)
 	_make_passthrough(vbox)
 	return card
 
