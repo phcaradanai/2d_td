@@ -1221,9 +1221,14 @@ func shoot() -> void:
 		return
 		
 	if projectile_scene:
-		var projectile = projectile_scene.instantiate()
 		var container = projectile_container if projectile_container else get_tree().current_scene
-		container.add_child(projectile)
+		var _pool := get_node_or_null("/root/ProjectilePool")
+		var projectile: Node
+		if _pool != null:
+			projectile = _pool.acquire(container)
+		else:
+			projectile = projectile_scene.instantiate()
+			container.add_child(projectile)
 		
 		# STANDARD: Use fire origin anchor for projectile spawn
 		var spawn_pos = get_muzzle_global_position()

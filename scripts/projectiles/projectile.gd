@@ -154,7 +154,7 @@ func _process(delta: float) -> void:
 	if has_live_target:
 		last_known_target_pos = _get_hit_anchor_global_position(target)
 	elif last_known_target_pos == Vector2.ZERO:
-		queue_free()
+		_release_to_pool()
 		return
 		
 	var target_pos := last_known_target_pos
@@ -169,7 +169,7 @@ func _process(delta: float) -> void:
 			hit_target()
 		else:
 			_spawn_dissipate_effect()
-			queue_free()
+			_release_to_pool()
 		return
 
 	var direction := to_target.normalized()
@@ -181,7 +181,7 @@ func _process(delta: float) -> void:
 
 	lifetime -= delta
 	if lifetime <= 0:
-		queue_free()
+		_release_to_pool()
 
 func _update_trail() -> void:
 	# Avoid adding points if we're already at the target or dead
@@ -386,7 +386,7 @@ func hit_target() -> void:
 			if combat_audio_service:
 				combat_audio_service.play_combat_event_sfx("projectile_hit")
 
-	queue_free()
+	_release_to_pool()
 
 func _apply_laser_pierce(origin: Vector2, base_damage: float) -> void:
 	var pierce_dir := Vector2.RIGHT.rotated(rotation)
@@ -902,6 +902,13 @@ func _normalize_target_categories(raw_categories) -> Array[String]:
 	if normalized.is_empty():
 		normalized.append(ENEMY_CATEGORY_LAND)
 	return normalized
+
+func _release_to_pool() -> void:
+	var pool := get_node_or_null("/root/ProjectilePool")
+	if pool != null:
+		pool.release(self)
+	else:
+		queue_free()
 
 func _draw_lightning_projectile() -> void:
 	# Jagged tail behind the projectile head

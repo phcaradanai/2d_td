@@ -26,6 +26,7 @@ PerformanceBudgetService="*res://scripts/services/performance_budget_service.gd"
 PerfOverlay="*res://scripts/ui/perf_overlay.gd"
 TargetingService="*res://scripts/services/targeting_service.gd"
 DebugLog="*res://scripts/services/debug_log.gd"
+ProjectilePool="*res://scripts/services/projectile_pool.gd"
 
 [display]
 

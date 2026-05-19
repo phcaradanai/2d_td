@@ -1424,8 +1424,13 @@ func _clear_gameplay_state() -> void:
 		for tower in tower_container.get_children():
 			tower.queue_free()
 	if projectile_container:
+		var pool := get_node_or_null("/root/ProjectilePool")
+		if pool != null:
+			pool.release_active()
+		# Free any non-pooled overflow projectiles still in the container.
 		for proj in projectile_container.get_children():
-			proj.queue_free()
+			if is_instance_valid(proj) and not proj.has_meta("pooled"):
+				proj.queue_free()
 	if effects_container:
 		for effect in effects_container.get_children():
 			effect.queue_free()
