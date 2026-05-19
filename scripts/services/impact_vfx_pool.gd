@@ -22,7 +22,7 @@ func acquire(container: Node) -> Node:
 		var fx := ImpactScene.instantiate()
 		container.add_child(fx)
 		return fx
-	var fx := _free_list.pop_back()
+	var fx : Node = _free_list.pop_back()
 	fx.reparent(container)
 	fx.visible = true
 	return fx
