@@ -10,6 +10,9 @@ extends RefCounted
 const DETAIL_OUTLINE := Color(0.0, 0.0, 0.0, 0.92)
 const DETAIL_OUTLINE_SOFT := Color(0.0, 0.0, 0.0, 0.68)
 
+static func _is_low_detail(detail_quality: int) -> bool:
+	return detail_quality == TowerVisualDrawUtils.DetailQuality.LOW
+
 static func _outline_poly(t: Node2D, points: PackedVector2Array) -> void:
 	TowerVisualDrawUtils._draw_contour_poly(t, points)
 
@@ -20,25 +23,19 @@ static func _outline_line(t: Node2D, from: Vector2, to: Vector2, width: float) -
 	TowerVisualDrawUtils._draw_contour_line(t, from, to, width)
 
 static func _draw_closed_polyline(t: Node2D, points: PackedVector2Array, color: Color, width: float, closed := true) -> void:
-	var path := PackedVector2Array(points)
-	if closed and path.size() > 0:
-		path.append(path[0])
-	t.draw_polyline(path, color, width, true)
+	TowerVisualDrawUtils.safe_draw_polyline(t, points, color, width, closed)
 
 static func _draw_stroked_polyline(t: Node2D, points: PackedVector2Array, color: Color, width: float, closed := true) -> void:
-	var path := PackedVector2Array(points)
-	if closed and path.size() > 0:
-		path.append(path[0])
-	t.draw_polyline(path, DETAIL_OUTLINE, width + 2.2, true)
-	t.draw_polyline(path, color, width, true)
+	TowerVisualDrawUtils.safe_draw_polyline(t, points, DETAIL_OUTLINE, width + 2.2, closed)
+	TowerVisualDrawUtils.safe_draw_polyline(t, points, color, width, closed)
 
 static func _draw_stroked_line(t: Node2D, from: Vector2, to: Vector2, color: Color, width: float, antialiased := true) -> void:
-	t.draw_line(from, to, DETAIL_OUTLINE, width + 2.2, antialiased)
-	t.draw_line(from, to, color, width, antialiased)
+	TowerVisualDrawUtils.safe_draw_line(t, from, to, DETAIL_OUTLINE, width + 2.2, antialiased)
+	TowerVisualDrawUtils.safe_draw_line(t, from, to, color, width, antialiased)
 
 static func _draw_stroked_circle(t: Node2D, center: Vector2, radius: float, fill: Color, stroke_width := 1.7) -> void:
-	t.draw_circle(center, radius + stroke_width, DETAIL_OUTLINE)
-	t.draw_circle(center, radius, fill)
+	TowerVisualDrawUtils.safe_draw_circle(t, center, radius + stroke_width, DETAIL_OUTLINE)
+	TowerVisualDrawUtils.safe_draw_circle(t, center, radius, fill)
 
 static func _regular_poly(center: Vector2, radius: float, sides: int, rotation: float = 0.0) -> PackedVector2Array:
 	var points := PackedVector2Array()
@@ -52,8 +49,8 @@ static func _draw_dual_element_token(t: Node2D, center: Vector2, radius: float, 
 	var outer := _regular_poly(center, radius, 8, PI / 8.0)
 	var inner := _regular_poly(center, radius * 0.78, 8, PI / 8.0)
 
-	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.5), Color(0.015, 0.025, 0.035, 0.88))
+	TowerVisualDrawUtils.safe_draw_polygon(t, outer, DETAIL_OUTLINE)
+	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(outer, -1.5), Color(0.015, 0.025, 0.035, 0.88))
 	_draw_closed_polyline(t, outer, Color(water_color.r, water_color.g, water_color.b, 0.45), 1.0)
 
 	# Split diagonal facets: holy ice / water crystal.
@@ -69,11 +66,11 @@ static func _draw_dual_element_token(t: Node2D, center: Vector2, radius: float, 
 		center + Vector2(radius * 0.46, radius * 0.48),
 		center + Vector2(0.0, radius * 0.66),
 	])
-	t.draw_colored_polygon(left_facet, Color(light_color.r, light_color.g, light_color.b, 0.42))
-	t.draw_colored_polygon(right_facet, Color(water_color.r, water_color.g, water_color.b, 0.46))
+	TowerVisualDrawUtils.safe_draw_polygon(t, left_facet, Color(light_color.r, light_color.g, light_color.b, 0.42))
+	TowerVisualDrawUtils.safe_draw_polygon(t, right_facet, Color(water_color.r, water_color.g, water_color.b, 0.46))
 	_draw_closed_polyline(t, inner, Color(1.0, 1.0, 0.90, 0.36), 0.8)
 
-static func _draw_ice_glyph(t: Node2D, center: Vector2, radius: float, ice_color: Color) -> void:
+static func _draw_ice_glyph(t: Node2D, center: Vector2, radius: float, ice_color: Color, detail_quality: int) -> void:
 	# Static snowflake/frost glyph, cheaper and clearer than particles.
 	for i in range(6):
 		var a := float(i) / 6.0 * TAU
@@ -85,14 +82,15 @@ static func _draw_ice_glyph(t: Node2D, center: Vector2, radius: float, ice_color
 		var branch_center := center + dir * (radius * 0.55)
 		var side_a := a + PI * 0.72
 		var side_b := a - PI * 0.72
-		t.draw_line(branch_center, branch_center + Vector2(cos(side_a), sin(side_a)) * (radius * 0.16), DETAIL_OUTLINE_SOFT, 1.6, true)
-		t.draw_line(branch_center, branch_center + Vector2(cos(side_b), sin(side_b)) * (radius * 0.16), DETAIL_OUTLINE_SOFT, 1.6, true)
-		t.draw_line(branch_center, branch_center + Vector2(cos(side_a), sin(side_a)) * (radius * 0.12), ice_color, 0.75, true)
-		t.draw_line(branch_center, branch_center + Vector2(cos(side_b), sin(side_b)) * (radius * 0.12), ice_color, 0.75, true)
+		if not _is_low_detail(detail_quality):
+			TowerVisualDrawUtils.safe_draw_line(t, branch_center, branch_center + Vector2(cos(side_a), sin(side_a)) * (radius * 0.16), DETAIL_OUTLINE_SOFT, 1.6, true)
+			TowerVisualDrawUtils.safe_draw_line(t, branch_center, branch_center + Vector2(cos(side_b), sin(side_b)) * (radius * 0.16), DETAIL_OUTLINE_SOFT, 1.6, true)
+			TowerVisualDrawUtils.safe_draw_line(t, branch_center, branch_center + Vector2(cos(side_a), sin(side_a)) * (radius * 0.12), ice_color, 0.75, true)
+			TowerVisualDrawUtils.safe_draw_line(t, branch_center, branch_center + Vector2(cos(side_b), sin(side_b)) * (radius * 0.12), ice_color, 0.75, true)
 
-	t.draw_circle(center, radius * 0.16, Color(1.0, 1.0, 0.92, 0.92))
+	TowerVisualDrawUtils.safe_draw_circle(t, center, radius * 0.16, Color(1.0, 1.0, 0.92, 0.92))
 
-static func draw_contour(t: Node2D) -> void:
+static func draw_contour(t: Node2D, detail_quality: int = TowerVisualDrawUtils.DetailQuality.MEDIUM) -> void:
 	var lvl: int = t.tree_tier
 	var shard_len := 30.0 + float(lvl) * 2.5
 
@@ -118,28 +116,30 @@ static func draw_contour(t: Node2D) -> void:
 	])
 	_outline_poly(t, shard)
 
-	# Upper/lower stabilizer fins for control/slow identity.
-	_outline_poly(t, PackedVector2Array([
-		Vector2(-8, -10),
-		Vector2(7, -23),
-		Vector2(18, -18),
-		Vector2(10, -9),
-	]))
-	_outline_poly(t, PackedVector2Array([
-		Vector2(-8, 10),
-		Vector2(7, 23),
-		Vector2(18, 18),
-		Vector2(10, 9),
-	]))
+	if not _is_low_detail(detail_quality):
+		# Upper/lower stabilizer fins for control/slow identity.
+		_outline_poly(t, PackedVector2Array([
+			Vector2(-8, -10),
+			Vector2(7, -23),
+			Vector2(18, -18),
+			Vector2(10, -9),
+		]))
+		_outline_poly(t, PackedVector2Array([
+			Vector2(-8, 10),
+			Vector2(7, 23),
+			Vector2(18, 18),
+			Vector2(10, 9),
+		]))
 
 	# Rear frost badge and small slow-radius glyph nodes.
 	_outline_circle(t, Vector2(-10, 0), 7.5)
-	_outline_circle(t, Vector2(-21, -21), 4.0)
-	_outline_circle(t, Vector2(21, -21), 4.0)
-	_outline_circle(t, Vector2(-21, 21), 4.0)
-	_outline_circle(t, Vector2(21, 21), 4.0)
+	if not _is_low_detail(detail_quality):
+		_outline_circle(t, Vector2(-21, -21), 4.0)
+		_outline_circle(t, Vector2(21, -21), 4.0)
+		_outline_circle(t, Vector2(-21, 21), 4.0)
+		_outline_circle(t, Vector2(21, 21), 4.0)
 
-static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color], detail_quality: int = TowerVisualDrawUtils.DetailQuality.MEDIUM) -> void:
 	var water_color := main_color
 	if el_colors.size() > 0:
 		water_color = el_colors[0]
@@ -155,9 +155,10 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 	var shard_len := 30.0 + float(lvl) * 2.5
 
 	# Static slow/control aura language. Very subtle so it does not become an area indicator.
-	t.draw_circle(Vector2.ZERO, 20.5 + float(lvl), ice_glow)
-	t.draw_arc(Vector2.ZERO, 24.0, -0.25 * PI, 0.25 * PI, 18, Color(water_color.r, water_color.g, water_color.b, 0.22), 1.0, true)
-	t.draw_arc(Vector2.ZERO, 24.0, 0.75 * PI, 1.25 * PI, 18, Color(water_color.r, water_color.g, water_color.b, 0.18), 1.0, true)
+	if not _is_low_detail(detail_quality):
+		TowerVisualDrawUtils.safe_draw_circle(t, Vector2.ZERO, 20.5 + float(lvl), ice_glow)
+		TowerVisualDrawUtils.safe_draw_arc(t, Vector2.ZERO, 24.0, -0.25 * PI, 0.25 * PI, 18, Color(water_color.r, water_color.g, water_color.b, 0.22), 1.0, true)
+		TowerVisualDrawUtils.safe_draw_arc(t, Vector2.ZERO, 24.0, 0.75 * PI, 1.25 * PI, 18, Color(water_color.r, water_color.g, water_color.b, 0.18), 1.0, true)
 
 	# Dual element token behind the main body.
 	_draw_dual_element_token(t, Vector2(-14, 0), 11.2 + float(lvl) * 0.3, light_color, water_color)
@@ -172,8 +173,8 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 		Vector2(8, 15),
 		Vector2(-12, 16),
 	])
-	t.draw_colored_polygon(body, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(body, -2.0), Color(water_color.r * 0.35, water_color.g * 0.48, water_color.b * 0.55, 0.88))
+	TowerVisualDrawUtils.safe_draw_polygon(t, body, DETAIL_OUTLINE)
+	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(body, -2.0), Color(water_color.r * 0.35, water_color.g * 0.48, water_color.b * 0.55, 0.88))
 	_draw_stroked_polyline(t, body, Color(ice.r, ice.g, ice.b, 0.68), 1.25)
 
 	# Mirrored inner crystal facets.
@@ -189,11 +190,11 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 		Vector2(14, 4),
 		Vector2(-1, 2),
 	])
-	t.draw_colored_polygon(top_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(top_facet, -1.0), Color(0.88, 1.0, 1.0, 0.22))
+	TowerVisualDrawUtils.safe_draw_polygon(t, top_facet, DETAIL_OUTLINE_SOFT)
+	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(top_facet, -1.0), Color(0.88, 1.0, 1.0, 0.22))
 	_draw_stroked_polyline(t, top_facet, Color(0.92, 1.0, 1.0, 0.48), 0.8)
-	t.draw_colored_polygon(bot_facet, DETAIL_OUTLINE_SOFT)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(bot_facet, -1.0), Color(water_color.r, water_color.g, water_color.b, 0.24))
+	TowerVisualDrawUtils.safe_draw_polygon(t, bot_facet, DETAIL_OUTLINE_SOFT)
+	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(bot_facet, -1.0), Color(water_color.r, water_color.g, water_color.b, 0.24))
 	_draw_stroked_polyline(t, bot_facet, Color(0.72, 0.96, 1.0, 0.42), 0.8)
 
 	# Symmetric stabilizer fins. These read as control/slow rather than raw DPS.
@@ -209,11 +210,11 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 		Vector2(18, 18),
 		Vector2(10, 9),
 	])
-	t.draw_colored_polygon(upper_fin, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(upper_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.34))
+	TowerVisualDrawUtils.safe_draw_polygon(t, upper_fin, DETAIL_OUTLINE)
+	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(upper_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.34))
 	_draw_stroked_polyline(t, upper_fin, Color(ice.r, ice.g, ice.b, 0.42), 0.9)
-	t.draw_colored_polygon(lower_fin, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(lower_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.26))
+	TowerVisualDrawUtils.safe_draw_polygon(t, lower_fin, DETAIL_OUTLINE)
+	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(lower_fin, -1.5), Color(water_color.r, water_color.g, water_color.b, 0.26))
 	_draw_stroked_polyline(t, lower_fin, Color(ice.r, ice.g, ice.b, 0.38), 0.9)
 
 	# Long frost shard emitter: sharp tip implies piercing frost shard, not round cannon.
@@ -224,9 +225,9 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 		Vector2(shard_len - 4.0, 5),
 		Vector2(-2, 6),
 	])
-	t.draw_colored_polygon(shard, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(shard, -1.5), shadow)
-	t.draw_colored_polygon(PackedVector2Array([
+	TowerVisualDrawUtils.safe_draw_polygon(t, shard, DETAIL_OUTLINE)
+	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(shard, -1.5), shadow)
+	TowerVisualDrawUtils.safe_draw_polygon(t, PackedVector2Array([
 		Vector2(0, -3.6),
 		Vector2(shard_len - 5.0, -2.8),
 		Vector2(shard_len + 3.5, 0),
@@ -239,7 +240,8 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 
 	# Rear frost lens/glyph.
 	_draw_stroked_circle(t, Vector2(-10, 0), 7.5, Color(0.015, 0.040, 0.070, 0.90), 2.0)
-	_draw_ice_glyph(t, Vector2(-10, 0), 6.2, Color(0.80, 1.0, 1.0, 0.82))
+	if not _is_low_detail(detail_quality):
+		_draw_ice_glyph(t, Vector2(-10, 0), 6.2, Color(0.80, 1.0, 1.0, 0.82), detail_quality)
 
 	# Soft corner frost nodes instead of hard ticks.
 	var node_points := [
@@ -249,7 +251,7 @@ static func draw_top(t: Node2D, main_color: Color, _secondary_color: Color, _cor
 		Vector2(21, 21),
 	]
 	for p in node_points:
-		t.draw_circle(p, 5.8, Color(water_color.r, water_color.g, water_color.b, 0.08))
-		t.draw_arc(p, 4.4, 0.0, TAU, 18, DETAIL_OUTLINE_SOFT, 1.2, true)
-		t.draw_arc(p, 3.4, 0.0, TAU, 18, Color(ice.r, ice.g, ice.b, 0.34), 1.0, true)
-		t.draw_circle(p, 1.4, Color(0.92, 1.0, 1.0, 0.60))
+		TowerVisualDrawUtils.safe_draw_circle(t, p, 5.8, Color(water_color.r, water_color.g, water_color.b, 0.08))
+		TowerVisualDrawUtils.safe_draw_arc(t, p, 4.4, 0.0, TAU, 18, DETAIL_OUTLINE_SOFT, 1.2, true)
+		TowerVisualDrawUtils.safe_draw_arc(t, p, 3.4, 0.0, TAU, 18, Color(ice.r, ice.g, ice.b, 0.34), 1.0, true)
+		TowerVisualDrawUtils.safe_draw_circle(t, p, 1.4, Color(0.92, 1.0, 1.0, 0.60))

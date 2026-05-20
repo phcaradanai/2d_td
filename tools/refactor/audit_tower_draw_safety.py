@@ -10,6 +10,14 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 UTILS = ROOT / "scripts/towers/visuals/common/tower_visual_draw_utils.gd"
+RENDERER = ROOT / "scripts/towers/tower_visual_renderer.gd"
+TARGET_VISUALS = [
+    "scripts/towers/visuals/by_id/nature_t1_visual.gd",
+    "scripts/towers/visuals/by_id/ice_t1_visual.gd",
+    "scripts/towers/visuals/by_id/fire_t1_visual.gd",
+    "scripts/towers/visuals/by_id/light_t1_visual.gd",
+    "scripts/towers/visuals/by_id/blacksmith_t1_visual.gd",
+]
 
 
 def function_body(text: str, name: str) -> str:
@@ -21,6 +29,7 @@ def function_body(text: str, name: str) -> str:
 def main() -> int:
     failures: list[str] = []
     text = UTILS.read_text(encoding="utf-8")
+    renderer_text = RENDERER.read_text(encoding="utf-8")
 
     required_constants = {
         "MAX_POLYLINE_POINTS_PER_SHAPE": r"const MAX_POLYLINE_POINTS_PER_SHAPE := 24\b",
@@ -96,6 +105,24 @@ def main() -> int:
     for needle, message in required_behaviors:
         if needle not in text:
             failures.append(message)
+
+    if "_resolve_detail_quality" not in renderer_text:
+        failures.append("renderer must resolve detail quality")
+    if "detail_quality := _resolve_detail_quality(t)" not in renderer_text:
+        failures.append("renderer must compute detail quality before dispatch")
+    if "draw_contour(t, detail_quality)" not in renderer_text:
+        failures.append("renderer must thread detail quality into contour drawing")
+    if "draw_top(t, main_color, secondary_color, core_color, lvl, size, el_colors, detail_quality)" not in renderer_text:
+        failures.append("renderer must thread detail quality into top drawing")
+
+    for rel_path in TARGET_VISUALS:
+        visual_text = (ROOT / rel_path).read_text(encoding="utf-8")
+        if "detail_quality" not in visual_text:
+            failures.append(f"missing detail_quality parameter in {rel_path}")
+        if "TowerVisualDrawUtils.DetailQuality.MEDIUM" not in visual_text:
+            failures.append(f"missing medium default in {rel_path}")
+        if "DetailQuality.LOW" not in visual_text:
+            failures.append(f"missing LOW branch in {rel_path}")
 
     if failures:
         print("Tower draw safety audit FAILED:")
