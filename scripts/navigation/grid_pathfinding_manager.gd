@@ -28,6 +28,9 @@ func setup_grid(level_manager: Node) -> void:
 	grid_cols = int(level_manager.grid_cols)
 	grid_rows = int(level_manager.grid_rows)
 	grid_origin = level_manager.grid_origin
+	var target_cache := get_node_or_null("/root/SpatialTargetCache")
+	if target_cache != null and target_cache.has_method("set_bucket_size"):
+		target_cache.call("set_bucket_size", float(grid_size))
 
 	spawn_cells = _extract_cells(level_manager.level_data.get("spawn_cells", []))
 	if spawn_cells.is_empty() and "spawn_cell" in level_manager:
@@ -234,6 +237,9 @@ func _bump_grid_version() -> void:
 	grid_version += 1
 	_cached_spawn_paths.clear()
 	grid_changed.emit(grid_version)
+	var target_cache := get_node_or_null("/root/SpatialTargetCache")
+	if target_cache != null and target_cache.has_method("set_bucket_size"):
+		target_cache.call("set_bucket_size", float(grid_size))
 	if is_inside_tree():
 		var tree := get_tree()
 		tree.call_group("ground_enemies", "on_navigation_grid_changed", grid_version)

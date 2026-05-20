@@ -140,3 +140,10 @@ const _SCRIPTS: Dictionary = {
 
 static func get_vfx_script(tower_id: String) -> GDScript:
 	return _SCRIPTS.get(tower_id, null)
+
+static func get_all_vfx_scripts() -> Array:
+	var out: Array = []
+	for script in _SCRIPTS.values():
+		if script != null and not out.has(script):
+			out.append(script)
+	return out

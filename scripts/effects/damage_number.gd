@@ -15,11 +15,14 @@ static var _active_count: int = 0
 var pending_text: String = "-0"
 var pending_color: Color = Color.WHITE
 var pending_font_size: int = 18
+var _counted: bool = false
+var _active_tween: Tween = null
 
 func setup(amount: int, color: Color = Color.WHITE) -> void:
 	setup_text("-" + str(amount), color, 18)
 
 func setup_text(text: String, color: Color = Color.WHITE, font_size: int = 14) -> void:
+	_begin_pooled_lifecycle()
 	pending_text = text
 	pending_color = color
 	pending_font_size = font_size
@@ -27,9 +30,8 @@ func setup_text(text: String, color: Color = Color.WHITE, font_size: int = 14) -
 
 func _ready() -> void:
 	if PerformanceFirebreak.disable_damage_numbers:
-		queue_free()
+		_release_to_pool()
 		return
-	DamageNumber._active_count += 1
 	if label == null:
 		label = Label.new()
 		label.name = "Label"
@@ -40,31 +42,63 @@ func _ready() -> void:
 		add_child(label)
 
 	_apply_label_style()
+	if not has_meta("pooled"):
+		_begin_pooled_lifecycle()
 
-	var tween = create_tween()
-	tween.set_parallel(true)
+func _begin_pooled_lifecycle() -> void:
+	if _counted:
+		return
+	_counted = true
+	DamageNumber._active_count += 1
+	visible = true
+	set_process(true)
+	modulate = Color.WHITE
+	scale = Vector2(0.5, 0.5)
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = create_tween()
+	_active_tween.set_parallel(true)
 	
 	# Move up relative to starting position
 	# Using position here works because it's relative to the parent (EffectsContainer)
 	# And we set global_position just after add_child in the caller.
-	tween.tween_property(self, "position:y", position.y - travel_distance, duration)\
+	_active_tween.tween_property(self, "position:y", position.y - travel_distance, duration)\
 		.set_trans(Tween.TRANS_SINE)\
 		.set_ease(Tween.EASE_OUT)
 	
 	# Scale pop
-	scale = Vector2(0.5, 0.5)
-	tween.tween_property(self, "scale", Vector2(1.2, 1.2), 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_delay(0.1)
+	_active_tween.tween_property(self, "scale", Vector2(1.2, 1.2), 0.1).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_active_tween.tween_property(self, "scale", Vector2(1.0, 1.0), 0.1).set_delay(0.1)
 
 	# Fade out
-	tween.tween_property(self, "modulate:a", 0.0, duration - fade_delay)\
+	_active_tween.tween_property(self, "modulate:a", 0.0, duration - fade_delay)\
 		.set_delay(fade_delay)
 	
-	tween.chain().tween_callback(_on_expire)
+	_active_tween.chain().tween_callback(_on_expire)
 
 func _on_expire() -> void:
-	DamageNumber._active_count -= 1
-	queue_free()
+	_release_to_pool()
+
+func _release_to_pool() -> void:
+	if _counted:
+		_counted = false
+		DamageNumber._active_count = maxi(0, DamageNumber._active_count - 1)
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = null
+	pending_text = "-0"
+	pending_color = Color.WHITE
+	pending_font_size = 18
+	position = Vector2.ZERO
+	scale = Vector2.ONE
+	modulate = Color.WHITE
 
 func _apply_label_style() -> void:
 	if label == null:

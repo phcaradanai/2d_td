@@ -33,6 +33,9 @@ var allow_trails: bool = false
 var allow_minor_impacts: bool = true
 var allow_continuous_auras: bool = false
 var allow_screen_shake: bool = true
+var target_scans_per_second: int = 0
+var avg_candidates_per_scan: float = 0.0
+var active_towers_scanning: int = 0
 
 var _settings: Dictionary = DEFAULT_SETTINGS.duplicate(true)
 var _fps_elapsed: float = 0.0
@@ -42,6 +45,10 @@ var _attack_vfx_frame: int = -1
 var _attack_vfx_spawned_this_frame: int = 0
 var _damage_second_msec: int = 0
 var _damage_numbers_this_second: int = 0
+var _stat_timer: float = 0.0
+var _target_scan_bucket: int = 0
+var _target_candidate_bucket: int = 0
+var _target_scan_towers: Dictionary = {}
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -51,6 +58,15 @@ func _ready() -> void:
 
 func _process(delta: float) -> void:
 	_fps_elapsed += delta
+	_stat_timer += delta
+	if _stat_timer >= FPS_SAMPLE_INTERVAL:
+		_stat_timer = 0.0
+		target_scans_per_second = _target_scan_bucket
+		avg_candidates_per_scan = float(_target_candidate_bucket) / maxf(float(_target_scan_bucket), 1.0)
+		active_towers_scanning = _target_scan_towers.size()
+		_target_scan_bucket = 0
+		_target_candidate_bucket = 0
+		_target_scan_towers.clear()
 	if _fps_elapsed < FPS_SAMPLE_INTERVAL:
 		return
 	_fps_elapsed = 0.0
@@ -89,6 +105,16 @@ func get_quality_name() -> String:
 		Quality.LOW:
 			return "LOW"
 	return "LOW"
+
+func get_vfx_quality_name() -> String:
+	match quality:
+		Quality.HIGH:
+			return "High"
+		Quality.BALANCED:
+			return "Medium"
+		Quality.LOW:
+			return "Low"
+	return "Low"
 
 func get_budget(key: String) -> Variant:
 	match key:
@@ -132,6 +158,15 @@ func allow_floating_damage_number() -> bool:
 		return false
 	_damage_numbers_this_second += 1
 	return true
+
+func register_target_check() -> void:
+	register_target_scan(null, 0)
+
+func register_target_scan(tower: Node = null, candidate_count: int = 0) -> void:
+	_target_scan_bucket += 1
+	_target_candidate_bucket += max(candidate_count, 0)
+	if tower != null and is_instance_valid(tower):
+		_target_scan_towers[tower.get_instance_id()] = true
 
 func debug_force_fps(fps: float) -> void:
 	current_fps = fps
@@ -181,7 +216,7 @@ func _quality_from_setting(value: String) -> Quality:
 	match value:
 		"high":
 			return Quality.HIGH
-		"balanced":
+		"balanced", "medium":
 			return Quality.BALANCED
 		"low":
 			return Quality.LOW

@@ -39,6 +39,7 @@ var heal_cast_icon: Node = null
 # Dynamic status-effect indicators (slow/root/burn/poison/vuln).
 var status_effects_vfx: Node = null
 var _last_heal_cast_msec: int = 0
+var _heal_cast_hide_remaining: float = 0.0
 var role_color: Color = Color(0.25, 0.85, 1.0)
 var linked_towers: Array[Node] = []
 var signals_connected: bool = false
@@ -142,15 +143,14 @@ func mark_cloaked_targetable() -> void:
 func set_protected_icon(active: bool) -> void:
 	if active:
 		if protected_icon == null or not is_instance_valid(protected_icon):
-			protected_icon = StatusIconScript.new()
-			protected_icon.name = "ShieldStatus"
-			protected_icon.position = Vector2(0, -31)
-			vfx_root.add_child(protected_icon)
+			protected_icon = _acquire_status_icon(vfx_root, "ShieldStatus", Vector2(0, -31))
+			if protected_icon == null:
+				return
 			protected_icon.setup("shield", Color(0.35, 0.9, 1.0))
 			_apply_debug_visibility()
 	else:
 		if protected_icon and is_instance_valid(protected_icon):
-			protected_icon.queue_free()
+			_release_status_icon(protected_icon)
 		protected_icon = null
 
 func update_disrupted_towers(towers: Array) -> void:
@@ -189,6 +189,7 @@ func fade_out() -> void:
 	# Immediately hide status indicators — creep is dying.
 	if status_effects_vfx and is_instance_valid(status_effects_vfx):
 		status_effects_vfx.visible = false
+	_release_owned_status_icons()
 
 func _ensure_structure() -> void:
 	visual_root = get_node_or_null("VisualRoot")
@@ -243,11 +244,11 @@ func _configure_role() -> void:
 		passive_aura.queue_free()
 		passive_aura = null
 	if status_icon and is_instance_valid(status_icon):
-		status_icon.queue_free()
+		_release_status_icon(status_icon)
 		status_icon = null
-	# [VISUAL-OPT] Free previous role identity icon before reconfiguring.
+	# [VISUAL-OPT] Hide previous role identity icon before reconfiguring.
 	if role_icon and is_instance_valid(role_icon):
-		role_icon.queue_free()
+		_release_status_icon(role_icon)
 		role_icon = null
 	role_color = PolisherScript.role_color(enemy_type, visual_type, tags, skill_id)
 	if skill_id == "healer":
@@ -279,24 +280,21 @@ func _create_passive_aura(kind: String, radius: float) -> void:
 
 # [VISUAL-OPT] Compact identity icon above the creep body, always visible.
 func _create_role_icon(icon_type: String, color: Color) -> void:
-	role_icon = StatusIconScript.new()
-	role_icon.name = "RoleIcon"
-	role_icon.position = Vector2(0, -24)
-	vfx_root.add_child(role_icon)
+	if role_icon == null or not is_instance_valid(role_icon):
+		role_icon = _acquire_status_icon(vfx_root, "RoleIcon", Vector2(0, -24))
+		if role_icon == null:
+			return
+	role_icon.visible = true
 	role_icon.setup(icon_type, color)
 
 func _show_heal_cast_icon() -> void:
 	if heal_cast_icon == null or not is_instance_valid(heal_cast_icon):
-		heal_cast_icon = StatusIconScript.new()
-		heal_cast_icon.name = "HealCastIcon"
-		heal_cast_icon.position = Vector2(0, -38)
-		vfx_root.add_child(heal_cast_icon)
+		heal_cast_icon = _acquire_status_icon(vfx_root, "HealCastIcon", Vector2(0, -38))
+		if heal_cast_icon == null:
+			return
 	heal_cast_icon.visible = true
 	heal_cast_icon.setup("heal_cast", Color(0.55, 1.0, 0.72))
-	var icon := heal_cast_icon
-	await get_tree().create_timer(0.34).timeout
-	if icon and is_instance_valid(icon):
-		icon.visible = false
+	_heal_cast_hide_remaining = 0.34
 
 func _connect_enemy_signals() -> void:
 	if owner_enemy == null:
@@ -320,6 +318,49 @@ func _connect_enemy_signals() -> void:
 	if owner_enemy.has_signal("enemy_modifier_changed"):
 		owner_enemy.enemy_modifier_changed.connect(_on_enemy_modifier_changed)
 	signals_connected = true
+
+func _process(delta: float) -> void:
+	if _heal_cast_hide_remaining <= 0.0:
+		return
+	_heal_cast_hide_remaining -= delta
+	if _heal_cast_hide_remaining <= 0.0 and heal_cast_icon and is_instance_valid(heal_cast_icon):
+		_release_status_icon(heal_cast_icon)
+		heal_cast_icon = null
+
+func _acquire_status_icon(parent: Node, icon_name: String, icon_position: Vector2) -> Node:
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool == null or not pool.has_method("acquire_script"):
+		return null
+	var icon := pool.acquire_script(StatusIconScript, parent, "status_icon", "status_icon") as Node
+	if icon == null:
+		return null
+	icon.name = icon_name
+	if icon is Node2D:
+		(icon as Node2D).position = icon_position
+	return icon
+
+func _release_status_icon(icon: Node) -> void:
+	if icon == null or not is_instance_valid(icon):
+		return
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(icon)
+	else:
+		icon.visible = false
+
+func _release_owned_status_icons() -> void:
+	if protected_icon and is_instance_valid(protected_icon):
+		_release_status_icon(protected_icon)
+	protected_icon = null
+	if status_icon and is_instance_valid(status_icon):
+		_release_status_icon(status_icon)
+	status_icon = null
+	if role_icon and is_instance_valid(role_icon):
+		_release_status_icon(role_icon)
+	role_icon = null
+	if heal_cast_icon and is_instance_valid(heal_cast_icon):
+		_release_status_icon(heal_cast_icon)
+	heal_cast_icon = null
 
 func _on_healer_heal_tick(_healer: Node, targets: Array, _amount: float) -> void:
 	if targets.is_empty():
@@ -364,17 +405,22 @@ func _spawn_impact(mode: String, color: Color, duration: float, amount: float = 
 	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("get_budget") and not bool(perf_service.get_budget("allow_minor_impacts")):
 		return
-	var impact = ImpactScript.new()
-	impact.name = "ImpactVFX"
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool == null or not pool.has_method("acquire_script"):
+		return
+	var impact: Node2D = null
 	if mode == "split_burst":
 		var container := get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 		if container == null:
 			container = get_tree().current_scene
-		container.add_child(impact)
-		if owner_enemy is Node2D:
+		impact = pool.acquire_script(ImpactScript, container, "enemy_impact", "enemy_impact") as Node2D
+		if impact != null and owner_enemy is Node2D:
 			impact.global_position = (owner_enemy as Node2D).global_position
 	else:
-		vfx_root.add_child(impact)
+		impact = pool.acquire_script(ImpactScript, vfx_root, "enemy_impact", "enemy_impact") as Node2D
+	if impact == null:
+		return
+	impact.name = "ImpactVFX"
 	impact.setup(mode, color, duration, amount, debug_text)
 
 func _get_link_color(effect_type: String) -> Color:
@@ -385,10 +431,9 @@ func _get_link_color(effect_type: String) -> Color:
 
 func _show_status(icon_type: String, color: Color, text: String) -> void:
 	if status_icon == null or not is_instance_valid(status_icon):
-		status_icon = StatusIconScript.new()
-		status_icon.name = "StateIcon"
-		status_icon.position = Vector2(0, -42)
-		vfx_root.add_child(status_icon)
+		status_icon = _acquire_status_icon(vfx_root, "StateIcon", Vector2(0, -42))
+		if status_icon == null:
+			return
 	status_icon.setup(icon_type, color, text if OS.is_debug_build() else "")
 	_apply_debug_visibility()
 
@@ -398,10 +443,9 @@ func _sync_tower_icons() -> void:
 			continue
 		var icon := tower.get_node_or_null("EnemyVFXReloadSlowIcon")
 		if icon == null:
-			icon = StatusIconScript.new()
-			icon.name = "EnemyVFXReloadSlowIcon"
-			icon.position = Vector2(0, -46)
-			(tower as Node).add_child(icon)
+			icon = _acquire_status_icon(tower as Node, "EnemyVFXReloadSlowIcon", Vector2(0, -46))
+			if icon == null:
+				continue
 		if icon.has_method("setup"):
 			icon.setup("reload_slow", Color(1.0, 0.2, 0.72), "reload slowed")
 		icon.visible = debug_show_active_skill_targets
@@ -411,8 +455,7 @@ func _remove_tower_icon(tower: Node) -> void:
 		return
 	var icon := tower.get_node_or_null("EnemyVFXReloadSlowIcon")
 	if icon:
-		tower.remove_child(icon)
-		icon.free()
+		_release_status_icon(icon)
 
 func _apply_debug_visibility() -> void:
 	if passive_aura and is_instance_valid(passive_aura):

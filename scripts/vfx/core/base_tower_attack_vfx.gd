@@ -13,15 +13,19 @@ var elapsed: float = 0.0
 var distance: float = 100.0
 var palette_primary: Color = Color.WHITE
 var palette_secondary: Color = Color(0.9, 0.9, 1.0, 1.0)
+var _counted: bool = false
 
 func _ready() -> void:
-	BaseTowerAttackVFX._active_count += 1
 	add_to_group("attack_vfx")
+	if not has_meta("pooled"):
+		_begin_pooled_lifecycle()
 
 ## Called by TowerAttackVFXService after reparenting.
 func setup(origin: Vector2, target_pos: Vector2, tower_color: Color) -> void:
+	_begin_pooled_lifecycle()
 	palette_primary = tower_color
 	palette_secondary = tower_color.lightened(0.28)
+	elapsed = 0.0
 	global_position = origin
 	var diff := target_pos - origin
 	distance = diff.length()
@@ -42,11 +46,35 @@ func _draw_vfx(t: float, a: float, lend: Vector2) -> void:
 func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed >= lifetime:
-		BaseTowerAttackVFX._active_count -= 1
-		queue_free()
+		_release_to_pool()
 		return
 	if not PerformanceFirebreak.disable_all_attack_vfx:
 		queue_redraw()
+
+func _begin_pooled_lifecycle() -> void:
+	if _counted:
+		return
+	_counted = true
+	BaseTowerAttackVFX._active_count += 1
+	visible = true
+	set_process(true)
+
+func _release_to_pool() -> void:
+	if _counted:
+		_counted = false
+		BaseTowerAttackVFX._active_count = maxi(0, BaseTowerAttackVFX._active_count - 1)
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	elapsed = 0.0
+	distance = 100.0
+	lifetime = 0.12
+	palette_primary = Color.WHITE
+	palette_secondary = Color(0.9, 0.9, 1.0, 1.0)
 
 func _draw() -> void:
 	var t := clampf(elapsed / maxf(lifetime, 0.001), 0.0, 1.0)

@@ -7,6 +7,7 @@ signal target_selected(tower, target, reason)
 signal target_rejected(tower, target, reason)
 
 const TowerVisualRendererScript = preload("res://scripts/towers/tower_visual_renderer.gd")
+const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -96,6 +97,10 @@ static var _verbose_targeting: bool = false
 ## Selected towers still get full-rate redraws for the selection ring.
 const PROCEDURAL_DRAW_INTERVAL: float = 0.067
 var _procedural_draw_timer: float = 0.0
+const TOWER_VISUAL_PREVIEW_DEMO_REDRAW_INTERVAL: float = 0.10
+var _tower_visual_dirty: bool = true
+var _tower_visual_signature: String = ""
+var _tower_visual_preview_demo_redraw_timer: float = 0.0
 
 # Aim Visuals
 ## Aim line + target-marker crosshair on creeps.
@@ -331,7 +336,7 @@ func apply_level_stats() -> void:
 		_update_range_collision()
 		_configure_targeting_cache()
 		apply_level_visuals()
-		queue_redraw()
+		_mark_tower_visual_dirty()
 
 func apply_level_visuals() -> void:
 	_ensure_sprite_node()
@@ -370,7 +375,7 @@ func apply_level_visuals() -> void:
 	
 	# Ensure visuals are created
 	_ensure_aim_visual()
-	queue_redraw()
+	_mark_tower_visual_dirty()
 
 func _load_external_sprites() -> void:
 	var base_tex_path = "res://assets/sprites/towers/%s_tower_base_lv1.png" % visual_type
@@ -413,7 +418,7 @@ func _fit_sprite_to_size(p_sprite: Sprite2D, target_size: float) -> void:
 	p_sprite.centered = true
 	p_sprite.position = Vector2.ZERO
 	# Note: _ensure_aim_visual is now called in apply_level_visuals
-	queue_redraw()
+	_mark_tower_visual_dirty()
 
 func _ensure_aim_visual() -> void:
 	# Skip node creation entirely when aim indicator is off.
@@ -903,14 +908,13 @@ func play_upgrade_effect() -> void:
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	
 	# Spawn impact effect as a "flash"
-	var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
-	if impact_scene:
-		var effect = impact_scene.instantiate()
+	var imp_pool := get_node_or_null("/root/ImpactVFXPool")
+	if imp_pool != null:
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if effects_container:
-			effects_container.add_child(effect)
-		else:
-			get_tree().current_scene.add_child(effect)
+		var parent_node: Node = effects_container if effects_container else get_tree().current_scene
+		var effect: Node = imp_pool.acquire(parent_node)
+		if effect == null:
+			return
 		effect.global_position = global_position
 		effect.setup(Color(1, 1, 0.5, 0.8), 2.0)
 
@@ -922,7 +926,7 @@ func set_selected(value: bool) -> void:
 		_procedural_draw_timer = 0.0  # Force immediate redraw when selected
 	_update_support_overlay_z_lift()
 	apply_level_visuals()
-	queue_redraw()
+	_request_tower_visual_redraw_if_dirty()
 
 func get_info() -> Dictionary:
 	var can_up := can_upgrade()
@@ -1031,12 +1035,39 @@ func get_targeting_origin() -> Vector2:
 func set_projectile_container(container: Node2D) -> void:
 	projectile_container = container
 
+func mark_visual_dirty() -> void:
+	_mark_tower_visual_dirty()
+
+func _mark_tower_visual_dirty() -> void:
+	_tower_visual_dirty = true
+
+func _build_tower_visual_signature() -> String:
+	var preview_static := CatalogPreviewMode.is_static_preview(self)
+	var preview_demo := CatalogPreviewMode.is_selected_demo(self)
+	return "%s|%s|%d|%s|%s|%s|%s|%.3f" % [
+		tower_id,
+		visual_type,
+		tree_tier,
+		",".join(elements),
+		str(is_selected),
+		str(debug_draw_range),
+		str(preview_static),
+		global_scale.x,
+	] + "|%s" % str(preview_demo)
+
+func _request_tower_visual_redraw_if_dirty() -> void:
+	var next_signature := _build_tower_visual_signature()
+	if _tower_visual_dirty or next_signature != _tower_visual_signature:
+		_tower_visual_signature = next_signature
+		_tower_visual_dirty = false
+		queue_redraw()
+
 func _ready() -> void:
 	_disable_control_mouse_filter(self)
 
 	if preview_mode:
 		apply_level_visuals()
-		queue_redraw()
+		_request_tower_visual_redraw_if_dirty()
 		return
 
 	if click_area:
@@ -1048,7 +1079,7 @@ func _ready() -> void:
 			shape.shape.size = Vector2(60, 60)
 
 	apply_level_visuals()
-	queue_redraw()
+	_request_tower_visual_redraw_if_dirty()
 
 func _disable_control_mouse_filter(node: Node) -> void:
 	if node is Control:
@@ -1083,11 +1114,19 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
-	if preview_mode:
+	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+		if CatalogPreviewMode.is_static_preview(self) or not CatalogPreviewMode.is_selected_demo(self):
+			set_process(false)
+			_request_tower_visual_redraw_if_dirty()
+			return
 		idle_rotation += delta * 4.0
 		if turret_pivot:
 			turret_pivot.rotation += delta * 0.5
-		queue_redraw()
+		_tower_visual_preview_demo_redraw_timer -= delta
+		if _tower_visual_preview_demo_redraw_timer <= 0.0:
+			_tower_visual_preview_demo_redraw_timer = TOWER_VISUAL_PREVIEW_DEMO_REDRAW_INTERVAL
+			_mark_tower_visual_dirty()
+			_request_tower_visual_redraw_if_dirty()
 		return
 
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
@@ -1223,6 +1262,8 @@ func _update_aim_indicator(delta: float, target_active: bool) -> void:
 			target_marker.visible = false
 
 func shoot() -> void:
+	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+		return
 	if _is_support_aura() or _is_trickery_clone_support():
 		return
 	if attack_type == "aura":
@@ -1343,11 +1384,12 @@ func _perform_aura_attack() -> void:
 	if not container: container = get_tree().current_scene
 	
 	if allow_minor_impacts and visual_type == "sawblade":
-		var effect = Node2D.new()
-		effect.set_script(load("res://scripts/effects/sawblade_aoe_effect.gd"))
-		container.add_child(effect)
-		effect.global_position = global_position
-		if effect.has_method("setup"):
+		var pool := get_node_or_null("/root/VisualEffectPoolService")
+		var effect: Node2D = null
+		if pool != null and pool.has_method("acquire_script"):
+			effect = pool.acquire_script(load("res://scripts/effects/sawblade_aoe_effect.gd"), container, "sawblade_aoe", "attack_vfx") as Node2D
+		if effect != null:
+			effect.global_position = global_position
 			effect.setup(tower_color, attack_range)
 	elif allow_minor_impacts and visual_type in ["support_halo", "void_orb", "ember_bloom", "root_cage",
 			"voodoo_totem", "chaos_orb", "void_vortex", "void_flower",
@@ -1381,16 +1423,19 @@ func _perform_aura_attack() -> void:
 					"storm_turbine": "chain_lightning",
 				}
 				var av_type: String = vtype_to_vfx.get(visual_type, "magic_enchant")
-				var av_node: Node2D = Node2D.new()
-				av_node.set_script(_av_script)
-				container.add_child(av_node)
-				av_node.setup(av_type, get_muzzle_global_position(),
-						get_target_hit_anchor_global_position(_nearest), tower_color)
+				var pool := get_node_or_null("/root/VisualEffectPoolService")
+				if pool != null and pool.has_method("acquire_script"):
+					var av_node := pool.acquire_script(_av_script, container, "attack_vfx_legacy", "attack_vfx") as Node2D
+					if av_node != null:
+						av_node.setup(av_type, get_muzzle_global_position(),
+								get_target_hit_anchor_global_position(_nearest), tower_color)
 	elif allow_minor_impacts and muzzle_flash_scene:
-		var flash = muzzle_flash_scene.instantiate()
-		container.add_child(flash)
-		flash.global_position = get_muzzle_global_position()
-		if flash.has_method("setup"):
+		var pool := get_node_or_null("/root/VisualEffectPoolService")
+		var flash: Node = null
+		if pool != null and pool.has_method("acquire_scene"):
+			flash = pool.acquire_scene("muzzle_flash", container, "muzzle_flash")
+		if flash != null:
+			flash.global_position = get_muzzle_global_position()
 			# Cap scale — attack_range / 30 was producing scale ~4-5 for wide-range aura towers
 			var aura_flash_scale: float
 			if aura_vfx_type == "void_bloom" or aura_vfx_type == "toxic_bloom":
@@ -1415,14 +1460,15 @@ func _perform_aura_attack() -> void:
 				continue
 				
 			# Small impact effect on each enemy
-			var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
-			if allow_minor_impacts and impact_scene:
-				var effect = impact_scene.instantiate()
+			if allow_minor_impacts:
+				var imp_pool := get_node_or_null("/root/ImpactVFXPool")
+				if imp_pool == null:
+					continue
 				var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-				if effects_container:
-					effects_container.add_child(effect)
-				else:
-					get_tree().current_scene.add_child(effect)
+				var parent_node: Node = effects_container if effects_container else get_tree().current_scene
+				var effect: Node = imp_pool.acquire(parent_node)
+				if effect == null:
+					continue
 				effect.global_position = enemy_pos
 				if effect.has_method("setup"):
 					var impact_scale := 0.85 if aura_vfx_type == "void_bloom" else 0.6
@@ -1636,11 +1682,14 @@ func _apply_attack_status_effects_to_enemy(enemy: Variant) -> void:
 func _spawn_disease_attack_vfx(hit_pos: Vector2, container: Node, core_color: Color, secondary_color: Color, accent_color: Color, quality_name: String) -> void:
 	if container == null:
 		return
-	var effect := Node2D.new()
-	effect.set_script(DISEASE_ATTACK_VFX_SCRIPT)
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool == null or not pool.has_method("acquire_script"):
+		return
+	var effect := pool.acquire_script(DISEASE_ATTACK_VFX_SCRIPT, container, "disease_attack_vfx", "attack_vfx") as Node2D
+	if effect == null:
+		return
 	if effect.has_method("setup"):
 		effect.setup(get_muzzle_global_position(), hit_pos, core_color, secondary_color, accent_color, quality_name)
-	container.add_child(effect)
 
 func _get_fx_quality_name() -> String:
 	var pb := get_node_or_null("/root/PerformanceBudget")
@@ -1692,12 +1741,15 @@ func play_fire_recoil() -> void:
 
 func spawn_muzzle_flash(color: Color) -> void:
 	if muzzle_flash_scene:
-		var flash = muzzle_flash_scene.instantiate()
 		# STANDARD: effects in MapRoot/EffectsContainer
 		var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 		if not container: container = get_tree().current_scene
-		
-		container.add_child(flash)
+		var pool := get_node_or_null("/root/VisualEffectPoolService")
+		var flash: Node = null
+		if pool != null and pool.has_method("acquire_scene"):
+			flash = pool.acquire_scene("muzzle_flash", container, "muzzle_flash")
+		if flash == null:
+			return
 		flash.global_position = get_muzzle_global_position()
 		var direction_angle := turret_pivot.global_rotation if turret_pivot else global_rotation
 		if is_instance_valid(current_target):
@@ -1741,16 +1793,16 @@ func _configure_targeting_cache() -> void:
 
 func _calculate_retarget_interval() -> float:
 	if _is_support_aura():
-		return 0.45
+		return 0.18
 	if attack_type == "aura":
-		return 0.35
+		return 0.18
 	if slow_percent > 0.0 or slow_duration > 0.0 or slow_radius > 0.0:
-		return 0.28
+		return 0.18
 	if fire_rate > 0.0 and fire_rate <= 0.18:
-		return 0.12
+		return 0.08
 	if visual_type == "rapid":
-		return 0.14
-	return 0.22
+		return 0.08
+	return 0.12
 
 func _reset_retarget_timer(with_jitter: bool = true) -> void:
 	retarget_timer = retarget_interval
@@ -1761,10 +1813,10 @@ func _should_retarget(cached_target_valid: bool, had_target: bool) -> bool:
 	if had_target and not cached_target_valid:
 		return true
 	if current_target == null:
-		return shoot_cooldown <= 0.0 or retarget_timer <= 0.0
-	if retarget_timer > 0.0:
-		return false
-	return int(Engine.get_process_frames() % TARGET_UPDATE_PHASE_COUNT) == target_update_phase
+		if retarget_timer > 0.0:
+			return false
+		return int(Engine.get_process_frames() % TARGET_UPDATE_PHASE_COUNT) == target_update_phase
+	return false
 
 func update_target() -> void:
 	var next_target := find_target()
@@ -1838,6 +1890,8 @@ func _normalize_target_categories(raw_categories) -> Array[String]:
 	return normalized
 
 func find_target() -> Node2D:
+	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+		return null
 	var enemies = get_enemies_in_range()
 	if enemies.is_empty(): return null
 	
@@ -1942,16 +1996,26 @@ func _enemy_type_matches(enemy: Node2D, priority_types: Array[String]) -> bool:
 
 func get_enemies_in_range() -> Array:
 	_enemies_in_range_cache.clear()
-	# Use PerformanceBudget's frame-cached list — one group query per frame shared
-	# across all towers, instead of one per tower per scan interval.
-	var all_enemies: Array
-	if has_node("/root/PerformanceBudget"):
-		var pb := get_node("/root/PerformanceBudget")
-		all_enemies = pb.get_enemies()
-		pb.register_target_check()
+	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+		return _enemies_in_range_cache
+	var candidate_enemies: Array = []
+	var spatial_cache := get_node_or_null("/root/SpatialTargetCache")
+	if spatial_cache != null and spatial_cache.has_method("get_candidates_in_radius"):
+		candidate_enemies = spatial_cache.call("get_candidates_in_radius", get_range_origin(), attack_range)
 	else:
-		all_enemies = get_tree().get_nodes_in_group("enemies")
-	for enemy in all_enemies:
+		var perf_budget := get_node_or_null("/root/PerformanceBudget")
+		if perf_budget != null and perf_budget.has_method("get_enemies"):
+			candidate_enemies = perf_budget.get_enemies()
+		else:
+			candidate_enemies = get_tree().get_nodes_in_group("enemies")
+	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	if perf_service != null and perf_service.has_method("register_target_scan"):
+		perf_service.call("register_target_scan", self, candidate_enemies.size())
+	elif has_node("/root/PerformanceBudget"):
+		var pb := get_node("/root/PerformanceBudget")
+		if pb.has_method("register_target_check"):
+			pb.register_target_check()
+	for enemy in candidate_enemies:
 		if _is_valid_cached_target(enemy):
 			_enemies_in_range_cache.append(enemy)
 	return _enemies_in_range_cache
@@ -2205,6 +2269,8 @@ func _draw_buff_badge(local_center: Vector2, label: String, color: Color) -> voi
 	draw_string(font, Vector2(rect.position.x, y), label, HORIZONTAL_ALIGNMENT_CENTER, rect_size.x, BUFF_BADGE_FONT_SIZE, Color(color.r, color.g, color.b, 1.0))
 
 func _process_support_aura(delta: float) -> void:
+	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+		return
 	if support_value <= 0.0:
 		_clear_support_targets()
 		return
@@ -2332,6 +2398,8 @@ func _is_wave_active_for_trickery() -> bool:
 	return false
 
 func _process_trickery_clone_support(delta: float) -> void:
+	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+		return
 	if clone_damage_multiplier <= 0.0:
 		return
 

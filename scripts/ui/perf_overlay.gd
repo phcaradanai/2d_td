@@ -8,7 +8,7 @@ extends CanvasLayer
 
 const LABEL_FONT_SIZE := 13
 const PANEL_WIDTH     := 230
-const PANEL_HEIGHT    := 285
+const PANEL_HEIGHT    := 360
 const PADDING         := 8.0
 
 var _visible_flag: bool = false
@@ -78,6 +78,9 @@ func _refresh_label() -> void:
 	var atk_vfx := AttackVFX._active_count
 	var dmg_num := DamageNumber._active_count
 	var status_icons := get_tree().get_nodes_in_group("status_icons").size()
+	var target_scans := int(pbs.get("target_scans_per_second")) if pbs else (int(pb.target_checks_per_second) if pb else 0)
+	var avg_candidates := float(pbs.get("avg_candidates_per_scan")) if pbs else 0.0
+	var active_scanners := int(pbs.get("active_towers_scanning")) if pbs else 0
 
 	# Godot process time from the performance monitor (microseconds → ms).
 	var proc_ms := Performance.get_monitor(Performance.TIME_PROCESS) * 1000.0
@@ -110,6 +113,9 @@ func _refresh_label() -> void:
 		+ "Dmg Numbers   [color=#%s]%d / %d[/color]\n" % [c_dn, dmg_num, DamageNumber.MAX_ACTIVE]
 		+ "Status VFX    [color=#ffffff]%d[/color]\n" % get_tree().get_nodes_in_group("status_vfx").size()
 		+ "Status Icons   [color=#ffffff]%d[/color]\n" % status_icons
+		+ "Target scans  [color=#ffffff]%d / s[/color]\n" % target_scans
+		+ "Avg candidates [color=#ffffff]%.1f[/color]\n" % avg_candidates
+		+ "Active scans  [color=#ffffff]%d[/color]\n" % active_scanners
 		+ "──────────────────────\n"
 		+ "[color=#555555]Verbose targeting off\n"
 		+ "Verbose combat    off[/color]"

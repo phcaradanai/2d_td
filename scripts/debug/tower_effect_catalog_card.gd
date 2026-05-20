@@ -3,23 +3,46 @@ class_name TowerEffectCatalogCard
 extends Node
 
 signal card_selected(tower_id: String, cfg: Dictionary)
+signal card_hovered(tower_id: String, cfg: Dictionary, hovered: bool)
 
 var tower_id: String = ""
 var cfg: Dictionary = {}
+var vfx_mode: String = CatalogVfxMode.DEFAULT_MODE
 
 var _is_selected: bool = false
+var _is_hovered: bool = false
 var _card_panel: PanelContainer = null
 var _vfx_badge_label: Label = null
+var _preview: TowerCatalogPreview = null
 
 var _normal_style: StyleBoxFlat = null
 var _selected_style: StyleBoxFlat = null
 
-func setup(p_panel: PanelContainer, p_tower_id: String, p_cfg: Dictionary) -> void:
+func setup(p_panel: PanelContainer, p_tower_id: String, p_cfg: Dictionary, p_preview: TowerCatalogPreview = null) -> void:
 	_card_panel = p_panel
+	_preview = p_preview
 	tower_id = p_tower_id
 	cfg = p_cfg
 	_card_panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	_card_panel.gui_input.connect(_on_panel_gui_input)
+	_card_panel.mouse_entered.connect(func() -> void:
+		set_hovered(true)
+		card_hovered.emit(tower_id, cfg, true)
+	)
+	_card_panel.mouse_exited.connect(func() -> void:
+		set_hovered(false)
+		card_hovered.emit(tower_id, cfg, false)
+	)
+	_update_preview_activity()
+
+func bind_entry(p_tower_id: String, p_cfg: Dictionary, p_vfx_mode: String, selected: bool, hovered: bool = false) -> void:
+	tower_id = p_tower_id
+	cfg = p_cfg
+	vfx_mode = p_vfx_mode
+	_is_selected = selected
+	_is_hovered = hovered
+	set_selected(selected)
+	_update_preview_activity()
 
 func _on_panel_gui_input(event: InputEvent) -> void:
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT and event.pressed:
@@ -33,6 +56,30 @@ func set_selected(selected: bool) -> void:
 		_card_panel.add_theme_stylebox_override("panel", _selected_style)
 	elif _normal_style:
 		_card_panel.add_theme_stylebox_override("panel", _normal_style)
+	_update_preview_activity()
+
+func set_hovered(hovered: bool) -> void:
+	_is_hovered = hovered
+	_update_preview_activity()
+
+func set_vfx_mode(mode: String) -> void:
+	vfx_mode = mode
+	_update_preview_activity()
+
+func deactivate() -> void:
+	_is_hovered = false
+	_is_selected = false
+	if _preview:
+		_preview.disable_simulation()
+		_preview.set_active(false)
+
+func _update_preview_activity() -> void:
+	if _preview == null:
+		return
+	var allow_vfx := CatalogVfxMode.allows_grid_vfx(vfx_mode, _is_selected, _is_hovered)
+	_preview.set_active(true)
+	_preview.set_static_preview(not allow_vfx)
+	_preview.set_vfx_enabled(allow_vfx)
 
 func set_vfx_badge(badge_text: String) -> void:
 	if _vfx_badge_label == null:

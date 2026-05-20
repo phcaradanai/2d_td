@@ -1,5 +1,5 @@
 ## attack_vfx.gd — Lightweight directional tower attack VFX node.
-## Created by TowerAttackVFX.spawn_attack_vfx(); always self-frees when done.
+## Created by TowerAttackVFX.spawn_attack_vfx(); returns to VisualEffectPoolService.
 ##
 ## All draw functions draw in LOCAL space.  The node's global_rotation is
 ## set to (target – origin).angle(), so +X in local space always points
@@ -11,7 +11,7 @@ extends Node2D
 ## Beyond this budget, new spawns are skipped (visuals only — gameplay is unaffected).
 const MAX_ACTIVE: int = 60
 ## Shared counter across all AttackVFX instances.  Incremented in _ready(),
-## decremented just before queue_free() so the budget is always accurate.
+## decremented on pool release so the budget is always accurate.
 static var _active_count: int = 0
 
 var vfx_type:  String = "rapid_tracer"
@@ -19,15 +19,19 @@ var color:     Color  = Color.WHITE
 var distance:  float  = 100.0
 var elapsed:   float  = 0.0
 var duration:  float  = 0.12
+var _counted: bool = false
 
 func _ready() -> void:
-	AttackVFX._active_count += 1
 	add_to_group("attack_vfx")
+	if not has_meta("pooled"):
+		_begin_pooled_lifecycle()
 
 func setup(p_type: String, p_origin: Vector2, p_target: Vector2,
 		   p_color: Color, p_duration: float = 0.0) -> void:
+	_begin_pooled_lifecycle()
 	vfx_type = p_type
 	color    = p_color
+	elapsed = 0.0
 	global_position = p_origin
 
 	var diff: Vector2 = p_target - p_origin
@@ -51,11 +55,34 @@ static func _default_dur(t: String) -> float:
 func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed >= duration:
-		AttackVFX._active_count -= 1
-		queue_free()
+		_release_to_pool()
 		return
 	if not PerformanceFirebreak.disable_all_attack_vfx:
 		queue_redraw()
+
+func _begin_pooled_lifecycle() -> void:
+	if _counted:
+		return
+	_counted = true
+	AttackVFX._active_count += 1
+	visible = true
+	set_process(true)
+
+func _release_to_pool() -> void:
+	if _counted:
+		_counted = false
+		AttackVFX._active_count = maxi(0, AttackVFX._active_count - 1)
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	elapsed = 0.0
+	distance = 100.0
+	color = Color.WHITE
+	modulate = Color.WHITE
 
 func _draw() -> void:
 	var t   := clampf(elapsed / maxf(duration, 0.001), 0.0, 1.0)

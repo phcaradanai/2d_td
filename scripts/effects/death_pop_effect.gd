@@ -1,27 +1,45 @@
 extends Node2D
 
+const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
+
 # [VISUAL-OPT] Defaults reduced: duration 0.4→0.28, particle_count 8→4.
 var color: Color = Color(1.0, 0.2, 0.2, 0.8)
 var mode: String = "default"
 var duration: float = 0.28
 var particle_count: int = 4
+var _active_tween: Tween = null
 
 func setup(p_mode: String = "default", p_color: Color = Color(1.0, 0.2, 0.2, 0.8), p_duration: float = 0.28, p_particle_count: int = 4) -> void:
 	mode = p_mode
 	color = p_color
 	duration = p_duration
 	particle_count = p_particle_count
+	if is_inside_tree() and not CatalogPreviewMode.is_static_preview(self) and not bool(get_meta("preview_static", false)):
+		_begin_pooled_lifecycle()
 
 func _ready() -> void:
 	if PerformanceFirebreak.disable_death_effects:
-		queue_free()
+		_release_to_pool()
 		return
 	# Hide legacy ColorRect if it exists
 	var rect = get_node_or_null("ColorRect")
 	if rect: rect.visible = false
 
-	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	if CatalogPreviewMode.is_static_preview(self) or bool(get_meta("preview_static", false)):
+		scale = Vector2.ONE
+		modulate.a = 1.0
+		set_process(false)
+		queue_redraw()
+		return
+
+	if not has_meta("pooled"):
+		_begin_pooled_lifecycle()
+
+func _begin_pooled_lifecycle() -> void:
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = create_tween()
+	_active_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 
 	# Initial state
 	scale = Vector2.ONE
@@ -33,12 +51,28 @@ func _ready() -> void:
 		target_scale = Vector2(1.3, 1.3)
 	elif mode == "swarm_death":
 		target_scale = Vector2(1.6, 1.6)
-	tween.parallel().tween_property(self, "scale", target_scale, duration)\
+	_active_tween.parallel().tween_property(self, "scale", target_scale, duration)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(self, "modulate:a", 0.0, duration)\
+	_active_tween.parallel().tween_property(self, "modulate:a", 0.0, duration)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 
-	tween.tween_callback(queue_free)
+	_active_tween.tween_callback(_release_to_pool)
+	queue_redraw()
+
+func _release_to_pool() -> void:
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = null
+	scale = Vector2.ONE
+	modulate = Color.WHITE
+	position = Vector2.ZERO
 
 func _draw() -> void:
 	if mode == "swarm_hit":

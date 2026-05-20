@@ -10,6 +10,9 @@ extends Control
 @onready var scroll_container: ScrollContainer = $RootMargin/MainVBox/ContentArea/ScrollContainer
 
 const TOWER_TREE_PATH := "res://data/towers_tree.json"
+const CatalogVfxMode = preload("res://scripts/debug/catalog_vfx_mode.gd")
+const TowerCatalogVirtualList = preload("res://scripts/debug/tower_catalog_virtual_list.gd")
+const CatalogPerformanceMonitor = preload("res://scripts/debug/catalog_performance_monitor.gd")
 
 const ELEM_SHORT := {
 	"light": "L", "darkness": "D", "water": "W", "fire": "F",
@@ -49,11 +52,14 @@ const SECTION_LABELS := {
 }
 
 var _towers_config: Dictionary = {}
-var _all_cards: Array[TowerEffectCatalogCard] = []
 var _selected_card: TowerEffectCatalogCard = null
+var _selected_tower_id: String = ""
+var _selected_tower_cfg: Dictionary = {}
 
 var _controller: TowerEffectCatalogController = null
 var _zoom_controller: TowerEffectCatalogZoomController = null
+var _virtual_list: Node = null
+var _performance_monitor: Node = null
 
 var _side_preview: TowerCatalogPreview = null
 var _side_dummy_tower: DummyTowerPreview = null
@@ -130,10 +136,22 @@ func _group_into_families(section_entries: Array) -> Array:
 	return result
 
 func _build_catalog() -> void:
-	for child in content_vbox.get_children():
-		child.queue_free()
-	_all_cards.clear()
 	_selected_card = null
+	_selected_tower_id = ""
+	_selected_tower_cfg = {}
+	_virtual_list = TowerCatalogVirtualList.new()
+	_virtual_list.name = "TowerCatalogVirtualList"
+	add_child(_virtual_list)
+	_virtual_list.setup(
+		scroll_container,
+		content_vbox,
+		_populate_virtual_row,
+		_deactivate_virtual_row
+	)
+	_apply_filters()
+
+func _build_virtual_entries() -> Array:
+	var entries: Array = []
 
 	var sections := _build_families()
 
@@ -143,21 +161,24 @@ func _build_catalog() -> void:
 		var families := _group_into_families(sections[ctype])
 		if families.is_empty():
 			continue
-		content_vbox.add_child(_make_section_label(SECTION_LABELS.get(ctype, ctype)))
+		var section_added := false
 		for family in families:
 			var members: Array = family["members"]
-			var row := HBoxContainer.new()
-			row.add_theme_constant_override("separation", 12)
-			content_vbox.add_child(row)
+			var visible_members: Array = []
 			for pair in members:
 				var tid: String = pair[0]
 				var cfg: Dictionary = pair[1].duplicate(true)
-				row.add_child(_make_tower_card(tid, cfg))
-			if members.size() < 3:
-				var spacer := Control.new()
-				spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				row.add_child(spacer)
-		content_vbox.add_child(_make_separator())
+				if _entry_passes_filters(tid, cfg):
+					visible_members.append([tid, cfg])
+			if visible_members.is_empty():
+				continue
+			if not section_added:
+				entries.append({"type": "section", "label": SECTION_LABELS.get(ctype, ctype)})
+				section_added = true
+			entries.append({"type": "row", "members": visible_members})
+		if section_added:
+			entries.append({"type": "separator"})
+	return entries
 
 func _setup_controller() -> void:
 	_controller = TowerEffectCatalogController.new()
@@ -171,15 +192,61 @@ func _setup_zoom_controller() -> void:
 	_zoom_controller = TowerEffectCatalogZoomController.new()
 
 func _apply_filters() -> void:
-	for card in _all_cards:
-		if card._card_panel == null or not is_instance_valid(card._card_panel):
-			continue
-		card._card_panel.visible = card.passes_filters(
-			_controller.search_text,
-			_controller.element_filter,
-			_controller.tier_filter,
-			_controller.attack_filter
-		)
+	if _virtual_list:
+		_virtual_list.set_entries(_build_virtual_entries())
+
+func _entry_passes_filters(tower_id: String, cfg: Dictionary) -> bool:
+	if _controller == null:
+		return true
+	if _controller.search_text != "":
+		var s := _controller.search_text.to_lower()
+		if not (tower_id.to_lower().contains(s) or str(cfg.get("display_name", "")).to_lower().contains(s)):
+			return false
+	if _controller.element_filter != "all":
+		var elements: Array = cfg.get("elements", [])
+		if not elements.has(_controller.element_filter):
+			return false
+	if _controller.tier_filter != "all":
+		var tier_map := {"t1": 1, "t2": 2, "t3": 3, "pure": 4}
+		if cfg.get("tier", 0) != tier_map.get(_controller.tier_filter, -1):
+			return false
+	if _controller.attack_filter != "all":
+		if str(cfg.get("attack_type", "")).to_lower() != _controller.attack_filter:
+			return false
+	return true
+
+func _populate_virtual_row(row: Control, entry: Dictionary) -> void:
+	match str(entry.get("type", "row")):
+		"section":
+			var label := _make_section_label(str(entry.get("label", "")))
+			label.position = Vector2(0, 4)
+			row.add_child(label)
+		"separator":
+			row.add_child(_make_separator())
+		_:
+			var hbox := HBoxContainer.new()
+			hbox.add_theme_constant_override("separation", 12)
+			hbox.size = row.size
+			hbox.custom_minimum_size = row.size
+			row.add_child(hbox)
+			for pair in entry.get("members", []):
+				var tid: String = pair[0]
+				var cfg: Dictionary = pair[1].duplicate(true)
+				hbox.add_child(_make_tower_card(tid, cfg))
+			if entry.get("members", []).size() < 3:
+				var spacer := Control.new()
+				spacer.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+				hbox.add_child(spacer)
+
+func _deactivate_virtual_row(row: Control) -> void:
+	for child in row.get_children():
+		_deactivate_card_scripts(child)
+
+func _deactivate_card_scripts(node: Node) -> void:
+	if node is TowerEffectCatalogCard:
+		(node as TowerEffectCatalogCard).deactivate()
+	for child in node.get_children():
+		_deactivate_card_scripts(child)
 
 func _get_vfx_badge(tower_id: String, tier: int) -> String:
 	var script := TowerAttackVFXRegistry.get_vfx_script(tower_id)
@@ -257,6 +324,7 @@ func _make_tower_card(tower_id: String, cfg: Dictionary) -> PanelContainer:
 	preview.show_range_ring = false
 	preview.show_projectile_preview = false
 	preview.show_effects_preview = false
+	preview.static_preview = true
 	preview.custom_minimum_size = preview.preview_size
 	preview.mouse_filter = Control.MOUSE_FILTER_PASS
 	vbox.add_child(preview)
@@ -278,10 +346,18 @@ func _make_tower_card(tower_id: String, cfg: Dictionary) -> PanelContainer:
 	card_script._normal_style = normal_style
 	card_script._selected_style = selected_style
 	card.add_child(card_script)
-	card_script.setup(card, tower_id, cfg)
+	card_script.setup(card, tower_id, cfg, preview)
+	card_script.bind_entry(
+		tower_id,
+		cfg,
+		_controller.vfx_mode,
+		tower_id == _selected_tower_id
+	)
 	card_script.set_vfx_badge(badge_text)
 	card_script.card_selected.connect(_on_card_selected)
-	_all_cards.append(card_script)
+	card_script.card_hovered.connect(func(_tower_id: String, _cfg: Dictionary, _hovered: bool) -> void:
+		pass
+	)
 
 	_make_passthrough(vbox)
 	return card
@@ -398,11 +474,19 @@ func _build_toolbar() -> void:
 	top_toolbar.add_child(_make_toolbar_toggle("Models", true, func(v: bool) -> void:
 		_controller.show_models = v
 	))
-	top_toolbar.add_child(_make_toolbar_toggle("Attack VFX", true, func(v: bool) -> void:
-		_controller.show_attack_vfx = v
-		if not v:
+	var vfx_mode_opt := OptionButton.new()
+	for entry in [["VFX Off", CatalogVfxMode.VFX_OFF], ["Selected Only", CatalogVfxMode.VFX_SELECTED_ONLY], ["All", CatalogVfxMode.VFX_ALL]]:
+		vfx_mode_opt.add_item(entry[0])
+		vfx_mode_opt.set_item_metadata(vfx_mode_opt.item_count - 1, entry[1])
+	vfx_mode_opt.selected = 1
+	vfx_mode_opt.item_selected.connect(func(idx: int) -> void:
+		_controller.vfx_mode = str(vfx_mode_opt.get_item_metadata(idx))
+		if _controller.vfx_mode == CatalogVfxMode.VFX_OFF:
 			_clear_attack_vfx_nodes()
-	))
+		if _virtual_list:
+			_virtual_list.refresh_visible_rows()
+	)
+	top_toolbar.add_child(vfx_mode_opt)
 	top_toolbar.add_child(_make_toolbar_toggle("Status FX", true, func(v: bool) -> void:
 		_controller.show_status_fx = v
 	))
@@ -463,7 +547,40 @@ func _build_toolbar() -> void:
 	vfx_label.add_theme_color_override("font_color", Color(0.45, 0.65, 0.85))
 	vfx_label.text = "VFX: 0"
 	top_toolbar.add_child(vfx_label)
-	_controller.set_status_labels(fps_label, vfx_label)
+
+	var process_label := _make_perf_label("Process: --")
+	top_toolbar.add_child(process_label)
+
+	var drawn_label := _make_perf_label("Drawn: --")
+	top_toolbar.add_child(drawn_label)
+
+	var node_label := _make_perf_label("Nodes: --")
+	top_toolbar.add_child(node_label)
+
+	var active_preview_label := _make_perf_label("Active: 0")
+	top_toolbar.add_child(active_preview_label)
+
+	_performance_monitor = CatalogPerformanceMonitor.new()
+	_performance_monitor.name = "CatalogPerformanceMonitor"
+	add_child(_performance_monitor)
+	_performance_monitor.setup(
+		{
+			"fps": fps_label,
+			"process": process_label,
+			"drawn": drawn_label,
+			"nodes": node_label,
+			"active": active_preview_label,
+		},
+		func() -> int:
+			return _virtual_list.get_active_preview_count() if _virtual_list else 0
+	)
+
+func _make_perf_label(text: String) -> Label:
+	var label := Label.new()
+	label.add_theme_font_size_override("font_size", 12)
+	label.add_theme_color_override("font_color", Color(0.45, 0.65, 0.85))
+	label.text = text
+	return label
 
 func _build_side_panel_placeholder() -> void:
 	var style := StyleBoxFlat.new()
@@ -490,22 +607,22 @@ func _build_side_panel_placeholder() -> void:
 func _on_card_selected(tower_id: String, cfg: Dictionary) -> void:
 	if _selected_card != null:
 		_selected_card.set_selected(false)
-	for card in _all_cards:
-		if card.tower_id == tower_id:
-			_selected_card = card
-			card.set_selected(true)
-			break
+	_selected_tower_id = tower_id
+	_selected_tower_cfg = cfg.duplicate(true)
+	_selected_card = null
+	if _virtual_list:
+		_virtual_list.refresh_visible_rows()
 	_populate_side_panel(tower_id, cfg)
 
 func _replay_attack_vfx() -> void:
-	if _selected_card == null or _side_preview == null:
+	if _selected_tower_id == "" or _side_preview == null:
 		return
-	if not _controller.show_attack_vfx:
+	if _controller.vfx_mode == CatalogVfxMode.VFX_OFF:
 		return
 	if PerformanceFirebreak.disable_all_attack_vfx:
 		return
 
-	var tower_id: String = _selected_card.tower_id
+	var tower_id: String = _selected_tower_id
 	var script: GDScript = TowerAttackVFXRegistry.get_vfx_script(tower_id)
 	if script == null:
 		return
@@ -524,7 +641,7 @@ func _replay_attack_vfx() -> void:
 		_side_dummy_target.position = Vector2(80, 0)
 		vfx_viewport.add_child(_side_dummy_target)
 
-	var elements: Array = _selected_card.cfg.get("elements", [])
+	var elements: Array = _selected_tower_cfg.get("elements", [])
 	var color: Color = Color(0.45, 0.92, 1.0)
 	if not elements.is_empty():
 		color = ELEM_COLOR.get(str(elements[0]), color)

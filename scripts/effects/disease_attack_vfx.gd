@@ -10,6 +10,7 @@ var spore_color: Color = Color(0.65, 1.0, 0.32, 1.0)
 var show_trail: bool = true
 var trail_points: Array[Vector2] = []
 var max_trail_points: int = 4
+var _active_tween: Tween = null
 
 func setup(p_start: Vector2, p_end: Vector2, p_core: Color, p_edge: Color, p_spore: Color, quality_name: String = "HIGH") -> void:
 	start_pos = p_start
@@ -19,16 +20,26 @@ func setup(p_start: Vector2, p_end: Vector2, p_core: Color, p_edge: Color, p_spo
 	spore_color = p_spore
 	show_trail = quality_name != "LOW"
 	max_trail_points = 3 if quality_name == "MED" else 4
+	_begin_pooled_lifecycle()
 
 func _ready() -> void:
+	if has_meta("pooled"):
+		return
+	_begin_pooled_lifecycle()
+
+func _begin_pooled_lifecycle() -> void:
 	global_position = start_pos
 	trail_points.clear()
 	trail_points.append(global_position)
-	var tween := create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
-	tween.tween_property(self, "global_position", end_pos, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
-	tween.tween_callback(_spawn_toxic_impact)
-	tween.tween_callback(queue_free)
+	visible = true
+	set_process(true)
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = create_tween()
+	_active_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	_active_tween.tween_property(self, "global_position", end_pos, 0.16).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	_active_tween.tween_callback(_spawn_toxic_impact)
+	_active_tween.tween_callback(_release_to_pool)
 
 func _process(_delta: float) -> void:
 	if show_trail:
@@ -56,8 +67,28 @@ func _spawn_toxic_impact() -> void:
 		parent_node = get_tree().current_scene
 	if parent_node == null:
 		return
-	var impact = IMPACT_SCENE.instantiate()
-	parent_node.add_child(impact)
+	var imp_pool := get_node_or_null("/root/ImpactVFXPool")
+	if imp_pool == null:
+		return
+	var impact: Node = imp_pool.acquire(parent_node)
+	if impact == null:
+		return
 	impact.global_position = end_pos
 	if impact.has_method("setup"):
 		impact.setup(core_color, 0.82, "toxic_bloom", edge_color, spore_color)
+
+func _release_to_pool() -> void:
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = null
+	trail_points.clear()
+	show_trail = true
+	max_trail_points = 4
+	modulate = Color.WHITE

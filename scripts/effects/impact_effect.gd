@@ -1,6 +1,8 @@
 extends Node2D
 class_name ImpactEffect
 
+const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
+
 const MAX_ACTIVE: int = 40
 static var _active_count: int = 0
 
@@ -8,6 +10,8 @@ var color: Color = Color.WHITE
 var glow_color: Color = Color.WHITE
 var accent_color: Color = Color.WHITE
 var attack_type: String = "single"
+var _counted: bool = false
+var _active_tween: Tween = null
 
 func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0, p_attack_type: String = "single", p_glow_color: Color = Color.WHITE, p_accent_color: Color = Color.WHITE) -> void:
 	if PerformanceFirebreak.disable_impact_effects:
@@ -17,37 +21,69 @@ func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0, p_attack_typ
 	glow_color = p_glow_color
 	accent_color = p_accent_color
 	attack_type = p_attack_type
+	_begin_pooled_lifecycle()
 	
 	# Hide legacy ColorRect if it exists
 	var rect = get_node_or_null("ColorRect")
 	if rect: rect.visible = false
+
+	if CatalogPreviewMode.is_static_preview(self) or bool(get_meta("preview_static", false)):
+		scale = Vector2.ONE * scale_factor
+		modulate.a = 1.0
+		set_process(false)
+		queue_redraw()
+		return
 	
-	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = create_tween()
+	_active_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	
 	# Initial state
 	scale = Vector2.ZERO
 	modulate.a = 1.0
 	
 	# Burst animation
-	tween.parallel().tween_property(self, "scale", Vector2.ONE * scale_factor * 2.0, 0.2)\
+	_active_tween.parallel().tween_property(self, "scale", Vector2.ONE * scale_factor * 2.0, 0.2)\
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.25)\
+	_active_tween.parallel().tween_property(self, "modulate:a", 0.0, 0.25)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	
-	tween.tween_callback(_on_expire)
+	_active_tween.tween_callback(_on_expire)
 
 func _ready() -> void:
-	ImpactEffect._active_count += 1
 	add_to_group("impact_vfx_pool")
+	if not has_meta("pooled"):
+		_begin_pooled_lifecycle()
+
+func _begin_pooled_lifecycle() -> void:
+	if _counted:
+		return
+	_counted = true
+	ImpactEffect._active_count += 1
+	visible = true
+	set_process(true)
 
 func _on_expire() -> void:
-	ImpactEffect._active_count -= 1
+	if _counted:
+		_counted = false
+		ImpactEffect._active_count = maxi(0, ImpactEffect._active_count - 1)
 	var pool := get_node_or_null("/root/ImpactVFXPool")
 	if pool != null and has_meta("pooled"):
 		pool.release(self)
 	else:
-		queue_free()
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = null
+	color = Color.WHITE
+	glow_color = Color.WHITE
+	accent_color = Color.WHITE
+	attack_type = "single"
+	scale = Vector2.ONE
+	modulate = Color.WHITE
 
 func _draw() -> void:
 	if attack_type == "void_bloom":

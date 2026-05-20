@@ -27,8 +27,10 @@ VisualComfort="*res://scripts/services/visual_comfort_service.gd"
 PerfOverlay="*res://scripts/ui/perf_overlay.gd"
 TargetingService="*res://scripts/services/targeting_service.gd"
 DebugLog="*res://scripts/services/debug_log.gd"
+SpatialTargetCache="*res://scripts/services/spatial_target_cache.gd"
 ProjectilePool="*res://scripts/services/projectile_pool.gd"
 ImpactVFXPool="*res://scripts/services/impact_vfx_pool.gd"
+VisualEffectPoolService="*res://scripts/services/visual_effect_pool_service.gd"
 
 [display]
 

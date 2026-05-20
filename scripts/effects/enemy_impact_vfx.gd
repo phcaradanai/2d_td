@@ -7,20 +7,52 @@ var time: float = 0.0
 var mode: String = "impact"
 var amount: float = 0.0
 var debug_text: String = ""
+var _active: bool = false
 
 func setup(p_mode: String, p_color: Color, p_duration: float = 0.45, p_amount: float = 0.0, p_debug_text: String = "") -> void:
+	_begin_pooled_lifecycle()
 	mode = p_mode
 	color = p_color
 	duration = p_duration
 	amount = p_amount
 	debug_text = p_debug_text
+	queue_redraw()
+
+func _ready() -> void:
+	if not has_meta("pooled"):
+		_begin_pooled_lifecycle()
+
+func _begin_pooled_lifecycle() -> void:
+	if _active:
+		return
+	_active = true
+	time = 0.0
+	visible = true
+	set_process(true)
 
 func _process(delta: float) -> void:
 	time += delta
 	if time >= duration:
-		queue_free()
+		_release_to_pool()
 	else:
 		queue_redraw()
+
+func _release_to_pool() -> void:
+	_active = false
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	time = 0.0
+	duration = 0.45
+	mode = "impact"
+	amount = 0.0
+	debug_text = ""
+	color = Color.WHITE
+	modulate = Color.WHITE
 
 func _draw() -> void:
 	var t := clampf(time / duration, 0.0, 1.0)

@@ -1,5 +1,7 @@
 extends Node2D
 
+const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
+
 const EFFECT_DEFS := [
 	{
 		"id": "spawn_portal",
@@ -210,7 +212,7 @@ func _spawn_gallery() -> void:
 		preview_root.position = Vector2(0, -10)
 		card.add_child(preview_root)
 
-		_spawn_gallery_card_effect(preview_root, def, 0.72)
+		_spawn_static_gallery_icon(preview_root, def)
 
 		var label := Label.new()
 		label.position = Vector2(-95, 48)
@@ -243,6 +245,36 @@ func _spawn_gallery() -> void:
 			_show_detail_index(index)
 		)
 		card.add_child(click_button)
+
+func _spawn_static_gallery_icon(parent: Node2D, def: Dictionary) -> void:
+	CatalogPreviewMode.mark_preview_tree(parent, true, false)
+	var color := _get_static_effect_color(str(def.get("category", "")))
+	var ring := Line2D.new()
+	ring.width = 2.0
+	ring.default_color = color
+	for i in range(25):
+		var angle := TAU * float(i) / 24.0
+		ring.add_point(Vector2(cos(angle), sin(angle)) * 28.0)
+	parent.add_child(ring)
+
+	var core := ColorRect.new()
+	core.position = Vector2(-8, -8)
+	core.size = Vector2(16, 16)
+	core.color = color
+	parent.add_child(core)
+
+func _get_static_effect_color(category: String) -> Color:
+	match category:
+		"spawn":
+			return Color(0.25, 0.85, 1.0, 0.82)
+		"enemy", "aura", "status":
+			return Color(0.65, 1.0, 0.45, 0.82)
+		"beam", "tower":
+			return Color(1.0, 0.55, 0.2, 0.82)
+		"death":
+			return Color(1.0, 0.25, 0.35, 0.82)
+		_:
+			return Color(0.75, 0.85, 1.0, 0.82)
 
 
 func _build_detail_viewer() -> void:
@@ -522,6 +554,8 @@ func _replay_detail_effect() -> void:
 
 	var def: Dictionary = EFFECT_DEFS[_selected_index]
 	_detail_effect = _spawn_effect_preview(_detail_preview_root, def, _detail_zoom)
+	if _detail_effect:
+		CatalogPreviewMode.mark_preview_tree(_detail_effect, false, true)
 
 
 func _set_detail_zoom(value: float) -> void:

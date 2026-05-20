@@ -3,6 +3,7 @@ extends Node2D
 var color: Color = Color.WHITE
 var accent_color: Color = Color.WHITE
 var attack_type: String = "single"
+var _active_tween: Tween = null
 
 func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0, p_attack_type: String = "single", p_accent_color: Color = Color.WHITE) -> void:
 	color = p_color
@@ -10,17 +11,38 @@ func setup(p_color: Color = Color.WHITE, scale_factor: float = 1.0, p_attack_typ
 	attack_type = p_attack_type
 	scale = Vector2.ZERO
 	modulate.a = 1.0
+	visible = true
 	
-	var tween = create_tween()
-	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = create_tween()
+	_active_tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	
 	# Quick burst animation
-	tween.parallel().tween_property(self, "scale", Vector2.ONE * scale_factor, 0.05)\
+	_active_tween.parallel().tween_property(self, "scale", Vector2.ONE * scale_factor, 0.05)\
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(self, "modulate:a", 0.0, 0.15)\
+	_active_tween.parallel().tween_property(self, "modulate:a", 0.0, 0.15)\
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	
-	tween.tween_callback(queue_free)
+	_active_tween.tween_callback(_release_to_pool)
+	queue_redraw()
+
+func _release_to_pool() -> void:
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	if _active_tween != null and _active_tween.is_valid():
+		_active_tween.kill()
+	_active_tween = null
+	color = Color.WHITE
+	accent_color = Color.WHITE
+	attack_type = "single"
+	scale = Vector2.ONE
+	modulate = Color.WHITE
 
 func _draw() -> void:
 	# Procedural flash: A bright core and a few rays

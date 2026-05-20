@@ -128,8 +128,10 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 	if tower.has_method("_get_tower_color"):
 		color = tower._get_tower_color()
 
-	# Spawn lightweight Node2D with the VFX script.
-	var node: Node2D = Node2D.new()
-	node.set_script(_VFX_SCRIPT)
-	container.add_child(node)
+	var pool := tower.get_node_or_null("/root/VisualEffectPoolService")
+	var node: Node2D = null
+	if pool != null and pool.has_method("acquire_script"):
+		node = pool.acquire_script(_VFX_SCRIPT, container, "attack_vfx_legacy", "attack_vfx") as Node2D
+	if node == null:
+		return
 	node.setup(vfx_type, origin, tgt_pos, color)

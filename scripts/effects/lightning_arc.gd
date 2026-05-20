@@ -11,6 +11,10 @@ func setup(p_start: Vector2, p_end: Vector2, p_color: Color = Color(0.5, 0.8, 1.
 	start_pos = p_start
 	end_pos = p_end
 	color = p_color
+	elapsed = 0.0
+	global_position = start_pos
+	visible = true
+	set_process(true)
 	_generate_segments()
 	queue_redraw()
 
@@ -36,10 +40,24 @@ func _generate_segments() -> void:
 func _process(delta: float) -> void:
 	elapsed += delta
 	if elapsed >= duration:
-		queue_free()
+		_release_to_pool()
 		return
 	
 	queue_redraw()
+
+func _release_to_pool() -> void:
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool != null and pool.has_method("release"):
+		pool.release(self)
+	else:
+		call_deferred("free")
+
+func reset_for_pool() -> void:
+	elapsed = 0.0
+	duration = 0.2
+	segments.clear()
+	color = Color(0.5, 0.8, 1.0, 1.0)
+	modulate = Color.WHITE
 
 func _draw() -> void:
 	if segments.size() < 2: return

@@ -31,8 +31,11 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 	var color: Color = tower._get_tower_color() \
 		if tower.has_method("_get_tower_color") else Color.WHITE
 
-	var node: Node2D = Node2D.new()
-	node.set_script(script)
-	container.add_child(node)
+	var pool := tower.get_node_or_null("/root/VisualEffectPoolService")
+	if pool == null or not pool.has_method("acquire_script"):
+		return
+	var node := pool.acquire_script(script, container, "", "attack_vfx") as Node2D
+	if node == null:
+		return
 	node.setup(origin, tgt_pos, color)
 	node.configure({})

@@ -19,12 +19,12 @@ func _ready() -> void:
 ## Acquire an ImpactEffect and reparent it to `container`.
 func acquire(container: Node) -> Node:
 	if _free_list.is_empty():
-		var new_fx := ImpactScene.instantiate()
-		container.add_child(new_fx)
-		return new_fx
+		return null
 	var pooled_fx : Node = _free_list.pop_back()
 	pooled_fx.reparent(container)
 	pooled_fx.visible = true
+	pooled_fx.process_mode = Node.PROCESS_MODE_INHERIT
+	pooled_fx.set_process(true)
 	return pooled_fx
 
 ## Return an ImpactEffect to the pool after its animation completes.
@@ -32,11 +32,13 @@ func release(fx: Node) -> void:
 	if not is_instance_valid(fx):
 		return
 	if not fx.has_meta("pooled"):
-		fx.queue_free()
+		fx.call_deferred("free")
 		return
 	_reset_fx(fx)
 	fx.reparent(self)
 	fx.visible = false
+	fx.process_mode = Node.PROCESS_MODE_DISABLED
+	fx.set_process(false)
 	_free_list.append(fx)
 
 ## Release all active pooled ImpactEffect nodes back to the pool.
@@ -49,3 +51,5 @@ func _reset_fx(fx: Node) -> void:
 	fx.scale = Vector2.ONE
 	fx.modulate = Color.WHITE
 	fx.rotation = 0.0
+	if fx.has_method("reset_for_pool"):
+		fx.reset_for_pool()

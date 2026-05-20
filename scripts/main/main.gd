@@ -1369,6 +1369,9 @@ func start_level(level_path: String) -> void:
 	if OS.is_debug_build(): print("[Main] start_level: ", level_path)
 
 	_clear_gameplay_state()
+	var vfx_pool := get_node_or_null("/root/VisualEffectPoolService")
+	if vfx_pool != null and vfx_pool.has_method("prewarm_level_pools"):
+		vfx_pool.prewarm_level_pools()
 
 	if level_manager:
 		if level_manager.load_level(level_path):
@@ -1436,6 +1439,9 @@ func _clear_gameplay_state() -> void:
 		var imp_pool := get_node_or_null("/root/ImpactVFXPool")
 		if imp_pool != null:
 			imp_pool.release_active()
+		var vfx_pool := get_node_or_null("/root/VisualEffectPoolService")
+		if vfx_pool != null and vfx_pool.has_method("release_active"):
+			vfx_pool.release_active()
 		for effect in effects_container.get_children():
 			if is_instance_valid(effect) and not effect.has_meta("pooled"):
 				effect.queue_free()

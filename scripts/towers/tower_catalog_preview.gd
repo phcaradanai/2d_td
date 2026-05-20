@@ -1,6 +1,8 @@
 class_name TowerCatalogPreview
 extends Control
 
+const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
+
 ## Displays a real Tower scene inside a SubViewport so the catalog preview
 ## matches actual gameplay visuals, including idle animation and element glow.
 
@@ -11,6 +13,7 @@ var tower_config: Dictionary = {}
 @export var show_range_ring: bool = true
 @export var show_projectile_preview: bool = false
 @export var show_effects_preview: bool = false
+@export var static_preview: bool = true
 @export var preview_paused: bool = false:
 	set(value):
 		_preview_paused = value
@@ -28,6 +31,7 @@ var _texture_rect: TextureRect = null
 var _fx_layer: PreviewFxLayer = null
 var _tower_world_position := Vector2.ZERO
 var _preview_paused := false
+var _active := true
 
 class PreviewFxLayer:
 	extends Node2D
@@ -163,6 +167,8 @@ func _ready() -> void:
 	_spawn_preview_tower()
 	custom_minimum_size = preview_size
 	size = preview_size
+	set_static_preview(static_preview)
+	set_active(_active)
 
 
 func _setup_viewport() -> void:
@@ -170,6 +176,7 @@ func _setup_viewport() -> void:
 	_viewport.size = Vector2i(int(preview_size.x), int(preview_size.y))
 	_viewport.transparent_bg = true
 	_viewport.render_target_clear_mode = SubViewport.CLEAR_MODE_ALWAYS
+	_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS
 
 	var cam := Camera2D.new()
 	cam.position = Vector2(0, -2)
@@ -218,6 +225,7 @@ func _spawn_preview_tower() -> void:
 	_tower_world_position = _get_tower_world_position()
 	_tower.position = _tower_world_position
 	_tower.setup_preview(tower_config)
+	CatalogPreviewMode.mark_preview_tree(_tower, true, false)
 	_configure_fx_layer()
 
 func set_preview_options(p_show_range: bool, p_show_projectile: bool, p_show_effects: bool, p_paused: bool = false) -> void:
@@ -231,6 +239,52 @@ func set_preview_options(p_show_range: bool, p_show_projectile: bool, p_show_eff
 		_fx_layer.paused = preview_paused
 	queue_redraw()
 
+func set_active(active: bool) -> void:
+	_active = active
+	visible = active
+	set_process(active)
+	if _viewport:
+		_viewport.render_target_update_mode = SubViewport.UPDATE_ALWAYS if active else SubViewport.UPDATE_DISABLED
+	if _fx_layer:
+		_fx_layer.set_process(active and not static_preview)
+		_fx_layer.paused = (not active) or preview_paused or static_preview
+	if _tower:
+		CatalogPreviewMode.set_static_preview(_tower, static_preview or not active)
+		CatalogPreviewMode.set_selected_demo(_tower, active and not static_preview)
+		if _tower.has_method("mark_visual_dirty"):
+			_tower.mark_visual_dirty()
+		_set_processing_recursive(_tower, active and not static_preview)
+
+func set_static_preview(enabled: bool) -> void:
+	static_preview = enabled
+	if enabled:
+		show_projectile_preview = false
+		show_effects_preview = false
+		preview_paused = true
+		if _fx_layer:
+			_fx_layer.preview_projectile = false
+			_fx_layer.preview_effects = false
+	else:
+		preview_paused = false
+	if _tower:
+		CatalogPreviewMode.set_static_preview(_tower, enabled)
+		CatalogPreviewMode.set_selected_demo(_tower, not enabled)
+		if _tower.has_method("mark_visual_dirty"):
+			_tower.mark_visual_dirty()
+	set_active(_active)
+	queue_redraw()
+
+func set_vfx_enabled(enabled: bool) -> void:
+	if static_preview and enabled:
+		set_static_preview(false)
+	show_projectile_preview = enabled
+	show_effects_preview = enabled
+	if _fx_layer:
+		_fx_layer.preview_projectile = enabled
+		_fx_layer.preview_effects = enabled
+		_fx_layer.paused = (not enabled) or preview_paused or (not _active)
+	queue_redraw()
+
 func get_vfx_viewport() -> SubViewport:
 	return _viewport
 
@@ -238,6 +292,14 @@ func disable_simulation() -> void:
 	if _fx_layer:
 		_fx_layer.preview_projectile = false
 		_fx_layer.preview_effects = false
+		_fx_layer.paused = true
+		_fx_layer.set_process(false)
+
+func _set_processing_recursive(node: Node, enabled: bool) -> void:
+	node.set_process(enabled)
+	node.set_physics_process(false)
+	for child in node.get_children():
+		_set_processing_recursive(child, enabled)
 
 func _get_tower_world_position() -> Vector2:
 	if show_projectile_preview or show_effects_preview:

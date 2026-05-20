@@ -18,7 +18,19 @@ func setup(p_icon_type: String, p_color: Color, p_label: String = "") -> void:
 	icon_type = p_icon_type
 	color = p_color
 	label_text = p_label
+	time = 0.0
+	redraw_elapsed = 0.0
+	visible = true
+	set_process(true)
 	queue_redraw()
+
+func reset_for_pool() -> void:
+	icon_type = "shield"
+	color = Color.WHITE
+	label_text = ""
+	time = 0.0
+	redraw_elapsed = 0.0
+	modulate = Color.WHITE
 
 func _process(delta: float) -> void:
 	time += delta

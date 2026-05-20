@@ -1,5 +1,6 @@
 extends Node2D
 
+const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
 const ENEMY_SCRIPT := preload("res://scripts/enemies/enemy.gd")
 # แก้ path นี้ให้ตรงกับไฟล์จริงของคุณ
 
@@ -21,8 +22,6 @@ const ENEMY_DEFS := [
 	{"id": "disruptor", "name": "Disruptor", "visual_type": "disruptor", "hp": 50, "speed": 0, "reward_gold": 10, "base_damage": 1, "tags": []}
 ]
 
-var _pending_setup: Array = []
-
 var _detail_layer: CanvasLayer
 var _detail_overlay: Control
 var _detail_title: Label
@@ -34,30 +33,8 @@ var _selected_enemy_index: int = -1
 var _detail_zoom: float = 3.0
 
 func _ready() -> void:
-	
 	_spawn_gallery()
 	_build_detail_viewer()
-
-	await get_tree().process_frame
-
-	for item in _pending_setup:
-		var enemy = item.enemy
-		var config = item.config
-		
-		enemy.is_gallery_preview = true
-		
-		enemy.setup(config)
-		enemy.progress_ratio = 0.5
-
-		# ใส่ sample status บางตัว เพื่อให้เห็น effect เพิ่มขึ้น
-		match config.id:
-			"shieldbearer", "bulwark":
-				enemy.apply_shield(9999.0, 0.30)
-			"cloaked":
-				# setup() ทำ opacity ให้แล้ว
-				pass
-			"fast":
-				enemy.apply_slow(0.20, 9999.0)
 
 func _spawn_gallery() -> void:
 	var cols := 4
@@ -110,23 +87,11 @@ func _spawn_gallery() -> void:
 		)
 		cell.add_child(click_button)
 
-		# path holder (เพราะ enemy.gd extends PathFollow2D)
-		var path := Path2D.new()
-		cell.add_child(path)
-
-		var curve := Curve2D.new()
-		curve.add_point(Vector2(-10, 0))
-		curve.add_point(Vector2(10, 0))
-		path.curve = curve
-
-		# enemy instance
-		var enemy := PathFollow2D.new()
-		enemy.name = "Enemy"
-
-		enemy.set_script(ENEMY_SCRIPT)
-		enemy.is_gallery_preview = true
-
-		path.add_child(enemy)
+		var icon := ColorRect.new()
+		icon.position = Vector2(-22, -26)
+		icon.size = Vector2(44, 44)
+		icon.color = _get_static_enemy_color(str(data.get("id", "")))
+		cell.add_child(icon)
 
 		# label ชื่อ
 		var label := Label.new()
@@ -136,10 +101,20 @@ func _spawn_gallery() -> void:
 		label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		cell.add_child(label)
 
-		_pending_setup.append({
-			"enemy": enemy,
-			"config": data
-		})
+func _get_static_enemy_color(id: String) -> Color:
+	match id:
+		"tank", "bulwark", "shieldbearer", "armored_flyer":
+			return Color(0.25, 0.75, 1.0, 0.85)
+		"fast", "runner", "fast_flyer":
+			return Color(0.55, 1.0, 0.35, 0.85)
+		"healer":
+			return Color(0.8, 1.0, 0.45, 0.85)
+		"cloaked":
+			return Color(0.65, 0.35, 1.0, 0.55)
+		"disruptor":
+			return Color(1.0, 0.35, 0.75, 0.85)
+		_:
+			return Color(0.35, 0.85, 1.0, 0.85)
 		
 func _build_detail_viewer() -> void:
 	_detail_layer = CanvasLayer.new()
@@ -390,6 +365,7 @@ func _spawn_detail_enemy(config: Dictionary) -> void:
 	_detail_path.add_child(_detail_enemy)
 
 	_detail_enemy.setup(config)
+	CatalogPreviewMode.mark_preview_tree(_detail_enemy, false, true)
 	_detail_enemy.progress_ratio = 0.5
 	_detail_enemy.scale = Vector2.ONE * _detail_zoom
 	_detail_enemy.set_process(true)

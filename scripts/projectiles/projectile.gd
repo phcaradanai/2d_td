@@ -422,11 +422,11 @@ func _handle_chain_jump(hit_pos: Vector2) -> void:
 	var next_target = _find_next_chain_target(hit_pos)
 	if next_target:
 		# VISUAL: Spawn arc from previous target to next
-		var arc = Node2D.new()
-		arc.set_script(load("res://scripts/effects/lightning_arc.gd"))
-		get_parent().add_child(arc)
-		arc.global_position = hit_pos
-		arc.setup(hit_pos, _get_hit_anchor_global_position(next_target), vfx_core_color)
+		var pool := get_node_or_null("/root/VisualEffectPoolService")
+		if pool != null and pool.has_method("acquire_script"):
+			var arc := pool.acquire_script(load("res://scripts/effects/lightning_arc.gd"), get_parent(), "lightning_arc", "attack_vfx") as Node2D
+			if arc != null:
+				arc.setup(hit_pos, _get_hit_anchor_global_position(next_target), vfx_core_color)
 		
 		var next_proj = duplicate()
 		get_parent().add_child(next_proj)
@@ -463,13 +463,10 @@ func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angl
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 		var parent_node: Node = effects_container if effects_container else get_tree().current_scene
 		var imp_pool := get_node_or_null("/root/ImpactVFXPool")
-		var effect: Node
-		if imp_pool != null:
-			effect = imp_pool.acquire(parent_node)
-		elif impact_effect_scene:
-			effect = impact_effect_scene.instantiate()
-			parent_node.add_child(effect)
-		else:
+		if imp_pool == null:
+			return
+		var effect: Node = imp_pool.acquire(parent_node)
+		if effect == null:
 			return
 		effect.global_position = hit_pos
 
@@ -503,25 +500,24 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 
 	# Spawn visual effect at hit position
 	if not PERFORMANCE_MODE and splash_effect_scene and SplashEffect._active_count < SplashEffect.MAX_ACTIVE:
-		var effect = splash_effect_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if effects_container:
-			effects_container.add_child(effect)
+		var parent_node: Node = effects_container if effects_container else get_tree().current_scene
+		var pool := get_node_or_null("/root/VisualEffectPoolService")
+		var effect: Node = null
+		if pool != null and pool.has_method("acquire_scene"):
+			effect = pool.acquire_scene("splash_effect", parent_node, "splash_effect")
+		if effect != null:
 			effect.global_position = hit_pos
-		else:
-			get_tree().current_scene.add_child(effect)
-			effect.global_position = hit_pos
-		
-		# Element-tinted splash ring: prefer modulate color, fall back to attack-type defaults.
-		var mod := modulate
-		var is_default_white := mod.r >= 0.95 and mod.g >= 0.95 and mod.b >= 0.95
-		var effect_color: Color
-		if is_default_white:
-			effect_color = Color(1.0, 0.5, 0.2) if attack_type == "splash" else Color(0.4, 0.8, 1.0)
-		else:
-			effect_color = Color(mod.r, mod.g, mod.b, 0.85)
-		if effect.has_method("setup"):
-			effect.setup(effect_radius, effect_color)
+			# Element-tinted splash ring: prefer modulate color, fall back to attack-type defaults.
+			var mod := modulate
+			var is_default_white := mod.r >= 0.95 and mod.g >= 0.95 and mod.b >= 0.95
+			var effect_color: Color
+			if is_default_white:
+				effect_color = Color(1.0, 0.5, 0.2) if attack_type == "splash" else Color(0.4, 0.8, 1.0)
+			else:
+				effect_color = Color(mod.r, mod.g, mod.b, 0.85)
+			if effect.has_method("setup"):
+				effect.setup(effect_radius, effect_color)
 		
 	# Find enemies in radius
 	var enemies = get_tree().get_nodes_in_group("enemies")
@@ -632,12 +628,14 @@ func _spawn_elemental_debug_text(hit_pos: Vector2, info: Dictionary) -> void:
 	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
 		return
 	if not PerformanceFirebreak.disable_damage_numbers:
-		var effect = damage_number_scene.instantiate()
 		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if effects_container:
-			effects_container.add_child(effect)
-		else:
-			get_tree().current_scene.add_child(effect)
+		var parent_node: Node = effects_container if effects_container else get_tree().current_scene
+		var pool := get_node_or_null("/root/VisualEffectPoolService")
+		var effect: Node = null
+		if pool != null and pool.has_method("acquire_scene"):
+			effect = pool.acquire_scene("damage_number", parent_node, "damage_number")
+		if effect == null:
+			return
 		effect.global_position = hit_pos + Vector2(0, -22)
 		if effect.has_method("setup_text"):
 			effect.setup_text(text, _get_elemental_debug_color(multiplier), 12)

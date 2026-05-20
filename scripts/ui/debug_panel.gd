@@ -135,10 +135,17 @@ func _refresh_perf_overlay() -> void:
 	if effects_c:
 		fx_n = effects_c.get_child_count()
 	var tgt_checks := 0
+	var avg_candidates := 0.0
+	var active_scanners := 0
 	var quality_str := "N/A"
-	if pb:
-		tgt_checks  = pb.target_checks_per_second
-		quality_str = pb.get_quality_name()
+	var pbs := get_node_or_null("/root/PerformanceBudgetService")
+	if pbs:
+		tgt_checks = int(pbs.get("target_scans_per_second"))
+		avg_candidates = float(pbs.get("avg_candidates_per_scan"))
+		active_scanners = int(pbs.get("active_towers_scanning"))
+	elif pb:
+		tgt_checks = pb.target_checks_per_second
+	quality_str = pbs.get_quality_name() if pbs else (pb.get_quality_name() if pb else "N/A")
 	_perf_overlay.text = (
 		"[F3] PERF MONITOR\n"
 		+ "FPS:        %d\n" % fps_val
@@ -146,7 +153,9 @@ func _refresh_perf_overlay() -> void:
 		+ "Towers:     %d\n" % tower_n
 		+ "Bullets:    %d\n" % proj_n
 		+ "Active FX:  %d\n" % fx_n
-		+ "Tgt chk/s:  %d\n" % tgt_checks
+		+ "Tgt scan/s: %d\n" % tgt_checks
+		+ "Avg cand:   %.1f\n" % avg_candidates
+		+ "Active scan:%d\n" % active_scanners
 		+ "FX quality: %s" % quality_str
 	)
 

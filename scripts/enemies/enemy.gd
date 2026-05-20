@@ -4,6 +4,8 @@ extends PathFollow2D
 ## with 10+ special enemies on wave 27 this generates thousands of log lines/min.
 static var _verbose_combat: bool = false
 
+const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
+
 signal died(enemy, reward_gold)
 signal reached_base(enemy, damage, global_pos)
 signal healed(target, amount, source)
@@ -262,7 +264,8 @@ func setup(config: Dictionary) -> void:
 	_ensure_vfx_controller()
 	
 	if is_gallery_preview:
-		set_process(true)
+		CatalogPreviewMode.mark_preview_tree(self, true, false)
+		set_process(false)
 		set_physics_process(false)
 		queue_redraw()
 		
@@ -274,7 +277,8 @@ func setup(config: Dictionary) -> void:
 	is_active = true
 	
 	if is_gallery_preview:
-		set_process(true)
+		CatalogPreviewMode.mark_preview_tree(self, true, false)
+		set_process(false)
 		set_physics_process(false)
 		queue_redraw()
 
@@ -1772,14 +1776,22 @@ func _ready() -> void:
 
 
 	add_to_group("enemies")
+	_sync_spatial_target_cache(true)
 
 	_ensure_vfx_controller()
+
+func _exit_tree() -> void:
+	_sync_spatial_target_cache(false)
 
 func _process(delta: float) -> void:
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
 		return
 
-	if is_gallery_preview:
+	if is_gallery_preview or CatalogPreviewMode.is_preview_node(self):
+		if not CatalogPreviewMode.is_selected_demo(self):
+			set_process(false)
+			queue_redraw()
+			return
 		pulse_time += delta
 		queue_redraw()
 		return
@@ -1951,6 +1963,8 @@ func _try_runner_hit_dash() -> void:
 		_trigger_runner_dash("hit")
 
 func _process_shield_aura() -> void:
+	if CatalogPreviewMode.is_preview_node(self):
+		return
 	var radius = float(skill_params.get("radius", shield_radius))
 	var reduction = _get_skill_reduction()
 	var pb: Node = get_node_or_null("/root/PerformanceBudget")
@@ -1967,6 +1981,8 @@ func _get_skill_reduction() -> float:
 	return clampf(float(raw), 0.0, 0.9)
 
 func _process_healer_aura() -> void:
+	if CatalogPreviewMode.is_preview_node(self):
+		return
 	var radius = float(skill_params.get("radius", 100.0))
 	var amount = float(skill_params.get("heal_amount", 5.0))
 	var pb: Node = get_node_or_null("/root/PerformanceBudget")
@@ -1998,6 +2014,8 @@ func _process_healer_aura() -> void:
 
 
 func _process_disrupt_aura() -> void:
+	if CatalogPreviewMode.is_preview_node(self):
+		return
 	var radius = float(skill_params.get("radius", 150.0))
 	var penalty = clampf(float(skill_params.get("fire_rate_penalty", 0.5)), 0.05, 1.0)
 	var _ts_dis := get_node_or_null("/root/TargetingService")
@@ -2289,6 +2307,7 @@ func _process_pathing(delta: float) -> void:
 		_process_dynamic_pathing(delta)
 		return
 	progress += speed * delta
+	_sync_spatial_target_cache(true)
 	if progress_ratio >= 1.0:
 		reach_base()
 
@@ -2300,6 +2319,7 @@ func set_dynamic_pathing(manager: Node, spawn_cell: Vector2i) -> void:
 
 	var start_cell: Vector2i = pathfinding_manager.nearest_walkable_cell(spawn_cell)
 	global_position = pathfinding_manager.cell_to_world(start_cell)
+	_sync_spatial_target_cache(true)
 	last_path_grid_version = -1
 	_recalculate_dynamic_path()
 
@@ -2351,6 +2371,7 @@ func _process_dynamic_pathing(delta: float) -> void:
 	global_position += dir * step
 	rotation = lerp_angle(rotation, dir.angle(), 10.0 * delta)
 	dynamic_travel_distance += step
+	_sync_spatial_target_cache(true)
 
 func _recalculate_dynamic_path() -> void:
 	if pathfinding_manager == null or not is_instance_valid(pathfinding_manager):
@@ -2367,11 +2388,24 @@ func _recalculate_dynamic_path() -> void:
 	dynamic_path_index = 0
 	if dynamic_path.size() > 1 and global_position.distance_to(dynamic_path[0]) <= dynamic_target_reached_distance:
 		dynamic_path_index = 1
+	_sync_spatial_target_cache(true)
+
+func _sync_spatial_target_cache(register_if_missing: bool) -> void:
+	var cache := get_node_or_null("/root/SpatialTargetCache")
+	if cache == null:
+		return
+	if register_if_missing:
+		if cache.has_method("update_enemy_bucket"):
+			cache.call("update_enemy_bucket", self)
+	elif cache.has_method("unregister_enemy"):
+		cache.call("unregister_enemy", self)
 
 func get_last_damage_source() -> String:
 	return last_damage_source
 
 func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "", p_attack_type: String = "single") -> void:
+	if CatalogPreviewMode.is_preview_node(self):
+		return
 	if is_dead_flag or reached_base_flag: return
 	
 	if source_id != "":
@@ -2487,6 +2521,8 @@ func update_effective_speed() -> void:
 	speed = base_speed * formation_speed_multiplier * status_speed_multiplier * runner_multiplier
 
 func _process_tower_status_effects(delta: float) -> void:
+	if CatalogPreviewMode.is_preview_node(self):
+		return
 	if not active_dot_effects.is_empty():
 		var expired_dot_indexes: Array[int] = []
 		for i in range(active_dot_effects.size()):
@@ -2563,13 +2599,18 @@ func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.
 	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
 		return
 	if damage_number_scene:
-		var dn = damage_number_scene.instantiate()
-		get_tree().current_scene.add_child(dn)
+		var pool := get_node_or_null("/root/VisualEffectPoolService")
+		var parent_node: Node = get_tree().current_scene
+		var dn: Node = null
+		if pool != null and pool.has_method("acquire_scene"):
+			dn = pool.acquire_scene("damage_number", parent_node, "damage_number")
+		if dn == null:
+			return
 		var offset := Vector2(randf_range(-5, 5), -20 + randf_range(-5, 5))
 		if source_id.begins_with("disease_"):
 			offset = Vector2(randf_range(-12, 12), -12 + randf_range(-3, 3))
-		dn.setup(amount, color)
 		dn.global_position = hit_global + offset
+		dn.setup(amount, color)
 
 func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag: return
@@ -2636,7 +2677,13 @@ func _clear_disrupted_towers() -> void:
 func spawn_death_effect(death_global: Vector2) -> void:
 	if not PerformanceFirebreak.disable_death_effects:
 		if death_pop_scene:
-			var effect = death_pop_scene.instantiate()
+			var pool := get_node_or_null("/root/VisualEffectPoolService")
+			var effect: Node = null
+			if pool != null and pool.has_method("acquire_scene"):
+				effect = pool.acquire_scene("death_pop", get_tree().current_scene, "death_pop")
+			if effect == null:
+				return
+			effect.global_position = death_global
 			if effect.has_method("setup"):
 				if enemy_type == "swarm" or tags.has("swarm"):
 					# [VISUAL-OPT] Duration reduced 0.52→0.32 for snappier, cheaper swarm death.
@@ -2644,8 +2691,6 @@ func spawn_death_effect(death_global: Vector2) -> void:
 				else:
 					# [VISUAL-OPT] Explicit low particle count for all non-swarm deaths.
 					effect.setup("default", Color(0.9, 0.9, 0.9, 0.8), 0.28, 4)
-			get_tree().current_scene.add_child(effect)
-			effect.global_position = death_global
 
 func reach_base() -> void:
 	if reached_base_flag: return
@@ -2699,11 +2744,15 @@ func _spawn_swarm_hit_effect(hit_global: Vector2) -> void:
 	if PerformanceFirebreak.disable_death_effects: return
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = get_tree().current_scene
-	var effect = death_pop_scene.instantiate()
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	var effect: Node = null
+	if pool != null and pool.has_method("acquire_scene"):
+		effect = pool.acquire_scene("death_pop", container, "death_pop")
+	if effect == null:
+		return
+	effect.global_position = hit_global
 	if effect.has_method("setup"):
 		effect.setup("swarm_hit", swarm_core_glow_color, 0.18, 6)
-	container.add_child(effect)
-	effect.global_position = hit_global
 
 func _update_swarm_pack_density() -> void:
 	var nearby := 0
@@ -2749,13 +2798,17 @@ func _spawn_bleed_particle() -> void:
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = get_tree().current_scene
 	
-	var p = Node2D.new()
-	p.set_script(load("res://scripts/effects/bleed_particle.gd"))
-	container.add_child(p)
-	
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool == null or not pool.has_method("acquire_script"):
+		return
+	var p := pool.acquire_script(load("res://scripts/effects/bleed_particle.gd"), container, "bleed_particle", "enemy_impact") as Node2D
+	if p == null:
+		return
 	# Spawn randomly around center
 	var offset = Vector2(randf_range(-10, 10), randf_range(-10, 10))
 	p.global_position = global_position + offset
+	if p.has_method("reset_particle"):
+		p.reset_particle()
 
 func _spawn_impact_particle(color: Color) -> void:
 	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
@@ -2764,10 +2817,11 @@ func _spawn_impact_particle(color: Color) -> void:
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = get_tree().current_scene
 	
-	var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
-	if impact_scene:
-		var effect = impact_scene.instantiate()
-		container.add_child(effect)
+	var imp_pool := get_node_or_null("/root/ImpactVFXPool")
+	if imp_pool != null:
+		var effect: Node = imp_pool.acquire(container)
+		if effect == null:
+			return
 		var offset = Vector2(randf_range(-12, 12), randf_range(-12, 12))
 		effect.global_position = global_position + offset
 		if effect.has_method("setup"):
