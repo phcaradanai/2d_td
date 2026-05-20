@@ -114,6 +114,14 @@ def main() -> int:
         failures.append("renderer must thread detail quality into contour drawing")
     if "draw_top(t, main_color, secondary_color, core_color, lvl, size, el_colors, detail_quality)" not in renderer_text:
         failures.append("renderer must thread detail quality into top drawing")
+    if "CatalogPreviewModeScript.is_static_preview(t)" not in renderer_text:
+        failures.append("renderer must keep static preview on LOW")
+    if "CatalogPreviewModeScript.is_selected_demo(t)" not in renderer_text:
+        failures.append("renderer must keep selected demo on HIGH")
+    if "bool(t.get(\"is_hovered\"))" not in renderer_text and "bool(t.get(\"hovered\"))" not in renderer_text:
+        failures.append("renderer must keep hovered previews on HIGH")
+    if "PerformanceBudgetService" in renderer_text:
+        failures.append("renderer must not use performance quality to downgrade gameplay visuals")
 
     for rel_path in TARGET_VISUALS:
         visual_text = (ROOT / rel_path).read_text(encoding="utf-8")
