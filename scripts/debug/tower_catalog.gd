@@ -4,9 +4,13 @@ extends Control
 ## Open directly: res://scenes/debug/tower_catalog.tscn
 ## No gameplay changes — reads PerformanceFirebreak flags as read-only.
 
-@onready var _item_list: ItemList = $RootMargin/MainVBox/ContentArea/TowerList
-@onready var top_toolbar: HBoxContainer = $RootMargin/MainVBox/TopToolbar
-@onready var selected_tower_panel: VBoxContainer = $RootMargin/MainVBox/ContentArea/SelectedTowerPanel
+const CATALOG_TARGET_SIZE := Vector2(1920, 1080)
+
+@onready var _main_panel: Control = $RootMargin/MainPanel
+@onready var _item_list: ItemList = $RootMargin/MainPanel/BodySplit/TowerListPanel/TowerNameList
+@onready var top_toolbar: HBoxContainer = $RootMargin/MainPanel/Toolbar
+@onready var _detail_title: Label = $RootMargin/MainPanel/BodySplit/DetailPanel/SelectedTowerName
+@onready var _detail_body: Label = $RootMargin/MainPanel/BodySplit/DetailPanel/SelectedTowerStats
 
 const TOWER_TREE_PATH := "res://data/towers_tree.json"
 const CatalogVfxModeScript = preload("res://scripts/debug/catalog_vfx_mode.gd")
@@ -52,7 +56,6 @@ const SECTION_LABELS := {
 }
 
 var _towers_config: Dictionary = {}
-var _selected_card: TowerEffectCatalogCard = null
 var _selected_tower_id: String = ""
 var _selected_tower_cfg: Dictionary = {}
 
@@ -65,19 +68,19 @@ var _catalog_load_more_button: Button = null
 var _catalog_visible_limit: int = 24
 var _catalog_last_build_truncated: bool = false
 
-var _side_preview: TowerCatalogPreview = null
-var _side_dummy_tower: DummyTowerPreview = null
-var _side_dummy_target: DummyTargetPreview = null
-var _side_vfx_nodes: Array[Node] = []
-
 func _ready() -> void:
 	CatalogRenderGuardScript.reset_to_defaults()
 	_load_tower_data()
 	_setup_controller()
 	_setup_zoom_controller()
+	_item_list.item_selected.connect(_on_item_selected)
 	_build_toolbar()
-	_build_side_panel_placeholder()
 	_build_catalog()
+	_fit_catalog_to_viewport()
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_RESIZED:
+		_fit_catalog_to_viewport()
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
@@ -141,11 +144,11 @@ func _group_into_families(section_entries: Array) -> Array:
 	return result
 
 func _build_catalog() -> void:
-	_selected_card = null
 	_selected_tower_id = ""
 	_selected_tower_cfg = {}
 	_virtual_list = null
 	_apply_filters()
+	_update_detail_panel()
 
 func _build_virtual_entries(limit: int = -1) -> Array:
 	var entries: Array = []
@@ -195,8 +198,6 @@ func _setup_controller() -> void:
 	_controller.name = "CatalogController"
 	add_child(_controller)
 	_controller.filters_changed.connect(_apply_filters)
-	_controller.replay_selected_requested.connect(_replay_attack_vfx)
-	_controller.auto_play_tick.connect(_replay_attack_vfx)
 
 func _setup_zoom_controller() -> void:
 	_zoom_controller = TowerEffectCatalogZoomController.new()
@@ -204,6 +205,11 @@ func _setup_zoom_controller() -> void:
 func _apply_filters() -> void:
 	_populate_tower_name_list()
 	_update_load_more_button()
+	if _item_list and _item_list.item_count > 0 and _item_list.get_selected_items().is_empty():
+		_item_list.select(0)
+		_on_item_selected(0)
+	elif _item_list and _item_list.get_selected_items().is_empty():
+		_update_detail_panel()
 
 func _populate_tower_name_list() -> void:
 	if _item_list == null:
@@ -233,6 +239,14 @@ func _populate_tower_name_list() -> void:
 		]
 		_item_list.add_item(row_text)
 		_item_list.set_item_metadata(_item_list.item_count - 1, tower_id)
+
+func _on_item_selected(index: int) -> void:
+	if _item_list == null or index < 0 or index >= _item_list.item_count:
+		_update_detail_panel()
+		return
+	var tower_id := str(_item_list.get_item_metadata(index))
+	var cfg: Dictionary = _towers_config.get(tower_id, {})
+	_update_detail_panel(tower_id, cfg)
 
 func _entry_passes_filters(tower_id: String, cfg: Dictionary) -> bool:
 	if _controller == null:
@@ -355,48 +369,10 @@ func _make_tower_card(tower_id: String, cfg: Dictionary) -> PanelContainer:
 	tier_label.add_theme_color_override("font_color", tier_color)
 	top_row.add_child(tier_label)
 
-	var preview := TowerCatalogPreview.new()
-	preview.tower_id = tower_id
-	preview.tower_config = cfg
-	preview.preview_size = Vector2(330, 200)
-	preview.camera_zoom = 1.4
-	preview.show_range_ring = false
-	preview.show_projectile_preview = false
-	preview.show_effects_preview = false
-	preview.static_preview = true
-	preview.custom_minimum_size = preview.preview_size
-	preview.mouse_filter = Control.MOUSE_FILTER_PASS
-	vbox.add_child(preview)
-
-	var badge_text := _get_vfx_badge(tower_id, tier)
-	var badge_label := Label.new()
-	badge_label.text = "VFX: " + badge_text
-	badge_label.add_theme_font_size_override("font_size", 11)
-	vbox.add_child(badge_label)
-
 	vbox.add_child(_make_stat_label(
 		"ATK: %s  TYPE: %s" % [str(cfg.get("attack_type", "-")), str(cfg.get("visual_type", "-"))],
 		Color(0.55, 0.65, 0.85)
 	))
-
-	var card_script := TowerEffectCatalogCard.new()
-	card_script.name = "CardScript"
-	card_script._vfx_badge_label = badge_label
-	card_script._normal_style = normal_style
-	card_script._selected_style = selected_style
-	card.add_child(card_script)
-	card_script.setup(card, tower_id, cfg, preview)
-	card_script.bind_entry(
-		tower_id,
-		cfg,
-		_controller.vfx_mode,
-		tower_id == _selected_tower_id
-	)
-	card_script.set_vfx_badge(badge_text)
-	card_script.card_selected.connect(_on_card_selected)
-	card_script.card_hovered.connect(func(_tower_id: String, _cfg: Dictionary, _hovered: bool) -> void:
-		pass
-	)
 
 	_make_passthrough(vbox)
 	return card
@@ -671,82 +647,23 @@ func _make_perf_label(text: String) -> Label:
 	label.text = text
 	return label
 
-func _build_side_panel_placeholder() -> void:
-	var style := StyleBoxFlat.new()
-	style.bg_color = Color(0.03, 0.05, 0.09, 0.95)
-	style.border_color = Color(0.15, 0.45, 0.65, 0.5)
-	style.set_border_width_all(1)
-	style.set_corner_radius_all(6)
-	style.content_margin_left = 10
-	style.content_margin_right = 10
-	style.content_margin_top = 10
-	style.content_margin_bottom = 10
-	selected_tower_panel.add_theme_stylebox_override("panel", style)
-
-	var placeholder := Label.new()
-	placeholder.name = "Placeholder"
-	placeholder.text = "Click a tower to inspect"
-	placeholder.add_theme_font_size_override("font_size", 13)
-	placeholder.add_theme_color_override("font_color", Color(0.35, 0.45, 0.55))
-	placeholder.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	placeholder.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	placeholder.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	selected_tower_panel.add_child(placeholder)
-
-func _on_card_selected(tower_id: String, cfg: Dictionary) -> void:
-	if _selected_card != null:
-		_selected_card.set_selected(false)
-	_selected_tower_id = tower_id
-	_selected_tower_cfg = cfg.duplicate(true)
-	_selected_card = null
-	if _virtual_list:
-		_virtual_list.refresh_visible_rows()
-	_populate_side_panel(tower_id, cfg)
-
-func _replay_attack_vfx() -> void:
-	if _selected_tower_id == "" or _side_preview == null:
+func _update_detail_panel(tower_id: String = "", cfg: Dictionary = {}) -> void:
+	if _detail_title == null or _detail_body == null:
 		return
-	if _controller.vfx_mode == CatalogVfxModeScript.VFX_OFF:
+	if tower_id == "":
+		_detail_title.text = "Detail"
+		_detail_body.text = "Select a tower to inspect its text summary."
 		return
-	if PerformanceFirebreak.disable_all_attack_vfx:
-		return
-
-	var tower_id: String = _selected_tower_id
-	var script: GDScript = TowerAttackVFXRegistry.get_vfx_script(tower_id)
-	if script == null:
-		return
-
-	var vfx_viewport: SubViewport = _side_preview.get_vfx_viewport()
-	if vfx_viewport == null:
-		return
-
-	if _side_dummy_tower == null:
-		_side_dummy_tower = DummyTowerPreview.new()
-		_side_dummy_tower.position = Vector2(-80, 0)
-		vfx_viewport.add_child(_side_dummy_tower)
-
-	if _side_dummy_target == null:
-		_side_dummy_target = DummyTargetPreview.new()
-		_side_dummy_target.position = Vector2(80, 0)
-		vfx_viewport.add_child(_side_dummy_target)
-
-	var elements: Array = _selected_tower_cfg.get("elements", [])
-	var color: Color = Color(0.45, 0.92, 1.0)
-	if not elements.is_empty():
-		color = ELEM_COLOR.get(str(elements[0]), color)
-
-	_side_dummy_tower.setup(tower_id, color)
-
-	var vfx_node := Node2D.new()
-	vfx_node.set_script(script)
-	vfx_viewport.add_child(vfx_node)
-	vfx_node.setup(
-		_side_dummy_tower.position,
-		_side_dummy_target.position,
-		color
-	)
-	vfx_node.configure({})
-	_side_vfx_nodes.append(vfx_node)
+	_detail_title.text = _get_tower_display_name(tower_id, cfg)
+	var lines: Array[String] = [
+		"ID: %s" % tower_id,
+		"Tier: %s" % _get_tower_tier_text(cfg),
+		"Elements: %s" % _get_tower_element_text(cfg),
+		"Role: %s" % _get_tower_role_text(cfg),
+		"Attack: %s" % str(cfg.get("attack_type", "—")),
+		"Visual: %s" % str(cfg.get("visual_type", "—")),
+	]
+	_detail_body.text = "\n".join(lines)
 
 func _make_toolbar_sep() -> VSeparator:
 	return VSeparator.new()
@@ -784,122 +701,19 @@ func _sync_safe_mode_toggle_text(enabled: bool) -> void:
 	if _catalog_safe_mode_toggle:
 		_catalog_safe_mode_toggle.text = "Safe Mode: ON" if enabled else "Safe Mode: OFF"
 
-func _populate_side_panel(tower_id: String, cfg: Dictionary) -> void:
-	for child in selected_tower_panel.get_children():
-		child.queue_free()
-	_side_preview = null
-	_side_dummy_tower = null
-	_side_dummy_target = null
-	_side_vfx_nodes.clear()
-
-	var title := Label.new()
-	title.text = str(cfg.get("display_name", tower_id))
-	title.add_theme_font_size_override("font_size", 16)
-	title.add_theme_color_override("font_color", Color(0.85, 0.98, 1.0))
-	title.clip_text = true
-	selected_tower_panel.add_child(title)
-
-	selected_tower_panel.add_child(_make_side_stat("ID", tower_id, Color(0.5, 0.65, 0.8)))
-
-	var tier: int = int(cfg.get("tier", 1))
-	var tier_str := "T%d" % tier if tier <= 3 else ("Pure" if tier == 4 else "Tier %d" % tier)
-	selected_tower_panel.add_child(_make_side_stat("Tier", tier_str, TIER_BADGE_COLOR.get(tier, Color.WHITE)))
-
-	var elements: Array = cfg.get("elements", [])
-	if not elements.is_empty():
-		selected_tower_panel.add_child(_make_element_badge(elements))
-
-	selected_tower_panel.add_child(_make_side_stat("Attack", str(cfg.get("attack_type", "-")), Color(0.7, 0.82, 0.9)))
-	selected_tower_panel.add_child(_make_side_stat("Visual", str(cfg.get("visual_type", "-")), Color(0.6, 0.72, 0.85)))
-
-	var status_effect: String = str(cfg.get("status_effect", ""))
-	if status_effect != "" and status_effect != "null":
-		selected_tower_panel.add_child(_make_side_stat("Status FX", status_effect, Color(0.55, 0.95, 0.72)))
-
-	var support_type: String = str(cfg.get("support_type", ""))
-	if support_type != "" and support_type != "null":
-		selected_tower_panel.add_child(_make_side_stat("Support", support_type, Color(0.95, 0.78, 0.38)))
-
-	var vfx_path_label := Label.new()
-	vfx_path_label.text = "VFX path:"
-	vfx_path_label.add_theme_font_size_override("font_size", 11)
-	vfx_path_label.add_theme_color_override("font_color", Color(0.45, 0.55, 0.65))
-	selected_tower_panel.add_child(vfx_path_label)
-
-	var path_edit := LineEdit.new()
-	path_edit.text = "res://scripts/vfx/towers/%s_attack_vfx.gd" % tower_id
-	path_edit.editable = false
-	path_edit.add_theme_font_size_override("font_size", 10)
-	selected_tower_panel.add_child(path_edit)
-
-	var badge_text := _get_vfx_badge(tower_id, tier)
-	var badge_label := Label.new()
-	badge_label.text = "VFX status: " + badge_text
-	badge_label.add_theme_font_size_override("font_size", 12)
-	selected_tower_panel.add_child(badge_label)
-
-	selected_tower_panel.add_child(_make_side_separator())
-
-	var replay_atk := Button.new()
-	replay_atk.text = "▶  Replay Attack"
-	replay_atk.pressed.connect(_replay_attack_vfx)
-	selected_tower_panel.add_child(replay_atk)
-
-	var replay_status := Button.new()
-	replay_status.text = "◉  Replay Status"
-	replay_status.pressed.connect(_show_status_preview)
-	selected_tower_panel.add_child(replay_status)
-
-	var replay_support := Button.new()
-	replay_support.text = "⬡  Replay Support"
-	replay_support.pressed.connect(_show_support_preview)
-	selected_tower_panel.add_child(replay_support)
-
-	selected_tower_panel.add_child(_make_side_separator())
-
-	_side_preview = TowerCatalogPreview.new()
-	_side_preview.tower_id = tower_id
-	_side_preview.tower_config = cfg
-	_side_preview.preview_size = Vector2(300, 200)
-	_side_preview.camera_zoom = 1.2
-	_side_preview.show_range_ring = true
-	_side_preview.show_projectile_preview = false
-	_side_preview.show_effects_preview = false
-	_side_preview.custom_minimum_size = _side_preview.preview_size
-	selected_tower_panel.add_child(_side_preview)
-
-func _make_side_stat(key: String, value: String, color: Color) -> Label:
-	var label := Label.new()
-	label.text = "%s: %s" % [key, value]
-	label.add_theme_font_size_override("font_size", 13)
-	label.add_theme_color_override("font_color", color)
-	label.clip_text = true
-	return label
-
-func _make_side_separator() -> ColorRect:
-	var sep := ColorRect.new()
-	sep.custom_minimum_size.y = 1
-	sep.color = Color(0.2, 0.5, 0.7, 0.3)
-	return sep
-
-# show_effects_preview=true triggers PreviewFxLayer — status icons or support aura based on tower's attack_type
-func _show_status_preview() -> void:
-	if _side_preview == null:
+func _fit_catalog_to_viewport() -> void:
+	if _main_panel == null:
 		return
-	_side_preview.set_preview_options(
-		_side_preview.show_range_ring,
-		false,
-		true,
-		false
-	)
-
-# show_effects_preview=true triggers PreviewFxLayer — same flag, visual differs by tower attack_type/_is_support_style()
-func _show_support_preview() -> void:
-	if _side_preview == null:
+	var viewport_size := get_viewport_rect().size
+	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
 		return
-	_side_preview.set_preview_options(
-		_side_preview.show_range_ring,
-		false,
-		true,
-		false
+	var panel_size := Vector2(
+		minf(viewport_size.x, CATALOG_TARGET_SIZE.x),
+		minf(viewport_size.y, CATALOG_TARGET_SIZE.y)
 	)
+	var x_offset := maxf(0.0, floor((viewport_size.x - panel_size.x) * 0.5))
+	var y_offset := maxf(0.0, floor((viewport_size.y - panel_size.y) * 0.5))
+	_main_panel.offset_left = x_offset
+	_main_panel.offset_top = y_offset
+	_main_panel.offset_right = x_offset + panel_size.x
+	_main_panel.offset_bottom = y_offset + panel_size.y
