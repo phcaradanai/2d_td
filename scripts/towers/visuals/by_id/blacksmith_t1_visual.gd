@@ -14,9 +14,6 @@ const METAL_DARK := Color(0.075, 0.072, 0.066, 0.96)
 const METAL_MID := Color(0.22, 0.205, 0.18, 0.96)
 const STONE_DARK := Color(0.105, 0.092, 0.075, 0.95)
 
-static func _is_low_detail(detail_quality: int) -> bool:
-	return detail_quality == TowerVisualDrawUtils.DetailQuality.LOW
-
 static func _outline_poly(t: Node2D, points: PackedVector2Array) -> void:
 	TowerVisualDrawUtils._draw_contour_poly(t, points)
 
@@ -43,22 +40,22 @@ static func _closed_path(points: PackedVector2Array) -> PackedVector2Array:
 	return path
 
 static func _draw_stroked_poly(t: Node2D, points: PackedVector2Array, fill: Color, line_color: Color, line_width := 1.2) -> void:
-	TowerVisualDrawUtils.safe_draw_polygon(t, points, DETAIL_OUTLINE)
+	t.draw_colored_polygon(points, DETAIL_OUTLINE)
 	var inner := TowerVisualDrawUtils._expand_poly_from_center(points, -1.6)
-	TowerVisualDrawUtils.safe_draw_polygon(t, inner, fill)
-	TowerVisualDrawUtils.safe_draw_polyline(t, inner, line_color, line_width, true)
+	t.draw_colored_polygon(inner, fill)
+	t.draw_polyline(_closed_path(inner), line_color, line_width, true)
 
 static func _draw_stroked_rect(t: Node2D, rect: Rect2, fill: Color, stroke_width := 1.6) -> void:
-	TowerVisualDrawUtils.safe_draw_rect(t, rect.grow(stroke_width), DETAIL_OUTLINE)
-	TowerVisualDrawUtils.safe_draw_rect(t, rect, fill)
+	t.draw_rect(rect.grow(stroke_width), DETAIL_OUTLINE)
+	t.draw_rect(rect, fill)
 
 static func _draw_stroked_line(t: Node2D, from: Vector2, to: Vector2, color: Color, width: float, antialiased := true) -> void:
-	TowerVisualDrawUtils.safe_draw_line(t, from, to, DETAIL_OUTLINE, width + 2.2, antialiased)
-	TowerVisualDrawUtils.safe_draw_line(t, from, to, color, width, antialiased)
+	t.draw_line(from, to, DETAIL_OUTLINE, width + 2.2, antialiased)
+	t.draw_line(from, to, color, width, antialiased)
 
 static func _draw_stroked_circle(t: Node2D, center: Vector2, radius: float, fill: Color, stroke_width := 1.5) -> void:
-	TowerVisualDrawUtils.safe_draw_circle(t, center, radius + stroke_width, DETAIL_OUTLINE)
-	TowerVisualDrawUtils.safe_draw_circle(t, center, radius, fill)
+	t.draw_circle(center, radius + stroke_width, DETAIL_OUTLINE)
+	t.draw_circle(center, radius, fill)
 
 static func _fire_color(el_colors: Array[Color], fallback: Color) -> Color:
 	# Blacksmith is Fire + Earth. In most calls the first two element colors are provided.
@@ -75,9 +72,9 @@ static func _draw_dual_fire_earth_token(t: Node2D, center: Vector2, radius: floa
 	# Small support identity token; does not replace the anvil silhouette.
 	var outer := _regular_poly(center, radius, 8, PI / 8.0)
 	var inner := _regular_poly(center, radius * 0.78, 8, PI / 8.0)
-	TowerVisualDrawUtils.safe_draw_polygon(t, outer, DETAIL_OUTLINE)
-	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(outer, -1.3), Color(0.045, 0.033, 0.025, 0.90))
-	TowerVisualDrawUtils.safe_draw_polyline(t, inner, Color(earth_c.r, earth_c.g, earth_c.b, 0.50), 0.9, true)
+	t.draw_colored_polygon(outer, DETAIL_OUTLINE)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(outer, -1.3), Color(0.045, 0.033, 0.025, 0.90))
+	t.draw_polyline(_closed_path(inner), Color(earth_c.r, earth_c.g, earth_c.b, 0.50), 0.9, true)
 
 	# Fire half and earth half as readable miniature symbols.
 	var flame := PackedVector2Array([
@@ -88,11 +85,11 @@ static func _draw_dual_fire_earth_token(t: Node2D, center: Vector2, radius: floa
 		center + Vector2(4.4, 1.5),
 		center + Vector2(0.0, 4.2),
 	])
-	TowerVisualDrawUtils.safe_draw_polygon(t, flame, DETAIL_OUTLINE_SOFT)
-	TowerVisualDrawUtils.safe_draw_polygon(t, TowerVisualDrawUtils._expand_poly_from_center(flame, -0.9), Color(fire_c.r, fire_c.g, fire_c.b, 0.82))
+	t.draw_colored_polygon(flame, DETAIL_OUTLINE_SOFT)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(flame, -0.9), Color(fire_c.r, fire_c.g, fire_c.b, 0.82))
 	_draw_stroked_line(t, center + Vector2(-4.2, 5.4), center + Vector2(4.2, 5.4), Color(earth_c.r, earth_c.g, earth_c.b, 0.70), 1.0, true)
 
-static func draw_contour(t: Node2D, detail_quality: int = TowerVisualDrawUtils.DetailQuality.MEDIUM) -> void:
+static func draw_contour(t: Node2D) -> void:
 	# Support-aura footprint: not a target range circle, just four forge pylon anchors.
 	for p in [Vector2(-20, -18), Vector2(20, -18), Vector2(-20, 18), Vector2(20, 18)]:
 		_outline_circle(t, p, 4.8)
@@ -102,12 +99,6 @@ static func draw_contour(t: Node2D, detail_quality: int = TowerVisualDrawUtils.D
 		Vector2(-18, 16), Vector2(-23, 4), Vector2(-16, -11),
 		Vector2(16, -11), Vector2(23, 4), Vector2(18, 16),
 	]))
-
-	if detail_quality == TowerVisualDrawUtils.DetailQuality.LOW:
-		_outline_rect(t, Rect2(-14, 8, 28, 6))
-		_outline_circle(t, Vector2(0, 0), 7.6)
-		_draw_dual_fire_earth_token(t, Vector2(0, 20.5), 6.3, Color(1.0, 0.36, 0.08, 1.0), Color(0.58, 0.43, 0.20, 1.0))
-		return
 
 	# Anvil silhouette: left horn, flat striking face, tapered foot.
 	_outline_poly(t, PackedVector2Array([
@@ -124,7 +115,7 @@ static func draw_contour(t: Node2D, detail_quality: int = TowerVisualDrawUtils.D
 	_outline_line(t, Vector2(10, -21), Vector2(22, -9), 3.2)
 	_outline_rect(t, Rect2(19, -13, 8, 5))
 
-static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, el_colors: Array[Color], detail_quality: int = TowerVisualDrawUtils.DetailQuality.MEDIUM) -> void:
+static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, el_colors: Array[Color]) -> void:
 	var fire_c := _fire_color(el_colors, Color(1.0, 0.36, 0.08, 1.0))
 	var earth_c := _earth_color(el_colors, Color(0.58, 0.43, 0.20, 1.0))
 	var _forge_hot := Color(1.0, 0.48, 0.08, 0.95)
@@ -132,44 +123,19 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	var earth_glow := Color(earth_c.r, earth_c.g, earth_c.b, 0.34)
 	var fire_glow := Color(fire_c.r, fire_c.g, fire_c.b, 0.22)
 
-	if detail_quality == TowerVisualDrawUtils.DetailQuality.LOW:
-		var base := PackedVector2Array([
-			Vector2(-18, 16), Vector2(-23, 4), Vector2(-16, -11),
-			Vector2(16, -11), Vector2(23, 4), Vector2(18, 16),
-		])
-		var anvil_top := PackedVector2Array([
-			Vector2(-26, -9), Vector2(-16, -15), Vector2(14, -15), Vector2(23, -10),
-			Vector2(15, -5), Vector2(-8, -5), Vector2(-18, -2), Vector2(-28, -3),
-		])
-		var foot := PackedVector2Array([
-			Vector2(-11, -5), Vector2(11, -5), Vector2(8, 9), Vector2(-8, 9),
-		])
-		TowerVisualDrawUtils.safe_draw_polygon(t, base, STONE_DARK)
-		TowerVisualDrawUtils.safe_draw_polygon(t, anvil_top, METAL_MID)
-		TowerVisualDrawUtils.safe_draw_polygon(t, foot, METAL_DARK)
-		TowerVisualDrawUtils.safe_draw_rect(t, Rect2(-14, 8, 28, 6), Color(0.145, 0.128, 0.098, 0.96))
-		TowerVisualDrawUtils.safe_draw_circle(t, Vector2(0, 0), 7.4, Color(0.075, 0.027, 0.012, 0.96))
-		TowerVisualDrawUtils.safe_draw_circle(t, Vector2(0, 0), 5.6, Color(fire_c.r, fire_c.g * 0.72, fire_c.b * 0.48, 0.32))
-		TowerVisualDrawUtils.safe_draw_circle(t, Vector2(0, 0), 3.9, Color(1.0, 0.32, 0.04, 0.78))
-		TowerVisualDrawUtils.safe_draw_circle(t, Vector2(0, 0), 1.8, forge_yellow)
-		_draw_dual_fire_earth_token(t, Vector2(0, 20.5), 6.3, fire_c, earth_c)
-		return
-
 	# Static forge aura language. These arcs say "support aura" without gameplay range visuals.
-	if not _is_low_detail(detail_quality):
-		TowerVisualDrawUtils.safe_draw_arc(t, Vector2.ZERO, 25.5, deg_to_rad(205), deg_to_rad(335), 24, fire_glow, 1.4, true)
-		TowerVisualDrawUtils.safe_draw_arc(t, Vector2.ZERO, 25.5, deg_to_rad(25), deg_to_rad(155), 24, earth_glow, 1.4, true)
-		TowerVisualDrawUtils.safe_draw_arc(t, Vector2.ZERO, 20.5, deg_to_rad(215), deg_to_rad(325), 20, Color(fire_c.r, fire_c.g, fire_c.b, 0.16), 0.9, true)
+	t.draw_arc(Vector2.ZERO, 25.5, deg_to_rad(205), deg_to_rad(335), 24, fire_glow, 1.4, true)
+	t.draw_arc(Vector2.ZERO, 25.5, deg_to_rad(25), deg_to_rad(155), 24, earth_glow, 1.4, true)
+	t.draw_arc(Vector2.ZERO, 20.5, deg_to_rad(215), deg_to_rad(325), 20, Color(fire_c.r, fire_c.g, fire_c.b, 0.16), 0.9, true)
 
 	# Four aura pylons / rivets for support identity.
 	var pylon_fill := Color(0.035, 0.030, 0.025, 0.88)
 	var pylon_line := Color(forge_yellow.r, forge_yellow.g, forge_yellow.b, 0.62)
 	for p in [Vector2(-20, -18), Vector2(20, -18), Vector2(-20, 18), Vector2(20, 18)]:
-		TowerVisualDrawUtils.safe_draw_circle(t, p, 6.6, Color(fire_c.r, fire_c.g, fire_c.b, 0.055))
+		t.draw_circle(p, 6.6, Color(fire_c.r, fire_c.g, fire_c.b, 0.055))
 		_draw_stroked_circle(t, p, 4.0, pylon_fill, 1.3)
-		if not _is_low_detail(detail_quality):
-			TowerVisualDrawUtils.safe_draw_arc(t, p, 3.0, 0.0, TAU, 16, pylon_line, 0.8, true)
-		TowerVisualDrawUtils.safe_draw_circle(t, p, 1.25, Color(forge_yellow.r, forge_yellow.g, forge_yellow.b, 0.72))
+		t.draw_arc(p, 3.0, 0.0, TAU, 16, pylon_line, 0.8, true)
+		t.draw_circle(p, 1.25, Color(forge_yellow.r, forge_yellow.g, forge_yellow.b, 0.72))
 
 	# Heavy stone/metal base.
 	var base := PackedVector2Array([
@@ -199,9 +165,9 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 
 	# Molten forge chamber. This communicates damage-buff tempering rather than direct shooting.
 	_draw_stroked_circle(t, Vector2(0, 0), 7.4, Color(0.075, 0.027, 0.012, 0.96), 1.9)
-	TowerVisualDrawUtils.safe_draw_circle(t, Vector2(0, 0), 5.6, Color(fire_c.r, fire_c.g * 0.72, fire_c.b * 0.48, 0.32))
-	TowerVisualDrawUtils.safe_draw_circle(t, Vector2(0, 0), 3.9, Color(1.0, 0.32, 0.04, 0.78))
-	TowerVisualDrawUtils.safe_draw_circle(t, Vector2(0, 0), 1.8, forge_yellow)
+	t.draw_circle(Vector2(0, 0), 5.6, Color(fire_c.r, fire_c.g * 0.72, fire_c.b * 0.48, 0.32))
+	t.draw_circle(Vector2(0, 0), 3.9, Color(1.0, 0.32, 0.04, 0.78))
+	t.draw_circle(Vector2(0, 0), 1.8, forge_yellow)
 	_draw_stroked_line(t, Vector2(-5.5, 0.0), Vector2(5.5, 0.0), Color(1.0, 0.70, 0.20, 0.72), 0.9, true)
 	_draw_stroked_line(t, Vector2(0.0, -5.5), Vector2(0.0, 5.5), Color(1.0, 0.44, 0.08, 0.55), 0.75, true)
 
@@ -212,10 +178,9 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 
 	# Small static sparks at the striking face. Fixed positions = stable and cheap.
 	for spark in [Vector2(-7, -18), Vector2(0, -20), Vector2(8, -18)]:
-		if not _is_low_detail(detail_quality):
-			TowerVisualDrawUtils.safe_draw_circle(t, spark, 2.5, Color(fire_c.r, fire_c.g, fire_c.b, 0.08))
-			TowerVisualDrawUtils.safe_draw_circle(t, spark, 1.25, Color(1.0, 0.68, 0.16, 0.82))
-		TowerVisualDrawUtils.safe_draw_circle(t, spark, 0.55, Color(1.0, 0.92, 0.50, 0.86))
+		t.draw_circle(spark, 2.5, Color(fire_c.r, fire_c.g, fire_c.b, 0.08))
+		t.draw_circle(spark, 1.25, Color(1.0, 0.68, 0.16, 0.82))
+		t.draw_circle(spark, 0.55, Color(1.0, 0.92, 0.50, 0.86))
 
 	# Compact dual-element token, deliberately secondary to the forge silhouette.
 	_draw_dual_fire_earth_token(t, Vector2(0, 20.5), 6.3, fire_c, earth_c)
