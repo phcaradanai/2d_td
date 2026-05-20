@@ -50,13 +50,13 @@ text = "Tower Effect Catalog"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.65, 0.75, 1)
 theme_override_font_sizes/font_size = 14
-text = "Debug VFX preview — all towers, attack / status / support effects"
+text = "Text-only tower browser — previews load later"
 
 [node name="PreviewOnlyLabel" type="Label" parent="RootMargin/MainVBox/Header" unique_id=1321395903]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.55, 0.25, 1)
 theme_override_font_sizes/font_size = 12
-text = "Preview only — not gameplay simulation"
+text = "List first — no tower scenes on startup"
 horizontal_alignment = 2
 
 [node name="TopToolbar" type="HBoxContainer" parent="RootMargin/MainVBox" unique_id=1220493597]
@@ -69,16 +69,11 @@ layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
 
-[node name="ScrollContainer" type="ScrollContainer" parent="RootMargin/MainVBox/ContentArea" unique_id=865161609]
+[node name="TowerList" type="ItemList" parent="RootMargin/MainVBox/ContentArea" unique_id=865161609]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-
-[node name="ContentVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ContentArea/ScrollContainer" unique_id=1735917624]
-layout_mode = 2
-size_flags_horizontal = 0
-size_flags_vertical = 0
-theme_override_constants/separation = 16
+same_column_width = true
 
 [node name="SelectedTowerPanel" type="VBoxContainer" parent="RootMargin/MainVBox/ContentArea" unique_id=602910702]
 custom_minimum_size = Vector2(320, 0)

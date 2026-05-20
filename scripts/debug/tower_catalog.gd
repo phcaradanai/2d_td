@@ -4,15 +4,15 @@ extends Control
 ## Open directly: res://scenes/debug/tower_catalog.tscn
 ## No gameplay changes — reads PerformanceFirebreak flags as read-only.
 
-@onready var content_vbox: VBoxContainer = $RootMargin/MainVBox/ContentArea/ScrollContainer/ContentVBox
+@onready var _item_list: ItemList = $RootMargin/MainVBox/ContentArea/TowerList
 @onready var top_toolbar: HBoxContainer = $RootMargin/MainVBox/TopToolbar
 @onready var selected_tower_panel: VBoxContainer = $RootMargin/MainVBox/ContentArea/SelectedTowerPanel
-@onready var scroll_container: ScrollContainer = $RootMargin/MainVBox/ContentArea/ScrollContainer
 
 const TOWER_TREE_PATH := "res://data/towers_tree.json"
-const CatalogVfxMode = preload("res://scripts/debug/catalog_vfx_mode.gd")
-const TowerCatalogVirtualList = preload("res://scripts/debug/tower_catalog_virtual_list.gd")
-const CatalogPerformanceMonitor = preload("res://scripts/debug/catalog_performance_monitor.gd")
+const CatalogVfxModeScript = preload("res://scripts/debug/catalog_vfx_mode.gd")
+const TowerCatalogVirtualListScript = preload("res://scripts/debug/tower_catalog_virtual_list.gd")
+const CatalogPerformanceMonitorScript = preload("res://scripts/debug/catalog_performance_monitor.gd")
+const CatalogRenderGuardScript = preload("res://scripts/debug/catalog_render_guard.gd")
 
 const ELEM_SHORT := {
 	"light": "L", "darkness": "D", "water": "W", "fire": "F",
@@ -60,6 +60,10 @@ var _controller: TowerEffectCatalogController = null
 var _zoom_controller: TowerEffectCatalogZoomController = null
 var _virtual_list: Node = null
 var _performance_monitor: Node = null
+var _catalog_safe_mode_toggle: CheckButton = null
+var _catalog_load_more_button: Button = null
+var _catalog_visible_limit: int = 24
+var _catalog_last_build_truncated: bool = false
 
 var _side_preview: TowerCatalogPreview = null
 var _side_dummy_tower: DummyTowerPreview = null
@@ -67,6 +71,7 @@ var _side_dummy_target: DummyTargetPreview = null
 var _side_vfx_nodes: Array[Node] = []
 
 func _ready() -> void:
+	CatalogRenderGuardScript.reset_to_defaults()
 	_load_tower_data()
 	_setup_controller()
 	_setup_zoom_controller()
@@ -139,23 +144,19 @@ func _build_catalog() -> void:
 	_selected_card = null
 	_selected_tower_id = ""
 	_selected_tower_cfg = {}
-	_virtual_list = TowerCatalogVirtualList.new()
-	_virtual_list.name = "TowerCatalogVirtualList"
-	add_child(_virtual_list)
-	_virtual_list.setup(
-		scroll_container,
-		content_vbox,
-		_populate_virtual_row,
-		_deactivate_virtual_row
-	)
+	_virtual_list = null
 	_apply_filters()
 
-func _build_virtual_entries() -> Array:
+func _build_virtual_entries(limit: int = -1) -> Array:
 	var entries: Array = []
+	var card_count := 0
+	var limit_reached := false
 
 	var sections := _build_families()
 
 	for ctype in SECTION_ORDER:
+		if limit_reached:
+			break
 		if not sections.has(ctype):
 			continue
 		var families := _group_into_families(sections[ctype])
@@ -163,13 +164,19 @@ func _build_virtual_entries() -> Array:
 			continue
 		var section_added := false
 		for family in families:
+			if limit_reached:
+				break
 			var members: Array = family["members"]
 			var visible_members: Array = []
 			for pair in members:
+				if limit >= 0 and card_count >= limit:
+					limit_reached = true
+					break
 				var tid: String = pair[0]
 				var cfg: Dictionary = pair[1].duplicate(true)
 				if _entry_passes_filters(tid, cfg):
 					visible_members.append([tid, cfg])
+					card_count += 1
 			if visible_members.is_empty():
 				continue
 			if not section_added:
@@ -178,6 +185,9 @@ func _build_virtual_entries() -> Array:
 			entries.append({"type": "row", "members": visible_members})
 		if section_added:
 			entries.append({"type": "separator"})
+		if limit_reached:
+			break
+	_catalog_last_build_truncated = limit_reached
 	return entries
 
 func _setup_controller() -> void:
@@ -192,8 +202,37 @@ func _setup_zoom_controller() -> void:
 	_zoom_controller = TowerEffectCatalogZoomController.new()
 
 func _apply_filters() -> void:
-	if _virtual_list:
-		_virtual_list.set_entries(_build_virtual_entries())
+	_populate_tower_name_list()
+	_update_load_more_button()
+
+func _populate_tower_name_list() -> void:
+	if _item_list == null:
+		return
+	_item_list.clear()
+
+	var sorted_tower_ids: Array = _towers_config.keys()
+	sorted_tower_ids.sort_custom(func(a: String, b: String) -> bool:
+		var cfg_a: Dictionary = _towers_config.get(a, {})
+		var cfg_b: Dictionary = _towers_config.get(b, {})
+		var name_a := _get_tower_display_name(a, cfg_a).to_lower()
+		var name_b := _get_tower_display_name(b, cfg_b).to_lower()
+		if name_a != name_b:
+			return name_a < name_b
+		return a < b
+	)
+
+	for tower_id in sorted_tower_ids:
+		var cfg: Dictionary = _towers_config.get(tower_id, {})
+		if not _entry_passes_filters(tower_id, cfg):
+			continue
+		var row_text := "%s | %s | %s | %s" % [
+			_get_tower_display_name(tower_id, cfg),
+			_get_tower_tier_text(cfg),
+			_get_tower_element_text(cfg),
+			_get_tower_role_text(cfg),
+		]
+		_item_list.add_item(row_text)
+		_item_list.set_item_metadata(_item_list.item_count - 1, tower_id)
 
 func _entry_passes_filters(tower_id: String, cfg: Dictionary) -> bool:
 	if _controller == null:
@@ -415,6 +454,39 @@ func _make_stat_label(text: String, color: Color) -> Label:
 	label.add_theme_color_override("font_color", color)
 	return label
 
+func _get_tower_display_name(tower_id: String, cfg: Dictionary) -> String:
+	var display_name := str(cfg.get("display_name", cfg.get("name", "")))
+	return display_name if display_name != "" else tower_id
+
+func _get_tower_tier_text(cfg: Dictionary) -> String:
+	var tier: int = int(cfg.get("tier", 1))
+	if tier == 4:
+		return "Pure"
+	if tier <= 3:
+		return "T%d" % tier
+	return "T%d" % tier
+
+func _get_tower_element_text(cfg: Dictionary) -> String:
+	var elements: Array = cfg.get("elements", [])
+	if elements.is_empty():
+		return "—"
+	var labels: Array[String] = []
+	for element in elements:
+		labels.append(ELEM_DISPLAY.get(str(element), str(element).capitalize()))
+	return "+".join(labels)
+
+func _get_tower_role_text(cfg: Dictionary) -> String:
+	var role := str(cfg.get("support_type", ""))
+	if role == "" or role == "null":
+		role = str(cfg.get("attack_type", ""))
+	if role == "" or role == "null":
+		role = str(cfg.get("visual_type", ""))
+	if role == "" or role == "null":
+		role = str(cfg.get("combo_type", ""))
+	if role == "" or role == "null":
+		role = "—"
+	return role.capitalize() if role != "—" else role
+
 func _str_or_dash(value: float) -> String:
 	return "—" if value == 0.0 else str(value)
 
@@ -424,8 +496,6 @@ func _get_first_level_value(cfg: Dictionary, key: String, fallback: float) -> Va
 	return cfg.get(key, fallback)
 
 func _build_toolbar() -> void:
-	_zoom_controller.setup(content_vbox, scroll_container)
-
 	var search := LineEdit.new()
 	search.placeholder_text = "Search tower..."
 	search.custom_minimum_size = Vector2(160, 0)
@@ -474,14 +544,33 @@ func _build_toolbar() -> void:
 	top_toolbar.add_child(_make_toolbar_toggle("Models", true, func(v: bool) -> void:
 		_controller.show_models = v
 	))
+	_catalog_safe_mode_toggle = _make_toolbar_toggle("Safe Mode", CatalogRenderGuardScript.catalog_safe_mode, func(v: bool) -> void:
+		CatalogRenderGuardScript.catalog_safe_mode = v
+		_catalog_visible_limit = CatalogRenderGuardScript.max_preview_cards if v else -1
+		_sync_safe_mode_toggle_text(v)
+		_apply_filters()
+	)
+	top_toolbar.add_child(_catalog_safe_mode_toggle)
+	_sync_safe_mode_toggle_text(CatalogRenderGuardScript.catalog_safe_mode)
+
+	_catalog_load_more_button = Button.new()
+	_catalog_load_more_button.text = "Load More"
+	_catalog_load_more_button.pressed.connect(func() -> void:
+		if CatalogRenderGuardScript.catalog_safe_mode:
+			_catalog_visible_limit += CatalogRenderGuardScript.max_preview_cards
+			_apply_filters()
+	)
+	top_toolbar.add_child(_catalog_load_more_button)
+
 	var vfx_mode_opt := OptionButton.new()
-	for entry in [["VFX Off", CatalogVfxMode.VFX_OFF], ["Selected Only", CatalogVfxMode.VFX_SELECTED_ONLY], ["All", CatalogVfxMode.VFX_ALL]]:
+	for entry in [["VFX Off", CatalogVfxModeScript.VFX_OFF], ["Selected Only", CatalogVfxModeScript.VFX_SELECTED_ONLY], ["All", CatalogVfxModeScript.VFX_ALL]]:
 		vfx_mode_opt.add_item(entry[0])
 		vfx_mode_opt.set_item_metadata(vfx_mode_opt.item_count - 1, entry[1])
-	vfx_mode_opt.selected = 1
+	vfx_mode_opt.selected = 0
+	_controller.vfx_mode = CatalogVfxModeScript.VFX_OFF
 	vfx_mode_opt.item_selected.connect(func(idx: int) -> void:
 		_controller.vfx_mode = str(vfx_mode_opt.get_item_metadata(idx))
-		if _controller.vfx_mode == CatalogVfxMode.VFX_OFF:
+		if _controller.vfx_mode == CatalogVfxModeScript.VFX_OFF:
 			_clear_attack_vfx_nodes()
 		if _virtual_list:
 			_virtual_list.refresh_visible_rows()
@@ -560,7 +649,7 @@ func _build_toolbar() -> void:
 	var active_preview_label := _make_perf_label("Active: 0")
 	top_toolbar.add_child(active_preview_label)
 
-	_performance_monitor = CatalogPerformanceMonitor.new()
+	_performance_monitor = CatalogPerformanceMonitorScript.new()
 	_performance_monitor.name = "CatalogPerformanceMonitor"
 	add_child(_performance_monitor)
 	_performance_monitor.setup(
@@ -617,7 +706,7 @@ func _on_card_selected(tower_id: String, cfg: Dictionary) -> void:
 func _replay_attack_vfx() -> void:
 	if _selected_tower_id == "" or _side_preview == null:
 		return
-	if _controller.vfx_mode == CatalogVfxMode.VFX_OFF:
+	if _controller.vfx_mode == CatalogVfxModeScript.VFX_OFF:
 		return
 	if PerformanceFirebreak.disable_all_attack_vfx:
 		return
@@ -673,6 +762,27 @@ func _make_toolbar_toggle(label: String, initial: bool, callback: Callable) -> C
 func _clear_attack_vfx_nodes() -> void:
 	for node in get_tree().get_nodes_in_group("attack_vfx"):
 		node.queue_free()
+
+func _update_load_more_button() -> void:
+	if _catalog_load_more_button == null:
+		return
+	if CatalogRenderGuardScript.catalog_list_first:
+		_catalog_load_more_button.disabled = true
+		_catalog_load_more_button.text = "List Only"
+		return
+	if not CatalogRenderGuardScript.catalog_safe_mode:
+		_catalog_load_more_button.disabled = true
+		_catalog_load_more_button.text = "Load More"
+		return
+	_catalog_load_more_button.disabled = not _catalog_last_build_truncated
+	if _catalog_last_build_truncated:
+		_catalog_load_more_button.text = "Load More +%d" % CatalogRenderGuardScript.max_preview_cards
+	else:
+		_catalog_load_more_button.text = "All Loaded"
+
+func _sync_safe_mode_toggle_text(enabled: bool) -> void:
+	if _catalog_safe_mode_toggle:
+		_catalog_safe_mode_toggle.text = "Safe Mode: ON" if enabled else "Safe Mode: OFF"
 
 func _populate_side_panel(tower_id: String, cfg: Dictionary) -> void:
 	for child in selected_tower_panel.get_children():
