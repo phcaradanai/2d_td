@@ -71,7 +71,7 @@ func _spawn_gallery() -> void:
 		
 		
 
-		var row := i / cols
+		var row := int(float(i) / float(cols))
 		var col := i % cols
 		var cell_pos := Vector2(start_x + col * card_w, start_y + row * card_h)
 

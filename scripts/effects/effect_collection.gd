@@ -193,7 +193,7 @@ func _spawn_gallery() -> void:
 	for i in EFFECT_DEFS.size():
 		var def: Dictionary = EFFECT_DEFS[i]
 		var col := i % columns
-		var row := i / columns
+		var row := int(float(i) / float(columns))
 
 		var card := Control.new()
 		card.position = start + Vector2(col * cell_w, row * cell_h)

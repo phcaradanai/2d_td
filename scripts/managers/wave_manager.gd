@@ -548,11 +548,10 @@ func _on_enemy_removed() -> void:
 func _check_wave_completion() -> void:
 	if is_wave_running and not is_spawning and active_enemy_count <= 0:
 		is_wave_running = false
-		
-		var duration_sec = (Time.get_ticks_msec() - wave_start_time_msec) / 1000.0
+
 		if game_manager and game_manager.battle_telemetry:
 			game_manager.battle_telemetry.log_wave_completed(active_wave_number, "cleared", active_wave_reward)
-			
+		
 		if OS.is_debug_build(): print("Wave ", active_wave_number, " completed!")
 		wave_completed.emit(active_wave_number, active_wave_name, active_wave_reward)
 		

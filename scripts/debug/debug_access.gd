@@ -16,14 +16,13 @@ static func is_balance_tools_allowed() -> bool:
 		return bool(ProjectSettings.get_setting(BALANCE_TOOLS_SETTING, true))
 	return bool(ProjectSettings.get_setting(BALANCE_TOOLS_SETTING, false))
 
+const DEBUG_ACCESS_LOGS := false
+
 static func block_balance_tool(action: String) -> bool:
 	if is_balance_tools_allowed():
 		return false
-	var message := "Balance tool blocked: %s is not allowed in this build." % action
-	if OS.is_debug_build() or is_debug_ui_allowed():
-		push_warning(message)
-	else:
-		print(message)
+	if DEBUG_ACCESS_LOGS and OS.is_debug_build():
+		print("[DebugAccess] Balance tool blocked: %s is not allowed in this build." % action)
 	return true
 
 static func register_balance_tool_ui(node: Node) -> void:

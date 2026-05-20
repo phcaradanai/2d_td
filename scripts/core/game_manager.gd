@@ -40,7 +40,7 @@ var is_victory: bool = false
 var is_paused: bool = false
 var debug_god_mode: bool = false
 var session_start_time: int = 0
-var clear_time_seconds: int = 0
+var clear_time_seconds: float = 0.0
 
 var battle_telemetry = null
 
@@ -98,7 +98,7 @@ func start_timer() -> void:
 
 func stop_timer() -> void:
 	if session_start_time > 0 and clear_time_seconds == 0:
-		clear_time_seconds = (Time.get_ticks_msec() - session_start_time) / 1000
+		clear_time_seconds = float(Time.get_ticks_msec() - session_start_time) / 1000.0
 		if OS.is_debug_build(): print("[GameManager] Timer stopped: %d seconds" % clear_time_seconds)
 
 func add_gold(amount: int) -> void:
@@ -185,7 +185,7 @@ func add_score(amount: int) -> void:
 	score += amount
 	score_changed.emit(score)
 
-func calculate_final_score(total_waves: int = 0) -> int:
+func calculate_final_score() -> int:
 	# New formula based on requirements:
 	# Base clear score: 1000 if level cleared
 	# Remaining lives bonus: lives * 50
@@ -231,7 +231,7 @@ func calculate_stars(p_total_waves: int = 0) -> int:
 
 func get_run_summary(p_total_waves: int = 0) -> Dictionary:
 	var actual_total = p_total_waves if p_total_waves > 0 else total_waves
-	var final_score = calculate_final_score(actual_total)
+	var final_score = calculate_final_score()
 	var stars = calculate_stars(actual_total)
 	var is_perfect = is_victory and (lives >= starting_lives)
 	

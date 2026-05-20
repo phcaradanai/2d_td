@@ -438,10 +438,10 @@ func _draw_edge_nodes(points: PackedVector2Array, color: Color, radius: float = 
 		draw_circle(p, radius + 1.0, Color(0.0, 0.0, 0.0, 0.45))
 		draw_circle(p, radius, Color(color.r, color.g, color.b, 0.78))
 
-func _draw_orbiters(count: int, orbit_radius: float, node_radius: float, color: Color, speed: float = 1.0) -> void:
+func _draw_orbiters(count: int, orbit_radius: float, node_radius: float, color: Color, p_speed: float = 1.0) -> void:
 	if PERFORMANCE_VISUAL_MODE: return
 	for i in range(count):
-		var a := float(i) / float(count) * TAU + pulse_time * speed
+		var a := float(i) / float(count) * TAU + pulse_time * p_speed
 		var p := Vector2.RIGHT.rotated(a) * orbit_radius
 		draw_circle(p, node_radius + 2.0, Color(color.r, color.g, color.b, 0.08))
 		draw_circle(p, node_radius, Color(color.r, color.g, color.b, 0.75))
@@ -471,11 +471,11 @@ func _draw_shield_dome(radius: float, color: Color) -> void:
 		draw_circle(node_pos, 2.0, Color(color.r, color.g, color.b, 0.4))
 
 
-func _ellipse_points(center: Vector2, radius_x: float, radius_y: float, count: int = 28, rotation: float = 0.0) -> PackedVector2Array:
+func _ellipse_points(center: Vector2, radius_x: float, radius_y: float, count: int = 28, p_rotation: float = 0.0) -> PackedVector2Array:
 	var pts := PackedVector2Array()
 	for i in range(count):
 		var a: float = float(i) / float(count) * TAU
-		var p := Vector2(cos(a) * radius_x, sin(a) * radius_y).rotated(rotation)
+		var p := Vector2(cos(a) * radius_x, sin(a) * radius_y).rotated(p_rotation)
 		pts.append(center + p)
 	return pts
 
@@ -687,14 +687,8 @@ func _draw_cyber_node(color: Color, size: float) -> void:
 	var shell_body: Color = Color(0.145, 0.152, 0.168, 1.0)
 	var shell_mid: Color = Color(0.285, 0.300, 0.334, 1.0)
 	var shell_high: Color = Color(0.385, 0.398, 0.432, 1.0)
-	var shell_light: Color = Color(0.72, 0.78, 0.88, 0.96)
-	var black_line: Color = Color(0.0, 0.0, 0.0, 0.90)
 	var steel_shadow: Color = Color(0.050, 0.056, 0.070, 0.96)
 	var steel_rim: Color = Color(0.54, 0.58, 0.64, 0.78)
-	var steel_spec: Color = Color(0.82, 0.86, 0.92, 0.34)
-	var cyan_soft: Color = Color(color.r, color.g, color.b, 0.28 + pulse * 0.16)
-	var cyan_mid: Color = Color(color.r, color.g, color.b, 0.60 + pulse * 0.22)
-	var cyan_hot: Color = Color(color.r, color.g, color.b, 0.98 + pulse * 0.08)
 	var accent: Color = Color(1.0, 0.62, 0.18, 1.0)
 	var accent_soft: Color = Color(accent.r, accent.g, accent.b, 0.46 + blink * 0.16)
 	var accent_hot: Color = Color(accent.r, accent.g, accent.b, 1.0)
@@ -702,9 +696,6 @@ func _draw_cyber_node(color: Color, size: float) -> void:
 	# --- Ground contact ---
 	var body_shadow: PackedVector2Array = _ellipse_points(Vector2(0.0, size * 0.28), size * 1.30, size * 0.78, 36, 0.0)
 	draw_colored_polygon(body_shadow, Color(0.0, 0.0, 0.0, 0.28))
-
-	# Outer floor rings removed to keep focus on the character silhouette itself.
-	var floor_ring_center: Vector2 = Vector2(0.0, size * 0.24)
 
 	# Local +X is treated as travel direction.
 	var rear_top_hip: Vector2 = center + Vector2(-size * 0.58, -size * 0.42)
@@ -728,8 +719,8 @@ func _draw_cyber_node(color: Color, size: float) -> void:
 	# --- Main shell ---
 	var body_rx: float = size * 1.04
 	var body_ry: float = size * 0.70
-	var body: PackedVector2Array = _ellipse_points(center, body_rx, body_ry, 42, -0.05)
-	draw_colored_polygon(body, shell_body)
+	var body_shape: PackedVector2Array = _ellipse_points(center, body_rx, body_ry, 42, -0.05)
+	draw_colored_polygon(body_shape, shell_body)
 	var body_shadow_poly: PackedVector2Array = PackedVector2Array([
 		center + Vector2(-size * 0.98, -size * 0.04),
 		center + Vector2(-size * 0.30, -size * 0.46),
@@ -767,8 +758,8 @@ func _draw_cyber_node(color: Color, size: float) -> void:
 		center + Vector2(-size * 0.28, -size * 0.12)
 	])
 	draw_colored_polygon(body_spec_poly, Color(0.92, 0.95, 1.0, 0.08))
-	draw_polyline(body + PackedVector2Array([body[0]]), Color(steel_shadow.r, steel_shadow.g, steel_shadow.b, 0.82), 1.65, true)
-	draw_polyline(body + PackedVector2Array([body[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.28), 0.46, true)
+	draw_polyline(body_shape + PackedVector2Array([body_shape[0]]), Color(steel_shadow.r, steel_shadow.g, steel_shadow.b, 0.82), 1.65, true)
+	draw_polyline(body_shape + PackedVector2Array([body_shape[0]]), Color(steel_rim.r, steel_rim.g, steel_rim.b, 0.28), 0.46, true)
 	
 
 	# Metallic material shading is now carried mostly by panel fills and shadows.
@@ -1096,7 +1087,7 @@ func _draw_cyber_bulwark(color: Color, size: float) -> void:
 	# Shield Field (Dome)
 	_draw_shield_dome(shield_radius, color)
 
-func _draw_cyber_hunter(color: Color, size: float) -> void:
+func _draw_cyber_hunter(_color: Color, size: float) -> void:
 	# Hunter visual pass 4: reference-inspired crimson energy blades + stronger motion read.
 	# Still purely visual; gameplay logic/hitbox/pathing remain unchanged.
 	var phase: float = float(get_instance_id() % 89) * 0.083
@@ -1682,7 +1673,7 @@ func _draw_swarm_core_layers(origin: Vector2, size: float, core_color: Color, pu
 	draw_polyline(core + PackedVector2Array([core[0]]), Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 1.0 * flicker), 1.45)
 	draw_colored_polygon(hot_core, Color(SWARM_GLOW_LIGHT.r, SWARM_GLOW_LIGHT.g, SWARM_GLOW_LIGHT.b, 1.0 * flicker))
 
-func _draw_cyber_healer(color: Color, size: float) -> void:
+func _draw_cyber_healer(_color: Color, size: float) -> void:
 	var pts := PackedVector2Array()
 	for i in range(12):
 		var a = i * PI / 6
@@ -2033,7 +2024,7 @@ func _process_disrupt_aura() -> void:
 	if vfx_controller:
 		vfx_controller.update_disrupted_towers(currently_affected)
 
-func heal(amount: float, source: Variant = null) -> float:
+func heal(amount: float, _source: Variant = null) -> float:
 	if is_dead_flag or reached_base_flag or hp >= max_hp:
 		return 0.0
 	var before := hp
@@ -2284,8 +2275,8 @@ func _draw_hunter_compass_needle(pos: Vector2, dir: Vector2, color: Color, size:
 	draw_colored_polygon(glow, Color(color.r, color.g, color.b, color.a * 0.12))
 
 	# Main compass needle: small diamond/arrowhead, matching the neon vector theme.
-	var body: PackedVector2Array = PackedVector2Array([tip, left, tail, right])
-	draw_colored_polygon(body, Color(color.r, color.g, color.b, color.a * 0.38))
+	var needle_body: PackedVector2Array = PackedVector2Array([tip, left, tail, right])
+	draw_colored_polygon(needle_body, Color(color.r, color.g, color.b, color.a * 0.38))
 	draw_polyline(PackedVector2Array([tip, left, tail, right, tip]), Color(color.r, color.g, color.b, color.a), 1.35, true)
 
 	# Tiny hot core so it reads as a sensor, not a flat UI arrow.
@@ -2601,7 +2592,7 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	died.emit(self , reward_gold)
 	queue_free()
 
-func _handle_split_on_death(death_pos: Vector2) -> void:
+func _handle_split_on_death(_death_pos: Vector2) -> void:
 	if split_triggered_once:
 		return
 	split_triggered_once = true

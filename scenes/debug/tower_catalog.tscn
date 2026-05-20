@@ -59,12 +59,12 @@ theme_override_font_sizes/font_size = 12
 text = "Preview only — not gameplay simulation"
 horizontal_alignment = 2
 
-[node name="TopToolbar" type="HBoxContainer" parent="RootMargin/MainVBox"]
+[node name="TopToolbar" type="HBoxContainer" parent="RootMargin/MainVBox" unique_id=1220493597]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 theme_override_constants/separation = 6
-custom_minimum_size = Vector2(0, 36)
 
-[node name="ContentArea" type="HBoxContainer" parent="RootMargin/MainVBox"]
+[node name="ContentArea" type="HBoxContainer" parent="RootMargin/MainVBox" unique_id=1623376416]
 layout_mode = 2
 size_flags_vertical = 3
 theme_override_constants/separation = 8
@@ -73,7 +73,6 @@ theme_override_constants/separation = 8
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-horizontal_scroll_mode = 1
 
 [node name="ContentVBox" type="VBoxContainer" parent="RootMargin/MainVBox/ContentArea/ScrollContainer" unique_id=1735917624]
 layout_mode = 2
@@ -81,11 +80,11 @@ size_flags_horizontal = 0
 size_flags_vertical = 0
 theme_override_constants/separation = 16
 
-[node name="SelectedTowerPanel" type="VBoxContainer" parent="RootMargin/MainVBox/ContentArea"]
+[node name="SelectedTowerPanel" type="VBoxContainer" parent="RootMargin/MainVBox/ContentArea" unique_id=602910702]
+custom_minimum_size = Vector2(320, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 size_flags_vertical = 3
-custom_minimum_size = Vector2(320, 0)
 theme_override_constants/separation = 8
 
 [node name="AnimationPlayer" type="AnimationPlayer" parent="." unique_id=1107839158]
