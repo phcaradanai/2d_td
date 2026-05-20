@@ -133,7 +133,17 @@ static func _is_valid_point(point: Vector2) -> bool:
 	return _is_valid_number(point.x) and _is_valid_number(point.y) and absf(point.x) <= ABSURD_COORDINATE_LIMIT and absf(point.y) <= ABSURD_COORDINATE_LIMIT
 
 static func _is_valid_rect(rect: Rect2) -> bool:
-	return _is_valid_point(rect.position) and _is_valid_number(rect.size.x) and _is_valid_number(rect.size.y) and absf(rect.size.x) <= ABSURD_COORDINATE_LIMIT and absf(rect.size.y) <= ABSURD_COORDINATE_LIMIT and rect.size.x != 0.0 and rect.size.y != 0.0
+	return _is_valid_point(rect.position) and _is_valid_number(rect.size.x) and _is_valid_number(rect.size.y) and absf(rect.size.x) <= ABSURD_COORDINATE_LIMIT and absf(rect.size.y) <= ABSURD_COORDINATE_LIMIT and rect.size.x > 0.0 and rect.size.y > 0.0
+
+static func _polygon_signed_area(points: PackedVector2Array) -> float:
+	var area := 0.0
+	if points.size() < 3:
+		return 0.0
+	for i in range(points.size()):
+		var a := points[i]
+		var b := points[(i + 1) % points.size()]
+		area += a.x * b.y - b.x * a.y
+	return area * 0.5
 
 static func _is_valid_color(color: Color) -> bool:
 	return _is_valid_number(color.r) and _is_valid_number(color.g) and _is_valid_number(color.b) and _is_valid_number(color.a)
@@ -166,6 +176,8 @@ static func safe_draw_line(t: CanvasItem, from: Vector2, to: Vector2, color: Col
 		return false
 	if not _is_valid_point(from) or not _is_valid_point(to) or not _is_valid_color(color) or not _is_valid_number(width) or width <= 0.0:
 		return false
+	if from.distance_squared_to(to) <= 0.000001:
+		return false
 	if not _consume_draw_budget(t):
 		return false
 	t.draw_line(from, to, color, width, antialiased)
@@ -196,15 +208,19 @@ static func safe_draw_polygon(t: CanvasItem, points: PackedVector2Array, color: 
 	for point in points:
 		if not _is_valid_point(point):
 			return false
+	if absf(_polygon_signed_area(points)) <= 0.0001:
+		return false
 	if not _consume_draw_budget(t):
 		return false
 	t.draw_colored_polygon(points, color)
 	return true
 
-static func safe_draw_circle(t: CanvasItem, center: Vector2, radius: float, color: Color) -> bool:
+static func safe_draw_circle(t: CanvasItem, center: Vector2, radius: float, color: Color, segments: int = MAX_CIRCLE_SEGMENTS) -> bool:
 	if t == null or not is_instance_valid(t):
 		return false
 	if not _is_valid_point(center) or not _is_valid_number(radius) or radius <= 0.0 or not _is_valid_color(color):
+		return false
+	if segments < 3 or segments > MAX_CIRCLE_SEGMENTS:
 		return false
 	if not _consume_draw_budget(t):
 		return false
@@ -293,7 +309,7 @@ static func draw_base_plate(t: Node2D) -> void:
 	if lvl >= 2:
 		safe_draw_rect(t, INNER_RECT, data["inner_tint"])
 	if lvl >= 3:
-		safe_draw_arc(t, Vector2.ZERO, 20, 0, TAU, 32, data["ring_color"], 1.5)
+		safe_draw_arc(t, Vector2.ZERO, 20, 0, TAU, 12, data["ring_color"], 1.5)
 
 static func _draw_contour_rect(t: Node2D, rect: Rect2) -> void:
 	safe_draw_rect(t, rect.grow(TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
