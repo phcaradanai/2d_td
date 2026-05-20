@@ -328,7 +328,7 @@ func _process(delta: float) -> void:
 		heal_cast_icon = null
 
 func _acquire_status_icon(parent: Node, icon_name: String, icon_position: Vector2) -> Node:
-	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	var pool := get_node_or_null("res://root/VisualEffectPoolService")
 	if pool == null or not pool.has_method("acquire_script"):
 		return null
 	var icon := pool.acquire_script(StatusIconScript, parent, "status_icon", "status_icon") as Node

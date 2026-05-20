@@ -33,18 +33,6 @@ def main() -> int:
     tower_catalog = read("scripts/debug/tower_catalog.gd")
     scene = read("scenes/debug/tower_catalog.tscn")
     guard = read("scripts/debug/catalog_render_guard.gd")
-
-    build_body = function_body(tower_catalog, "_build_catalog")
-    require(
-        "TowerCatalogPreview.new()" not in build_body,
-        "tower_catalog.gd must not instantiate TowerCatalogPreview during initial catalog build",
-        failures,
-    )
-    require(
-        "TowerCatalogPreview.new()" not in function_body(tower_catalog, "_populate_tower_name_list"),
-        "_populate_tower_name_list must not instantiate TowerCatalogPreview",
-        failures,
-    )
     require(
         "func _populate_tower_name_list" in tower_catalog,
         "tower_catalog.gd must define _populate_tower_name_list()",
@@ -56,8 +44,18 @@ def main() -> int:
         failures,
     )
     require(
+        "TowerCatalogPreview.new()" not in tower_catalog,
+        "tower_catalog.gd must not instantiate TowerCatalogPreview in the list-first startup path",
+        failures,
+    )
+    require(
         "ItemList" in scene,
         "tower_catalog.tscn must expose an ItemList browser widget",
+        failures,
+    )
+    require(
+        "SelectedTowerPanel" not in scene,
+        "tower_catalog.tscn must not expose a persistent preview panel in list-first mode",
         failures,
     )
     require(

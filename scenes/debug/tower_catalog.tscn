@@ -20,46 +20,59 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.02, 0.03, 0.06, 1)
 
-[node name="RootMargin" type="Control" parent="." unique_id=2123320041]
+[node name="RootMargin" type="MarginContainer" parent="." unique_id=2123320041]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 24
 
 [node name="MainPanel" type="PanelContainer" parent="RootMargin" unique_id=1718215908]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-custom_minimum_size = Vector2(1760, 960)
-
-[node name="Header" type="HBoxContainer" parent="RootMargin/MainPanel" unique_id=1922751304]
 layout_mode = 2
-custom_minimum_size = Vector2(0, 84)
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MainMargin" type="MarginContainer" parent="RootMargin/MainPanel" unique_id=103317680]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 12
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 12
+
+[node name="MainVBox" type="VBoxContainer" parent="RootMargin/MainPanel/MainMargin" unique_id=1647081915]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="Header" type="HBoxContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox" unique_id=1922751304]
+custom_minimum_size = Vector2(0, 56)
+layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 16
 
-[node name="HeaderLeft" type="VBoxContainer" parent="RootMargin/MainPanel/Header" unique_id=1172875218]
+[node name="HeaderLeft" type="VBoxContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox/Header" unique_id=1172875218]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="TitleLabel" type="Label" parent="RootMargin/MainPanel/Header/HeaderLeft" unique_id=1219213645]
+[node name="TitleLabel" type="Label" parent="RootMargin/MainPanel/MainMargin/MainVBox/Header/HeaderLeft" unique_id=1219213645]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.35, 0.95, 1, 1)
-theme_override_font_sizes/font_size = 32
+theme_override_font_sizes/font_size = 28
 text = "Tower Effect Catalog"
 
-[node name="SubtitleLabel" type="Label" parent="RootMargin/MainPanel/Header/HeaderLeft" unique_id=304172565]
+[node name="SubtitleLabel" type="Label" parent="RootMargin/MainPanel/MainMargin/MainVBox/Header/HeaderLeft" unique_id=304172565]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.4, 0.65, 0.75, 1)
 theme_override_font_sizes/font_size = 14
 text = "Text-only tower browser — previews load on demand"
 
-[node name="PerfLabel" type="Label" parent="RootMargin/MainPanel/Header" unique_id=1321395903]
+[node name="PerfLabel" type="Label" parent="RootMargin/MainPanel/MainMargin/MainVBox/Header" unique_id=1321395903]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.65, 0.55, 0.25, 1)
@@ -67,65 +80,84 @@ theme_override_font_sizes/font_size = 16
 text = "Viewport-aware"
 horizontal_alignment = 2
 
-[node name="Toolbar" type="HBoxContainer" parent="RootMargin/MainPanel" unique_id=1220493597]
-custom_minimum_size = Vector2(0, 56)
+[node name="ToolbarScroll" type="ScrollContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox" unique_id=870108309]
+custom_minimum_size = Vector2(0, 44)
 layout_mode = 2
+vertical_scroll_mode = 0
+
+[node name="Toolbar" type="HBoxContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox/ToolbarScroll" unique_id=1220493597]
+custom_minimum_size = Vector2(0, 44)
+layout_mode = 2
+size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="BodySplit" type="HSplitContainer" parent="RootMargin/MainPanel" unique_id=1623376416]
+[node name="BodySplit" type="HSplitContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox" unique_id=1623376416]
 layout_mode = 2
+size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 12
 
-[node name="TowerListPanel" type="PanelContainer" parent="RootMargin/MainPanel/BodySplit" unique_id=865161609]
+[node name="TowerListPanel" type="PanelContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit" unique_id=865161609]
+custom_minimum_size = Vector2(520, 0)
 layout_mode = 2
-custom_minimum_size = Vector2(560, 0)
 size_flags_horizontal = 0
 size_flags_vertical = 3
 
-[node name="TowerNameList" type="ItemList" parent="RootMargin/MainPanel/BodySplit/TowerListPanel" unique_id=865161610]
+[node name="TowerNameList" type="ItemList" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/TowerListPanel" unique_id=865161610]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 same_column_width = true
 
-[node name="DetailPanel" type="PanelContainer" parent="RootMargin/MainPanel/BodySplit" unique_id=602910702]
-layout_mode = 2
+[node name="DetailPanel" type="PanelContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit" unique_id=602910702]
 custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
-[node name="SelectedTowerName" type="Label" parent="RootMargin/MainPanel/BodySplit/DetailPanel" unique_id=1803440740]
+[node name="DetailMargin" type="MarginContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/DetailPanel" unique_id=319189496]
+layout_mode = 2
+theme_override_constants/margin_left = 16
+theme_override_constants/margin_top = 14
+theme_override_constants/margin_right = 16
+theme_override_constants/margin_bottom = 14
+
+[node name="DetailVBox" type="VBoxContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/DetailPanel/DetailMargin" unique_id=1516732211]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 8
+
+[node name="SelectedTowerName" type="Label" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/DetailPanel/DetailMargin/DetailVBox" unique_id=1803440740]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.85, 0.98, 1, 1)
 theme_override_font_sizes/font_size = 20
 text = "Detail"
 
-[node name="SelectedTowerStats" type="Label" parent="RootMargin/MainPanel/BodySplit/DetailPanel" unique_id=570984169]
+[node name="SelectedTowerStats" type="Label" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/DetailPanel/DetailMargin/DetailVBox" unique_id=570984169]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_colors/font_color = Color(0.82, 0.88, 0.95, 1)
 theme_override_font_sizes/font_size = 15
-autowrap_mode = 2
 text = "Select a tower to inspect its text summary."
+autowrap_mode = 2
 
-[node name="HintLabel" type="Label" parent="RootMargin/MainPanel/BodySplit/DetailPanel" unique_id=1398246801]
+[node name="HintLabel" type="Label" parent="RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/DetailPanel/DetailMargin/DetailVBox" unique_id=1398246801]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.62, 0.72, 1)
 theme_override_font_sizes/font_size = 14
-autowrap_mode = 2
 text = "Single click updates details. Popup preview is opened later from the selected row."
+autowrap_mode = 2
 
-[node name="TowerPreviewPopup" type="PopupPanel" parent="." unique_id=1880022001]
-visible = false
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="PopupCard" type="PanelContainer" parent="TowerPreviewPopup" unique_id=1492209313]
+[node name="Footer" type="HBoxContainer" parent="RootMargin/MainPanel/MainMargin/MainVBox" unique_id=1176239675]
+custom_minimum_size = Vector2(0, 32)
 layout_mode = 2
-custom_minimum_size = Vector2(1280, 760)
+theme_override_constants/separation = 8
+
+[node name="FooterStatus" type="Label" parent="RootMargin/MainPanel/MainMargin/MainVBox/Footer" unique_id=145858904]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.45, 0.65, 0.85, 1)
+theme_override_font_sizes/font_size = 13
+text = "List-only idle mode. Open a selected row for one preview."

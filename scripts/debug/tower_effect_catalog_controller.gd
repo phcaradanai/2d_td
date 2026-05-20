@@ -2,7 +2,7 @@
 class_name TowerEffectCatalogController
 extends Node
 
-const CatalogVfxMode = preload("res://scripts/debug/catalog_vfx_mode.gd")
+const CatalogVfxModeScript = preload("res://scripts/debug/catalog_vfx_mode.gd")
 
 @warning_ignore("unused_signal")
 signal filters_changed
@@ -18,7 +18,7 @@ var tier_filter: String = "all"
 var attack_filter: String = "all"
 
 var show_models: bool = true
-var vfx_mode: String = CatalogVfxMode.DEFAULT_MODE
+var vfx_mode: String = CatalogVfxModeScript.DEFAULT_MODE
 var show_status_fx: bool = true
 var show_support_fx: bool = true
 var auto_play_enabled: bool = false

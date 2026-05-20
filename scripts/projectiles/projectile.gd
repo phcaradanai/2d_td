@@ -202,6 +202,9 @@ func _update_trail() -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if bool(get_meta("catalog_projectile_preview", false)):
+		_draw_performance_projectile()
+		return
 	if not SHOW_PROJECTILE_BODY_VFX:
 		return
 

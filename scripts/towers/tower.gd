@@ -7,7 +7,8 @@ signal target_selected(tower, target, reason)
 signal target_rejected(tower, target, reason)
 
 const TowerVisualRendererScript = preload("res://scripts/towers/tower_visual_renderer.gd")
-const CatalogPreviewMode = preload("res://scripts/debug/catalog_preview_mode.gd")
+const CatalogPreviewModeScript = preload("res://scripts/debug/catalog_preview_mode.gd")
+const CatalogRenderGuardScript = preload("res://scripts/debug/catalog_render_guard.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -1042,8 +1043,8 @@ func _mark_tower_visual_dirty() -> void:
 	_tower_visual_dirty = true
 
 func _build_tower_visual_signature() -> String:
-	var preview_static := CatalogPreviewMode.is_static_preview(self)
-	var preview_demo := CatalogPreviewMode.is_selected_demo(self)
+	var preview_static := CatalogPreviewModeScript.is_static_preview(self)
+	var preview_demo := CatalogPreviewModeScript.is_selected_demo(self)
 	return "%s|%s|%d|%s|%s|%s|%s|%.3f" % [
 		tower_id,
 		visual_type,
@@ -1114,8 +1115,8 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
-	if preview_mode or CatalogPreviewMode.is_preview_node(self):
-		if CatalogPreviewMode.is_static_preview(self) or not CatalogPreviewMode.is_selected_demo(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+		if CatalogPreviewModeScript.is_static_preview(self) or not CatalogPreviewModeScript.is_selected_demo(self):
 			set_process(false)
 			_request_tower_visual_redraw_if_dirty()
 			return
@@ -1262,7 +1263,7 @@ func _update_aim_indicator(delta: float, target_active: bool) -> void:
 			target_marker.visible = false
 
 func shoot() -> void:
-	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
 		return
 	if _is_support_aura() or _is_trickery_clone_support():
 		return
@@ -1890,7 +1891,7 @@ func _normalize_target_categories(raw_categories) -> Array[String]:
 	return normalized
 
 func find_target() -> Node2D:
-	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
 		return null
 	var enemies = get_enemies_in_range()
 	if enemies.is_empty(): return null
@@ -1996,7 +1997,7 @@ func _enemy_type_matches(enemy: Node2D, priority_types: Array[String]) -> bool:
 
 func get_enemies_in_range() -> Array:
 	_enemies_in_range_cache.clear()
-	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
 		return _enemies_in_range_cache
 	var candidate_enemies: Array = []
 	var spatial_cache := get_node_or_null("/root/SpatialTargetCache")
@@ -2269,7 +2270,7 @@ func _draw_buff_badge(local_center: Vector2, label: String, color: Color) -> voi
 	draw_string(font, Vector2(rect.position.x, y), label, HORIZONTAL_ALIGNMENT_CENTER, rect_size.x, BUFF_BADGE_FONT_SIZE, Color(color.r, color.g, color.b, 1.0))
 
 func _process_support_aura(delta: float) -> void:
-	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
 		return
 	if support_value <= 0.0:
 		_clear_support_targets()
@@ -2398,7 +2399,7 @@ func _is_wave_active_for_trickery() -> bool:
 	return false
 
 func _process_trickery_clone_support(delta: float) -> void:
-	if preview_mode or CatalogPreviewMode.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
 		return
 	if clone_damage_multiplier <= 0.0:
 		return
@@ -2900,6 +2901,8 @@ func _get_rank_accent_color() -> Color:
 	return Color(0.55, 0.75, 0.85, 1.0)
 
 func _draw_tower_rank_badge(center: Vector2, tier: int, accent: Color, scale_factor: float = 1.0) -> void:
+	if CatalogRenderGuardScript.catalog_safe_mode and CatalogPreviewModeScript.is_preview_node(self):
+		return
 	var safe_tier: int = clampi(tier, 1, 4)
 	var plate_w := 24.0 * scale_factor
 	var plate_h := 14.0 * scale_factor

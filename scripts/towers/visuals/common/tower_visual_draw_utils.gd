@@ -13,7 +13,8 @@ const MAX_CIRCLE_SEGMENTS := 16
 const MAX_DETAIL_SEGMENTS := 12
 const MAX_DRAW_CALLS_PER_TOWER_VISUAL := 80
 const MAX_DRAW_CALLS_PER_CATALOG_CARD := 35
-const ABSURD_COORDINATE_LIMIT := 32768.0
+const ABSURD_COORDINATE_LIMIT := 10000.0
+const CatalogRenderGuardScript = preload("res://scripts/debug/catalog_render_guard.gd")
 const BASE_RECT := Rect2(-24, -24, 48, 48)
 const INNER_RECT := Rect2(-18, -18, 36, 36)
 const CORE_SINGLE := [Vector2.ZERO]
@@ -152,9 +153,9 @@ static func _budget_key(t: CanvasItem) -> String:
 	return "%s:%d" % [t.get_class(), t.get_instance_id()]
 
 static func _get_draw_budget_limit(t: CanvasItem) -> int:
-	var static_preview := bool(t.get("static_preview"))
-	if static_preview or bool(t.get("preview_mode")) or bool(t.get("is_static_preview")):
-		return MAX_DRAW_CALLS_PER_CATALOG_CARD
+	var static_preview: bool = t.get("static_preview") == true
+	if static_preview or t.get("preview_mode") == true or t.get("is_static_preview") == true:
+		return CatalogRenderGuardScript.max_draw_calls_per_catalog_card if CatalogRenderGuardScript.catalog_safe_mode else MAX_DRAW_CALLS_PER_CATALOG_CARD
 	return MAX_DRAW_CALLS_PER_TOWER_VISUAL
 
 static func _consume_draw_budget(t: CanvasItem, cost: int = 1) -> bool:
@@ -186,33 +187,53 @@ static func safe_draw_line(t: CanvasItem, from: Vector2, to: Vector2, color: Col
 static func safe_draw_polyline(t: CanvasItem, points: PackedVector2Array, color: Color, width: float, closed: bool = false) -> bool:
 	if t == null or not is_instance_valid(t):
 		return false
-	if points.size() < 2 or points.size() > MAX_POLYLINE_POINTS_PER_SHAPE:
+	var point_limit := MAX_POLYLINE_POINTS_PER_SHAPE
+	if CatalogRenderGuardScript.catalog_safe_mode:
+		point_limit = mini(point_limit, CatalogRenderGuardScript.max_polyline_points)
+	if points.size() < 2:
 		return false
 	if not _is_valid_color(color) or not _is_valid_number(width) or width <= 0.0:
 		return false
-	for point in points:
+	var clamped_points := points
+	if points.size() > point_limit:
+		if point_limit < 2:
+			return false
+		clamped_points = PackedVector2Array()
+		for i in range(point_limit):
+			clamped_points.append(points[i])
+	for point in clamped_points:
 		if not _is_valid_point(point):
 			return false
 	if not _consume_draw_budget(t):
 		return false
-	t.draw_polyline(points, color, width, closed)
+	t.draw_polyline(clamped_points, color, width, closed)
 	return true
 
 static func safe_draw_polygon(t: CanvasItem, points: PackedVector2Array, color: Color) -> bool:
 	if t == null or not is_instance_valid(t):
 		return false
-	if points.size() < 3 or points.size() > MAX_POLYLINE_POINTS_PER_SHAPE:
+	var point_limit := MAX_POLYLINE_POINTS_PER_SHAPE
+	if CatalogRenderGuardScript.catalog_safe_mode:
+		point_limit = mini(point_limit, CatalogRenderGuardScript.max_polyline_points)
+	if points.size() < 3:
 		return false
 	if not _is_valid_color(color):
 		return false
-	for point in points:
+	var clamped_points := points
+	if points.size() > point_limit:
+		if point_limit < 3:
+			return false
+		clamped_points = PackedVector2Array()
+		for i in range(point_limit):
+			clamped_points.append(points[i])
+	for point in clamped_points:
 		if not _is_valid_point(point):
 			return false
-	if absf(_polygon_signed_area(points)) <= 0.0001:
+	if absf(_polygon_signed_area(clamped_points)) <= 0.0001:
 		return false
 	if not _consume_draw_budget(t):
 		return false
-	t.draw_colored_polygon(points, color)
+	t.draw_colored_polygon(clamped_points, color)
 	return true
 
 static func safe_draw_circle(t: CanvasItem, center: Vector2, radius: float, color: Color, segments: int = MAX_CIRCLE_SEGMENTS) -> bool:
@@ -220,8 +241,12 @@ static func safe_draw_circle(t: CanvasItem, center: Vector2, radius: float, colo
 		return false
 	if not _is_valid_point(center) or not _is_valid_number(radius) or radius <= 0.0 or not _is_valid_color(color):
 		return false
-	if segments < 3 or segments > MAX_CIRCLE_SEGMENTS:
+	var max_segments := MAX_CIRCLE_SEGMENTS
+	if CatalogRenderGuardScript.catalog_safe_mode:
+		max_segments = mini(max_segments, CatalogRenderGuardScript.max_circle_segments)
+	if segments < 3:
 		return false
+	segments = mini(segments, max_segments)
 	if not _consume_draw_budget(t):
 		return false
 	t.draw_circle(center, radius, color)
@@ -249,8 +274,12 @@ static func safe_draw_arc(t: CanvasItem, center: Vector2, radius: float, start_a
 		return false
 	if not _is_valid_number(start_angle) or not _is_valid_number(end_angle) or not _is_valid_color(color) or not _is_valid_number(width) or width <= 0.0:
 		return false
-	if point_count < 3 or point_count > MAX_DETAIL_SEGMENTS:
+	var max_segments := MAX_DETAIL_SEGMENTS
+	if CatalogRenderGuardScript.catalog_safe_mode:
+		max_segments = mini(max_segments, CatalogRenderGuardScript.max_detail_segments)
+	if point_count < 3:
 		return false
+	point_count = mini(point_count, max_segments)
 	if not _consume_draw_budget(t):
 		return false
 	t.draw_arc(center, radius, start_angle, end_angle, point_count, color, width, antialiased)

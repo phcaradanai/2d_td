@@ -4,19 +4,22 @@ extends Control
 ## Open directly: res://scenes/debug/tower_catalog.tscn
 ## No gameplay changes — reads PerformanceFirebreak flags as read-only.
 
-const CATALOG_TARGET_SIZE := Vector2(1920, 1080)
+const BASE_SIZE := Vector2(1920, 1080)
+const MIN_WINDOW_SIZE := Vector2(1280, 720)
 
 @onready var _main_panel: Control = $RootMargin/MainPanel
-@onready var _item_list: ItemList = $RootMargin/MainPanel/BodySplit/TowerListPanel/TowerNameList
-@onready var top_toolbar: HBoxContainer = $RootMargin/MainPanel/Toolbar
-@onready var _detail_title: Label = $RootMargin/MainPanel/BodySplit/DetailPanel/SelectedTowerName
-@onready var _detail_body: Label = $RootMargin/MainPanel/BodySplit/DetailPanel/SelectedTowerStats
+@onready var _root_margin: MarginContainer = $RootMargin
+@onready var _item_list: ItemList = $RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/TowerListPanel/TowerNameList
+@onready var top_toolbar: HBoxContainer = $RootMargin/MainPanel/MainMargin/MainVBox/ToolbarScroll/Toolbar
+@onready var _detail_title: Label = $RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/DetailPanel/DetailMargin/DetailVBox/SelectedTowerName
+@onready var _detail_body: Label = $RootMargin/MainPanel/MainMargin/MainVBox/BodySplit/DetailPanel/DetailMargin/DetailVBox/SelectedTowerStats
 
 const TOWER_TREE_PATH := "res://data/towers_tree.json"
 const CatalogVfxModeScript = preload("res://scripts/debug/catalog_vfx_mode.gd")
 const TowerCatalogVirtualListScript = preload("res://scripts/debug/tower_catalog_virtual_list.gd")
 const CatalogPerformanceMonitorScript = preload("res://scripts/debug/catalog_performance_monitor.gd")
 const CatalogRenderGuardScript = preload("res://scripts/debug/catalog_render_guard.gd")
+const TowerPreviewPopupScene = preload("res://scenes/debug/tower_preview_popup.tscn")
 
 const ELEM_SHORT := {
 	"light": "L", "darkness": "D", "water": "W", "fire": "F",
@@ -67,6 +70,8 @@ var _catalog_safe_mode_toggle: CheckButton = null
 var _catalog_load_more_button: Button = null
 var _catalog_visible_limit: int = 24
 var _catalog_last_build_truncated: bool = false
+var current_preview: Node = null
+var popup_open: bool = false
 
 func _ready() -> void:
 	CatalogRenderGuardScript.reset_to_defaults()
@@ -74,6 +79,7 @@ func _ready() -> void:
 	_setup_controller()
 	_setup_zoom_controller()
 	_item_list.item_selected.connect(_on_item_selected)
+	_item_list.item_activated.connect(_on_item_activated)
 	_build_toolbar()
 	_build_catalog()
 	_fit_catalog_to_viewport()
@@ -84,6 +90,10 @@ func _notification(what: int) -> void:
 
 func _input(event: InputEvent) -> void:
 	if event.is_action_pressed("ui_cancel"):
+		if popup_open:
+			_close_preview_popup()
+			get_viewport().set_input_as_handled()
+			return
 		get_tree().quit()
 	if event is InputEventMouseButton and event.ctrl_pressed:
 		if event.button_index == MOUSE_BUTTON_WHEEL_UP:
@@ -246,7 +256,15 @@ func _on_item_selected(index: int) -> void:
 		return
 	var tower_id := str(_item_list.get_item_metadata(index))
 	var cfg: Dictionary = _towers_config.get(tower_id, {})
+	_selected_tower_id = tower_id
+	_selected_tower_cfg = cfg.duplicate(true)
 	_update_detail_panel(tower_id, cfg)
+
+func _on_item_activated(index: int) -> void:
+	if _item_list == null or index < 0 or index >= _item_list.item_count:
+		return
+	var tower_id := str(_item_list.get_item_metadata(index))
+	_open_preview_popup(tower_id)
 
 func _entry_passes_filters(tower_id: String, cfg: Dictionary) -> bool:
 	if _controller == null:
@@ -559,6 +577,14 @@ func _build_toolbar() -> void:
 		_controller.show_support_fx = v
 	))
 
+	var open_selected_btn := Button.new()
+	open_selected_btn.text = "Open Selected"
+	open_selected_btn.pressed.connect(func() -> void:
+		if _selected_tower_id != "":
+			_open_preview_popup(_selected_tower_id)
+	)
+	top_toolbar.add_child(open_selected_btn)
+
 	top_toolbar.add_child(_make_toolbar_sep())
 
 	top_toolbar.add_child(_make_toolbar_toggle("Auto Play", false, func(v: bool) -> void:
@@ -665,6 +691,41 @@ func _update_detail_panel(tower_id: String = "", cfg: Dictionary = {}) -> void:
 	]
 	_detail_body.text = "\n".join(lines)
 
+func _open_preview_popup(tower_id: String) -> void:
+	if tower_id == "":
+		return
+	_clear_preview_nodes()
+	var cfg: Dictionary = _towers_config.get(tower_id, {})
+	var popup := TowerPreviewPopupScene.instantiate()
+	if popup == null:
+		push_error("[TowerCatalog] Failed to create TowerPreviewPopup")
+		return
+	add_child(popup)
+	current_preview = popup
+	popup_open = true
+	if popup.has_signal("close_requested"):
+		popup.close_requested.connect(_close_preview_popup)
+	if popup.has_method("open_for_tower"):
+		popup.open_for_tower(tower_id, cfg)
+
+func _close_preview_popup() -> void:
+	_clear_preview_nodes()
+	popup_open = false
+
+func _clear_preview_nodes() -> void:
+	if current_preview == null or not is_instance_valid(current_preview):
+		current_preview = null
+		return
+	if current_preview.has_method("stop_preview"):
+		current_preview.stop_preview()
+	if current_preview.has_method("close_popup"):
+		current_preview.close_popup()
+	current_preview.set_process(false)
+	current_preview.set_physics_process(false)
+	current_preview.set_process_input(false)
+	current_preview.queue_free()
+	current_preview = null
+
 func _make_toolbar_sep() -> VSeparator:
 	return VSeparator.new()
 
@@ -707,13 +768,17 @@ func _fit_catalog_to_viewport() -> void:
 	var viewport_size := get_viewport_rect().size
 	if viewport_size.x <= 0.0 or viewport_size.y <= 0.0:
 		return
-	var panel_size := Vector2(
-		minf(viewport_size.x, CATALOG_TARGET_SIZE.x),
-		minf(viewport_size.y, CATALOG_TARGET_SIZE.y)
-	)
-	var x_offset := maxf(0.0, floor((viewport_size.x - panel_size.x) * 0.5))
-	var y_offset := maxf(0.0, floor((viewport_size.y - panel_size.y) * 0.5))
-	_main_panel.offset_left = x_offset
-	_main_panel.offset_top = y_offset
-	_main_panel.offset_right = x_offset + panel_size.x
-	_main_panel.offset_bottom = y_offset + panel_size.y
+	_main_panel.custom_minimum_size = Vector2.ZERO
+	if _root_margin:
+		var compact := viewport_size.x < MIN_WINDOW_SIZE.x or viewport_size.y < MIN_WINDOW_SIZE.y
+		_root_margin.add_theme_constant_override("margin_left", 12 if compact else 24)
+		_root_margin.add_theme_constant_override("margin_top", 8 if compact else 16)
+		_root_margin.add_theme_constant_override("margin_right", 12 if compact else 24)
+		_root_margin.add_theme_constant_override("margin_bottom", 12 if compact else 24)
+	_apply_catalog_font_scale(viewport_size)
+
+func _apply_catalog_font_scale(viewport_size: Vector2) -> void:
+	var compact := viewport_size.x < MIN_WINDOW_SIZE.x or viewport_size.y < MIN_WINDOW_SIZE.y
+	var row_font := 14 if compact else 16
+	if _item_list:
+		_item_list.add_theme_font_size_override("font_size", row_font)

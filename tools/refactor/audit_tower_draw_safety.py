@@ -64,15 +64,20 @@ def main() -> int:
             "t.draw_line(from, to, color, width, antialiased)",
         ],
         "safe_draw_polyline": [
-            "points.size() < 2 or points.size() > MAX_POLYLINE_POINTS_PER_SHAPE",
-            "t.draw_polyline(points, color, width, closed)",
+            "var point_limit := MAX_POLYLINE_POINTS_PER_SHAPE",
+            "if points.size() > point_limit",
+            "clamped_points = PackedVector2Array()",
+            "t.draw_polyline(clamped_points, color, width, closed)",
         ],
         "safe_draw_polygon": [
-            "absf(_polygon_signed_area(points)) <= 0.0001",
-            "t.draw_colored_polygon(points, color)",
+            "var point_limit := MAX_POLYLINE_POINTS_PER_SHAPE",
+            "if points.size() > point_limit",
+            "clamped_points = PackedVector2Array()",
+            "t.draw_colored_polygon(clamped_points, color)",
         ],
         "safe_draw_circle": [
-            "segments < 3 or segments > MAX_CIRCLE_SEGMENTS",
+            "var max_segments := MAX_CIRCLE_SEGMENTS",
+            "segments = mini(segments, max_segments)",
             "t.draw_circle(center, radius, color)",
         ],
         "safe_draw_rect": [
@@ -80,7 +85,8 @@ def main() -> int:
             "t.draw_rect(rect, color, false, width)",
         ],
         "safe_draw_arc": [
-            "point_count < 3 or point_count > MAX_DETAIL_SEGMENTS",
+            "var max_segments := MAX_DETAIL_SEGMENTS",
+            "point_count = mini(point_count, max_segments)",
             "t.draw_arc(center, radius, start_angle, end_angle, point_count, color, width, antialiased)",
         ],
     }
@@ -118,7 +124,7 @@ def main() -> int:
         failures.append("renderer must keep static preview on LOW")
     if "CatalogPreviewModeScript.is_selected_demo(t)" not in renderer_text:
         failures.append("renderer must keep selected demo on HIGH")
-    if "bool(t.get(\"is_hovered\"))" not in renderer_text and "bool(t.get(\"hovered\"))" not in renderer_text:
+    if "t.get(\"is_hovered\") == true" not in renderer_text and "t.get(\"hovered\") == true" not in renderer_text:
         failures.append("renderer must keep hovered previews on HIGH")
     if "PerformanceBudgetService" in renderer_text:
         failures.append("renderer must not use performance quality to downgrade gameplay visuals")

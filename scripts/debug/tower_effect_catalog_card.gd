@@ -2,12 +2,15 @@
 class_name TowerEffectCatalogCard
 extends Node
 
+const CatalogVfxModeScript = preload("res://scripts/debug/catalog_vfx_mode.gd")
+const CatalogRenderGuardScript = preload("res://scripts/debug/catalog_render_guard.gd")
+
 signal card_selected(tower_id: String, cfg: Dictionary)
 signal card_hovered(tower_id: String, cfg: Dictionary, hovered: bool)
 
 var tower_id: String = ""
 var cfg: Dictionary = {}
-var vfx_mode: String = CatalogVfxMode.DEFAULT_MODE
+var vfx_mode: String = CatalogVfxModeScript.DEFAULT_MODE
 
 var _is_selected: bool = false
 var _is_hovered: bool = false
@@ -76,10 +79,14 @@ func deactivate() -> void:
 func _update_preview_activity() -> void:
 	if _preview == null:
 		return
-	var allow_vfx := CatalogVfxMode.allows_grid_vfx(vfx_mode, _is_selected, _is_hovered)
+	var allow_vfx := CatalogVfxModeScript.allows_grid_vfx(vfx_mode, _is_selected, _is_hovered)
+	var use_detail := _is_selected or _is_hovered
 	_preview.set_active(true)
-	_preview.set_static_preview(not allow_vfx)
-	_preview.set_vfx_enabled(allow_vfx)
+	if CatalogRenderGuardScript.catalog_safe_mode:
+		_preview.set_static_preview(not use_detail)
+	else:
+		_preview.set_static_preview(not allow_vfx and not use_detail)
+	_preview.set_vfx_enabled(allow_vfx and use_detail)
 
 func set_vfx_badge(badge_text: String) -> void:
 	if _vfx_badge_label == null:

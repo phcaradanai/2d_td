@@ -382,6 +382,8 @@ func _ready() -> void:
 	center_restart_button.pressed.connect(_on_restart_pressed)
 	
 	_setup_right_sidebar_layout()
+	_remove_selected_tower_controls_from_left_panel()
+	_assert_left_panel_has_no_selected_tower_actions()
 	_setup_hover_card()
 	_ensure_elemental_shop_ui()
 	_ensure_element_modal()
@@ -527,6 +529,8 @@ func _ready() -> void:
 	var top_hbox := gold_label.get_parent()
 	if top_hbox is HBoxContainer:
 		top_hbox.add_theme_constant_override("separation", 8)
+	_remove_selected_tower_controls_from_left_panel()
+	_assert_left_panel_has_no_selected_tower_actions()
 
 func _process(delta: float) -> void:
 	if damage_stats_panel == null or not SHOW_DAMAGE_PANEL:
@@ -701,6 +705,7 @@ func _apply_build_drawer_visibility() -> void:
 	# Tower Detail lives only in the floating tower card. The left drawer is a
 	# menu: Build Towers, Wave Intel, or Damage Stats. Only one body is visible.
 	tower_detail_collapsed = true
+	_remove_selected_tower_controls_from_left_panel()
 
 	if not build_drawer_expanded and wave_intel_collapsed and not damage_stats_expanded:
 		build_drawer_expanded = true
@@ -746,6 +751,7 @@ func _apply_build_drawer_visibility() -> void:
 		# Let the active body use the remaining drawer height instead of locking it
 		# to a small card that immediately shows an inner scrollbar.
 		wave_intel_panel.custom_minimum_size.y = 0.0
+	_assert_left_panel_has_no_selected_tower_actions()
 	if damage_stats_panel:
 		damage_stats_panel.visible = damage_stats_expanded
 		damage_stats_panel.size_flags_vertical = Control.SIZE_EXPAND_FILL if damage_stats_expanded else Control.SIZE_SHRINK_BEGIN
@@ -4245,10 +4251,66 @@ func _make_right_panel_eyebrow(text: String, color: Color) -> HBoxContainer:
 func _register_tower_detail_content(node: Control) -> void:
 	_td_content_nodes.append(node)
 
+func _is_in_left_panel(node: Node) -> bool:
+	return node != null and left_sidebar != null and (node == left_sidebar or left_sidebar.is_ancestor_of(node))
+
+func _can_mount_selected_tower_actions(parent: Node) -> bool:
+	if _is_in_left_panel(parent):
+		push_warning("Blocked selected tower action UI from mounting into left panel.")
+		return false
+	return true
+
+func _remove_selected_tower_controls_from_left_panel() -> void:
+	if left_sidebar == null:
+		return
+	var forbidden_keywords := [
+		"SelectedTower",
+		"TowerDetail",
+		"TowerAction",
+		"Upgrade",
+		"Sell",
+		"MaxTier",
+	]
+	for child in left_sidebar.find_children("*", "", true, false):
+		var child_name := child.name.to_lower()
+		for keyword in forbidden_keywords:
+			if keyword.to_lower() in child_name:
+				if child == right_sidebar and right_sidebar_container != null:
+					var current_parent := right_sidebar.get_parent()
+					if current_parent:
+						current_parent.remove_child(right_sidebar)
+					right_sidebar_container.add_child(right_sidebar)
+					right_sidebar.visible = false
+					right_sidebar.mouse_filter = Control.MOUSE_FILTER_IGNORE
+					break
+				if child is Control:
+					(child as Control).visible = false
+				child.queue_free()
+				break
+
+func _assert_left_panel_has_no_selected_tower_actions() -> void:
+	if not OS.is_debug_build() or left_sidebar == null:
+		return
+	var bad_text := ["Sell", "Upgrade", "MAX TIER", "No Upgrade"]
+	for node in left_sidebar.find_children("*", "Control", true, false):
+		if node.is_queued_for_deletion():
+			continue
+		var text := ""
+		if node is Button:
+			text = (node as Button).text
+		elif node is Label:
+			text = (node as Label).text
+		else:
+			continue
+		for bad in bad_text:
+			if text.contains(bad):
+				push_error("REGRESSION: selected tower action UI found in left panel: %s text=%s" % [node.get_path(), text])
+
 func _set_tower_detail_collapsed(_collapsed: bool) -> void:
 	# Legacy drawer Tower Detail is disabled. Selected tower actions now live
 	# only in the floating tower card.
 	tower_detail_collapsed = true
+	_remove_selected_tower_controls_from_left_panel()
 	for node in _td_content_nodes:
 		if node != null and is_instance_valid(node):
 			node.visible = false
@@ -4263,6 +4325,7 @@ func _set_tower_detail_collapsed(_collapsed: bool) -> void:
 		no_selection_panel.visible = false
 	_apply_build_drawer_visibility()
 	_apply_left_drawer_layout()
+	_assert_left_panel_has_no_selected_tower_actions()
 
 func _toggle_tower_detail_collapsed() -> void:
 	_set_tower_detail_collapsed(not tower_detail_collapsed)
@@ -4341,11 +4404,13 @@ func _setup_right_sidebar_layout() -> void:
 		old_right_container.visible = false
 		old_right_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
-	if right_sidebar.get_parent() != container:
+	# Do not mount selected tower details/actions into the left drawer. The
+	# only approved selected-tower action surface is TowerFloatCard.
+	if _is_in_left_panel(right_sidebar) and old_right_container:
 		var old_parent := right_sidebar.get_parent()
 		if old_parent:
 			old_parent.remove_child(right_sidebar)
-		container.add_child(right_sidebar)
+		old_right_container.add_child(right_sidebar)
 
 	container.add_theme_constant_override("separation", DRAWER_SECTION_GAP)
 
@@ -4580,27 +4645,8 @@ func _setup_right_sidebar_layout() -> void:
 		deselect_tower_button.hide()
 		deselect_tower_button.custom_minimum_size = Vector2.ZERO
 
-	# 2. No Selection — Tower Detail's empty drawer body
-	no_selection_panel = PanelContainer.new()
-	no_selection_panel.name = "NoSelectionPanel"
-	no_selection_panel.custom_minimum_size = Vector2(0, 68)
-	no_selection_panel.size_flags_vertical = Control.SIZE_SHRINK_BEGIN
-	no_selection_panel.add_theme_stylebox_override("panel", _make_right_drawer_body_style(NeonStyle.CYAN))
-	container.add_child(no_selection_panel)
-	container.move_child(no_selection_panel, right_sidebar.get_index() + 1)
-
-	var ns_vbox := VBoxContainer.new()
-	ns_vbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	ns_vbox.add_theme_constant_override("separation", 8)
-	no_selection_panel.add_child(ns_vbox)
-
-	var ns_sub := Label.new()
-	ns_sub.text = "Select a tower or build tile to view details."
-	ns_sub.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	ns_sub.add_theme_font_size_override("font_size", 11)
-	ns_sub.add_theme_color_override("font_color", NeonStyle.INK_3)
-	ns_sub.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	ns_vbox.add_child(ns_sub)
+	# 2. No selection/tower detail body is mounted in the left drawer.
+	no_selection_panel = null
 
 	# 3. Wave Intel — collapsible wrapper: header button + body panel
 	_wi_wrapper = VBoxContainer.new()
