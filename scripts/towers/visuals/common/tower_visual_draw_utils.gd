@@ -8,6 +8,12 @@ const TOWER_CONTOUR_PX := 1.6
 const TOWER_CONTOUR_COLOR := Color(0.0, 0.0, 0.0, 0.78)
 const BASE_COLOR := Color(0.06, 0.08, 0.12, 1.0)
 const NEUTRAL_ACCENT := Color(0.35, 0.55, 0.7, 0.35)
+const MAX_POLYLINE_POINTS_PER_SHAPE := 24
+const MAX_CIRCLE_SEGMENTS := 16
+const MAX_DETAIL_SEGMENTS := 12
+const MAX_DRAW_CALLS_PER_TOWER_VISUAL := 80
+const MAX_DRAW_CALLS_PER_CATALOG_CARD := 35
+const ABSURD_COORDINATE_LIMIT := 32768.0
 const BASE_RECT := Rect2(-24, -24, 48, 48)
 const INNER_RECT := Rect2(-18, -18, 36, 36)
 const CORE_SINGLE := [Vector2.ZERO]
@@ -28,6 +34,12 @@ const CORNER_TICKS := [
 	[Vector2(22, 22), Vector2(22, 16)],
 ]
 
+enum DetailQuality {
+	LOW,
+	MEDIUM,
+	HIGH,
+}
+
 static var _element_color_cache: Dictionary = {}
 static var _base_plate_cache: Dictionary = {}
 static var _element_core_layout_cache: Dictionary = {
@@ -35,6 +47,8 @@ static var _element_core_layout_cache: Dictionary = {
 	2: CORE_DUAL,
 	3: CORE_TRIPLE,
 }
+static var _draw_budget_cache: Dictionary = {}
+static var _draw_budget_frame: int = -1
 
 static func _element_signature(t: Node2D) -> String:
 	var parts: Array[String] = []
@@ -106,6 +120,126 @@ static func _get_base_plate_cache(t: Node2D) -> Dictionary:
 	_base_plate_cache[signature] = data
 	return data
 
+static func _reset_budget_if_needed() -> void:
+	var frame := Engine.get_frames_drawn()
+	if frame != _draw_budget_frame:
+		_draw_budget_frame = frame
+		_draw_budget_cache.clear()
+
+static func _is_valid_number(value: float) -> bool:
+	return not is_nan(value) and not is_inf(value)
+
+static func _is_valid_point(point: Vector2) -> bool:
+	return _is_valid_number(point.x) and _is_valid_number(point.y) and absf(point.x) <= ABSURD_COORDINATE_LIMIT and absf(point.y) <= ABSURD_COORDINATE_LIMIT
+
+static func _is_valid_rect(rect: Rect2) -> bool:
+	return _is_valid_point(rect.position) and _is_valid_number(rect.size.x) and _is_valid_number(rect.size.y) and absf(rect.size.x) <= ABSURD_COORDINATE_LIMIT and absf(rect.size.y) <= ABSURD_COORDINATE_LIMIT and rect.size.x != 0.0 and rect.size.y != 0.0
+
+static func _is_valid_color(color: Color) -> bool:
+	return _is_valid_number(color.r) and _is_valid_number(color.g) and _is_valid_number(color.b) and _is_valid_number(color.a)
+
+static func _budget_key(t: CanvasItem) -> String:
+	return "%s:%d" % [t.get_class(), t.get_instance_id()]
+
+static func _get_draw_budget_limit(t: CanvasItem) -> int:
+	var static_preview := bool(t.get("static_preview"))
+	if static_preview or bool(t.get("preview_mode")) or bool(t.get("is_static_preview")):
+		return MAX_DRAW_CALLS_PER_CATALOG_CARD
+	return MAX_DRAW_CALLS_PER_TOWER_VISUAL
+
+static func _consume_draw_budget(t: CanvasItem, cost: int = 1) -> bool:
+	if t == null or not is_instance_valid(t) or cost <= 0:
+		return false
+	_reset_budget_if_needed()
+	var key := _budget_key(t)
+	var limit := _get_draw_budget_limit(t)
+	var state: Dictionary = _draw_budget_cache.get(key, {"remaining": limit})
+	var remaining := int(state.get("remaining", limit))
+	if remaining < cost:
+		return false
+	state["remaining"] = remaining - cost
+	_draw_budget_cache[key] = state
+	return true
+
+static func safe_draw_line(t: CanvasItem, from: Vector2, to: Vector2, color: Color, width: float = 1.0, antialiased: bool = false) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if not _is_valid_point(from) or not _is_valid_point(to) or not _is_valid_color(color) or not _is_valid_number(width) or width <= 0.0:
+		return false
+	if not _consume_draw_budget(t):
+		return false
+	t.draw_line(from, to, color, width, antialiased)
+	return true
+
+static func safe_draw_polyline(t: CanvasItem, points: PackedVector2Array, color: Color, width: float, closed: bool = false) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if points.size() < 2 or points.size() > MAX_POLYLINE_POINTS_PER_SHAPE:
+		return false
+	if not _is_valid_color(color) or not _is_valid_number(width) or width <= 0.0:
+		return false
+	for point in points:
+		if not _is_valid_point(point):
+			return false
+	if not _consume_draw_budget(t):
+		return false
+	t.draw_polyline(points, color, width, closed)
+	return true
+
+static func safe_draw_polygon(t: CanvasItem, points: PackedVector2Array, color: Color) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if points.size() < 3 or points.size() > MAX_POLYLINE_POINTS_PER_SHAPE:
+		return false
+	if not _is_valid_color(color):
+		return false
+	for point in points:
+		if not _is_valid_point(point):
+			return false
+	if not _consume_draw_budget(t):
+		return false
+	t.draw_colored_polygon(points, color)
+	return true
+
+static func safe_draw_circle(t: CanvasItem, center: Vector2, radius: float, color: Color) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if not _is_valid_point(center) or not _is_valid_number(radius) or radius <= 0.0 or not _is_valid_color(color):
+		return false
+	if not _consume_draw_budget(t):
+		return false
+	t.draw_circle(center, radius, color)
+	return true
+
+static func safe_draw_rect(t: CanvasItem, rect: Rect2, color: Color, filled: bool = true, width: float = -1.0) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if not _is_valid_rect(rect) or not _is_valid_color(color):
+		return false
+	if not filled and (not _is_valid_number(width) or width <= 0.0):
+		return false
+	if not _consume_draw_budget(t):
+		return false
+	if filled:
+		t.draw_rect(rect, color)
+	else:
+		t.draw_rect(rect, color, false, width)
+	return true
+
+static func safe_draw_arc(t: CanvasItem, center: Vector2, radius: float, start_angle: float, end_angle: float, point_count: int, color: Color, width: float = 1.0, antialiased: bool = false) -> bool:
+	if t == null or not is_instance_valid(t):
+		return false
+	if not _is_valid_point(center) or not _is_valid_number(radius) or radius <= 0.0:
+		return false
+	if not _is_valid_number(start_angle) or not _is_valid_number(end_angle) or not _is_valid_color(color) or not _is_valid_number(width) or width <= 0.0:
+		return false
+	if point_count < 3 or point_count > MAX_DETAIL_SEGMENTS:
+		return false
+	if not _consume_draw_budget(t):
+		return false
+	t.draw_arc(center, radius, start_angle, end_angle, point_count, color, width, antialiased)
+	return true
+
 static func draw_base_plate(t: Node2D) -> void:
 	var data := _get_base_plate_cache(t)
 	var lvl: int = data["level"]
@@ -114,64 +248,64 @@ static func draw_base_plate(t: Node2D) -> void:
 
 	# Main Base Rect
 	_draw_contour_rect(t, BASE_RECT)
-	t.draw_rect(BASE_RECT, data["base_color"])
+	safe_draw_rect(t, BASE_RECT, data["base_color"])
 
 	# Element-colored border segments
 	# Each element gets an equal portion of the border perimeter
 	var border_w: float = data["border_w"]
 	if el_colors.is_empty():
 		# Neutral: single muted border
-		t.draw_rect(BASE_RECT, data["accent_color"], false, border_w)
+		safe_draw_rect(t, BASE_RECT, data["accent_color"], false, border_w)
 	elif el_colors.size() == 1:
 		# Single element: full border in element color
-		t.draw_rect(BASE_RECT, border_colors[0], false, border_w)
+		safe_draw_rect(t, BASE_RECT, border_colors[0], false, border_w)
 	elif el_colors.size() == 2:
 		# Dual element: top+right = element1, bottom+left = element2
 		var c0: Color = border_colors[0]
 		var c1: Color = border_colors[1]
-		t.draw_line(Vector2(-24, -24), Vector2(24, -24), c0, border_w)  # top
-		t.draw_line(Vector2(24, -24), Vector2(24, 24), c0, border_w)    # right
-		t.draw_line(Vector2(24, 24), Vector2(-24, 24), c1, border_w)    # bottom
-		t.draw_line(Vector2(-24, 24), Vector2(-24, -24), c1, border_w)  # left
+		safe_draw_line(t, Vector2(-24, -24), Vector2(24, -24), c0, border_w)  # top
+		safe_draw_line(t, Vector2(24, -24), Vector2(24, 24), c0, border_w)    # right
+		safe_draw_line(t, Vector2(24, 24), Vector2(-24, 24), c1, border_w)    # bottom
+		safe_draw_line(t, Vector2(-24, 24), Vector2(-24, -24), c1, border_w)  # left
 	else:
 		# Triple+ element: distribute segments around the border
 		var c0: Color = border_colors[0]
 		var c1: Color = border_colors[1]
 		var c2: Color = border_colors[2]
-		t.draw_line(Vector2(-24, -24), Vector2(24, -24), c0, border_w)  # top = el1
-		t.draw_line(Vector2(24, -24), Vector2(24, 24), c1, border_w)    # right = el2
-		t.draw_line(Vector2(24, 24), Vector2(-24, 24), c2, border_w)    # bottom = el3
+		safe_draw_line(t, Vector2(-24, -24), Vector2(24, -24), c0, border_w)  # top = el1
+		safe_draw_line(t, Vector2(24, -24), Vector2(24, 24), c1, border_w)    # right = el2
+		safe_draw_line(t, Vector2(24, 24), Vector2(-24, 24), c2, border_w)    # bottom = el3
 		# left side: blend of el1+el3
 		var c_left := c0.lerp(c2, 0.5)
-		t.draw_line(Vector2(-24, 24), Vector2(-24, -24), c_left, border_w)
+		safe_draw_line(t, Vector2(-24, 24), Vector2(-24, -24), c_left, border_w)
 
 	# Corner Ticks — colored per element
 	var tick_color: Color = data["tick_primary"]
 	var tick_color2: Color = data["tick_secondary"]
 	# Top-left & top-right: primary element
 	for i in range(4):
-		t.draw_line(CORNER_TICKS[i][0], CORNER_TICKS[i][1], tick_color)
+		safe_draw_line(t, CORNER_TICKS[i][0], CORNER_TICKS[i][1], tick_color)
 	# Bottom-left & bottom-right: secondary element (or same)
 	for i in range(4, 8):
-		t.draw_line(CORNER_TICKS[i][0], CORNER_TICKS[i][1], tick_color2)
+		safe_draw_line(t, CORNER_TICKS[i][0], CORNER_TICKS[i][1], tick_color2)
 
 	# Level Details — tier 2+ inner rect tinted toward element
 	if lvl >= 2:
-		t.draw_rect(INNER_RECT, data["inner_tint"])
+		safe_draw_rect(t, INNER_RECT, data["inner_tint"])
 	if lvl >= 3:
-		t.draw_arc(Vector2.ZERO, 20, 0, TAU, 32, data["ring_color"], 1.5)
+		safe_draw_arc(t, Vector2.ZERO, 20, 0, TAU, 32, data["ring_color"], 1.5)
 
 static func _draw_contour_rect(t: Node2D, rect: Rect2) -> void:
-	t.draw_rect(rect.grow(TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
+	safe_draw_rect(t, rect.grow(TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
 
 static func _draw_contour_circle(t: Node2D, center: Vector2, radius: float) -> void:
-	t.draw_circle(center, radius + TOWER_CONTOUR_PX, TOWER_CONTOUR_COLOR)
+	safe_draw_circle(t, center, radius + TOWER_CONTOUR_PX, TOWER_CONTOUR_COLOR)
 
 static func _draw_contour_line(t: Node2D, from: Vector2, to: Vector2, width: float) -> void:
-	t.draw_line(from, to, TOWER_CONTOUR_COLOR, width + TOWER_CONTOUR_PX * 2.0, true)
+	safe_draw_line(t, from, to, TOWER_CONTOUR_COLOR, width + TOWER_CONTOUR_PX * 2.0, true)
 
 static func _draw_contour_poly(t: Node2D, points: PackedVector2Array) -> void:
-	t.draw_colored_polygon(_expand_poly_from_center(points, TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
+	safe_draw_polygon(t, _expand_poly_from_center(points, TOWER_CONTOUR_PX), TOWER_CONTOUR_COLOR)
 
 static func _expand_poly_from_center(points: PackedVector2Array, amount: float) -> PackedVector2Array:
 	var out := PackedVector2Array()
@@ -194,20 +328,20 @@ static func draw_element_core(t: Node2D) -> void:
 	if el_colors.size() == 1:
 		# Single element: one bright core
 		var pos: Vector2 = layout[0]
-		t.draw_circle(pos, glow_r, Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.35))
-		t.draw_circle(pos, core_r, el_colors[0])
-		t.draw_circle(pos, 1.5, el_colors[0].lightened(0.6))
+		safe_draw_circle(t, pos, glow_r, Color(el_colors[0].r, el_colors[0].g, el_colors[0].b, 0.35))
+		safe_draw_circle(t, pos, core_r, el_colors[0])
+		safe_draw_circle(t, pos, 1.5, el_colors[0].lightened(0.6))
 	elif el_colors.size() == 2:
 		# Dual element: two dots side by side
 		for i in range(2):
 			var pos: Vector2 = layout[i]
-			t.draw_circle(pos, glow_r - 1.0, Color(el_colors[i].r, el_colors[i].g, el_colors[i].b, 0.3))
-			t.draw_circle(pos, core_r - 0.5, el_colors[i])
-			t.draw_circle(pos, 1.2, el_colors[i].lightened(0.55))
+			safe_draw_circle(t, pos, glow_r - 1.0, Color(el_colors[i].r, el_colors[i].g, el_colors[i].b, 0.3))
+			safe_draw_circle(t, pos, core_r - 0.5, el_colors[i])
+			safe_draw_circle(t, pos, 1.2, el_colors[i].lightened(0.55))
 	else:
 		# Triple element: three dots in triangle formation
 		for i in range(mini(el_colors.size(), 3)):
 			var pos: Vector2 = layout[i]
-			t.draw_circle(pos, glow_r - 1.5, Color(el_colors[i].r, el_colors[i].g, el_colors[i].b, 0.3))
-			t.draw_circle(pos, core_r - 1.0, el_colors[i])
-			t.draw_circle(pos, 1.0, el_colors[i].lightened(0.5))
+			safe_draw_circle(t, pos, glow_r - 1.5, Color(el_colors[i].r, el_colors[i].g, el_colors[i].b, 0.3))
+			safe_draw_circle(t, pos, core_r - 1.0, el_colors[i])
+			safe_draw_circle(t, pos, 1.0, el_colors[i].lightened(0.5))
