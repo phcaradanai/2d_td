@@ -13,6 +13,8 @@ const CatalogPreviewModeScript = preload("res://scripts/debug/catalog_preview_mo
 const CatalogRenderGuardScript = preload("res://scripts/debug/catalog_render_guard.gd")
 const TowerConstructionComponentScript = preload("res://scripts/components/tower_construction_component.gd")
 const TowerConstructionConfigScript = preload("res://scripts/config/tower_construction_config.gd")
+const TowerMuzzleAnchorConfigScript = preload("res://scripts/config/tower_muzzle_anchor_config.gd")
+const TowerMuzzleDebugOverlayScript = preload("res://scripts/components/tower_muzzle_debug_overlay.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -125,10 +127,12 @@ var _pending_upgrade_old_tier: int = 0
 ## Off by default — reduces visual clutter and avoids per-frame Line2D / marker redraws.
 ## Flip to true in the inspector (per-tower) or via a debug flag to re-enable.
 @export var show_aim_indicator: bool = false
+@export var show_muzzle_debug_overlay: bool = false
 var aim_visual: Node2D = null
 var aim_line: Line2D = null
 var target_marker: Node2D = null
 var aim_alpha: float = 0.0 # For smooth fading
+var muzzle_debug_overlay: Node2D = null
 
 # Shooting variables
 var shoot_cooldown: float = 0.0
@@ -406,6 +410,8 @@ func apply_level_visuals() -> void:
 	
 	# Ensure visuals are created
 	_ensure_aim_visual()
+	_ensure_muzzle_debug_overlay()
+	_update_muzzle_debug_overlay_visibility()
 	_mark_tower_visual_dirty()
 
 func begin_build_construction(p_config: Dictionary = {}) -> bool:
@@ -693,6 +699,22 @@ func _ensure_aim_visual() -> void:
 	
 	aim_visual.visible = true
 
+func _ensure_muzzle_debug_overlay() -> void:
+	if not show_muzzle_debug_overlay:
+		if muzzle_debug_overlay and muzzle_debug_overlay.has_method("set_active"):
+			muzzle_debug_overlay.set_active(false)
+		return
+	if muzzle_debug_overlay == null:
+		muzzle_debug_overlay = TowerMuzzleDebugOverlayScript.new()
+		muzzle_debug_overlay.name = "MuzzleDebugOverlay"
+		add_child(muzzle_debug_overlay)
+		muzzle_debug_overlay.setup(self)
+
+func _update_muzzle_debug_overlay_visibility() -> void:
+	if muzzle_debug_overlay == null or not muzzle_debug_overlay.has_method("set_active"):
+		return
+	muzzle_debug_overlay.set_active(show_muzzle_debug_overlay and is_selected)
+
 func _get_element_color(element_id: String) -> Color:
 	match element_id:
 		"light": return Color(1.0, 0.88, 0.1)      # Bright yellow — แสง
@@ -819,42 +841,12 @@ func _draw_base_plate() -> void:
 	TowerVisualRendererScript.draw_base_plate(self)
 
 func _get_visual_muzzle_local_position() -> Vector2:
-	var lvl := tree_tier
-	if tower_id == "neutral_cannon_tower":
-		return Vector2(28, 0)
-	match visual_type:
-		"basic": return Vector2(26 + lvl * 4, 0)
-		"rapid": return Vector2(22 + lvl * 2, 0)
-		"cannon": return Vector2(18 + lvl * 4, 0)
-		"sniper": return Vector2(42 + lvl * 6, 0)
-		"prism_lens":
-			match _get_tower_visual_family():
-				"ice":
-					return Vector2.ZERO
-				"polar":
-					return Vector2(20, 0)
-				_:
-					return Vector2(32 + lvl * 4, 0)
-		"furnace": return Vector2(24 + lvl * 3, 0)
-		"bio_vine": return Vector2(24 + lvl * 2, 0)
-		"stone_bastion": return Vector2(26 + lvl * 3, 0)
-		"forge_anvil": return Vector2(28 + lvl * 2, 0)
-		"particle_accel": return Vector2(36 + lvl * 5, 0)
-		"heavy_mortar": return Vector2(26 + lvl * 2, 0)
-		"steam_boiler": return Vector2(24 + lvl * 2, 0)
-		"hydro_cannon": return Vector2(28 + lvl * 3, 0)
-		"dual_nozzle": return Vector2(28 + lvl * 2, 0)
-		"tri_reactor": return Vector2(30 + lvl * 4, 0)
-		"golem_body": return Vector2(24 + lvl * 2, 0)
-		"seismic_drill": return Vector2(28 + lvl * 3, 0)
-		"gold_refinery": return Vector2(24 + lvl * 2, 0)
-		"acid_vat": return Vector2(20 + lvl * 2, 0)
-		"rail_laser": return Vector2(42 + lvl * 5, 0)
-		"strike_blades": return Vector2(24, 0)
-		"slow", "lightning", "trickery", "sawblade", "void_orb", "crystal_emitter", "support_halo", "chaos_orb", "toxin_vial", "spore_cap", "tar_pool", "voodoo_totem", "root_cage", "solar_bloom", "void_vortex", "hail_crystal", "void_flower", "storm_turbine":
-			return Vector2.ZERO
-		_:
-			return Vector2(28, 0)
+	return TowerMuzzleAnchorConfigScript.get_muzzle_local_position(
+		tower_id,
+		visual_type,
+		tree_tier,
+		_get_tower_visual_family()
+	)
 
 func _get_tower_visual_family() -> String:
 	var id := tower_id.to_lower()
@@ -1169,6 +1161,7 @@ func set_selected(value: bool) -> void:
 	if value:
 		_procedural_draw_timer = 0.0  # Force immediate redraw when selected
 	_update_support_overlay_z_lift()
+	_update_muzzle_debug_overlay_visibility()
 	apply_level_visuals()
 	_request_tower_visual_redraw_if_dirty()
 

@@ -84,6 +84,8 @@ class RealTowerVisualPreview:
 	var is_catalog_preview: bool = true
 	var attack_range: float = 160.0
 
+	const MuzzleAnchors = preload("res://scripts/config/tower_muzzle_anchor_config.gd")
+
 	func configure(p_tower_id: String, cfg: Dictionary) -> void:
 		tower_id = p_tower_id
 		visual_type = str(cfg.get("visual_type", "basic"))
@@ -180,26 +182,12 @@ class RealTowerVisualPreview:
 		return visual_type
 
 	func _get_visual_muzzle_local_position() -> Vector2:
-		var lvl := tree_tier
-		match visual_type:
-			"basic":
-				return Vector2(26 + lvl * 4, 0)
-			"rapid":
-				return Vector2(22 + lvl * 2, 0)
-			"cannon":
-				return Vector2(18 + lvl * 4, 0)
-			"sniper":
-				return Vector2(42 + lvl * 6, 0)
-			"forge_anvil":
-				return Vector2(28 + lvl * 2, 0)
-			"rail_laser":
-				return Vector2(42 + lvl * 5, 0)
-			"hydro_cannon", "dual_nozzle":
-				return Vector2(28 + lvl * 3, 0)
-			"furnace", "bio_vine", "steam_boiler":
-				return Vector2(24 + lvl * 2, 0)
-			_:
-				return Vector2(28, 0)
+		return MuzzleAnchors.get_muzzle_local_position(
+			tower_id,
+			visual_type,
+			tree_tier,
+			_get_tower_visual_family()
+		)
 
 
 func _ready() -> void:
