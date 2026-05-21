@@ -36,12 +36,14 @@ func main() {
 	// ── Repos & services ───────────────────────────────────────────────────
 	runtimeRepo := repository.NewRuntimeRepository(database)
 	accessRepo  := repository.NewAccessRepository(database)
+	saveRepo    := repository.NewSaveRepository(database)
 	resolver    := service.NewAccessResolver(runtimeRepo, accessRepo, cfg.DefaultAccessProfile)
 
 	// ── Handlers ───────────────────────────────────────────────────────────
 	limiter    := ratelimit.New(60, time.Minute)
 	lb         := handler.New(database, cfg).WithResolver(resolver)
 	rtHandler  := handler.NewRuntimeHandler(runtimeRepo, resolver)
+	saveH      := handler.NewSaveHandler(saveRepo)
 	acHandler  := handler.NewAccessHandler(runtimeRepo, resolver)
 	adm        := handler.NewAdminHandler(runtimeRepo, accessRepo, resolver)
 	dash       := handler.NewDashboardHandler(database)
@@ -69,6 +71,11 @@ func main() {
 	mux.HandleFunc("OPTIONS /api/v1/game/runtime/heartbeat",optionsOK)
 	mux.HandleFunc("OPTIONS /api/v1/game/access",           optionsOK)
 	mux.HandleFunc("OPTIONS /api/v1/game/token/redeem",     optionsOK)
+
+	// ── Cloud Save endpoints (public, keyed by install_id) ─────────────────
+	mux.HandleFunc("GET /api/v1/game/save",     saveH.GetSave)
+	mux.HandleFunc("PUT /api/v1/game/save",     saveH.PutSave)
+	mux.HandleFunc("OPTIONS /api/v1/game/save", optionsOK)
 
 	// ── Admin REST API (token-protected, JSON only) ────────────────────────
 	mux.Handle("GET /api/admin/dashboard/summary",                   adminMW(http.HandlerFunc(dash.Summary)))

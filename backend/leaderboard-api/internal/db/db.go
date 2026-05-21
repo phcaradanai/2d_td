@@ -159,6 +159,15 @@ CREATE TABLE IF NOT EXISTS token_redemptions (
 CREATE INDEX IF NOT EXISTS idx_tr_token   ON token_redemptions (token_code);
 CREATE INDEX IF NOT EXISTS idx_tr_install ON token_redemptions (install_id);
 
+-- ── Player Cloud Saves ───────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS player_saves (
+    id          BIGSERIAL    PRIMARY KEY,
+    install_id  VARCHAR(64)  UNIQUE NOT NULL,
+    save_json   TEXT         NOT NULL DEFAULT '{}',
+    updated_at  TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_ps_install ON player_saves (install_id);
+
 -- ── Audit Logs ────────────────────────────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS audit_logs (
     id           BIGSERIAL     PRIMARY KEY,

@@ -1,6 +1,17 @@
 extends Node
 
-const SAVE_PATH = "user://tower_defense_save.json"
+const SAVE_PATH          = "user://tower_defense_save.json"
+const IDENTITY_CACHE_PATH = "user://runtime_identity.json"
+const DEV_CONFIG_PATH     = "user://remote_access_config_dev.json"
+const BUNDLED_API_URL     = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"
+const BACKEND_TIMEOUT     = 10.0
+
+var _api_base_url: String   = ""
+var _install_id: String     = ""
+var _http_fetch: HTTPRequest = null
+var _http_push: HTTPRequest  = null
+var _push_in_flight: bool    = false
+var _push_pending: bool      = false
 
 var save_data: Dictionary = {
 	"player_name": "Player",
@@ -30,6 +41,7 @@ var save_data: Dictionary = {
 
 func _ready() -> void:
 	load_save()
+	call_deferred("_setup_backend")
 
 func load_save() -> Dictionary:
 	if not FileAccess.file_exists(SAVE_PATH):
@@ -74,6 +86,7 @@ func save_to_disk() -> void:
 	file.store_string(json_text)
 	file.close()
 	if OS.is_debug_build(): print("[SaveManager] Save written to disk.")
+	_push_backend_save()
 
 func get_level_record(level_id: String) -> Dictionary:
 	if save_data["levels"].has(level_id):
@@ -241,6 +254,144 @@ func get_performance_settings() -> Dictionary:
 func update_performance_settings(settings: Dictionary) -> void:
 	save_data["settings"]["performance"] = settings
 	save_to_disk()
+
+# ── Backend Cloud Save ────────────────────────────────────────────────────────
+
+func _setup_backend() -> void:
+	_api_base_url = BUNDLED_API_URL
+	if FileAccess.file_exists(DEV_CONFIG_PATH):
+		var file = FileAccess.open(DEV_CONFIG_PATH, FileAccess.READ)
+		if file:
+			var parsed = JSON.parse_string(file.get_as_text())
+			file.close()
+			if parsed is Dictionary:
+				var url = str(parsed.get("api_base_url", "")).strip_edges()
+				if not url.is_empty():
+					_api_base_url = url
+
+	if FileAccess.file_exists(IDENTITY_CACHE_PATH):
+		var file = FileAccess.open(IDENTITY_CACHE_PATH, FileAccess.READ)
+		if file:
+			var parsed = JSON.parse_string(file.get_as_text())
+			file.close()
+			if parsed is Dictionary:
+				_install_id = str(parsed.get("install_id", "")).strip_edges()
+
+	if _install_id.is_empty():
+		if OS.is_debug_build(): print("[SaveManager] No install_id yet, skipping cloud sync.")
+		return
+
+	_http_fetch = HTTPRequest.new()
+	_http_fetch.timeout = BACKEND_TIMEOUT
+	add_child(_http_fetch)
+	_http_fetch.request_completed.connect(_on_fetch_completed)
+
+	_http_push = HTTPRequest.new()
+	_http_push.timeout = BACKEND_TIMEOUT
+	add_child(_http_push)
+	_http_push.request_completed.connect(_on_push_completed)
+
+	_fetch_backend_save()
+
+func _fetch_backend_save() -> void:
+	if _http_fetch == null or _install_id.is_empty():
+		return
+	var url = _api_base_url.rstrip("/") + "/api/v1/game/save?install_id=" + _install_id.uri_encode()
+	var err = _http_fetch.request(url)
+	if err != OK:
+		if OS.is_debug_build(): push_warning("[SaveManager] Cloud fetch request error: %d" % err)
+
+func _on_fetch_completed(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray) -> void:
+	if result != HTTPRequest.RESULT_SUCCESS or response_code < 200 or response_code >= 300:
+		if OS.is_debug_build():
+			push_warning("[SaveManager] Cloud fetch failed: HTTP %d (result=%d)" % [response_code, result])
+		return
+
+	var parsed = JSON.parse_string(body.get_string_from_utf8())
+	if not parsed is Dictionary or not parsed.get("ok", false):
+		return
+
+	if not parsed.get("found", false):
+		if OS.is_debug_build(): print("[SaveManager] No cloud save found; pushing local.")
+		_push_backend_save()
+		return
+
+	var remote_save = JSON.parse_string(str(parsed.get("save_json", "")))
+	if not remote_save is Dictionary:
+		return
+
+	var changed = false
+
+	var remote_name = str(remote_save.get("player_name", "")).strip_edges()
+	if remote_name != "" and remote_name != "Player" and remote_name != save_data.get("player_name", ""):
+		save_data["player_name"] = remote_name
+		changed = true
+
+	if remote_save.has("levels") and remote_save["levels"] is Dictionary:
+		for level_id in remote_save["levels"]:
+			var remote_rec: Dictionary = remote_save["levels"][level_id]
+			if save_data["levels"].has(level_id):
+				var merged = _merge_level_record(save_data["levels"][level_id], remote_rec)
+				if merged != save_data["levels"][level_id]:
+					save_data["levels"][level_id] = merged
+					changed = true
+			else:
+				save_data["levels"][level_id] = remote_rec
+				changed = true
+
+	if changed:
+		var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+		if file:
+			file.store_string(JSON.stringify(save_data, "\t"))
+			file.close()
+		if OS.is_debug_build(): print("[SaveManager] Cloud save merged and written to disk.")
+		_push_backend_save()
+	else:
+		if OS.is_debug_build(): print("[SaveManager] Cloud save loaded; no new data.")
+
+func _merge_level_record(local_rec: Dictionary, remote_rec: Dictionary) -> Dictionary:
+	var merged = local_rec.duplicate()
+	merged["best_score"]    = max(local_rec.get("best_score", 0),    remote_rec.get("best_score", 0))
+	merged["best_stars"]    = max(local_rec.get("best_stars", 0),    remote_rec.get("best_stars", 0))
+	merged["times_cleared"] = max(local_rec.get("times_cleared", 0), remote_rec.get("times_cleared", 0))
+	merged["perfect_clear"] = local_rec.get("perfect_clear", false) or remote_rec.get("perfect_clear", false)
+	merged["completed"]     = local_rec.get("completed", false)      or remote_rec.get("completed", false)
+	merged["unlocked"]      = local_rec.get("unlocked", false)       or remote_rec.get("unlocked", false)
+	return merged
+
+func _push_backend_save() -> void:
+	if _http_push == null or _install_id.is_empty():
+		return
+	if _push_in_flight:
+		_push_pending = true
+		return
+
+	var cloud_payload = {
+		"player_name": save_data.get("player_name", "Player"),
+		"levels": save_data.get("levels", {})
+	}
+	var body = JSON.stringify({
+		"install_id": _install_id,
+		"save_json":  JSON.stringify(cloud_payload)
+	})
+	var headers = PackedStringArray(["Content-Type: application/json"])
+	var url = _api_base_url.rstrip("/") + "/api/v1/game/save"
+	var err = _http_push.request(url, headers, HTTPClient.METHOD_PUT, body)
+	if err == OK:
+		_push_in_flight = true
+	else:
+		if OS.is_debug_build(): push_warning("[SaveManager] Cloud push request error: %d" % err)
+
+func _on_push_completed(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray) -> void:
+	_push_in_flight = false
+	if OS.is_debug_build():
+		if result == HTTPRequest.RESULT_SUCCESS and response_code >= 200 and response_code < 300:
+			print("[SaveManager] Cloud save pushed OK.")
+		else:
+			push_warning("[SaveManager] Cloud push failed: HTTP %d (result=%d)" % [response_code, result])
+	if _push_pending:
+		_push_pending = false
+		_push_backend_save()
 
 func clear_save() -> void:
 	save_data = {
