@@ -104,23 +104,18 @@ func get_enemies() -> Array:
 	var frame := Engine.get_process_frames()
 	if frame - _enemy_cache_frame <= 2:
 		return _enemy_list_cache
-	# Cache stale — should not happen in normal gameplay, but be safe
-	return []
+	# Cache stale — fall back to live group query rather than returning nothing.
+	return get_tree().get_nodes_in_group("enemies")
 
 # ── Quality transitions ───────────────────────────────────────────────────────
 func _update_quality() -> void:
 	match fx_quality:
 		Quality.HIGH:
-			if current_fps < FPS_TO_MEDIUM:
+			if current_fps < FPS_TO_HIGH:
 				_downgrade_timer += FPS_SAMPLE_INTERVAL
 				_upgrade_timer = 0.0
 				if _downgrade_timer >= DOWNGRADE_HOLD_SECS:
-					fx_quality = Quality.LOW
-					_downgrade_timer = 0.0
-			elif current_fps < FPS_TO_HIGH:
-				_downgrade_timer += FPS_SAMPLE_INTERVAL
-				_upgrade_timer = 0.0
-				if _downgrade_timer >= DOWNGRADE_HOLD_SECS:
+					# Step down one level at a time: HIGH -> MEDIUM, never HIGH -> LOW directly.
 					fx_quality = Quality.MEDIUM
 					_downgrade_timer = 0.0
 			else:

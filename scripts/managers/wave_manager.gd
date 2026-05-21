@@ -76,8 +76,11 @@ func load_enemies_config() -> void:
 	if not FileAccess.file_exists(enemies_data_path):
 		push_error("Enemies config file not found: " + enemies_data_path)
 		return
-	
+
 	var file = FileAccess.open(enemies_data_path, FileAccess.READ)
+	if file == null:
+		push_error("[WaveManager] Cannot open enemies config: " + enemies_data_path)
+		return
 	var json_text = file.get_as_text()
 	file.close()
 	
@@ -95,8 +98,11 @@ func load_waves() -> void:
 	if not FileAccess.file_exists(waves_data_path):
 		push_error("Waves data file not found: " + waves_data_path)
 		return
-	
+
 	var file = FileAccess.open(waves_data_path, FileAccess.READ)
+	if file == null:
+		push_error("[WaveManager] Cannot open waves data: " + waves_data_path)
+		return
 	var json_text = file.get_as_text()
 	file.close()
 	

@@ -78,6 +78,10 @@ func reset_for_pool() -> void:
 	if _active_tween != null and _active_tween.is_valid():
 		_active_tween.kill()
 	_active_tween = null
+	# Correct static counter when pool reclaims node externally (e.g. release_active on restart).
+	if _counted:
+		_counted = false
+		ImpactEffect._active_count = maxi(0, ImpactEffect._active_count - 1)
 	color = Color.WHITE
 	glow_color = Color.WHITE
 	accent_color = Color.WHITE

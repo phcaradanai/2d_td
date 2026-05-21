@@ -1,4 +1,4 @@
-extends Node
+extends RefCounted
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 

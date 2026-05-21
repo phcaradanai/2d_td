@@ -35,8 +35,11 @@ func load_save() -> Dictionary:
 	if not FileAccess.file_exists(SAVE_PATH):
 		if OS.is_debug_build(): print("[SaveManager] No save file found, using defaults.")
 		return save_data
-	
+
 	var file = FileAccess.open(SAVE_PATH, FileAccess.READ)
+	if file == null:
+		push_error("[SaveManager] Cannot open save file for reading: " + SAVE_PATH)
+		return save_data
 	var json_text = file.get_as_text()
 	file.close()
 	
@@ -64,6 +67,9 @@ func load_save() -> Dictionary:
 
 func save_to_disk() -> void:
 	var file = FileAccess.open(SAVE_PATH, FileAccess.WRITE)
+	if file == null:
+		push_error("[SaveManager] Cannot open save file for writing: " + SAVE_PATH)
+		return
 	var json_text = JSON.stringify(save_data, "\t")
 	file.store_string(json_text)
 	file.close()

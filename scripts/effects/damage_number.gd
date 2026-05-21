@@ -93,6 +93,11 @@ func reset_for_pool() -> void:
 	if _active_tween != null and _active_tween.is_valid():
 		_active_tween.kill()
 	_active_tween = null
+	# Decrement the static active counter when the pool reclaims this node externally
+	# (e.g. via release_active() on level restart), since _release_to_pool won't be called.
+	if _counted:
+		_counted = false
+		DamageNumber._active_count = maxi(0, DamageNumber._active_count - 1)
 	pending_text = "-0"
 	pending_color = Color.WHITE
 	pending_font_size = 18

@@ -1445,29 +1445,32 @@ func _perform_aura_attack() -> void:
 				aura_flash_scale = minf(attack_range / 30.0, 1.0)
 			flash.setup(tower_color, aura_flash_scale, aura_vfx_type, secondary_color)
 
+	# Build status effects once — applied to every enemy in range, not per-enemy.
+	var _prebuilt_effects := _build_attack_status_effects()
+	# Hoist pool/container lookups outside the enemy loop (was N lookups, now 1).
+	var _imp_pool := get_node_or_null("/root/ImpactVFXPool") if allow_minor_impacts else null
+	var _aura_impact_container: Node = container
+
 	for enemy in enemies:
 		if is_instance_valid(enemy):
 			var enemy_pos = get_target_hit_anchor_global_position(enemy)
 			enemy.take_damage(damage, enemy_pos, tower_id, attack_type)
-			
+
 			if _should_apply_direct_vulnerability() and vulnerability_percent > 0 and enemy.has_method("apply_vulnerability"):
 				enemy.apply_vulnerability(1.0 + vulnerability_percent, vulnerability_duration)
-			_apply_attack_status_effects_to_enemy(enemy)
+			_apply_attack_status_effects_to_enemy(enemy, _prebuilt_effects)
 
 			if aura_vfx_type == "toxic_bloom":
 				if allow_minor_impacts and toxic_vfx_spawned < toxic_vfx_limit:
 					_spawn_disease_attack_vfx(enemy_pos, container, tower_color, secondary_color, accent_color, quality_name)
 					toxic_vfx_spawned += 1
 				continue
-				
+
 			# Small impact effect on each enemy
 			if allow_minor_impacts:
-				var imp_pool := get_node_or_null("/root/ImpactVFXPool")
-				if imp_pool == null:
+				if _imp_pool == null:
 					continue
-				var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-				var parent_node: Node = effects_container if effects_container else get_tree().current_scene
-				var effect: Node = imp_pool.acquire(parent_node)
+				var effect: Node = _imp_pool.acquire(_aura_impact_container)
 				if effect == null:
 					continue
 				effect.global_position = enemy_pos
@@ -1655,10 +1658,11 @@ func _should_apply_direct_vulnerability() -> bool:
 		or tower_id.begins_with("voodoo_")
 	)
 
-func _apply_attack_status_effects_to_enemy(enemy: Variant) -> void:
+func _apply_attack_status_effects_to_enemy(enemy: Variant, prebuilt_effects: Array = []) -> void:
 	if enemy == null or not is_instance_valid(enemy):
 		return
-	for effect in _build_attack_status_effects():
+	var effects := prebuilt_effects if not prebuilt_effects.is_empty() else _build_attack_status_effects()
+	for effect in effects:
 		var effect_type := str(effect.get("type", "")).to_lower()
 		var duration := float(effect.get("duration", 0.0))
 		match effect_type:

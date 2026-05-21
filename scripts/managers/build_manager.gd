@@ -62,6 +62,9 @@ func load_towers_config() -> void:
 	# Load tower tree config (Element TD progression system)
 	if FileAccess.file_exists(towers_tree_data_path):
 		var file2 = FileAccess.open(towers_tree_data_path, FileAccess.READ)
+		if file2 == null:
+			push_error("[BuildManager] Cannot open towers tree config: " + towers_tree_data_path)
+			return
 		var json_text2 = file2.get_as_text()
 		file2.close()
 		

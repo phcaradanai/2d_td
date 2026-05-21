@@ -780,8 +780,9 @@ func _ensure_level_nodes_exist() -> void:
 		add_child(save_game_service)
 
 	# Local leaderboard (existing — keeps result-panel rank working)
-	leaderboard_service = load("res://scripts/core/leaderboard_service.gd").new()
-	add_child(leaderboard_service)
+	if leaderboard_service == null or not is_instance_valid(leaderboard_service):
+		leaderboard_service = load("res://scripts/core/leaderboard_service.gd").new()
+		add_child(leaderboard_service)
 
 	# [MetaLayer] Online leaderboard client
 	if online_lb_client == null:
@@ -2010,14 +2011,7 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		damage_stats_tracker.reset_wave()
 	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
-	else:
-		if element_td_interest_service:
-			element_td_interest_service.elapsed = 0.0
-	if element_td_interest_service:
 		element_td_interest_service.disabled_for_wave = false
-	else:
-		if element_td_interest_service:
-			element_td_interest_service.disabled_for_wave = false
 	_stop_auto_next_wave_countdown()
 	_clear_route_preview()
 	set_game_phase(GameState.WAVE)
@@ -2031,14 +2025,7 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 func _on_wave_completed(wave_number: int, _wave_name: String, reward: int) -> void:
 	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
-	else:
-		if element_td_interest_service:
-			element_td_interest_service.elapsed = 0.0
-	if element_td_interest_service:
 		element_td_interest_service.disabled_for_wave = false
-	else:
-		if element_td_interest_service:
-			element_td_interest_service.disabled_for_wave = false
 	if game_manager:
 		game_manager.award_wave_completion(reward)
 	_show_wave_complete_status_feedback = true
@@ -2107,14 +2094,7 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 	# but interest for this wave stops after a leak to avoid abuse.
 	if element_td_interest_service:
 		element_td_interest_service.disable_for_current_wave()
-	else:
-		if element_td_interest_service:
-			element_td_interest_service.disable_for_current_wave()
-	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
-	else:
-		if element_td_interest_service:
-			element_td_interest_service.elapsed = 0.0
 	if game_manager:
 		game_manager.damage_base(base_damage)
 
@@ -2122,22 +2102,26 @@ func _on_base_damaged(base_damage: int, global_pos: Vector2) -> void:
 	if game_hud:
 		game_hud.show_screen_flash(Color(0.8, 0.1, 0.1, 0.4), 0.3)
 
-	# Spawn impact effect at leak position
-	var impact_scene = preload("res://scenes/effects/ImpactEffect.tscn")
-	if impact_scene:
-		var effect = impact_scene.instantiate()
-		var container = get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
-		if container:
+	# Spawn impact effect at leak position — use ImpactVFXPool to avoid per-leak allocations.
+	var container = get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+	if container == null:
+		container = self
+	var imp_pool := get_node_or_null("/root/ImpactVFXPool")
+	var effect: Node = null
+	if imp_pool != null and imp_pool.has_method("acquire"):
+		effect = imp_pool.acquire(container)
+	if effect == null:
+		# Pool exhausted fallback — instantiate directly (rare).
+		var impact_scene: PackedScene = load("res://scenes/effects/ImpactEffect.tscn")
+		if impact_scene:
+			effect = impact_scene.instantiate()
 			container.add_child(effect)
-			effect.global_position = global_pos
+	if effect:
+		effect.global_position = global_pos
+		if effect.has_method("setup"):
 			effect.setup(Color(1, 0, 0), 3.0)
-
-			if OS.is_debug_build():
-				print("[BaseDamageFX] leak_global=", global_pos, " fx.global=", effect.global_position, " parent=", container.name)
-		else:
-			add_child(effect)
-			effect.global_position = global_pos
-			effect.setup(Color(1, 0, 0), 3.0)
+		if OS.is_debug_build():
+			print("[BaseDamageFX] leak_global=", global_pos, " fx.global=", effect.global_position, " container=", container.name)
 
 	if audio_manager:
 		audio_manager.play_sfx("enemy_reach_base")
@@ -2185,8 +2169,13 @@ func _on_game_over() -> void:
 
 func _clear_projectiles_and_targeting() -> void:
 	if projectile_container:
+		# Return pooled projectiles before freeing; avoids orphaned pool nodes.
+		var pool := get_node_or_null("/root/ProjectilePool")
+		if pool != null:
+			pool.release_active()
 		for proj in projectile_container.get_children():
-			proj.queue_free()
+			if is_instance_valid(proj) and not proj.has_meta("pooled"):
+				proj.queue_free()
 
 	# Clear all tower targeting lines
 	if tower_container:
