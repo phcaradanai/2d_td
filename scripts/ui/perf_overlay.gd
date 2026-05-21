@@ -1,14 +1,14 @@
 ## PerfOverlay — lightweight live diagnostics overlay.
 ##
 ## Registered as an autoload ("PerfOverlay") in project.godot.
-## Visible only in OS.is_debug_build() and only when toggled on (F10).
-## Reads live counters from PerformanceBudget and static VFX budgets.
-## Zero runtime cost in release builds (process disabled in _ready).
+## Toggle: F9 + O
+## Reads live counters from PerformanceBudget, FrameSpikeLogger, and main scene.
+## Panel is always created; _process is cheap when hidden.
 extends CanvasLayer
 
 const LABEL_FONT_SIZE := 13
-const PANEL_WIDTH     := 230
-const PANEL_HEIGHT    := 360
+const PANEL_WIDTH     := 280
+const PANEL_HEIGHT    := 520
 const PADDING         := 8.0
 
 var _visible_flag: bool = false
@@ -22,14 +22,8 @@ func _ready() -> void:
 	name = "PerfOverlay"
 	process_mode = Node.PROCESS_MODE_ALWAYS
 
-	# Release builds: disable everything immediately — no overhead at all.
-	if not OS.is_debug_build():
-		set_process(false)
-		set_process_input(false)
-		return
-
 	_panel = ColorRect.new()
-	_panel.color = Color(0.0, 0.0, 0.0, 0.72)
+	_panel.color = Color(0.0, 0.0, 0.0, 0.78)
 	_panel.size = Vector2(PANEL_WIDTH, PANEL_HEIGHT)
 	_panel.position = Vector2(8, 8)
 	_panel.visible = false
@@ -39,17 +33,17 @@ func _ready() -> void:
 	_label.bbcode_enabled = true
 	_label.fit_content = true
 	_label.scroll_active = false
+	_label.autowrap_mode = TextServer.AUTOWRAP_OFF
 	_label.size = Vector2(PANEL_WIDTH - PADDING * 2, PANEL_HEIGHT - PADDING * 2)
 	_label.position = Vector2(PADDING, PADDING)
 	_label.add_theme_font_size_override("normal_font_size", LABEL_FONT_SIZE)
 	_panel.add_child(_label)
 
-func _input(event: InputEvent) -> void:
+func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo:
-		if event.keycode == KEY_F10:
+		if event.keycode == KEY_O and Input.is_key_pressed(KEY_F9):
 			_visible_flag = not _visible_flag
-			if _panel:
-				_panel.visible = _visible_flag
+			_panel.visible = _visible_flag
 			get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
@@ -95,28 +89,69 @@ func _refresh_label() -> void:
 	var c_avfx := "00ff88" if atk_vfx < atk_budget * 0.8 else ("ffcc00" if atk_vfx < atk_budget else "ff4444")
 	var c_dn   := "00ff88" if dmg_num < DamageNumber.MAX_ACTIVE * 0.8 else ("ffcc00" if dmg_num < DamageNumber.MAX_ACTIVE else "ff4444")
 
+	# ── Wave preview cache counters (from main scene) ──
+	var cache_hits := 0
+	var cache_misses := 0
+	var ei_hits := 0
+	var ei_misses := 0
+	var preview_active := 0
+	var preview_redraws := 0
+	var spike_frames := 0
+	var main_node := get_tree().current_scene
+	if main_node and main_node.has_method("get_perf_debug_counters"):
+		var counters: Dictionary = main_node.call("get_perf_debug_counters")
+		cache_hits    = int(counters.get("wave_preview_cache_hits", 0))
+		cache_misses  = int(counters.get("wave_preview_cache_misses", 0))
+		ei_hits       = int(counters.get("element_icon_cache_hits", 0))
+		ei_misses     = int(counters.get("element_icon_cache_misses", 0))
+		preview_active  = int(counters.get("tower_preview_active_count", 0))
+		preview_redraws = int(counters.get("tower_preview_redraw_count", 0))
+	var fsl_node := get_node_or_null("/root/FrameSpikeLogger")
+	if fsl_node:
+		spike_frames = int(fsl_node.total_spike_frames)
+
+	# ── Section timings from last frame ──
+	var section_lines := ""
+	var sections: Dictionary = fsl_node.get_section_report() if fsl_node else {}
+	if not sections.is_empty():
+		var pairs: Array = []
+		for k in sections: pairs.append([k, float(sections[k])])
+		pairs.sort_custom(func(a: Array, b: Array) -> bool: return a[1] > b[1])
+		for pair in pairs:
+			var t: float = pair[1]
+			var c_t := "ff4444" if t > 8.0 else ("ffcc00" if t > 4.0 else "888888")
+			section_lines += "  %-24s [color=#%s]%.2f ms[/color]\n" % [pair[0], c_t, t]
+	else:
+		section_lines = "  [color=#555555](idle — no hot sections)[/color]\n"
+
+	var c_cache := "00ff88" if cache_misses == 0 else ("ffcc00" if cache_misses < 3 else "ff4444")
+	var c_spike := "00ff88" if spike_frames == 0 else ("ffcc00" if spike_frames < 5 else "ff4444")
+
 	_label.text = (
 		"[b][color=#aaddff]■ PERF OVERLAY[/color][/b]  [color=#555555]F10[/color]\n"
-		+ "──────────────────────\n"
+		+ "──────────────────────────\n"
 		+ "[color=#%s]FPS  %d  (%.1f ms)[/color]\n" % [c_fps, fps, f_ms]
 		+ "Process  [color=#ffee88]%.2f ms[/color]\n" % proc_ms
 		+ "Physics  [color=#ffee88]%.2f ms[/color]\n" % physics_ms
 		+ "Draws    [color=#ffffff]%d[/color]\n" % draw_calls
 		+ "Nodes    [color=#ffffff]%d[/color]\n" % node_count
 		+ "Quality  [color=#%s]%s[/color]\n" % [c_qual, qual]
-		+ "──────────────────────\n"
+		+ "──────────────────────────\n"
 		+ "Creeps        [color=#ffffff]%d[/color]\n" % creep_count
 		+ "Towers        [color=#ffffff]%d[/color]\n" % tower_count
 		+ "Projectiles   [color=#ffffff]%d[/color]\n" % proj_count
-		+ "──────────────────────\n"
+		+ "──────────────────────────\n"
 		+ "Attack VFX    [color=#%s]%d / %d[/color]\n" % [c_avfx, atk_vfx, atk_budget]
 		+ "Dmg Numbers   [color=#%s]%d / %d[/color]\n" % [c_dn, dmg_num, DamageNumber.MAX_ACTIVE]
-		+ "Status VFX    [color=#ffffff]%d[/color]\n" % get_tree().get_nodes_in_group("status_vfx").size()
-		+ "Status Icons   [color=#ffffff]%d[/color]\n" % status_icons
-		+ "Target scans  [color=#ffffff]%d / s[/color]\n" % target_scans
-		+ "Avg candidates [color=#ffffff]%.1f[/color]\n" % avg_candidates
-		+ "Active scans  [color=#ffffff]%d[/color]\n" % active_scanners
-		+ "──────────────────────\n"
-		+ "[color=#555555]Verbose targeting off\n"
-		+ "Verbose combat    off[/color]"
+		+ "Status Icons  [color=#ffffff]%d[/color]\n" % status_icons
+		+ "Target scans  [color=#ffffff]%d/s[/color]\n" % target_scans
+		+ "──────────────────────────\n"
+		+ "[b][color=#aaddff]■ CACHE / HOTPATH[/color][/b]\n"
+		+ "WavePreview   [color=#%s]hit=%d miss=%d[/color]\n" % [c_cache, cache_hits, cache_misses]
+		+ "ElemIcon      [color=#888888]hit=%d miss=%d[/color]\n" % [ei_hits, ei_misses]
+		+ "PreviewActive [color=#ffffff]%d  redraws=%d[/color]\n" % [preview_active, preview_redraws]
+		+ "SpikeFrames   [color=#%s]%d[/color]\n" % [c_spike, spike_frames]
+		+ "──────────────────────────\n"
+		+ "[b][color=#aaddff]■ LAST FRAME HOT SECTIONS[/color][/b]\n"
+		+ section_lines
 	)

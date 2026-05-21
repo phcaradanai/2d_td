@@ -26,10 +26,20 @@ enum HealthVisualState { HEALTH_OK = 0, HEALTH_DAMAGED = 1, HEALTH_CRITICAL = 2 
 
 # ── Pure-math helpers ────────────────────────────────────────────────────────────
 
+static var _scale_cache: Dictionary = {}  # hash(points + amount) -> PackedVector2Array
+
 static func scale_polygon(points: PackedVector2Array, amount: float) -> PackedVector2Array:
+	# Cache result: polygons are computed from compile-time constants so the
+	# same (points, amount) always yields the same output.
+	var key: int = hash(str(amount) + str(points))
+	if _scale_cache.has(key):
+		return _scale_cache[key]
 	var out := PackedVector2Array()
-	for p in points:
-		out.append(p + p.normalized() * amount)
+	out.resize(points.size())
+	for i in range(points.size()):
+		var p: Vector2 = points[i]
+		out[i] = p + p.normalized() * amount
+	_scale_cache[key] = out
 	return out
 
 static func apply_health_tint(base_color: Color, health_visual_state: int) -> Color:

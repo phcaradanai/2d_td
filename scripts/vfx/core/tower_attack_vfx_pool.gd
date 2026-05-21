@@ -3,7 +3,7 @@
 class_name TowerAttackVFXPool
 extends RefCounted
 
-const MAX_ACTIVE: int = 60
+const MAX_ACTIVE: int = 80
 
 static func can_spawn() -> bool:
 	return BaseTowerAttackVFX._active_count < MAX_ACTIVE

@@ -93,18 +93,40 @@ func _draw_heal_cast() -> void:
 	draw_arc(Vector2.ZERO, 20.0 + alpha * 8.0, time * 7.0, time * 7.0 + PI * 1.25, 24, Color(0.45, 1.0, 0.9, 0.45 * alpha), 2.0)
 
 func _draw_links() -> void:
-	var alpha_max := 0.28
-	var glow_alpha := 0.18
+	var alpha_max := 0.22
 	var comfort := get_node_or_null("/root/VisualComfort")
-	if comfort != null:
-		if comfort.has_method("get_link_alpha_max"):
-			alpha_max = float(comfort.get_link_alpha_max())
-		if comfort.has_method("get_soft_glow_alpha"):
-			glow_alpha = float(comfort.get_soft_glow_alpha())
-	for target in links:
+	if comfort != null and comfort.has_method("get_link_alpha_max"):
+		alpha_max = float(comfort.get_link_alpha_max()) * 0.75
+
+	# Cap: only show the first 4 links per disruptor to avoid fan-of-lines overload.
+	var draw_count := mini(links.size(), 4)
+	var phase := fmod(time * 38.0, 14.0)  # dash animation offset
+
+	for i in range(draw_count):
+		var target = links[i]
 		if not is_instance_valid(target) or not (target is Node2D):
 			continue
 		var local_target := to_local((target as Node2D).global_position)
-		var c := Color(beam_color.r, beam_color.g, beam_color.b, minf(beam_color.a, alpha_max))
-		draw_line(Vector2.ZERO, local_target, Color(c.r, c.g, c.b, glow_alpha), 3.0, true)
-		draw_line(Vector2.ZERO, local_target, c, 1.25, true)
+		var dist := local_target.length()
+		if dist < 1.0:
+			continue
+		var dir := local_target / dist
+		var c := Color(beam_color.r, beam_color.g, beam_color.b, alpha_max)
+
+		# Animated dashes: short segments moving from disruptor toward tower.
+		var dash := 7.0
+		var gap  := 7.0
+		var p    := fmod(phase, dash + gap)
+		while p < dist:
+			var seg_end := minf(p + dash, dist)
+			var fade    := 1.0 - (p / dist) * 0.55   # far end fades out
+			draw_line(dir * p, dir * seg_end,
+				Color(c.r, c.g, c.b, c.a * 0.20 * fade), 2.5, true)  # soft glow
+			draw_line(dir * p, dir * seg_end,
+				Color(c.r, c.g, c.b, c.a * fade), 1.0, true)          # crisp core
+			p += dash + gap
+
+		# Small pulse dot at origin and target endpoint.
+		var pulse := 0.55 + sin(time * 9.0) * 0.35
+		draw_circle(Vector2.ZERO, 2.5 * pulse, Color(c.r, c.g, c.b, 0.55))
+		draw_circle(local_target,  2.0 * pulse, Color(c.r, c.g, c.b, 0.40))

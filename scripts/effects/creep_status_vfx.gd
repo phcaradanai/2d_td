@@ -8,9 +8,9 @@ extends Node2D
 class_name CreepStatusVFX
 
 # ── Layout constants ──────────────────────────────────────────────────────────
-const ICON_R    := 5.5    # icon glyph half-size
-const ICON_GAP  := 13.0   # horizontal spacing between icons
-const ICON_Y    := -26.0  # vertical offset above enemy center
+const ICON_R    := 4.5    # icon glyph half-size  (was 5.5 — smaller, less overlap)
+const ICON_GAP  := 11.0   # horizontal spacing   (was 13.0)
+const ICON_Y    := -28.0  # vertical offset       (was -26.0 — pushed higher)
 const RING_R    := 14.0   # body-ring radius
 
 # ── Status colors — alpha ≤ 0.75 so creep body stays readable ────────────────
@@ -154,7 +154,7 @@ func _draw_icons(st: Dictionary) -> void:
 	var order: Array[String] = ["root", "slow", "burn", "poison", "vuln"]
 	var visible_icons: Array[String] = []
 	for key in order:
-		if st.get(key, false) and visible_icons.size() < 3:
+		if st.get(key, false) and visible_icons.size() < 2:  # max 2 — less overlap
 			visible_icons.append(key)
 
 	var n := visible_icons.size()
@@ -165,8 +165,8 @@ func _draw_icons(st: Dictionary) -> void:
 	for i in n:
 		var pos := Vector2(x0 + float(i) * ICON_GAP, ICON_Y)
 		var col := _col(visible_icons[i])
-		# Soft glow backing
-		draw_circle(pos, ICON_R + 3.5, Color(col.r, col.g, col.b, 0.10))
+		# Dark backing pill for contrast — replaces glow circle (less noise)
+		draw_circle(pos, ICON_R + 2.0, Color(0.04, 0.04, 0.08, 0.70))
 		# Icon glyph
 		match visible_icons[i]:
 			"root":   _glyph_lock(pos, C_ROOT)

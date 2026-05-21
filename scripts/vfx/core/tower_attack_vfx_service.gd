@@ -1,14 +1,17 @@
 ## TowerAttackVFXService — resolves tower_id → VFX script and spawns the node.
-## Called from the updated TowerAttackVFX.spawn_attack_vfx().
+## Per-tower slot model: each tower owns one active VFX at a time.
+## Replaces the old global-cap model that caused some towers to show no effect.
 class_name TowerAttackVFXService
 extends RefCounted
+
+## instance_id(tower) → WeakRef(active VFX node)
+## Every tower gets its own slot; the previous VFX is released when a new one spawns.
+static var _tower_slots: Dictionary = {}
 
 static func spawn(tower: Node2D, target: Node2D) -> void:
 	if PerformanceFirebreak.disable_all_attack_vfx:
 		return
 	if not is_instance_valid(tower) or not is_instance_valid(target):
-		return
-	if not TowerAttackVFXPool.can_spawn():
 		return
 
 	var container: Node = tower.get_tree().current_scene \
@@ -32,10 +35,24 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 		if tower.has_method("_get_tower_color") else Color.WHITE
 
 	var pool := tower.get_node_or_null("/root/VisualEffectPoolService")
-	if pool == null or not pool.has_method("acquire_script"):
+	if pool == null or not pool.has_method("acquire_for_tower"):
 		return
-	var node := pool.acquire_script(script, container, "", "attack_vfx") as Node2D
+
+	var tower_iid := tower.get_instance_id()
+
+	# Release the previous VFX for this tower so the slot is always fresh.
+	if _tower_slots.has(tower_iid):
+		var old_node = (_tower_slots[tower_iid] as WeakRef).get_ref()
+		if old_node != null and is_instance_valid(old_node) \
+				and old_node.has_method("_release_to_pool"):
+			old_node._release_to_pool()
+		_tower_slots.erase(tower_iid)
+
+	# Acquire — pool grows on demand, never returns null.
+	var node := pool.acquire_for_tower(script, container) as Node2D
 	if node == null:
 		return
+
+	_tower_slots[tower_iid] = weakref(node)
 	node.setup(origin, tgt_pos, color)
 	node.configure({})

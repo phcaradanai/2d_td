@@ -42,8 +42,9 @@ func fade_out() -> void:
 	tween.tween_callback(queue_free)
 
 func _process(delta: float) -> void:
+	if not visible:
+		return
 	time += delta
-	# [VISUAL-OPT] Only redraw at ~8 fps to reduce GPU overhead when visible.
 	_redraw_accum += delta
 	if _redraw_accum >= _REDRAW_INTERVAL:
 		_redraw_accum = 0.0

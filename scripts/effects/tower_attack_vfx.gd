@@ -104,8 +104,21 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 	if target.has_method("get_hit_origin"):
 		tgt_pos = target.get_hit_origin()
 
-	# Budget cap — skip spawn if too many VFX are already alive.
-	# Gameplay damage/targeting is unaffected; this is a visuals-only guard.
+	# Baker-style owned VFX: draw once, Tween fade — no pool, no global cap.
+	# Each registered tower owns a permanent VFX node set up in apply_level_visuals().
+	var owned_vfx = tower.get("_owned_vfx")
+	if owned_vfx != null and is_instance_valid(owned_vfx) \
+			and owned_vfx.has_method("show_shot_static"):
+		var origin_o: Vector2 = tower.get_fire_origin() \
+			if tower.has_method("get_fire_origin") else tower.global_position
+		var tgt_o: Vector2 = target.get_hit_origin() \
+			if target.has_method("get_hit_origin") else target.global_position
+		var color_o: Color = tower._get_tower_color() \
+			if tower.has_method("_get_tower_color") else Color.WHITE
+		owned_vfx.show_shot_static(origin_o, tgt_o, color_o)
+		return
+
+	# Budget cap for pool-based (legacy / unregistered) towers only.
 	var perf_service := tower.get_node_or_null("/root/PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("can_spawn_attack_vfx"):
 		if not perf_service.can_spawn_attack_vfx(AttackVFX._active_count):
@@ -114,7 +127,7 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 		if AttackVFX._active_count >= AttackVFX.MAX_ACTIVE:
 			return
 
-	# New per-id system: try registry first.
+	# Pool path: try registry first for non-owned towers.
 	var tower_id: String = str(tower.get("tower_id")) if "tower_id" in tower else ""
 	if tower_id != "" and TowerAttackVFXRegistry.get_vfx_script(tower_id) != null:
 		TowerAttackVFXService.spawn(tower, target)

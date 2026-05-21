@@ -51,7 +51,6 @@ var enemies_config: Dictionary = {}
 var wave_start_time_msec: int = 0
 var current_wave_index: int = 0
 var is_wave_running: bool = false
-var active_enemy_count: int = 0
 var formation_planner = null
 
 var is_spawning: bool = false
@@ -60,6 +59,22 @@ var spawn_generation: int = 0
 var spawn_lane_cursor: int = 0
 var enemy_pathing_mode: String = ELEMENT_TD_PATHING_MODE
 var leak_respawn_enabled: bool = false
+
+# ── Enemy tracking (instance-based) ─────────────────────────────────────────
+# Track the Set of live enemy instances instead of a bare counter.
+# Rules:
+#   • _track_enemy(node)   — called once per spawn; no-op on duplicate.
+#   • _untrack_enemy(node) — called once per removal; no-op on unknown node.
+#   • active_enemy_count   — always equals _live_enemies.size(); read-only alias.
+# This makes double-add and double-remove structurally impossible.
+var _live_enemies: Dictionary = {}  # instance_id (int) -> WeakRef
+
+var active_enemy_count: int:
+	get: return _live_enemies.size()
+
+# Safety: periodic resync evicts freed nodes that somehow slipped past signals.
+const _WAVE_STUCK_CHECK_INTERVAL := 3.0
+var _wave_stuck_elapsed: float = 0.0
 
 # Track active wave specifically to avoid index confusion during running wave
 var active_wave_number: int = 0
@@ -147,7 +162,8 @@ func reset_waves() -> void:
 	is_wave_running = false
 	is_spawning = false
 	current_wave_index = 0
-	active_enemy_count = 0
+	_live_enemies.clear()
+	_wave_stuck_elapsed = 0.0
 	active_wave_number = 0
 	active_wave_name = ""
 	active_wave_reward = 0
@@ -257,21 +273,27 @@ func _wait_unpaused(seconds: float, gen: int) -> void:
 		elapsed += get_process_delta_time()
 
 func spawn_enemy(group_data: Dictionary) -> Node:
+	FrameSpikeLogger.begin("enemy_spawn")
+	var result := _spawn_enemy_impl(group_data)
+	FrameSpikeLogger.end("enemy_spawn")
+	return result
+
+func _spawn_enemy_impl(group_data: Dictionary) -> Node:  # extracted for FSL timing
 	var requested_path_id: String = str(group_data.get("path", "default"))
 	var path_id: String = _resolve_spawn_path_id(requested_path_id)
 	var path_node = path_nodes.get(path_id, path_nodes.get("default"))
 	if not path_node: return null
-		
+
 	var enemy_type = group_data.get("enemy_type", group_data.get("type", "basic"))
 	var base_config = enemies_config.get(enemy_type, {}).duplicate()
 	base_config["category"] = resolve_enemy_category(group_data)
 	base_config["pathing_mode"] = ELEMENT_TD_PATHING_MODE
-	
+
 	# Merge group overrides into base config
 	for key in group_data.keys():
 		if key != "count" and key != "spawn_delay":
 			base_config[key] = group_data[key]
-	
+
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
 		enemy.setup(base_config)
@@ -291,7 +313,7 @@ func spawn_enemy(group_data: Dictionary) -> Node:
 		
 	path_node.add_child(enemy)
 	if not is_debug_probe:
-		active_enemy_count += 1
+		_track_enemy(enemy)
 	
 	if game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
@@ -357,7 +379,7 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	
 	path_node.add_child(enemy)
 	enemy.progress = prog
-	active_enemy_count += 1
+	_track_enemy(enemy)
 	
 	if game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
@@ -389,7 +411,7 @@ func spawn_enemy_at_world_position(enemy_type: String, world_pos: Vector2) -> vo
 	var parent := _get_enemy_container()
 	parent.add_child(enemy)
 	enemy.global_position = world_pos
-	active_enemy_count += 1
+	_track_enemy(enemy)
 
 	if game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.log_enemy_spawn(enemy_type)
@@ -437,6 +459,7 @@ func _on_enemy_died(_enemy: Node, reward: int) -> void:
 	var source_id := _get_enemy_last_damage_source(_enemy)
 	_apply_economy_tower_kill_effects(source_id, reward)
 	enemy_killed.emit(reward)
+	_untrack_enemy(_enemy)
 	_on_enemy_removed()
 
 func _get_enemy_last_damage_source(enemy: Variant) -> String:
@@ -468,9 +491,12 @@ func _apply_economy_tower_kill_effects(source_id: String, reward: int) -> void:
 		economy_life_kill_counters[source_id] = count
 
 func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> void:
-	# Guard: if the enemy already died (e.g. from DoT in the same frame as reaching
-	# the base), _on_enemy_died already decremented the count. Skip to avoid double-removal.
-	if _enemy != null and is_instance_valid(_enemy) and bool(_enemy.get("is_dead_flag")):
+	# Instance-set guard: if this enemy isn't in _live_enemies it was already
+	# counted out (e.g. via _on_enemy_died in the same frame). Skip entirely.
+	var enemy_id := -1
+	if _enemy != null and is_instance_valid(_enemy):
+		enemy_id = _enemy.get_instance_id()
+	if not _live_enemies.has(enemy_id):
 		return
 
 	var hp_rem := 0.0
@@ -485,14 +511,39 @@ func _on_enemy_reached_base(_enemy: Node, damage: int, global_pos: Vector2) -> v
 
 	base_damaged.emit(damage, global_pos)
 
-	# Element TD WC3-style leak loop: a leaked creep costs life, then returns to
-	# the start so the wave can still be fully defeated and the gold is not lost.
-	# Spawn the replacement before decrementing the old instance so active count
-	# stays stable and wave completion cannot get stuck.
+	# Element TD WC3-style leak loop: respawn the enemy once at the path start.
+	# Mark it so it cannot trigger a second respawn and create an infinite loop.
 	if leak_respawn_enabled and _should_respawn_leaked_enemy(_enemy):
 		_respawn_leaked_enemy(_enemy, hp_rem)
 
+	_untrack_enemy(_enemy)
 	_on_enemy_removed()
+
+func _process(delta: float) -> void:
+	if not is_wave_running or is_spawning:
+		_wave_stuck_elapsed = 0.0
+		return
+	if _live_enemies.is_empty():
+		_check_wave_completion()
+		return
+	# Periodic sweep: evict freed/done weak-refs that slipped past signals.
+	_wave_stuck_elapsed += delta
+	if _wave_stuck_elapsed >= _WAVE_STUCK_CHECK_INTERVAL:
+		_wave_stuck_elapsed = 0.0
+		var stale: Array = []
+		for eid in _live_enemies:
+			var ref: WeakRef = _live_enemies[eid]
+			var node = ref.get_ref()
+			if node == null or not is_instance_valid(node) \
+					or bool(node.get("is_dead_flag")) \
+					or bool(node.get("reached_base_flag")):
+				stale.append(eid)
+		if not stale.is_empty():
+			if OS.is_debug_build():
+				print("[WaveManager] Swept %d orphaned enemy refs (wave %d)." % [stale.size(), active_wave_number])
+			for eid in stale:
+				_live_enemies.erase(eid)
+		_check_wave_completion()
 
 func _should_respawn_leaked_enemy(enemy: Node) -> bool:
 	if enemy == null or not is_instance_valid(enemy):
@@ -502,6 +553,9 @@ func _should_respawn_leaked_enemy(enemy: Node) -> bool:
 	if game_manager != null and int(game_manager.get("lives")) <= 0:
 		return false
 	if enemy.has_method("get_current_hp") and float(enemy.get_current_hp()) <= 0.0:
+		return false
+	# An already-respawned enemy must not respawn again — prevents infinite leak loops.
+	if enemy.has_meta("is_leak_respawn"):
 		return false
 	return true
 
@@ -524,6 +578,8 @@ func _respawn_leaked_enemy(enemy: Node, hp_remaining: float) -> void:
 		"path": path_id,
 		"leak_respawn": true
 	})
+	if respawned != null and is_instance_valid(respawned):
+		respawned.set_meta("is_leak_respawn", true)
 	_apply_respawn_health(respawned, hp_remaining)
 	DebugLog.trace("formation", "[LeakRespawn] enemy=%s path=%s hp=%.1f" % [enemy_type, path_id, hp_remaining])
 
@@ -547,12 +603,40 @@ func _apply_respawn_health(enemy: Node, hp_remaining: float) -> void:
 	if enemy.has_method("_update_health_visual_state"):
 		enemy._update_health_visual_state(true)
 
+## Add an enemy to the live set.  Duplicate spawns are silently ignored.
+func _track_enemy(enemy: Node) -> void:
+	if enemy == null or not is_instance_valid(enemy):
+		return
+	var id := enemy.get_instance_id()
+	if _live_enemies.has(id):
+		return  # already tracked — no double-count
+	_live_enemies[id] = weakref(enemy)
+
+## Remove an enemy from the live set.  Unknown nodes are silently ignored.
+func _untrack_enemy(enemy: Node) -> void:
+	var id := -1
+	if enemy != null and is_instance_valid(enemy):
+		id = enemy.get_instance_id()
+	if id >= 0 and _live_enemies.has(id):
+		_live_enemies.erase(id)
+		return
+	# Fallback: sweep for a freed/invalid weak-ref with this id or scan all.
+	# This handles the rare case where the node was freed before _untrack.
+	var stale: Array = []
+	for eid in _live_enemies:
+		var ref: WeakRef = _live_enemies[eid]
+		if ref.get_ref() == null:
+			stale.append(eid)
+		elif id >= 0 and eid == id:
+			stale.append(eid)
+	for eid in stale:
+		_live_enemies.erase(eid)
+
 func _on_enemy_removed() -> void:
-	active_enemy_count -= 1
 	_check_wave_completion()
 
 func _check_wave_completion() -> void:
-	if is_wave_running and not is_spawning and active_enemy_count <= 0:
+	if is_wave_running and not is_spawning and _live_enemies.is_empty():
 		is_wave_running = false
 
 		if game_manager and game_manager.battle_telemetry:

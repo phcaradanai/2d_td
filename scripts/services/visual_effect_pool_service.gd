@@ -255,6 +255,34 @@ func _ensure_lists(pool_key: String) -> void:
 	if not _active_by_key.has(pool_key):
 		_active_by_key[pool_key] = []
 
+## Per-tower acquisition: never returns null, never checks global cap.
+## Creates a new node on demand if the free list is exhausted.
+## Used by TowerAttackVFXService so every tower always gets its own VFX slot.
+func acquire_for_tower(script: GDScript, parent: Node) -> Node2D:
+	if script == null or parent == null:
+		return null
+	var key := _script_pool_key(script)
+	_ensure_lists(key)
+	if not _script_by_key.has(key):
+		_script_by_key[key] = script
+	if not _cap_key_by_pool_key.has(key):
+		_cap_key_by_pool_key[key] = CAP_ATTACK
+
+	var free_list: Array = _free_by_key[key]
+	var node: Node2D
+	if free_list.is_empty():
+		# Pool exhausted — create a fresh node so the tower is never silent.
+		node = Node2D.new()
+		node.set_script(script)
+		node.set_meta("pooled", true)
+		node.set_meta("vfx_pool_key", key)
+		node.set_meta("vfx_cap_key", CAP_ATTACK)
+		add_child(node)
+	else:
+		node = free_list.pop_back() as Node2D
+	_activate_node(key, CAP_ATTACK, node, parent)
+	return node
+
 func _script_pool_key(script: GDScript) -> String:
 	var path := script.resource_path
 	if path == "":

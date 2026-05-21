@@ -111,6 +111,16 @@ const SHOW_FLOATING_DAMAGE_NUMBERS := false
 enum HealthVisualState { HEALTH_OK, HEALTH_DAMAGED, HEALTH_CRITICAL }
 var health_visual_state: int = HealthVisualState.HEALTH_OK
 
+# Baker-style body sprite — replaces procedural _draw() body (15→1 draw call).
+var _body_sprite: Sprite2D = null
+var _body_baked: bool = false
+var _baked_health_state: int = -1
+var _bake_scale: Vector2 = Vector2(0.5, 0.5)   # set in _apply_baked_enemy_texture
+
+# Sprite animation state (no queue_redraw needed — GPU-side transforms only)
+var _hit_impact_tween: Tween = null
+var _hit_impact_active: bool = false   # true while hit squish is playing
+
 # Shield and disrupt aura scan intervals — prevent O(n) group walks every frame.
 # 0.25 s matches human-visible refresh; gameplay feel is unchanged.
 const SHIELD_AURA_INTERVAL := 0.25
@@ -262,6 +272,7 @@ func setup(config: Dictionary) -> void:
 	_update_health_visual_state(true)
 	apply_visuals()
 	_ensure_vfx_controller()
+	_request_baked_enemy_texture()
 	
 	if is_gallery_preview:
 		CatalogPreviewMode.mark_preview_tree(self, true, false)
@@ -321,6 +332,17 @@ func get_vfx_controller() -> Node:
 	return vfx_controller
 
 func _draw() -> void:
+	if _body_baked:
+		# Body is a Sprite2D — only draw dynamic overlays (0-3 calls vs 15-20).
+		const SIZE := 16.0
+		if shield_remaining > 0:
+			draw_arc(Vector2.ZERO, SIZE * 1.4, 0, TAU, 12, Color(0.4, 0.8, 1.0, 0.22), 1.5)
+		if active_slow_percent > 0:
+			draw_circle(Vector2.ZERO, SIZE * 1.2, Color(0.6, 0.9, 1.0, 0.16))
+		if is_flashing and hit_flash_alpha > 0.01:
+			draw_circle(Vector2.ZERO, SIZE * 1.35,
+				Color(hit_flash_color.r, hit_flash_color.g, hit_flash_color.b, hit_flash_alpha))
+		return
 	ENEMY_VISUAL_ROUTER.draw_enemy(self)
 
 # --- Performance Silhouette Mode ---
@@ -417,6 +439,108 @@ func _update_health_visual_state(force_redraw: bool = false) -> void:
 	if force_redraw or next_state != health_visual_state:
 		health_visual_state = next_state
 		queue_redraw()
+		if _body_baked and next_state != _baked_health_state:
+			_request_baked_enemy_texture()
+
+# ── Baker-style body sprite ──────────────────────────────────────────────────
+
+func _request_baked_enemy_texture() -> void:
+	if is_gallery_preview or PERFORMANCE_VISUAL_MODE:
+		return
+	# Defer until we're in the scene tree so add_child / callbacks work safely.
+	if not is_inside_tree():
+		call_deferred("_request_baked_enemy_texture")
+		return
+	var vt: String = str(visual_type)
+	var hs: int    = health_visual_state
+	var captured   := self
+	EnemyTextureBaker.request_texture(vt, hs, func(tex: ImageTexture) -> void:
+		if not is_instance_valid(captured):
+			return
+		captured._apply_baked_enemy_texture(tex)
+	)
+
+func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
+	if tex == null:
+		return
+	if _body_sprite == null or not is_instance_valid(_body_sprite):
+		_body_sprite = Sprite2D.new()
+		_body_sprite.name = "BakedBodySprite"
+		_body_sprite.centered = true
+		_body_sprite.z_index = -1   # behind parent _draw() so overlays render on top
+		_body_sprite.z_as_relative = true
+		add_child(_body_sprite)
+		move_child(_body_sprite, 0)
+	_bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM)
+	_body_sprite.texture = tex
+	_body_sprite.scale   = _bake_scale
+	_body_sprite.visible = true
+	_baked_health_state  = health_visual_state
+	if not _body_baked:
+		# First time baked: pop-in spawn animation
+		_body_sprite.scale = Vector2.ZERO
+		var spawn_tw := create_tween()
+		spawn_tw.tween_property(_body_sprite, "scale", _bake_scale, 0.18)\
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	_body_baked = true
+	queue_redraw()
+
+## Walking squash/stretch — called every frame when baked. No queue_redraw.
+func _update_sprite_movement_anim() -> void:
+	if not _body_baked or _body_sprite == null or _hit_impact_active:
+		return
+	var speed_ratio := clampf(speed / maxf(base_speed, 1.0), 0.0, 2.2)
+	if speed_ratio < 0.04:
+		_body_sprite.scale    = _bake_scale
+		_body_sprite.position = Vector2.ZERO
+		return
+	# Squash/stretch gait: one cycle per ~110 px of path distance
+	var bob := sin(progress * 0.057) * speed_ratio
+	_body_sprite.scale = Vector2(
+		_bake_scale.x * (1.0 - bob * 0.045),   # narrow when tall
+		_bake_scale.y * (1.0 + bob * 0.065)    # taller at step apex
+	)
+	# Subtle float at each step peak (local Y = perpendicular to path)
+	_body_sprite.position = Vector2(0.0, -absf(bob) * 1.6 * speed_ratio)
+
+## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
+func _play_sprite_hit_impact(color: Color) -> void:
+	if not _body_baked or _body_sprite == null or not is_instance_valid(_body_sprite):
+		return
+	if _hit_impact_tween != null and _hit_impact_tween.is_valid():
+		_hit_impact_tween.kill()
+	_hit_impact_active = true
+	# Flash colour: briefly saturate the element colour, then fade to white
+	var flash_col := Color(
+		minf(color.r * 2.2, 1.0),
+		minf(color.g * 1.8, 1.0),
+		minf(color.b * 1.8, 1.0), 1.0)
+	var t := create_tween().set_parallel(true)
+	_hit_impact_tween = t
+	# Scale squish: wide-flat then spring to neutral
+	t.tween_property(_body_sprite, "scale",
+		Vector2(_bake_scale.x * 1.45, _bake_scale.y * 0.60), 0.055)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	t.chain().tween_property(_body_sprite, "scale", _bake_scale, 0.15)\
+		.set_trans(Tween.TRANS_SPRING).set_ease(Tween.EASE_OUT)
+	# Modulate flash
+	t.tween_property(_body_sprite, "modulate", flash_col, 0.04)
+	t.chain().tween_property(_body_sprite, "modulate", Color.WHITE, 0.16)\
+		.set_trans(Tween.TRANS_EXPO)
+	t.chain().tween_callback(func() -> void:
+		_hit_impact_active = false
+		if _body_sprite != null and is_instance_valid(_body_sprite):
+			_body_sprite.modulate = Color.WHITE
+	)
+
+## Death pop — instant scale burst + fade before queue_free fires.
+func _play_sprite_death() -> void:
+	if not _body_baked or _body_sprite == null or not is_instance_valid(_body_sprite):
+		return
+	if _hit_impact_tween != null and _hit_impact_tween.is_valid():
+		_hit_impact_tween.kill()
+	_body_sprite.scale = _bake_scale * 1.25
+	_body_sprite.modulate = Color(2.0, 2.0, 2.0, 0.0)  # instant white-flash + transparent
 
 # --- High-Fidelity Procedural Visuals ---
 
@@ -1784,6 +1908,11 @@ func _exit_tree() -> void:
 	_sync_spatial_target_cache(false)
 
 func _process(delta: float) -> void:
+	FrameSpikeLogger.begin("enemy_tick")
+	_process_inner(delta)
+	FrameSpikeLogger.end("enemy_tick")
+
+func _process_inner(delta: float) -> void:
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
 		return
 
@@ -1800,10 +1929,13 @@ func _process(delta: float) -> void:
 		return
 
 	pulse_time += delta
-	_draw_timer += delta
-	if _draw_timer >= ENEMY_VISUAL_REDRAW_INTERVAL:
-		_draw_timer -= ENEMY_VISUAL_REDRAW_INTERVAL
-		queue_redraw()
+	if _body_baked:
+		_update_sprite_movement_anim()
+	else:
+		_draw_timer += delta
+		if _draw_timer >= ENEMY_VISUAL_REDRAW_INTERVAL:
+			_draw_timer -= ENEMY_VISUAL_REDRAW_INTERVAL
+			queue_redraw()
 
 	if not is_active or is_dead_flag or reached_base_flag:
 		return
@@ -2575,6 +2707,9 @@ func flash_body(damage_context: String = "") -> void:
 		hit_flash_color = Color(1.0, 0.62, 0.26, 0.20)
 	hit_flash_alpha = minf(hit_flash_color.a, 0.22)
 	is_flashing = hit_flash_alpha > 0.01
+	if _body_baked:
+		_play_sprite_hit_impact(hit_flash_color)
+		return   # modulate handles flash — no queue_redraw needed
 	queue_redraw()
 
 	var duration := 0.08
@@ -2616,6 +2751,7 @@ func die(death_global: Vector2 = Vector2.ZERO) -> void:
 	if is_dead_flag: return
 	is_dead_flag = true
 	is_active = false
+	_play_sprite_death()
 	_clear_disrupted_towers()
 	if vfx_controller:
 		vfx_controller.fade_out()

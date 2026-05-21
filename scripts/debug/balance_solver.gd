@@ -360,25 +360,50 @@ func generate_initial_build_candidates(gold: int) -> Array:
 	if best_cells.is_empty():
 		return candidates
 
+	# Map legacy names to current tower IDs and filter to only existing entries.
+	var _id_map: Dictionary = {
+		"basic_tower":    "basic_tower_t1",
+		"cannon_tower":   "neutral_cannon_tower",
+		"rapid_tower":    "nature_t1",
+		"slow_tower":     "water_t1",
+		"sniper_tower":   "light_t1",
+		"lightning_tower":"electricity_t1",
+		"sawblade_tower": "earth_t1",
+	}
+	var _remap := func(raw_id: String) -> String:
+		var mapped: String = str(_id_map.get(raw_id, raw_id))
+		return mapped if towers_config.has(mapped) else ""
+
+	var raw_recipes: Array = [
+		["rapid_tower", "rapid_tower"],
+		["rapid_tower", "basic_tower"],
+		["rapid_tower", "slow_tower"],
+		["basic_tower", "slow_tower"],
+		["cannon_tower", "basic_tower"],
+		["rapid_tower", "rapid_tower", "slow_tower"],
+		["rapid_tower", "rapid_tower", "basic_tower", "basic_tower"],
+		["rapid_tower", "slow_tower", "basic_tower"],
+		["rapid_tower", "rapid_tower", "rapid_tower"],
+		["cannon_tower", "rapid_tower", "slow_tower"],
+		["cannon_tower", "basic_tower", "basic_tower"],
+		["slow_tower", "rapid_tower", "basic_tower", "basic_tower"],
+		["sniper_tower", "basic_tower"],
+		["lightning_tower", "slow_tower"],
+		["sawblade_tower", "rapid_tower"],
+		["sniper_tower", "lightning_tower", "basic_tower"],
+	]
 	var recipes: Array = []
-	recipes.append(["rapid_tower", "rapid_tower"])
-	recipes.append(["rapid_tower", "basic_tower"])
-	recipes.append(["rapid_tower", "slow_tower"])
-	recipes.append(["basic_tower", "slow_tower"])
-	recipes.append(["cannon_tower", "basic_tower"])
-	recipes.append(["rapid_tower", "rapid_tower", "slow_tower"])
-	recipes.append(["rapid_tower", "rapid_tower", "basic_tower", "basic_tower"])
-	recipes.append(["rapid_tower", "slow_tower", "basic_tower"])
-	recipes.append(["rapid_tower", "rapid_tower", "rapid_tower"])
-	recipes.append(["cannon_tower", "rapid_tower", "slow_tower"])
-	recipes.append(["cannon_tower", "basic_tower", "basic_tower"])
-	recipes.append(["slow_tower", "rapid_tower", "basic_tower", "basic_tower"])
-	
-	# New specialized tower recipes
-	recipes.append(["sniper_tower", "basic_tower"])
-	recipes.append(["lightning_tower", "slow_tower"])
-	recipes.append(["sawblade_tower", "rapid_tower"])
-	recipes.append(["sniper_tower", "lightning_tower", "basic_tower"])
+	for raw in raw_recipes:
+		var mapped_recipe: Array = []
+		var valid := true
+		for raw_id in raw:
+			var mid: String = _remap.call(str(raw_id))
+			if mid.is_empty():
+				valid = false
+				break
+			mapped_recipe.append(mid)
+		if valid:
+			recipes.append(mapped_recipe)
 
 	for recipe in recipes:
 		var recipe_cost: int = _recipe_cost(recipe)
@@ -402,7 +427,7 @@ func generate_initial_build_candidates(gold: int) -> Array:
 				candidates.append(state)
 
 	for type in tower_types:
-		var cost = towers_config[type].get("cost", 0)
+		var cost = towers_config.get(type, {}).get("cost", 0)
 		if gold >= cost:
 			for cell in best_cells.slice(0, 4):
 				var s = GameState.new()
@@ -501,9 +526,31 @@ func _rank_cells_by_coverage(cells: Array) -> Array:
 	return res
 
 func _get_tower_priority_order() -> Array[String]:
-	var order: Array[String] = ["sniper_tower", "lightning_tower", "sawblade_tower", "rapid_tower", "slow_tower", "basic_tower", "cannon_tower"]
-	if not _level_has_fast_pressure():
-		order = ["basic_tower", "rapid_tower", "sawblade_tower", "lightning_tower", "cannon_tower", "slow_tower", "sniper_tower"]
+	# Build priority list from actual config keys so we never reference missing IDs.
+	# Neutral towers first (cheapest, always buildable), then single-element, then combos.
+	var combo_priority := ["neutral", "single", "dual", "triple", "pure", "periodic"]
+	var buckets: Dictionary = {}
+	for tid in towers_config.keys():
+		var cfg: Dictionary = towers_config.get(tid, {})
+		if not bool(cfg.get("build_entry", false)):
+			continue
+		var combo: String = str(cfg.get("combo_type", "neutral"))
+		if not buckets.has(combo):
+			buckets[combo] = []
+		buckets[combo].append(tid)
+	# Sort within each bucket by cost ascending
+	for combo in buckets:
+		buckets[combo].sort_custom(func(a: String, b: String) -> bool:
+			return int(towers_config.get(a, {}).get("cost", 9999)) < int(towers_config.get(b, {}).get("cost", 9999))
+		)
+	var order: Array[String] = []
+	for combo in combo_priority:
+		if buckets.has(combo):
+			order.append_array(buckets[combo])
+	# Fallback: include any remaining keys not covered by combo_priority
+	for tid in towers_config.keys():
+		if not order.has(tid) and bool(towers_config.get(tid, {}).get("build_entry", false)):
+			order.append(tid)
 	return order
 
 func _level_has_fast_pressure() -> bool:
@@ -536,34 +583,39 @@ func _score_state_for_level(state) -> float:
 		score += coverage
 		if level > 1:
 			score += float(level - 1) * coverage * 1.25
+		var cfg: Dictionary = towers_config.get(tower_type, {})
+		var visual: String = str(cfg.get("visual_type", ""))
+		var elements: Array = cfg.get("elements", [])
+		var is_slow:   bool = elements.has("water") or visual == "crystal_emitter"
+		var is_rapid:  bool = elements.has("nature") or visual == "bio_vine"
+		var is_cannon: bool = visual == "cannon" or visual == "heavy_mortar"
+		var is_single: bool = str(cfg.get("combo_type", "")) == "neutral" and not is_cannon
 		if fast_pressure:
-			match tower_type:
-				"rapid_tower":
-					score += 36.0
-					score += float(level - 1) * 34.0
-				"slow_tower":
-					score += 28.0
-					score += float(level - 1) * 24.0
-				"basic_tower":
-					score += 12.0
-					score += float(level - 1) * 14.0
-				"cannon_tower":
-					score -= 14.0
-					score += float(level - 1) * 4.0
+			if is_rapid:
+				score += 36.0
+				score += float(level - 1) * 34.0
+			elif is_slow:
+				score += 28.0
+				score += float(level - 1) * 24.0
+			elif is_single:
+				score += 12.0
+				score += float(level - 1) * 14.0
+			elif is_cannon:
+				score -= 14.0
+				score += float(level - 1) * 4.0
 		else:
-			match tower_type:
-				"cannon_tower":
-					score += 18.0
-					score += float(level - 1) * 18.0
-				"basic_tower":
-					score += 14.0
-					score += float(level - 1) * 20.0
-				"rapid_tower":
-					score += 12.0
-					score += float(level - 1) * 12.0
-				"slow_tower":
-					score += 8.0
-					score += float(level - 1) * 8.0
+			if is_cannon:
+				score += 18.0
+				score += float(level - 1) * 18.0
+			elif is_single:
+				score += 14.0
+				score += float(level - 1) * 20.0
+			elif is_rapid:
+				score += 12.0
+				score += float(level - 1) * 12.0
+			elif is_slow:
+				score += 8.0
+				score += float(level - 1) * 8.0
 	score += float(cells_seen.size()) * 8.0
 	return score
 
@@ -656,7 +708,8 @@ func _best_upgrade_action(towers: Array, gold: int, upcoming_wave: Dictionary) -
 		var cell: Vector2i = tower.get("cell", Vector2i.ZERO)
 		var coverage: float = _cell_coverage_score(cell)
 		var role_bonus: float = _tower_role_bonus(tower_type, upcoming_wave)
-		if tower_type == "slow_tower":
+		var _up_cfg: Dictionary = towers_config.get(tower_type, {})
+		if _up_cfg.get("elements", []).has("water"):
 			role_bonus += float(next_stats.get("slow_radius", 0.0) - current_stats.get("slow_radius", 0.0)) * 0.08
 			role_bonus += float(next_stats.get("slow_percent", 0.0) - current_stats.get("slow_percent", 0.0)) * 35.0
 		var score: float = coverage * 1.5 + dps_gain_per_gold * 220.0 + role_bonus
@@ -682,7 +735,8 @@ func _best_build_action(towers: Array, gold: int, upcoming_wave: Dictionary) -> 
 	for tower in towers:
 		var cell: Vector2i = tower.get("cell", Vector2i.ZERO)
 		occupied[cell] = true
-		if str(tower.get("type", "")) == "slow_tower":
+		var _t_cfg: Dictionary = towers_config.get(str(tower.get("type", "")), {})
+		if _t_cfg.get("elements", []).has("water"):
 			has_slow = true
 	var best: Dictionary = {}
 	for cell in legal_cells:
@@ -694,7 +748,9 @@ func _best_build_action(towers: Array, gold: int, upcoming_wave: Dictionary) -> 
 			if cost > gold:
 				continue
 			var role_bonus: float = _tower_role_bonus(tower_type, upcoming_wave)
-			if _wave_has_enemy(upcoming_wave, "fast") and tower_type == "slow_tower" and not has_slow:
+			var _bt_cfg: Dictionary = towers_config.get(tower_type, {})
+			var _is_water: bool = (_bt_cfg.get("elements", []) as Array).has("water")
+			if _wave_has_enemy(upcoming_wave, "fast") and _is_water and not has_slow:
 				role_bonus += 22.0
 			var score: float = coverage * 1.4 + role_bonus - float(cost) * 0.03
 			if best.is_empty() or score > float(best.get("score", 0.0)):
@@ -713,21 +769,28 @@ func _best_build_action(towers: Array, gold: int, upcoming_wave: Dictionary) -> 
 	return best
 
 func _tower_role_bonus(tower_type: String, wave_data: Dictionary) -> float:
+	var cfg: Dictionary = towers_config.get(tower_type, {})
+	var visual: String   = str(cfg.get("visual_type", ""))
+	var elements: Array  = cfg.get("elements", [])
+	var is_slow:   bool = elements.has("water") or visual == "crystal_emitter"
+	var is_rapid:  bool = elements.has("nature") or visual == "bio_vine"
+	var is_cannon: bool = visual == "cannon" or visual == "heavy_mortar"
+	var is_sniper: bool = elements.has("light") and str(cfg.get("combo_type", "")) == "single"
+	var is_chain:  bool = elements.has("light") and elements.has("fire")
+	var is_aura:   bool = elements.has("fire") and elements.has("earth")
 	if _wave_has_enemy(wave_data, "fast"):
-		match tower_type:
-			"rapid_tower": return 34.0
-			"slow_tower": return 28.0
-			"basic_tower": return 10.0
-			"cannon_tower": return -8.0
+		if is_rapid:  return 34.0
+		if is_slow:   return 28.0
+		if is_cannon: return -8.0
+		return 10.0
 	if _wave_has_enemy(wave_data, "tank") or _wave_has_enemy(wave_data, "heavy"):
-		match tower_type:
-			"basic_tower": return 24.0
-			"sniper_tower": return 60.0
-			"lightning_tower": return 30.0
-			"sawblade_tower": return 25.0
-			"cannon_tower": return 16.0
-			"rapid_tower": return 8.0
-			"slow_tower": return 8.0
+		if is_sniper: return 60.0
+		if is_chain:  return 30.0
+		if is_aura:   return 25.0
+		if is_cannon: return 16.0
+		if is_rapid:  return 8.0
+		if is_slow:   return 8.0
+		return 24.0
 	return 10.0
 
 func _wave_has_enemy(wave_data: Dictionary, enemy_key: String) -> bool:
@@ -822,9 +885,15 @@ func _validate_plan_quality(plan: Dictionary) -> Dictionary:
 	if fast_pressure:
 		if placements.size() < 2:
 			return {"valid": false, "reason": "Fast-pressure plan has fewer than two opening towers", "wave": 1}
-		if placements.size() == 1 and placements[0] == "cannon_tower":
+		if placements.size() == 1 and towers_config.get(placements[0], {}).get("visual_type", "") == "cannon":
 			return {"valid": false, "reason": "Rejected cannon-only fallback opening", "wave": 1}
-		if not placements.has("rapid_tower") and not placements.has("slow_tower"):
+		var _has_answer := false
+		for _p in placements:
+			var _pe: Array = towers_config.get(_p, {}).get("elements", [])
+			if _pe.has("nature") or _pe.has("water"):
+				_has_answer = true
+				break
+		if not _has_answer:
 			return {"valid": false, "reason": "Fast-pressure plan lacks Rapid/Slow answer", "wave": 1}
 
 	var total_waves: int = current_waves_data.size()
@@ -1253,7 +1322,8 @@ func _apply_dmg(t, cfg, stats, target, enemies):
 			else:
 				break
 				
-	var is_sawblade = t["type"] == "sawblade_tower"
+	var _saw_cfg: Dictionary = towers_config.get(str(t.get("type", "")), {})
+	var is_sawblade = _saw_cfg.get("visual_type", "") == "strike_blades" or _saw_cfg.get("visual_type", "") == "seismic_drill"
 	var is_slow = atk_type == "slow"
 	var slow_pct = stats.get("slow_percent", 0.4)
 	var slow_dur = stats.get("slow_duration", 2.0)

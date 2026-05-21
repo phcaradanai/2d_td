@@ -6,21 +6,57 @@ class_name BaseTowerAttackVFX
 extends Node2D
 
 static var _active_count: int = 0
-const MAX_ACTIVE: int = 60
+const MAX_ACTIVE: int = 80   # per-tower model: 1 slot/tower, scales with placed towers
 
-var lifetime: float = 0.12
+var lifetime: float = 0.10
 var elapsed: float = 0.0
 var distance: float = 100.0
 var palette_primary: Color = Color.WHITE
 var palette_secondary: Color = Color(0.9, 0.9, 1.0, 1.0)
 var _counted: bool = false
 
+# ── Static-mode (baker-style) ────────────────────────────────────────────────
+# Each tower owns one VFX node permanently. show_shot_static() draws ONCE via
+# queue_redraw(), then a Tween fades modulate.a — no _process loop, no repeated
+# queue_redraw(). This mirrors how TowerTextureBaker works for tower visuals.
+var static_mode: bool = false
+var _shot_tween: Tween = null
+
+## Baker-style entry point for owned VFX nodes.
+## Draws exactly once; Tween handles the fade — no _process / queue_redraw loop.
+func show_shot_static(origin: Vector2, target_pos: Vector2, tower_color: Color) -> void:
+	if PerformanceFirebreak.disable_all_attack_vfx:
+		return
+	palette_primary  = tower_color
+	palette_secondary = tower_color.lightened(0.28)
+	global_position  = origin
+	var diff := target_pos - origin
+	distance = diff.length()
+	if distance > 0.5:
+		global_rotation = diff.angle()
+	modulate = Color(1.0, 1.0, 1.0, 1.0)
+	visible  = true
+	queue_redraw()   # single draw call — static_mode draws at t=1,a=1
+	if _shot_tween:
+		_shot_tween.kill()
+	_shot_tween = create_tween()
+	_shot_tween.tween_property(self, "modulate:a", 0.0, lifetime)
+	_shot_tween.tween_callback(_on_static_shot_done)
+
+func _on_static_shot_done() -> void:
+	visible  = false
+	modulate = Color(1.0, 1.0, 1.0, 1.0)  # reset for next shot
+
 func _ready() -> void:
 	add_to_group("attack_vfx")
+	if static_mode:
+		visible = false
+		set_process(false)
+		return
 	if not has_meta("pooled"):
 		_begin_pooled_lifecycle()
 
-## Called by TowerAttackVFXService after reparenting.
+## Called by TowerAttackVFXService (pool path) after reparenting.
 func setup(origin: Vector2, target_pos: Vector2, tower_color: Color) -> void:
 	_begin_pooled_lifecycle()
 	palette_primary = tower_color
@@ -33,13 +69,11 @@ func setup(origin: Vector2, target_pos: Vector2, tower_color: Color) -> void:
 		global_rotation = diff.angle()
 	queue_redraw()
 
-## Override in T1 subclass to set lifetime, palette_primary, palette_secondary.
-## Always call super.configure(data) at the end.
+## Override in subclass to set lifetime/palette. Called once at node creation.
 func configure(_data: Dictionary) -> void:
 	pass
 
-## Override in T1 subclass to draw the VFX.
-## Default: rapid tracer bolt.
+## Override in subclass to draw the VFX.
 func _draw_vfx(t: float, a: float, lend: Vector2) -> void:
 	_h_rapid_tracer(t, a, lend)
 
@@ -77,10 +111,14 @@ func reset_for_pool() -> void:
 	palette_secondary = Color(0.9, 0.9, 1.0, 1.0)
 
 func _draw() -> void:
-	var t := clampf(elapsed / maxf(lifetime, 0.001), 0.0, 1.0)
-	var a := 1.0 - t
 	var lend := Vector2(distance, 0.0)
-	_draw_vfx(t, a, lend)
+	if static_mode:
+		# Draw at full extent (t=1) and full alpha (a=1).
+		# modulate.a is handled by the Tween — no per-frame alpha logic needed.
+		_draw_vfx(1.0, 1.0, lend)
+	else:
+		var t := clampf(elapsed / maxf(lifetime, 0.001), 0.0, 1.0)
+		_draw_vfx(t, 1.0 - t, lend)
 
 # ── Color helpers ─────────────────────────────────────────────────────────────
 
@@ -108,28 +146,28 @@ func _jag(lend: Vector2, n: int) -> PackedVector2Array:
 
 func _h_rapid_tracer(t: float, a: float, lend: Vector2) -> void:
 	var reach := lend * minf(t * 4.0, 1.0)
-	draw_line(Vector2.ZERO, reach, _c(a * 0.3), 3.5, true)
-	draw_line(Vector2.ZERO, reach, _c(a * 0.8), 1.2, true)
-	draw_circle(Vector2.ZERO, 3.5 * (1.0 - t), _c(a))
-	draw_circle(Vector2.ZERO, 1.8 * (1.0 - t), Color(1.0, 1.0, 1.0, a * 0.75))
+	draw_line(Vector2.ZERO, reach, _c(a * 0.10), 2.5, true)   # slim halo
+	draw_line(Vector2.ZERO, reach, _c(a * 0.92), 1.5, true)   # crisp core
+	draw_circle(Vector2.ZERO, 2.8 * (1.0 - t), _c(a * 0.9))
+	draw_circle(Vector2.ZERO, 1.4 * (1.0 - t), _c2(a * 0.95)) # element-colored core
 
 func _h_cannon_blast(t: float, a: float) -> void:
 	var r := 7.0 + t * 16.0
-	draw_circle(Vector2.ZERO, r, _c(a * 0.25))
-	draw_arc(Vector2.ZERO, r, -0.65, 0.65, 12, _c(a * 0.75), 2.5, true)
+	draw_circle(Vector2.ZERO, r, _c(a * 0.12))                # softer fill
+	draw_arc(Vector2.ZERO, r, -0.65, 0.65, 12, _c(a * 0.80), 2.2, true)
 	for i in range(5):
 		var spread := -0.4 + float(i) * 0.2
 		var rlen   := (18.0 + float(i % 2) * 8.0) * (1.0 - t * 0.45)
 		draw_line(Vector2.ZERO,
 			Vector2(cos(spread) * rlen, sin(spread) * rlen),
-			_c(a * (0.9 - float(i) * 0.1)), 2.2 - float(i % 2) * 0.5, true)
-	draw_circle(Vector2.ZERO, 4.5 * (1.0 - t), Color(1.0, 1.0, 1.0, a * 0.65))
+			_c(a * (0.9 - float(i) * 0.1)), 2.0 - float(i % 2) * 0.4, true)
+	draw_circle(Vector2.ZERO, 4.0 * (1.0 - t), _c2(a * 0.72)) # element-colored core
 
 func _h_precision_beam(t: float, a: float, lend: Vector2) -> void:
 	var reach := lend * clampf(t * 5.0, 0.0, 1.0)
-	draw_line(Vector2.ZERO, reach, _c(a * 0.22), 4.5, true)
-	draw_line(Vector2.ZERO, reach, _c(a * 0.85), 1.0, true)
-	draw_circle(Vector2.ZERO, 3.0 * (1.0 - t), Color(1.0, 1.0, 1.0, a * 0.9))
+	draw_line(Vector2.ZERO, reach, _c(a * 0.10), 3.0, true)   # narrow halo
+	draw_line(Vector2.ZERO, reach, _c(a * 0.90), 1.2, true)   # bright core
+	draw_circle(Vector2.ZERO, 2.8 * (1.0 - t), _c(a * 0.9))  # element-colored
 
 func _h_flame_cone(t: float, a: float, lend: Vector2) -> void:
 	var cl := lend.x * 0.46 * (1.0 - t * 0.28)
@@ -154,10 +192,10 @@ func _h_electric_arc(a: float, lend: Vector2, heavy: bool) -> void:
 	var segs := 8 if heavy else 5
 	var pts := _jag(lend, segs)
 	if pts.size() >= 2:
-		draw_polyline(pts, _c(a * 0.4), 3.5 if heavy else 2.5, true)
-		draw_polyline(pts, Color(1.0, 1.0, 1.0, a * 0.72), 1.2 if heavy else 0.9, true)
-	draw_circle(Vector2.ZERO, 4.0 * (1.0 - minf(a, 0.6)), _c(a * 0.65))
-	draw_circle(lend, 3.0 * (1.0 - minf(a, 0.7)), Color(1.0, 1.0, 1.0, a * 0.8))
+		draw_polyline(pts, _c(a * 0.20), 2.8 if heavy else 2.0, true)  # softer glow
+		draw_polyline(pts, Color(1.0, 1.0, 1.0, a * 0.75), 1.2 if heavy else 0.9, true)
+	draw_circle(Vector2.ZERO, 3.5 * (1.0 - minf(a, 0.6)), _c(a * 0.72))
+	draw_circle(lend, 2.5 * (1.0 - minf(a, 0.7)), _c2(a * 0.85))     # element-colored hit
 
 func _h_magic_enchant(t: float, a: float, lend: Vector2) -> void:
 	var ring_r := 6.0 + t * 10.0
@@ -169,17 +207,17 @@ func _h_magic_enchant(t: float, a: float, lend: Vector2) -> void:
 
 func _h_water_jet(t: float, a: float, lend: Vector2) -> void:
 	for i in range(3):
-		var off   := float(i - 1) * 3.5
+		var off   := float(i - 1) * 3.0
 		var reach := lend * (0.72 + float(i % 2) * 0.18) * (1.0 - t * 0.15)
 		draw_line(Vector2.ZERO, reach + Vector2(0.0, off),
-			_c(a * (0.62 - float(i % 2) * 0.12)), 2.8 - float(i) * 0.4, true)
-	draw_circle(lend * 0.82, 4.5 * (1.0 - t), _c(a * 0.55))
+			_c(a * (0.75 - float(i % 2) * 0.15)), 2.2 - float(i) * 0.3, true)
+	draw_circle(lend * 0.82, 3.8 * (1.0 - t), _c(a * 0.65))
 
 func _h_frost_beam(t: float, a: float, lend: Vector2) -> void:
 	var reach := lend * clampf(t * 4.5, 0.0, 1.0)
-	draw_line(Vector2.ZERO, reach, _c(a * 0.3), 5.0, true)
-	draw_line(Vector2.ZERO, reach, _c(a * 0.75), 1.8, true)
-	draw_line(Vector2.ZERO, reach, Color(1.0, 1.0, 1.0, a * 0.4), 0.8, true)
+	draw_line(Vector2.ZERO, reach, _c(a * 0.12), 3.5, true)   # thinner fog layer
+	draw_line(Vector2.ZERO, reach, _c(a * 0.80), 1.8, true)
+	draw_line(Vector2.ZERO, reach, _c2(a * 0.45), 0.8, true)  # icy secondary highlight
 	for i in range(3):
 		var f  := 0.25 + float(i) * 0.22
 		var sp := Vector2(lend.x * f, (float(i % 2) * 2.0 - 1.0) * 3.5)
@@ -236,11 +274,11 @@ func _h_light_pulse(t: float, a: float, lend: Vector2) -> void:
 	var sr := 11.0 * (1.0 - t)
 	for i in range(4):
 		draw_line(Vector2.ZERO,
-			Vector2(cos(i * PI * 0.5), sin(i * PI * 0.5)) * sr, _c(a * 0.72), 1.5, true)
-	draw_circle(Vector2.ZERO, 4.5 * (1.0 - t), Color(1.0, 1.0, 1.0, a * 0.88))
-	draw_circle(Vector2.ZERO, 2.2 * (1.0 - t), _c(a))
-	draw_line(Vector2.ZERO, lend, _c(a * 0.32), 3.2, true)
-	draw_line(Vector2.ZERO, lend, Color(1.0, 1.0, 1.0, a * 0.38), 1.0, true)
+			Vector2(cos(i * PI * 0.5), sin(i * PI * 0.5)) * sr, _c(a * 0.75), 1.5, true)
+	draw_circle(Vector2.ZERO, 3.8 * (1.0 - t), _c(a * 0.80))  # element-colored (was white)
+	draw_circle(Vector2.ZERO, 2.0 * (1.0 - t), _c(a))
+	draw_line(Vector2.ZERO, lend, _c(a * 0.14), 2.8, true)     # narrower halo
+	draw_line(Vector2.ZERO, lend, _c2(a * 0.45), 1.0, true)    # secondary color core
 
 func _h_nature_vine(t: float, a: float, lend: Vector2) -> void:
 	var n_seg := clampi(int(lend.length() / 18.0) + 2, 3, 7)
@@ -250,11 +288,11 @@ func _h_nature_vine(t: float, a: float, lend: Vector2) -> void:
 		var wave := sin(f * TAU * 1.3 + t * 4.5) * 5.5
 		pts.append(Vector2(lend.x * f, wave))
 	if pts.size() >= 2:
-		draw_polyline(pts, _c(a * 0.32), 3.8, true)
-		draw_polyline(pts, _c(a * 0.72), 1.6, true)
+		draw_polyline(pts, _c(a * 0.18), 3.2, true)  # thinner shadow
+		draw_polyline(pts, _c(a * 0.80), 1.6, true)
 	for i in range(3):
 		var lp := Vector2(lend.x * (0.22 + float(i) * 0.26), 0.0)
-		draw_circle(lp, 2.8 * (1.0 - t * 0.45), _c(a * 0.65))
+		draw_circle(lp, 2.5 * (1.0 - t * 0.45), _c(a * 0.72))
 
 func _h_acid_splash(t: float, a: float, lend: Vector2) -> void:
 	for i in range(5):

@@ -67,6 +67,9 @@ var turret_pivot: Node2D = null
 var turret_sprite: Sprite2D = null
 var muzzle: Marker2D = null
 
+# Baker-style owned VFX: one permanent node per tower, draw-once on fire.
+var _owned_vfx: Node2D = null
+
 const TOWER_VISUAL_SIZE := 56.0
 const TURRET_VISUAL_SIZE := 44.0
 
@@ -363,7 +366,13 @@ func apply_level_visuals() -> void:
 		use_sprite = false
 		if base_sprite: base_sprite.visible = false
 		if turret_sprite: turret_sprite.visible = false
-	
+		# Hide tower while baking so no wrong-model flash is visible.
+		# Skipped for upgrades where sprites are already correct (modulate.a already 1).
+		if modulate.a > 0.05:
+			modulate = Color(1.0, 1.0, 1.0, 0.0)
+		_request_baked_textures()
+		_setup_owned_vfx()
+
 	# Update muzzle based on tower type
 	if muzzle:
 		muzzle.position = _get_visual_muzzle_local_position()
@@ -377,6 +386,75 @@ func apply_level_visuals() -> void:
 	# Ensure visuals are created
 	_ensure_aim_visual()
 	_mark_tower_visual_dirty()
+
+## Creates the permanent owned VFX node for this tower (baker-style).
+## Guards against recreation on every apply_level_visuals() / selection call.
+func _setup_owned_vfx() -> void:
+	if tower_id == "" or preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+		return
+	var script: GDScript = TowerAttackVFXRegistry.get_vfx_script(tower_id)
+	if script == null:
+		return
+	# Skip if already set up for this exact tower_id (e.g. selection re-triggers visuals).
+	if _owned_vfx != null and is_instance_valid(_owned_vfx) \
+			and str(_owned_vfx.get_meta("vfx_tower_id", "")) == tower_id:
+		return
+	# Free previous node only when tower_id actually changed (upgrade).
+	if _owned_vfx != null and is_instance_valid(_owned_vfx):
+		_owned_vfx.queue_free()
+		_owned_vfx = null
+	var node := Node2D.new()
+	node.set_script(script)
+	# Set static_mode BEFORE add_child so _ready() skips _begin_pooled_lifecycle().
+	if "static_mode" in node:
+		node.static_mode = true
+	node.name = "OwnedAttackVFX"
+	node.set_meta("tower_owned", true)
+	node.set_meta("vfx_tower_id", tower_id)
+	node.visible = false
+	node.process_mode = Node.PROCESS_MODE_INHERIT
+	add_child(node)
+	if node.has_method("configure"):
+		node.configure({})
+	_owned_vfx = node
+
+func _request_baked_textures() -> void:
+	# Defer if not in tree yet (tower added to scene after setup() is called).
+	if not is_inside_tree():
+		call_deferred("_request_baked_textures")
+		return
+	var captured_self := self
+	TowerTextureBaker.request_textures(tower_id, visual_type, elements, tree_tier,
+		func(result: Dictionary) -> void:
+			if not is_instance_valid(captured_self):
+				return
+			if result.is_empty():
+				return
+			captured_self._apply_baked_textures(result)
+	)
+
+func _apply_baked_textures(result: Dictionary) -> void:
+	_ensure_sprite_node()
+	# Baked at BAKE_ZOOM (2×), so scale down by 1/BAKE_ZOOM to restore world size.
+	var bake_scale := Vector2.ONE / float(TowerTextureBaker.BAKE_ZOOM)
+	if result.has("base") and base_sprite != null:
+		base_sprite.texture = result["base"]
+		base_sprite.scale   = bake_scale
+		base_sprite.offset  = Vector2.ZERO
+		base_sprite.visible = true
+	if result.has("turret") and turret_sprite != null:
+		turret_sprite.texture = result["turret"]
+		turret_sprite.scale   = bake_scale
+		turret_sprite.offset  = Vector2.ZERO
+		turret_sprite.visible = true
+	if result.has("base") or result.has("turret"):
+		use_sprite = true
+		queue_redraw()
+		# Materialize: fade in from transparent so no wrong-model flash.
+		if modulate.a < 0.05:
+			var tw := create_tween()
+			tw.tween_property(self, "modulate:a", 1.0, 0.18)\
+				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _load_external_sprites() -> void:
 	var base_tex_path = "res://assets/sprites/towers/%s_tower_base_lv1.png" % visual_type

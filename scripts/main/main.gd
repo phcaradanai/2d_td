@@ -484,9 +484,11 @@ func _refresh_interest_status_ui() -> void:
 	hud_state_presenter.set_interest_status(_format_interest_status_text())
 
 func _refresh_gameplay_hud_state() -> void:
+	FrameSpikeLogger.begin("hud_gameplay_state")
 	_refresh_start_wave_ui()
 	_refresh_hud_wave_intel()
 	_refresh_route_preview()
+	FrameSpikeLogger.end("hud_gameplay_state")
 
 var active_path_nodes: Dictionary = {}
 
@@ -613,8 +615,24 @@ func _setup_game_from_level() -> void:
 	update_hud()
 	_refresh_hud_wave_intel()
 	_refresh_route_preview()
+	# Pre-warm canvas shaders for all enemy visual types so the first AoE hit
+	# never causes a shader-compilation spike mid-wave.
+	call_deferred("_prewarm_enemy_visuals")
 	# Removed _spawn_hero() as it's now manual deployment
 	_setup_hero_if_enabled()
+
+## Prewarm canvas shaders and bake all enemy textures before wave 1.
+## Eliminates first-AoE shader-compilation spikes and texture-baking stutter.
+func _prewarm_enemy_visuals() -> void:
+	const PREWARMER = preload("res://scripts/enemies/enemy_visual_prewarmer.gd")
+	var pw: Node = PREWARMER.new()
+	add_child(pw)
+	pw.start()
+	# Kick off EnemyTextureBaker prewarm in parallel — all 45 combinations
+	# bake over the next ~90 frames so they're cached before enemies spawn.
+	var baker := get_node_or_null("/root/EnemyTextureBaker")
+	if baker != null and baker.has_method("prewarm_all"):
+		baker.prewarm_all()
 
 func _setup_hero_if_enabled() -> void:
 	if game_hud and level_manager and level_manager.hero_config.get("enabled", false):
@@ -870,10 +888,12 @@ func _refresh_elemental_shop() -> void:
 	if ids_hash == _last_shop_ids_hash:
 		return
 	_last_shop_ids_hash = ids_hash
+	FrameSpikeLogger.begin("shop_rebuild")
 	if build_manager.has_method("set_unlocked_tower_ids"):
 		build_manager.set_unlocked_tower_ids(ids)
 	_bind_hud_state_presenter()
 	hud_state_presenter.refresh_tower_shop(ids)
+	FrameSpikeLogger.end("shop_rebuild")
 	if element_progression_manager and element_progression_manager.has_method("get_element_levels"):
 		game_hud.set_element_levels(element_progression_manager.get_element_levels())
 
@@ -2817,7 +2837,9 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	var traits = derive_wave_traits(counts, total, categories)
 	var rec_roles = recommend_roles_for_wave(traits)
 	var warnings = derive_wave_warnings(traits)
+	FrameSpikeLogger.begin("spawn_formation_plan")
 	var formation_preview = _summarize_wave_formations_for_preview(wave_data)
+	FrameSpikeLogger.end("spawn_formation_plan")
 	
 	if wave_data.has("intel") and wave_data["intel"] != "":
 		warnings.append(wave_data["intel"])
@@ -2904,6 +2926,7 @@ func get_wave_preview_data(level_id: int) -> Array[Dictionary]:
 		wave_preview_cache_hits += 1
 		return _wave_preview_cache[level_id]
 	wave_preview_cache_misses += 1
+	FrameSpikeLogger.begin("wave_preview_build_lv%d" % level_id)
 	var waves_data = _get_wave_source_for_preview(level_id)
 	var result: Array[Dictionary] = []
 	for wave in waves_data:
@@ -2911,6 +2934,7 @@ func get_wave_preview_data(level_id: int) -> Array[Dictionary]:
 		if not preview.is_empty():
 			result.append(preview)
 	_wave_preview_cache[level_id] = result
+	FrameSpikeLogger.end("wave_preview_build_lv%d" % level_id)
 	return result
 
 func _invalidate_wave_preview_cache(level_id: int = -1) -> void:
@@ -2965,6 +2989,7 @@ func _refresh_hud_wave_intel() -> void:
 	_last_wi_wave_index = cur_wave_idx
 	_last_wi_running = cur_running
 
+	FrameSpikeLogger.begin("wave_intel_refresh")
 	var previews = get_wave_preview_data(selected_level_id)
 
 	if OS.is_debug_build():
@@ -2983,6 +3008,7 @@ func _refresh_hud_wave_intel() -> void:
 		wave_manager.get_total_waves(),
 		wave_manager.is_wave_running
 	)
+	FrameSpikeLogger.end("wave_intel_refresh")
 
 func _refresh_route_preview() -> void:
 	# MazeMapRenderer guideline handles route visualization

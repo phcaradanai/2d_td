@@ -4,11 +4,11 @@ class_name VisualComfortService
 const HIT_FLASH_ALPHA_MAX := 0.22
 const HIT_FLASH_DURATION := 0.08
 const HIT_FLASH_COOLDOWN := 0.18
-const LINK_ALPHA_MAX := 0.28
-const SHIELD_ALPHA_MAX := 0.24
-const STATUS_ICON_ALPHA := 0.75
+const LINK_ALPHA_MAX := 0.20   # was 0.28 — disruptor/heal beams less obtrusive
+const SHIELD_ALPHA_MAX := 0.22
+const STATUS_ICON_ALPHA := 0.82
 const MAX_FLASHES_PER_SECOND := 3
-const SOFT_GLOW_ALPHA := 0.18
+const SOFT_GLOW_ALPHA := 0.08   # was 0.18 — glow layer much dimmer across all effects
 
 var visual_comfort_mode := true
 
