@@ -819,6 +819,8 @@ func _draw_base_plate() -> void:
 
 func _get_visual_muzzle_local_position() -> Vector2:
 	var lvl := tree_tier
+	if tower_id == "neutral_cannon_tower":
+		return Vector2(36, 0)
 	match visual_type:
 		"basic": return Vector2(26 + lvl * 4, 0)
 		"rapid": return Vector2(22 + lvl * 2, 0)
