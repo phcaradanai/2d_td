@@ -93,6 +93,7 @@ var can_attack_air: bool = false
 var can_attack_ground: bool = true
 const TARGET_UPDATE_PHASE_COUNT: int = 4
 const RETARGET_JITTER_MAX: float = 0.05
+const FIRE_ALIGNMENT_MAX_ANGLE_RADIANS: float = 0.14
 # Pre-allocated cloaked-target array — cleared and reused each scan to avoid per-frame GC pressure.
 var _cloaked_targets: Array = []
 var _enemies_in_range_cache: Array = []
@@ -820,7 +821,7 @@ func _draw_base_plate() -> void:
 func _get_visual_muzzle_local_position() -> Vector2:
 	var lvl := tree_tier
 	if tower_id == "neutral_cannon_tower":
-		return Vector2(36, 0)
+		return Vector2(28, 0)
 	match visual_type:
 		"basic": return Vector2(26 + lvl * 4, 0)
 		"rapid": return Vector2(22 + lvl * 2, 0)
@@ -1267,6 +1268,23 @@ func get_target_hit_anchor_global_position(enemy: Variant) -> Vector2:
 			return enemy.global_position
 	return global_position
 
+func _get_target_aim_global_position(target: Variant) -> Vector2:
+	return get_target_hit_anchor_global_position(target)
+
+func _get_desired_turret_rotation_for_target(target: Variant) -> float:
+	var direction := _get_target_aim_global_position(target) - get_targeting_origin()
+	if direction.length_squared() <= 0.001:
+		return turret_pivot.rotation if turret_pivot else global_rotation
+	return direction.angle() + deg_to_rad(turret_angle_offset_degrees) + deg_to_rad(AIM_ROTATION_OFFSET)
+
+func _is_turret_aligned_for_fire(target: Variant) -> bool:
+	if turret_pivot == null:
+		return true
+	if target == null or not is_instance_valid(target):
+		return false
+	var angle_delta := wrapf(turret_pivot.rotation - _get_desired_turret_rotation_for_target(target), -PI, PI)
+	return absf(angle_delta) <= FIRE_ALIGNMENT_MAX_ANGLE_RADIANS
+
 func get_attack_range() -> float:
 	return attack_range
 
@@ -1421,20 +1439,8 @@ func _process(delta: float) -> void:
 		if cached_target_valid:
 			# STANDARD: Use targeting origin (usually center) for rotation calculation 
 			# to avoid feedback loops if muzzle is offset and rotating
-			var source_pos = get_targeting_origin()
-			var target_pos = current_target.global_position
-			if current_target.has_method("get_aim_point"):
-				target_pos = current_target.get_aim_point()
-			elif current_target.has_method("get_hit_origin"):
-				target_pos = current_target.get_hit_origin()
-			
-			var direction = target_pos - source_pos
-			var angle_to_target = direction.angle()
-			
-			var desired_angle = angle_to_target + deg_to_rad(turret_angle_offset_degrees) + deg_to_rad(AIM_ROTATION_OFFSET)
-			
-			# Rotation Speed Check
-			var final_rot = lerp_angle(turret_pivot.rotation, desired_angle, min(1.0, aim_turn_speed * delta))
+			var desired_angle := _get_desired_turret_rotation_for_target(current_target)
+			var final_rot := lerp_angle(turret_pivot.rotation, desired_angle, min(1.0, aim_turn_speed * delta))
 			turret_pivot.rotation = final_rot
 		else:
 			# Optional: slow return to zero or stay
@@ -1449,7 +1455,7 @@ func _process(delta: float) -> void:
 	if shoot_cooldown > 0:
 		shoot_cooldown -= delta
 
-	if cached_target_valid and shoot_cooldown <= 0:
+	if cached_target_valid and shoot_cooldown <= 0 and _is_turret_aligned_for_fire(current_target):
 		shoot()
 		shoot_cooldown = get_effective_fire_rate()
 	

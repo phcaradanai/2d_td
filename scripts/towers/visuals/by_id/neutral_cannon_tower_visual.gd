@@ -83,24 +83,24 @@ static func draw_contour(t: Node2D) -> void:
 	var base := PackedVector2Array([
 		Vector2(-20, -10),
 		Vector2(6, -16),
-		Vector2(18, -9),
-		Vector2(20, 9),
+		Vector2(16, -9),
+		Vector2(18, 9),
 		Vector2(6, 16),
 		Vector2(-20, 10),
 	])
 	TowerVisualDrawUtils._draw_contour_poly(t, base)
 
-	# Short, wide forward mortar barrel. Neutral Cannon must read as splash artillery.
-	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-2, -7, 32, 14))
-	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(21, -10, 10, 20))
+	# Compact forward mortar barrel. Neutral Cannon must read as splash artillery without entering lanes.
+	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(-2, -7, 22, 14))
+	TowerVisualDrawUtils._draw_contour_rect(t, Rect2(16, -9, 12, 18))
 
 	# Recoil brace and wheel-like side housings.
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-10, -11), 5.5)
 	TowerVisualDrawUtils._draw_contour_circle(t, Vector2(-10, 11), 5.5)
-	TowerVisualDrawUtils._draw_contour_line(t, Vector2(-19, 0), Vector2(24, 0), 4.0)
+	TowerVisualDrawUtils._draw_contour_line(t, Vector2(-19, 0), Vector2(21, 0), 4.0)
 
 static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, _size: float, _el_colors: Array[Color]) -> void:
-	var barrel_len := 30.0 + float(lvl) * 1.5
+	var barrel_len := 20.0 + float(lvl) * 0.75
 	var dark := METAL_DARK
 	var _mid := METAL_MID
 	var light := METAL_LIGHT
@@ -115,8 +115,8 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	var base := PackedVector2Array([
 		Vector2(-20, -10),
 		Vector2(6, -16),
-		Vector2(18, -9),
-		Vector2(20, 9),
+		Vector2(16, -9),
+		Vector2(18, 9),
 		Vector2(6, 16),
 		Vector2(-20, 10),
 	])
@@ -127,8 +127,8 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	var top_plate := PackedVector2Array([
 		Vector2(-15, -6),
 		Vector2(5, -11),
-		Vector2(14, -6),
-		Vector2(15, 6),
+		Vector2(13, -6),
+		Vector2(14, 6),
 		Vector2(5, 11),
 		Vector2(-15, 6),
 	])
@@ -167,8 +167,8 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 		t.draw_circle(p + Vector2(-0.5, -0.5), 0.75, Color(1.0, 0.92, 0.62, 0.55))
 
 	# Low recoil rails, symmetric top/bottom.
-	_stroked_line(t, Vector2(-18, -16), Vector2(15, -16), Color(0.52, 0.52, 0.48, 0.56), 1.1)
-	_stroked_line(t, Vector2(-18, 16), Vector2(15, 16), Color(0.52, 0.52, 0.48, 0.56), 1.1)
+	_stroked_line(t, Vector2(-18, -16), Vector2(12, -16), Color(0.52, 0.52, 0.48, 0.56), 1.1)
+	_stroked_line(t, Vector2(-18, 16), Vector2(12, 16), Color(0.52, 0.52, 0.48, 0.56), 1.1)
 
 	# Warm loaded-shell glow in the bore; not an element icon.
 	t.draw_circle(Vector2(muzzle_x + 1.5, 0), 3.8, Color(0.0, 0.0, 0.0, 0.62))
