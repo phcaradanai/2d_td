@@ -468,6 +468,7 @@ func _on_construction_component_finished(mode: String, _payload: Dictionary) -> 
 	if mode == "upgrade":
 		_finish_pending_upgrade()
 		return
+	play_build_complete_effect()
 	construction_completed.emit(self, mode)
 	_mark_tower_visual_dirty()
 	_request_tower_visual_redraw_if_dirty()
@@ -485,6 +486,21 @@ func _finish_pending_upgrade() -> void:
 		return
 	construction_completed.emit(self, "upgrade")
 	upgrade_completed.emit(self, old_id, old_tier, tower_id, tree_tier, cost_value)
+
+func play_build_complete_effect() -> void:
+	var base_scale = Vector2.ONE
+	if visual_type == "rapid": base_scale = Vector2(0.8, 0.8)
+	elif visual_type == "cannon": base_scale = Vector2(1.1, 1.1)
+	var tween := create_tween()
+	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
+	scale = base_scale * 0.92
+	modulate = Color(1.25, 1.25, 1.25, 0.92)
+	tween.parallel().tween_property(self, "scale", base_scale * 1.08, 0.08)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.parallel().tween_property(self, "modulate", Color.WHITE, 0.12)\
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	tween.tween_property(self, "scale", base_scale, 0.14)\
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _clear_pending_upgrade() -> void:
 	_pending_upgrade_target_id = ""

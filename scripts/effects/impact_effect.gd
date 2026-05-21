@@ -100,11 +100,16 @@ func _draw() -> void:
 	# Draw multi-directional sparks
 	var rays = 6 if attack_type == "splash" else 4
 	var size = 8.0
+	if attack_type == "splash":
+		draw_circle(Vector2.ZERO, size * 1.75, Color(color.r, color.g, color.b, 0.12))
+		draw_arc(Vector2.ZERO, size * 1.55, 0, TAU, 24, Color(accent_color.r, accent_color.g, accent_color.b, 0.72), 2.4, true)
+		draw_arc(Vector2.ZERO, size * 2.25, PI * 0.12, PI * 1.72, 24, Color(color.r, color.g, color.b, 0.38), 1.3, true)
 	for i in range(rays):
 		var angle = i * TAU / rays
 		var spark_len = size * (1.2 if attack_type == "splash" else 0.9)
 		var dir = Vector2(cos(angle), sin(angle))
-		draw_line(Vector2.ZERO, dir * spark_len, color, 1.5)
+		var width := 2.2 if attack_type == "splash" else 1.5
+		draw_line(Vector2.ZERO, dir * spark_len, color, width)
 		# Secondary smaller spark
 		draw_line(dir * (spark_len * 0.4), dir * (spark_len * 0.7), glow_color, 1.0)
 	if attack_type == "slow":
