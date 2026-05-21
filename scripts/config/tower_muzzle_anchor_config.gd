@@ -5,6 +5,27 @@ class_name TowerMuzzleAnchorConfig
 # for towers that have not been calibrated yet.
 const BY_TOWER_ID := {
 	"neutral_cannon_tower": Vector2(28, 0),
+	"fire_t1": Vector2(37, 0),
+	"fire_t2": Vector2(39, 0),
+	"fire_t3": Vector2(41, 0),
+	"pure_fire": Vector2(43, 0),
+	"gunpowder_t1": Vector2(38, 0),
+	"gunpowder_t2": Vector2(40, 0),
+	"gunpowder_t3": Vector2(42, 0),
+	"hydro_t1": Vector2(39, 0),
+	"hydro_t2": Vector2(42, 0),
+	"hydro_t3": Vector2(44, 0),
+	"ice_t1": Vector2(39, 0),
+	"ice_t2": Vector2(41, 0),
+	"ice_t3": Vector2(44, 0),
+	"light_t1": Vector2(35, 0),
+	"light_t2": Vector2(36, 0),
+	"light_t3": Vector2(38, 0),
+	"pure_light": Vector2(39, 0),
+	"nature_t1": Vector2(34, 0),
+	"nature_t2": Vector2(36, 0),
+	"nature_t3": Vector2(38, 0),
+	"pure_nature": Vector2(40, 0),
 }
 
 static func get_muzzle_local_position(
