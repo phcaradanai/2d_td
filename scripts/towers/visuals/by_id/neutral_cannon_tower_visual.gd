@@ -145,7 +145,7 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_stroked_rect(t, Rect2(-2, -7, barrel_len, 14), Color(0.18, 0.19, 0.19, 0.98), 2.0)
 	_stroked_rect(t, Rect2(2, -4.5, barrel_len - 6.0, 9.0), Color(0.08, 0.085, 0.085, 0.98), 1.0)
 	_stroked_line(t, Vector2(1, -7.7), Vector2(barrel_len - 3.0, -7.7), Color(0.74, 0.74, 0.68, 0.42), 0.9)
-	_stroked_line(t, Vector2(1, 7.7), Vector2(barrel_len - 3.0, 7.7), Color(0.0, 0.0, 0.0, 0.42), 0.8)
+	_stroked_line(t, Vector2(1, 7.7), Vector2(barrel_len - 3.0, 7.7), Color(0.74, 0.74, 0.68, 0.42), 0.9)
 
 	# Big square-ish muzzle clearly says cannon/splash shell, not sniper or beam.
 	var muzzle_x := barrel_len - 1.0
