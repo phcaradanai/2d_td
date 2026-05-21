@@ -13,6 +13,7 @@ signal hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String)
 
 @export var tower_scene: PackedScene = preload("res://scenes/towers/Tower.tscn")
 @export var towers_tree_data_path: String = "res://data/towers_tree.json"
+@export var keep_selected_after_place: bool = true
 
 var towers_config: Dictionary = {}
 var towers_tree_config: Dictionary = {}
@@ -336,7 +337,7 @@ func validate_placement(cell: Vector2i) -> Dictionary:
 	
 	return {"is_valid": true, "reason": "Valid", "cost": cost, "config": config}
 
-func place_tower(cell: Vector2i, config: Dictionary) -> void:
+func place_tower(cell: Vector2i, config: Dictionary, start_construction: bool = true) -> void:
 	var tower = tower_scene.instantiate()
 	tower_container.add_child(tower)
 	tower.add_to_group("towers")
@@ -348,6 +349,8 @@ func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	
 	tower.setup(config, cell)
 	tower.set_projectile_container(projectile_container)
+	if start_construction and tower.has_method("begin_build_construction"):
+		tower.begin_build_construction(config)
 	
 	for footprint_cell in _get_tower_footprint_cells(cell, config):
 		occupied_cells[footprint_cell] = true
@@ -357,8 +360,8 @@ func place_tower(cell: Vector2i, config: Dictionary) -> void:
 	if game_manager and "battle_telemetry" in game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.log_tower_built(selected_tower_id, cell, tower.position, config.get("cost", 0))
 	
-	# After placing, clear selection
-	clear_selected_tower()
+	if not keep_selected_after_place:
+		clear_selected_tower()
 
 func local_to_cell(local_pos: Vector2) -> Vector2i:
 	var p := local_pos - grid_origin

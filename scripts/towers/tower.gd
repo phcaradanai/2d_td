@@ -5,10 +5,14 @@ signal shot_fired(tower, target, timestamp)
 signal fire_rate_modifier_changed(tower, source, value)
 signal target_selected(tower, target, reason)
 signal target_rejected(tower, target, reason)
+signal construction_completed(tower: Node2D, mode: String)
+signal upgrade_completed(tower: Node2D, old_tower_id: String, old_tier: int, new_tower_id: String, new_tier: int, cost: int)
 
 const TowerVisualRendererScript = preload("res://scripts/towers/tower_visual_renderer.gd")
 const CatalogPreviewModeScript = preload("res://scripts/debug/catalog_preview_mode.gd")
 const CatalogRenderGuardScript = preload("res://scripts/debug/catalog_render_guard.gd")
+const TowerConstructionComponentScript = preload("res://scripts/components/tower_construction_component.gd")
+const TowerConstructionConfigScript = preload("res://scripts/config/tower_construction_config.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -105,6 +109,15 @@ const TOWER_VISUAL_PREVIEW_DEMO_REDRAW_INTERVAL: float = 0.10
 var _tower_visual_dirty: bool = true
 var _tower_visual_signature: String = ""
 var _tower_visual_preview_demo_redraw_timer: float = 0.0
+var _tower_texture_request_serial: int = 0
+var _construction_component: Node2D = null
+var is_under_construction: bool = false
+var construction_mode: String = ""
+var _pending_upgrade_target_id: String = ""
+var _pending_upgrade_config: Dictionary = {}
+var _pending_upgrade_cost: int = 0
+var _pending_upgrade_old_id: String = ""
+var _pending_upgrade_old_tier: int = 0
 
 # Aim Visuals
 ## Aim line + target-marker crosshair on creeps.
@@ -345,6 +358,13 @@ func apply_level_stats() -> void:
 func apply_level_visuals() -> void:
 	_ensure_sprite_node()
 	if not is_inside_tree(): return
+	if tower_id == "":
+		use_sprite = false
+		if base_sprite: base_sprite.visible = false
+		if turret_sprite: turret_sprite.visible = false
+		modulate = Color(1.0, 1.0, 1.0, 0.0)
+		_mark_tower_visual_dirty()
+		return
 	
 	if level_badge:
 		level_badge.visible = false
@@ -387,6 +407,92 @@ func apply_level_visuals() -> void:
 	_ensure_aim_visual()
 	_mark_tower_visual_dirty()
 
+func begin_build_construction(p_config: Dictionary = {}) -> bool:
+	var duration := TowerConstructionConfigScript.get_build_seconds(p_config if not p_config.is_empty() else config)
+	return _start_construction("build", duration, {})
+
+func begin_upgrade_construction(target_tower_id: String, new_config: Dictionary) -> bool:
+	if is_under_construction:
+		return false
+	var upgrade_cost := _get_config_upgrade_cost(new_config)
+	if upgrade_cost <= 0:
+		push_error("[UPGRADE] Invalid upgrade_cost=%d for tower=%s target=%s" % [upgrade_cost, upgrade_id, target_tower_id])
+		return false
+	_pending_upgrade_target_id = target_tower_id
+	_pending_upgrade_config = new_config.duplicate(true)
+	_pending_upgrade_cost = upgrade_cost
+	_pending_upgrade_old_id = tower_id
+	_pending_upgrade_old_tier = tree_tier
+	var duration := TowerConstructionConfigScript.get_upgrade_seconds(new_config)
+	return _start_construction("upgrade", duration, {
+		"target_tower_id": target_tower_id,
+	})
+
+func is_constructing() -> bool:
+	return is_under_construction
+
+func get_construction_progress() -> float:
+	if _construction_component != null and is_instance_valid(_construction_component) and _construction_component.has_method("progress"):
+		return float(_construction_component.call("progress"))
+	return 1.0
+
+func _start_construction(mode: String, duration: float, payload: Dictionary) -> bool:
+	if duration <= 0.0:
+		return false
+	_ensure_construction_component()
+	if _construction_component == null:
+		return false
+	is_under_construction = true
+	construction_mode = mode
+	current_target = null
+	if aim_visual:
+		aim_visual.visible = false
+	_construction_component.call("start", mode, duration, payload)
+	_mark_tower_visual_dirty()
+	_request_tower_visual_redraw_if_dirty()
+	return true
+
+func _ensure_construction_component() -> void:
+	if _construction_component != null and is_instance_valid(_construction_component):
+		return
+	_construction_component = TowerConstructionComponentScript.new()
+	_construction_component.name = "ConstructionComponent"
+	add_child(_construction_component)
+	var callback := Callable(self, "_on_construction_component_finished")
+	if not _construction_component.is_connected("finished", callback):
+		_construction_component.connect("finished", callback)
+
+func _on_construction_component_finished(mode: String, _payload: Dictionary) -> void:
+	is_under_construction = false
+	construction_mode = ""
+	if mode == "upgrade":
+		_finish_pending_upgrade()
+		return
+	construction_completed.emit(self, mode)
+	_mark_tower_visual_dirty()
+	_request_tower_visual_redraw_if_dirty()
+
+func _finish_pending_upgrade() -> void:
+	var old_id := _pending_upgrade_old_id
+	var old_tier := _pending_upgrade_old_tier
+	var cost_value := _pending_upgrade_cost
+	var target_id := _pending_upgrade_target_id
+	var target_config := _pending_upgrade_config.duplicate(true)
+	_clear_pending_upgrade()
+	if target_id.is_empty() or target_config.is_empty():
+		return
+	if not _apply_upgrade_to(target_id, target_config, cost_value):
+		return
+	construction_completed.emit(self, "upgrade")
+	upgrade_completed.emit(self, old_id, old_tier, tower_id, tree_tier, cost_value)
+
+func _clear_pending_upgrade() -> void:
+	_pending_upgrade_target_id = ""
+	_pending_upgrade_config = {}
+	_pending_upgrade_cost = 0
+	_pending_upgrade_old_id = ""
+	_pending_upgrade_old_tier = 0
+
 ## Creates the permanent owned VFX node for this tower (baker-style).
 ## Guards against recreation on every apply_level_visuals() / selection call.
 func _setup_owned_vfx() -> void:
@@ -424,14 +530,40 @@ func _request_baked_textures() -> void:
 		call_deferred("_request_baked_textures")
 		return
 	var captured_self := self
+	_tower_texture_request_serial += 1
+	var request_serial := _tower_texture_request_serial
+	var request_tower_id := tower_id
+	var request_visual_type := visual_type
+	var request_elements := elements.duplicate()
+	var request_tier := tree_tier
 	TowerTextureBaker.request_textures(tower_id, visual_type, elements, tree_tier,
 		func(result: Dictionary) -> void:
 			if not is_instance_valid(captured_self):
+				return
+			if captured_self._is_stale_baked_texture_result(
+					request_serial,
+					request_tower_id,
+					request_visual_type,
+					request_elements,
+					request_tier):
 				return
 			if result.is_empty():
 				return
 			captured_self._apply_baked_textures(result)
 	)
+
+func _is_stale_baked_texture_result(
+		request_serial: int,
+		request_tower_id: String,
+		request_visual_type: String,
+		request_elements: Array,
+		request_tier: int
+) -> bool:
+	return request_serial != _tower_texture_request_serial \
+		or request_tower_id != tower_id \
+		or request_visual_type != visual_type \
+		or request_tier != tree_tier \
+		or request_elements != elements
 
 func _apply_baked_textures(result: Dictionary) -> void:
 	_ensure_sprite_node()
@@ -774,6 +906,8 @@ func get_next_upgrade_config() -> Dictionary:
 
 
 func can_upgrade() -> bool:
+	if is_under_construction:
+		return false
 	if get_next_upgrade_id().is_empty():
 		return false
 	if get_next_upgrade_config().is_empty():
@@ -857,9 +991,21 @@ func upgrade() -> bool:
 ## Reads upgrade cost from the target config — each entry's upgrade_cost is the
 ## cost to upgrade INTO it.
 func upgrade_to(target_tower_id: String, new_config: Dictionary) -> bool:
+	if is_under_construction:
+		return false
+	return begin_upgrade_construction(target_tower_id, new_config)
+
+
+func upgrade_to_config(new_config: Dictionary) -> bool:
+	var target_tower_id := str(new_config.get("id", ""))
+	if target_tower_id.is_empty():
+		return false
+	return upgrade_to(target_tower_id, new_config)
+
+
+func _apply_upgrade_to(target_tower_id: String, new_config: Dictionary, upgrade_cost: int) -> bool:
 	_clear_support_targets()
 	_remove_clone_from_current_target()
-	var upgrade_cost := _get_config_upgrade_cost(new_config)
 	if upgrade_cost <= 0:
 		push_error("[UPGRADE] Invalid upgrade_cost=%d for tower=%s target=%s" % [upgrade_cost, upgrade_id, target_tower_id])
 		return false
@@ -1023,6 +1169,9 @@ func get_info() -> Dictionary:
 		"required_element_level": required_element_level,
 		"is_max_tier": next_upgrade_ids.is_empty(),
 		"is_branch_point": is_branch_point(),
+		"is_constructing": is_under_construction,
+		"construction_mode": construction_mode,
+		"construction_progress": get_construction_progress(),
 		"next_upgrade_ids": next_upgrade_ids.duplicate(),
 		"damage": damage,
 		"range": attack_range,
@@ -1209,6 +1358,10 @@ func _process(delta: float) -> void:
 		return
 
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
+		return
+
+	if is_under_construction:
+		current_target = null
 		return
 
 	if _is_support_aura():

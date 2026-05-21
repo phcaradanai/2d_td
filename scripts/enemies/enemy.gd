@@ -119,7 +119,16 @@ var _bake_scale: Vector2 = Vector2(0.5, 0.5)   # set in _apply_baked_enemy_textu
 
 # Sprite animation state (no queue_redraw needed — GPU-side transforms only)
 var _hit_impact_tween: Tween = null
-var _hit_impact_active: bool = false   # true while hit squish is playing
+var _hit_impact_active: bool = false
+
+# Smart Visual LOD — prioritises CPU for hero moments, saves it for background creeps.
+# LOW (0): healthy, not in combat  → animate every 3rd frame, no glow
+# HIGH (2): low HP, hit recently   → animate every frame, red pulse glow
+const ANIM_LOD_LOW  := 0
+const ANIM_LOD_HIGH := 2
+var _anim_lod: int = ANIM_LOD_LOW
+var _anim_frame_counter: int = 0   # incremented in _process, used to skip frames
+var _death_glow_tween: Tween = null
 
 # Shield and disrupt aura scan intervals — prevent O(n) group walks every frame.
 # 0.25 s matches human-visible refresh; gameplay feel is unchanged.
@@ -441,6 +450,11 @@ func _update_health_visual_state(force_redraw: bool = false) -> void:
 		queue_redraw()
 		if _body_baked and next_state != _baked_health_state:
 			_request_baked_enemy_texture()
+		# Escalate to HIGH LOD when hurt — full animation + glow from now on.
+		if next_state >= HealthVisualState.HEALTH_DAMAGED:
+			_set_anim_lod_high()
+		if next_state == HealthVisualState.HEALTH_CRITICAL:
+			_start_near_death_glow()
 
 # ── Baker-style body sprite ──────────────────────────────────────────────────
 
@@ -504,34 +518,67 @@ func _update_sprite_movement_anim() -> void:
 	_body_sprite.position = Vector2(0.0, -absf(bob) * 1.6 * speed_ratio)
 
 ## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
+## Called every hit (no throttle) for baked sprites.
 func _play_sprite_hit_impact(color: Color) -> void:
 	if not _body_baked or _body_sprite == null or not is_instance_valid(_body_sprite):
 		return
 	if _hit_impact_tween != null and _hit_impact_tween.is_valid():
 		_hit_impact_tween.kill()
+	if _death_glow_tween != null and _death_glow_tween.is_valid():
+		_death_glow_tween.pause()
 	_hit_impact_active = true
-	# Flash colour: briefly saturate the element colour, then fade to white
-	var flash_col := Color(
-		minf(color.r * 2.2, 1.0),
-		minf(color.g * 1.8, 1.0),
-		minf(color.b * 1.8, 1.0), 1.0)
+
+	# Bright white flash first frame, then element colour, then return — very snappy
+	var flash_white := Color(2.0, 2.0, 2.0, 1.0)
+	var flash_col   := Color(
+		minf(color.r * 2.5, 1.0),
+		minf(color.g * 2.0, 1.0),
+		minf(color.b * 2.0, 1.0), 1.0)
+
 	var t := create_tween().set_parallel(true)
 	_hit_impact_tween = t
-	# Scale squish: wide-flat then spring to neutral
+
+	# Stronger squish: very wide + flat then elastic spring back
 	t.tween_property(_body_sprite, "scale",
-		Vector2(_bake_scale.x * 1.45, _bake_scale.y * 0.60), 0.055)\
+		Vector2(_bake_scale.x * 1.65, _bake_scale.y * 0.45), 0.045)\
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.chain().tween_property(_body_sprite, "scale", _bake_scale, 0.15)\
+	t.chain().tween_property(_body_sprite, "scale", _bake_scale, 0.18)\
 		.set_trans(Tween.TRANS_SPRING).set_ease(Tween.EASE_OUT)
-	# Modulate flash
-	t.tween_property(_body_sprite, "modulate", flash_col, 0.04)
-	t.chain().tween_property(_body_sprite, "modulate", Color.WHITE, 0.16)\
+
+	# Flash: instant bright white → element colour → white
+	_body_sprite.modulate = flash_white
+	t.tween_property(_body_sprite, "modulate", flash_col, 0.03)
+	t.chain().tween_property(_body_sprite, "modulate", Color.WHITE, 0.14)\
 		.set_trans(Tween.TRANS_EXPO)
+
 	t.chain().tween_callback(func() -> void:
 		_hit_impact_active = false
 		if _body_sprite != null and is_instance_valid(_body_sprite):
-			_body_sprite.modulate = Color.WHITE
+			if health_visual_state < HealthVisualState.HEALTH_CRITICAL:
+				_body_sprite.modulate = Color.WHITE
+		if _death_glow_tween != null and _death_glow_tween.is_valid():
+			_death_glow_tween.play()
 	)
+
+## Hit spark at the world-space impact point — bypasses screen shake entirely.
+## Uses the enemy_impact pool for a tiny 3-ray burst + core dot.
+func _spawn_hit_spark(hit_pos: Vector2, color: Color) -> void:
+	if PerformanceFirebreak.disable_death_effects:
+		return
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool == null or not pool.has_method("acquire_scene"):
+		return
+	var spark: Node = pool.acquire_scene("death_pop",
+		get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer") \
+		if get_tree().current_scene.has_node("WorldRoot/MapRoot/EffectsContainer") \
+		else get_tree().current_scene,
+		"death_pop")
+	if spark == null:
+		return
+	spark.global_position = hit_pos
+	spark.scale = Vector2(0.45, 0.45)   # tiny spark — not an explosion
+	if spark.has_method("setup"):
+		spark.setup("default", Color(color.r, color.g, color.b, 1.0), 0.12, 3)
 
 ## Death pop — instant scale burst + fade before queue_free fires.
 func _play_sprite_death() -> void:
@@ -539,8 +586,28 @@ func _play_sprite_death() -> void:
 		return
 	if _hit_impact_tween != null and _hit_impact_tween.is_valid():
 		_hit_impact_tween.kill()
-	_body_sprite.scale = _bake_scale * 1.25
-	_body_sprite.modulate = Color(2.0, 2.0, 2.0, 0.0)  # instant white-flash + transparent
+	if _death_glow_tween != null and _death_glow_tween.is_valid():
+		_death_glow_tween.kill()
+	# Pop: burst scale + instant white flash → transparent before queue_free
+	var imp := _get_death_importance()
+	_body_sprite.scale   = _bake_scale * clampf(1.15 + imp * 0.12, 1.15, 1.6)
+	_body_sprite.modulate = Color(2.2, 2.2, 2.2, 0.0)
+
+## Escalate LOD: full-rate animation + hit emphasis from now on.
+func _set_anim_lod_high() -> void:
+	_anim_lod = ANIM_LOD_HIGH
+
+## Pulsing red glow on sprite when enemy is near death — draws attention to threats.
+func _start_near_death_glow() -> void:
+	if not _body_baked or _body_sprite == null or not is_instance_valid(_body_sprite):
+		return
+	if _death_glow_tween != null and _death_glow_tween.is_valid():
+		return  # already pulsing
+	_death_glow_tween = create_tween().set_loops()
+	_death_glow_tween.tween_property(_body_sprite, "modulate",
+		Color(1.6, 0.55, 0.55, 1.0), 0.28).set_trans(Tween.TRANS_SINE)
+	_death_glow_tween.tween_property(_body_sprite, "modulate",
+		Color(1.0, 1.0, 1.0, 1.0), 0.28).set_trans(Tween.TRANS_SINE)
 
 # --- High-Fidelity Procedural Visuals ---
 
@@ -1928,10 +1995,15 @@ func _process_inner(delta: float) -> void:
 	if not is_active or is_dead_flag or reached_base_flag:
 		return
 
-	pulse_time += delta
+	_anim_frame_counter += 1
 	if _body_baked:
-		_update_sprite_movement_anim()
+		# Smart LOD: LOW priority updates every 3rd frame; HIGH every frame.
+		# pulse_time not needed when baked (sprite animation uses 'progress' only).
+		var skip := (_anim_lod == ANIM_LOD_LOW) and (_anim_frame_counter % 3 != 0)
+		if not skip:
+			_update_sprite_movement_anim()
 	else:
+		pulse_time += delta
 		_draw_timer += delta
 		if _draw_timer >= ENEMY_VISUAL_REDRAW_INTERVAL:
 			_draw_timer -= ENEMY_VISUAL_REDRAW_INTERVAL
@@ -2581,12 +2653,17 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	flash_body(source_id if source_id != "" else p_attack_type)
 	var dn_color = Color.WHITE
 	if shield_remaining > 0 and not is_bulwark:
-		dn_color = Color(0.4, 0.8, 1.0) # Light blue for shielded hits
+		dn_color = Color(0.4, 0.8, 1.0)
 	elif source_id.begins_with("disease_"):
 		dn_color = Color(0.58, 1.0, 0.28)
-		
+
 	spawn_damage_number(int(final_damage), capture_pos, dn_color, source_id)
 	_play_hit_pulse()
+	if _body_baked:
+		# Always show impact squish regardless of flash throttle.
+		_play_sprite_hit_impact(hit_flash_color if is_flashing else dn_color)
+		# Hit spark: tiny burst at impact point — replaces screen shake as impact cue.
+		_spawn_hit_spark(capture_pos, dn_color)
 	_try_runner_hit_dash()
 	if enemy_type == "swarm" or tags.has("swarm"):
 		_trigger_swarm_hit_reaction()
@@ -2707,9 +2784,10 @@ func flash_body(damage_context: String = "") -> void:
 		hit_flash_color = Color(1.0, 0.62, 0.26, 0.20)
 	hit_flash_alpha = minf(hit_flash_color.a, 0.22)
 	is_flashing = hit_flash_alpha > 0.01
+	_set_anim_lod_high()   # hit = always full animation
 	if _body_baked:
 		_play_sprite_hit_impact(hit_flash_color)
-		return   # modulate handles flash — no queue_redraw needed
+		return
 	queue_redraw()
 
 	var duration := 0.08
@@ -2810,7 +2888,42 @@ func _clear_disrupted_towers() -> void:
 	if vfx_controller:
 		vfx_controller.clear_all_disrupted_towers()
 
+func _get_death_burst_color() -> Color:
+	match visual_type:
+		"basic":        return Color(0.20, 0.80, 1.00, 1.0)
+		"fast":         return Color(0.00, 1.00, 0.70, 1.0)
+		"tank":         return Color(1.00, 0.45, 0.10, 1.0)
+		"bulwark":      return Color(0.10, 0.60, 1.00, 1.0)
+		"hunter":       return Color(1.00, 0.10, 0.40, 1.0)
+		"healer":       return Color(0.40, 1.00, 0.60, 1.0)
+		"disruptor":    return Color(1.00, 0.55, 0.15, 1.0)
+		"splitter":     return Color(0.90, 0.45, 1.00, 1.0)
+		"shieldbearer": return Color(0.35, 0.90, 1.00, 1.0)
+		"runner":       return Color(0.15, 1.00, 0.50, 1.0)
+		"cloaked":      return Color(0.75, 0.75, 1.00, 1.0)
+		"flyer":        return Color(0.45, 0.90, 1.00, 1.0)
+		"fast_flyer":   return Color(0.00, 0.90, 0.60, 1.0)
+		"armored_flyer":return Color(1.00, 0.60, 0.20, 1.0)
+	return Color(0.70, 0.85, 1.00, 1.0)
+
+func _get_death_importance() -> float:
+	# Returns 1.0 for normal, 2.0+ for tankier enemies — used to scale explosion size.
+	var hp_tier := clampf(max_hp / 80.0, 1.0, 4.0)
+	match visual_type:
+		"tank","bulwark","armored_flyer": return clampf(hp_tier * 1.4, 1.8, 4.0)
+		"splitter","healer","disruptor":  return clampf(hp_tier * 1.1, 1.2, 3.0)
+	return clampf(hp_tier, 1.0, 2.5)
+
+func _trigger_death_shake() -> void:
+	var main := get_tree().current_scene
+	if not main.has_method("shake_camera"):
+		return
+	var imp := _get_death_importance()
+	var strength := clampf(imp * 1.8, 1.0, 6.0)
+	main.shake_camera(strength, 0.8)
+
 func spawn_death_effect(death_global: Vector2) -> void:
+	_trigger_death_shake()
 	if not PerformanceFirebreak.disable_death_effects:
 		if death_pop_scene:
 			var pool := get_node_or_null("/root/VisualEffectPoolService")
@@ -2819,14 +2932,17 @@ func spawn_death_effect(death_global: Vector2) -> void:
 				effect = pool.acquire_scene("death_pop", get_tree().current_scene, "death_pop")
 			if effect == null:
 				return
+			var imp := _get_death_importance()
 			effect.global_position = death_global
+			effect.scale = Vector2.ONE * clampf(imp * 0.72, 0.72, 2.2)
 			if effect.has_method("setup"):
 				if enemy_type == "swarm" or tags.has("swarm"):
-					# [VISUAL-OPT] Duration reduced 0.52→0.32 for snappier, cheaper swarm death.
 					effect.setup("swarm_death", swarm_core_glow_color, 0.32, swarm_death_particle_count)
 				else:
-					# [VISUAL-OPT] Explicit low particle count for all non-swarm deaths.
-					effect.setup("default", Color(0.9, 0.9, 0.9, 0.8), 0.28, 4)
+					var burst_color := _get_death_burst_color()
+					var particles  := clampi(int(imp * 4.0), 4, 10)
+					var dur        := clampf(0.25 + imp * 0.06, 0.25, 0.42)
+					effect.setup("default", burst_color, dur, particles)
 
 func reach_base() -> void:
 	if reached_base_flag: return

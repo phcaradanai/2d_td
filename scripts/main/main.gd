@@ -1845,8 +1845,25 @@ func _on_tower_build_selected(tower_id: String) -> void:
 func _on_tower_placed(tower: Node2D, _tower_id: String, _cost: int) -> void:
 	if tower.has_signal("clicked"):
 		tower.clicked.connect(_on_placed_tower_clicked)
+	if tower.has_signal("upgrade_completed"):
+		var upgrade_callback := Callable(self, "_on_tower_upgrade_completed")
+		if not tower.is_connected("upgrade_completed", upgrade_callback):
+			tower.connect("upgrade_completed", upgrade_callback)
 	if audio_manager:
 		audio_manager.play_sfx("tower_place")
+
+func _on_tower_upgrade_completed(tower: Node2D, _old_tower_id: String, old_tier: int, _new_tower_id: String, new_tier: int, cost: int) -> void:
+	if game_manager and game_manager.battle_telemetry:
+		game_manager.battle_telemetry.log_tower_upgraded(tower.tower_id, old_tier, new_tier, cost)
+	if selected_tower == tower and game_hud:
+		var info: Dictionary = tower.get_info() if tower.has_method("get_info") else {}
+		if not info.is_empty():
+			game_hud.show_tower_info(info)
+			if game_hud.has_method("show_tower_float_card"):
+				game_hud.show_tower_float_card(info, tower)
+		game_hud.set_build_status("Tower Upgraded!")
+	if audio_manager:
+		audio_manager.play_sfx("tower_upgrade")
 
 func _on_placed_tower_clicked(tower: Node2D) -> void:
 	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
@@ -1926,16 +1943,14 @@ func _on_upgrade_tower_requested() -> void:
 
 	if game_manager and game_manager.spend_gold(cost):
 		var tower := selected_tower
-		tower.upgrade()
-		if game_manager.battle_telemetry:
-			game_manager.battle_telemetry.log_tower_upgraded(tower.tower_id, tower.tree_tier - 1, tower.tree_tier, cost)
-		# Re-select to fully refresh UI with new upgrade_id
-		clear_selected_tower()
-		_select_tower(tower)
-		if game_hud:
-			game_hud.set_build_status("Tower Upgraded!")
-		if audio_manager:
-			audio_manager.play_sfx("tower_upgrade")
+		if tower.upgrade():
+			if game_hud:
+				game_hud.set_build_status("Upgrading tower...")
+				var info: Dictionary = tower.get_info() if tower.has_method("get_info") else {}
+				if not info.is_empty():
+					game_hud.show_tower_info(info)
+		elif game_hud:
+			game_hud.set_build_status("Upgrade unavailable")
 	elif game_hud:
 		game_hud.set_build_status("Not enough gold!")
 	_play_ui_click()
@@ -2077,6 +2092,7 @@ func _on_wave_completed(wave_number: int, _wave_name: String, reward: int) -> vo
 		game_manager.award_wave_completion(reward)
 	_show_wave_complete_status_feedback = true
 	set_game_phase(GameState.BUILD)
+	shake_camera(5.5, 0.6)
 	if game_hud:
 		game_hud.set_status("Wave Complete")
 		show_wave_feedback("Wave Cleared! +%d Gold" % reward, Color(0.2, 1.0, 0.4))
@@ -2448,7 +2464,7 @@ func _restore_towers(towers_data: Array) -> void:
 			push_warning("[MetaLayer] Restore: cell %s occupied, skipping." % str(cell))
 			continue
 		var config = build_manager.towers_config[tower_id].duplicate(true)
-		build_manager.place_tower(cell, config)
+		build_manager.place_tower(cell, config, false)
 
 func _auto_save_run_state() -> void:
 	if save_game_service == null or game_manager == null or level_manager == null:

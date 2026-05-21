@@ -399,6 +399,9 @@ func _try_upgrade_selected_tower() -> bool:
 	if tower == null:
 		_set_status("Select a tower to upgrade")
 		return false
+	if tower.has_method("is_constructing") and bool(tower.call("is_constructing")):
+		_set_status("Tower is busy")
+		return false
 	var upgrade_id := _pick_upgrade_id(tower)
 	if upgrade_id == "":
 		_set_status("No upgrade available")
@@ -418,11 +421,16 @@ func _try_upgrade_selected_tower() -> bool:
 	if not bool(game_manager.call("spend_gold", cost)):
 		_set_status("Not enough gold for upgrade: %d" % cost)
 		return false
-	_apply_upgrade_config_to_tower(tower, upgrade_config, cost)
+	if not _apply_upgrade_config_to_tower(tower, upgrade_config, cost):
+		_set_status("Upgrade unavailable")
+		return false
 	_apply_short_fire_lockout(tower, REALTIME_UPGRADE_LOCKOUT_SEC)
 	_update_tower_panel(tower)
 	_refresh_hud_after_economy_change()
-	_set_status("Upgraded to %s" % str(upgrade_config.get("display_name", upgrade_config.get("name", upgrade_id))))
+	if tower.has_method("is_constructing") and bool(tower.call("is_constructing")):
+		_set_status("Upgrading to %s" % str(upgrade_config.get("display_name", upgrade_config.get("name", upgrade_id))))
+	else:
+		_set_status("Upgraded to %s" % str(upgrade_config.get("display_name", upgrade_config.get("name", upgrade_id))))
 	return true
 
 func _get_upgrade_options(tower: Node2D) -> Array[String]:
@@ -516,11 +524,14 @@ func _get_upgrade_locked_reason(upgrade_config: Dictionary) -> String:
 		return "Required elements are not unlocked"
 	return "Need matching upgrade path for %s" % _format_tower_id(str(upgrade_config.get("id", "")))
 
-func _apply_upgrade_config_to_tower(tower: Node2D, upgrade_config: Dictionary, upgrade_cost: int) -> void:
+func _apply_upgrade_config_to_tower(tower: Node2D, upgrade_config: Dictionary, upgrade_cost: int) -> bool:
 	var previous_invested := _get_tower_invested_gold(tower)
 	var cell := _get_tower_cell(tower)
-	if tower.has_method("upgrade_to_config"):
-		tower.call("upgrade_to_config", upgrade_config)
+	var upgrade_id := str(upgrade_config.get("id", ""))
+	if tower.has_method("upgrade_to") and upgrade_id != "":
+		return bool(tower.call("upgrade_to", upgrade_id, upgrade_config))
+	elif tower.has_method("upgrade_to_config"):
+		return bool(tower.call("upgrade_to_config", upgrade_config))
 	else:
 		tower.call("setup", upgrade_config, cell)
 	tower.set("total_invested_gold", previous_invested + upgrade_cost)
@@ -528,6 +539,7 @@ func _apply_upgrade_config_to_tower(tower: Node2D, upgrade_config: Dictionary, u
 		var projectiles := main.get_node_or_null("WorldRoot/MapRoot/ProjectileContainer")
 		if projectiles != null:
 			tower.call("set_projectile_container", projectiles)
+	return true
 
 func _try_sell_selected_tower() -> bool:
 	var tower := _get_selected_tower()
