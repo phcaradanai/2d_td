@@ -97,6 +97,25 @@ var enemy_route_overlay: Node2D = null
 var selected_tower: Node2D = null
 var current_state: GameState = GameState.MENU
 var _show_wave_complete_status_feedback: bool = false
+var _last_shop_ids_hash: int = 0  # Guards _refresh_elemental_shop against redundant rebuilds.
+
+# ── Wave preview cache ──────────────────────────────────────────────────────
+# Caches per-level wave summaries so SpawnFormationPlanner is not run every UI refresh.
+# Key: level_id (int). Invalidated on level start / wave data reload.
+var _wave_preview_cache: Dictionary = {}  # level_id (int) -> Array[Dictionary]
+var wave_preview_cache_hits: int = 0
+var wave_preview_cache_misses: int = 0
+
+# ── Wave intel dirty tracking ────────────────────────────────────────────────
+# Prevents redundant _refresh_hud_wave_intel calls when nothing changed.
+var _wave_intel_dirty: bool = true
+var _last_wi_level_id: int = -1
+var _last_wi_wave_index: int = -1
+var _last_wi_running: bool = false
+
+# ── Debug performance counters ───────────────────────────────────────────────
+var tower_preview_active_count: int = 0
+var tower_preview_redraw_count: int = 0
 var _touch_points: Dictionary = {}   # active touch indices for two-finger deselect
 var current_level_path: String = ""
 var current_level_id: String = ""
@@ -847,6 +866,10 @@ func _refresh_elemental_shop() -> void:
 	if element_progression_manager and element_progression_manager.has_method("get_buildable_tower_ids"):
 		ids = element_progression_manager.get_buildable_tower_ids(build_manager.towers_config)
 	ids = _ensure_starter_towers_in_shop(ids)
+	var ids_hash := hash(ids)
+	if ids_hash == _last_shop_ids_hash:
+		return
+	_last_shop_ids_hash = ids_hash
 	if build_manager.has_method("set_unlocked_tower_ids"):
 		build_manager.set_unlocked_tower_ids(ids)
 	_bind_hud_state_presenter()
@@ -1358,6 +1381,8 @@ func start_game(level_path: String) -> void:
 
 func start_level(level_path: String) -> void:
 	current_level_path = level_path
+	_invalidate_wave_preview_cache()
+	_last_shop_ids_hash = 0  # Force shop rebuild for this level.
 
 	# STANDARD: Ensure engine is unpaused when starting a level
 	get_tree().paused = false
@@ -2006,6 +2031,7 @@ func _on_hover_cell_changed(cell: Vector2i, is_valid: bool, reason: String) -> v
 			game_hud.set_build_status(label_text)
 
 func _on_wave_started(wave_number: int, wave_name: String) -> void:
+	_wave_intel_dirty = true
 	_show_wave_complete_status_feedback = false
 	if damage_stats_tracker and damage_stats_tracker.has_method("reset_wave"):
 		damage_stats_tracker.reset_wave()
@@ -2023,6 +2049,7 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		_refresh_gameplay_hud_state()
 
 func _on_wave_completed(wave_number: int, _wave_name: String, reward: int) -> void:
+	_wave_intel_dirty = true
 	if element_td_interest_service:
 		element_td_interest_service.elapsed = 0.0
 		element_td_interest_service.disabled_for_wave = false
@@ -2873,13 +2900,35 @@ func _get_wave_source_for_preview(level_id: int) -> Array:
 	return load_waves_config(waves_path)
 
 func get_wave_preview_data(level_id: int) -> Array[Dictionary]:
+	if _wave_preview_cache.has(level_id):
+		wave_preview_cache_hits += 1
+		return _wave_preview_cache[level_id]
+	wave_preview_cache_misses += 1
 	var waves_data = _get_wave_source_for_preview(level_id)
 	var result: Array[Dictionary] = []
 	for wave in waves_data:
 		var preview = summarize_wave_for_preview(wave)
 		if not preview.is_empty():
 			result.append(preview)
+	_wave_preview_cache[level_id] = result
 	return result
+
+func _invalidate_wave_preview_cache(level_id: int = -1) -> void:
+	if level_id < 0:
+		_wave_preview_cache.clear()
+	else:
+		_wave_preview_cache.erase(level_id)
+	_wave_intel_dirty = true
+
+func get_perf_debug_counters() -> Dictionary:
+	return {
+		"wave_preview_cache_hits": wave_preview_cache_hits,
+		"wave_preview_cache_misses": wave_preview_cache_misses,
+		"tower_preview_active_count": TowerCatalogPreview._s_active_count,
+		"tower_preview_redraw_count": TowerCatalogPreview._s_redraw_count,
+		"element_icon_cache_hits": ElementIcon.element_icon_cache_hits,
+		"element_icon_cache_misses": ElementIcon.element_icon_cache_misses,
+	}
 
 func get_wave_preview_for_index(level_id: int, wave_index: int) -> Dictionary:
 	if wave_index < 0:
@@ -2896,12 +2945,25 @@ func _refresh_hud_wave_intel() -> void:
 	if not game_hud or not wave_manager: return
 
 	if current_state != GameState.BUILD and current_state != GameState.WAVE:
-		game_hud.clear_wave_intel()
+		if _last_wi_level_id >= 0:
+			game_hud.clear_wave_intel()
+			_last_wi_level_id = -1
 		return
 
 	if selected_level_id <= 0:
-		game_hud.clear_wave_intel()
+		if _last_wi_level_id >= 0:
+			game_hud.clear_wave_intel()
+			_last_wi_level_id = -1
 		return
+
+	var cur_wave_idx: int = wave_manager.current_wave_index
+	var cur_running: bool = wave_manager.is_wave_running
+	if not _wave_intel_dirty and _last_wi_level_id == selected_level_id and _last_wi_wave_index == cur_wave_idx and _last_wi_running == cur_running:
+		return
+	_wave_intel_dirty = false
+	_last_wi_level_id = selected_level_id
+	_last_wi_wave_index = cur_wave_idx
+	_last_wi_running = cur_running
 
 	var previews = get_wave_preview_data(selected_level_id)
 

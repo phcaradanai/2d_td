@@ -151,8 +151,11 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	var muzzle_x := barrel_len - 1.0
 	_stroked_rect(t, Rect2(muzzle_x - 3.0, -10.0, 10.0, 20.0), Color(0.12, 0.13, 0.13, 0.98), 2.0)
 	_stroked_rect(t, Rect2(muzzle_x - 0.5, -6.8, 5.0, 13.6), Color(0.015, 0.014, 0.012, 0.98), 1.0)
-	_stroked_line(t, Vector2(muzzle_x - 1.0, -8.0), Vector2(muzzle_x + 5.4, -8.0), accent, 1.0)
-	_stroked_line(t, Vector2(muzzle_x - 1.0, 8.0), Vector2(muzzle_x + 5.4, 8.0), accent.darkened(0.22), 1.0)
+	# Muzzle silver trims, symmetric top/bottom.
+	var silver_trim := Color(0.74, 0.74, 0.68, 0.58)
+
+	_stroked_line(t, Vector2(muzzle_x - 1.0, -8.0), Vector2(muzzle_x + 5.4, -8.0), silver_trim, 1.0)
+	_stroked_line(t, Vector2(muzzle_x - 1.0, 8.0), Vector2(muzzle_x + 5.4, 8.0), silver_trim, 1.0)
 
 	# Rear recoil block and shell badge.
 	_stroked_rect(t, Rect2(-20, -5, 14, 10), Color(0.11, 0.12, 0.12, 0.96), 1.7)

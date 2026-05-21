@@ -8,33 +8,50 @@ const STATE_LOCKED := "locked"
 const STATE_PLACEHOLDER := "placeholder"
 
 static var _color_cache: Dictionary = {}
+static var element_icon_cache_hits: int = 0    # Redraws suppressed by equality guard
+static var element_icon_cache_misses: int = 0  # Redraws actually queued
 
 @export var elements: Array[String] = []:
 	set(value):
-		elements = _normalize_elements(value)
+		var normalized := _normalize_elements(value)
+		if normalized == elements:
+			element_icon_cache_hits += 1
+			return
+		element_icon_cache_misses += 1
+		elements = normalized
 		queue_redraw()
 
 @export var state: String = STATE_UNLOCKED:
 	set(value):
+		if value == state:
+			element_icon_cache_hits += 1
+			return
+		element_icon_cache_misses += 1
 		state = value
 		queue_redraw()
 
 @export_range(0, 3, 1) var placeholder_count: int = 0:
 	set(value):
-		placeholder_count = clampi(value, 0, 3)
+		var clamped := clampi(value, 0, 3)
+		if clamped == placeholder_count:
+			element_icon_cache_hits += 1
+			return
+		element_icon_cache_misses += 1
+		placeholder_count = clamped
 		queue_redraw()
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func configure(raw_elements: Array, is_unlocked: bool = true, placeholders: int = 0) -> void:
-	elements = _normalize_elements(raw_elements)
-	placeholder_count = clampi(placeholders, 0, 3)
-	state = STATE_UNLOCKED if is_unlocked else STATE_LOCKED
-	if placeholder_count > 0:
-		state = STATE_PLACEHOLDER
+	var new_elements := _normalize_elements(raw_elements)
+	var new_placeholder_count := clampi(placeholders, 0, 3)
+	var new_state := STATE_PLACEHOLDER if new_placeholder_count > 0 else (STATE_UNLOCKED if is_unlocked else STATE_LOCKED)
+	# Setters have equality guards and call queue_redraw only when values change.
+	elements = new_elements
+	placeholder_count = new_placeholder_count
+	state = new_state
 	tooltip_text = get_element_tooltip_text()
-	queue_redraw()
 
 func get_element_tooltip_text() -> String:
 	if state == STATE_PLACEHOLDER:

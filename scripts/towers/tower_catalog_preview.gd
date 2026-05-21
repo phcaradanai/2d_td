@@ -45,6 +45,12 @@ var _projectile_node: Node2D = null
 var _impact_node: Node2D = null
 var _projectile_t: float = 0.0
 var _shot_elapsed: float = 0.0
+var _last_draw_hash: int = 0   # Redraw guard: only queue_redraw when visual state changed.
+var _counted_active: bool = false  # Tracks whether this instance is counted in _s_active_count.
+
+# Global counters for debug telemetry.
+static var _s_active_count: int = 0
+static var _s_redraw_count: int = 0
 
 class PreviewDummyTarget:
 	extends Node2D
@@ -303,12 +309,18 @@ func set_preview_options(p_show_range: bool, p_show_projectile: bool, p_show_eff
 	show_impact_preview = p_show_impact
 	_sync_real_preview_nodes()
 	set_active(_active)
-	queue_redraw()
+	_queue_redraw_if_changed()
 
 func set_active(active: bool) -> void:
 	_active = active
 	visible = active
 	set_process(active)
+	if active and not _counted_active:
+		_counted_active = true
+		_s_active_count += 1
+	elif not active and _counted_active:
+		_counted_active = false
+		_s_active_count = maxi(0, _s_active_count - 1)
 	if _viewport:
 		if not active:
 			_viewport.render_target_update_mode = SubViewport.UPDATE_DISABLED
@@ -347,7 +359,7 @@ func set_static_preview(enabled: bool) -> void:
 			_tower.mark_visual_dirty()
 	_sync_real_preview_nodes()
 	set_active(_active)
-	queue_redraw()
+	_queue_redraw_if_changed()
 
 func set_vfx_enabled(enabled: bool) -> void:
 	if static_preview and enabled:
@@ -355,7 +367,7 @@ func set_vfx_enabled(enabled: bool) -> void:
 	show_effects_preview = enabled
 	_sync_real_preview_nodes()
 	set_active(_active)
-	queue_redraw()
+	_queue_redraw_if_changed()
 
 func set_projectile_preview_enabled(enabled: bool) -> void:
 	show_projectile_preview = enabled
@@ -363,7 +375,7 @@ func set_projectile_preview_enabled(enabled: bool) -> void:
 		set_static_preview(false)
 	_sync_real_preview_nodes()
 	set_active(_active)
-	queue_redraw()
+	_queue_redraw_if_changed()
 
 func set_impact_preview_enabled(enabled: bool) -> void:
 	show_impact_preview = enabled
@@ -371,7 +383,7 @@ func set_impact_preview_enabled(enabled: bool) -> void:
 		set_static_preview(false)
 	_sync_real_preview_nodes()
 	set_active(_active)
-	queue_redraw()
+	_queue_redraw_if_changed()
 
 func play_preview() -> void:
 	preview_paused = false
@@ -603,6 +615,7 @@ func _show_fallback(reason: String) -> void:
 
 
 func _draw() -> void:
+	_s_redraw_count += 1
 	if CatalogRenderGuardScript.catalog_safe_mode:
 		return
 	if not show_range_ring or _tower == null:
@@ -620,3 +633,9 @@ func _draw() -> void:
 	var ring_r := clampf(rng * 0.35, 24, sz.x * 0.48)
 	TowerVisualDrawUtils.safe_draw_circle(self, Vector2(cx, cy), ring_r, Color(0.15, 0.45, 0.6, 0.10))
 	TowerVisualDrawUtils.safe_draw_arc(self, Vector2(cx, cy), ring_r, 0, TAU, 12, Color(0.15, 0.45, 0.6, 0.22), 1.0)
+
+func _queue_redraw_if_changed() -> void:
+	var new_hash := hash([tower_id, show_range_ring, show_projectile_preview, show_effects_preview, static_preview, _active])
+	if new_hash != _last_draw_hash:
+		_last_draw_hash = new_hash
+		queue_redraw()

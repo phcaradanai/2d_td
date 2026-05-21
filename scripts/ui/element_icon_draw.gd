@@ -19,13 +19,18 @@ class_name ElementIconDraw
 
 @export var element_id: String = "" :
 	set(v):
+		if v == element_id:
+			return
 		element_id = v
 		queue_redraw()
 
 ## Scale factor 0.0–1.0 applied to icon brightness (used for locked/maxed states).
 @export var icon_alpha: float = 1.0 :
 	set(v):
-		icon_alpha = clampf(v, 0.0, 1.0)
+		var clamped := clampf(v, 0.0, 1.0)
+		if absf(clamped - icon_alpha) < 0.001:
+			return
+		icon_alpha = clamped
 		queue_redraw()
 
 # ── Static helpers ──────────────────────────────────────────────────────────
