@@ -120,6 +120,14 @@ var _bake_scale: Vector2 = Vector2(0.5, 0.5)   # set in _apply_baked_enemy_textu
 # Sprite animation state (no queue_redraw needed — GPU-side transforms only)
 var _hit_impact_tween: Tween = null
 var _hit_impact_active: bool = false
+var _hit_jitter_tween: Tween = null
+var _last_sprite_hit_impact_msec: int = -1000000
+var _last_hit_spark_msec: int = -1000000
+const SPRITE_HIT_IMPACT_COOLDOWN_MSEC := 130
+const HIT_SPARK_COOLDOWN_MSEC := 80
+const CROWDED_HIT_SPARK_COOLDOWN_MSEC := 180
+const CROWDED_ENEMY_RADIUS := 54.0
+const CROWDED_ENEMY_THRESHOLD := 7
 
 # Per-enemy organic motion — set once in setup(), never changes.
 # Desync bobs, drift ⊥ to path, tilt on step — all GPU-side Sprite2D transforms.
@@ -132,11 +140,13 @@ var _perp_drift_freq: float = 0.0  # drift cycles per px of path progress
 var _sep_lateral: float = 0.0      # current smoothed lateral offset (px)
 var _sep_target: float = 0.0       # target lateral from last avoidance scan
 var _sep_check_timer: float = 0.0  # countdown to next scan
+var _spawn_spread_lateral: float = 0.0 # early visual-only lane offset; fades with progress
 
 const SEP_SCAN_INTERVAL   := 0.38   # base seconds between scans per enemy
 const SEP_SCAN_RADIUS_SQ  := 784.0  # 28 px² — world-space proximity filter
 const SEP_PUSH_MAX        := 7.0    # max px pushed per overlapping neighbour
 const SEP_ROAD_HALF       := 14.0   # max combined lateral offset from path center
+const SPAWN_SPREAD_FADE_DISTANCE := 220.0
 
 # Smart Visual LOD — prioritises CPU for hero moments, saves it for background creeps.
 # LOW (0): healthy, not in combat  → animate every 3rd frame, no glow
@@ -318,7 +328,10 @@ func setup(config: Dictionary) -> void:
 	_anim_phase      = fmod(iid_f * 2.39996, TAU)
 	_perp_drift_amp  = _get_type_drift_amp(visual_type) * (0.7 + fmod(iid_f * 0.61803, 1.0) * 0.6)
 	_perp_drift_freq = 0.045 + fmod(iid_f * 0.38196, 0.025)
-	_sep_check_timer = fmod(iid_f * 0.15700, SEP_SCAN_INTERVAL)  # stagger first scan
+	var spread_dir := 1.0 if fmod(iid_f * 0.754877, 1.0) >= 0.5 else -1.0
+	var spread_mag := 0.55 + fmod(iid_f * 0.31831, 1.0) * 0.45
+	_spawn_spread_lateral = _get_type_spawn_spread(visual_type) * spread_dir * spread_mag
+	_sep_check_timer = 0.04 + fmod(iid_f * 0.15700, 0.14)  # quick first scan, still staggered
 
 	is_active = true
 	
@@ -536,6 +549,16 @@ func _get_type_drift_amp(vtype: String) -> float:
 		"tank", "bulwark", "shieldbearer": return 3.0
 		_:             return 6.0
 
+## Spawn spread is visual-only and decays during the first few road tiles.
+## It keeps dense starts from reading as one stacked train without moving gameplay hitboxes.
+func _get_type_spawn_spread(vtype: String) -> float:
+	match vtype:
+		"swarm":                           return 10.0
+		"fast", "runner", "fast_flyer":    return 8.5
+		"tank", "bulwark", "shieldbearer": return 4.5
+		"flyer", "armored_flyer":          return 6.0
+		_:                                 return 7.0
+
 ## Lazy separation — pushes _sep_target away from nearby overlapping enemies.
 ## Called ~every 0.4 s per enemy (staggered), NOT every frame.
 func _update_separation() -> void:
@@ -569,6 +592,15 @@ func _update_separation() -> void:
 		push = _sep_target * -0.25   # gentle return to center when isolated
 	_sep_target = clampf(push, -SEP_ROAD_HALF, SEP_ROAD_HALF)
 
+## Per-type bob intensity — tanks plod with heavy stillness; fast/runner dart more.
+func _get_type_bob_intensity(vtype: String) -> float:
+	match vtype:
+		"tank", "bulwark", "shieldbearer": return 0.55
+		"swarm":                           return 0.85
+		"fast", "runner", "fast_flyer":    return 1.28
+		"hunter":                          return 1.12
+		_:                                 return 1.0
+
 ## Walking squash/stretch — called every frame when baked. No queue_redraw.
 func _update_sprite_movement_anim() -> void:
 	if not _body_baked or _body_sprite == null or _hit_impact_active:
@@ -583,29 +615,35 @@ func _update_sprite_movement_anim() -> void:
 	# enemies (dynamic_travel_distance). Using progress directly would freeze dynamic-path
 	# enemies at phase = 0, giving no animation.
 	var path_px := get_path_progress()
+	var bob_intensity := _get_type_bob_intensity(visual_type)
 	# Staggered bob: unique phase per enemy; ~1 cycle every 70 px of travel
-	var bob := sin(path_px * 0.090 + _anim_phase) * speed_ratio
+	var bob := sin(path_px * 0.090 + _anim_phase) * speed_ratio * bob_intensity
 	# Squash-stretch: exaggerated so it reads at small sprite sizes
 	_body_sprite.scale = Vector2(
-		_bake_scale.x * (1.0 - bob * 0.18),   # narrow on upstroke
-		_bake_scale.y * (1.0 + bob * 0.25)    # tall on upstroke, short on downstroke
+		_bake_scale.x * (1.0 - bob * 0.20),   # narrow on upstroke
+		_bake_scale.y * (1.0 + bob * 0.30)    # tall on upstroke, short on downstroke
 	)
 	# Primary slow weave ⊥ to path + secondary overtone = organic swarm feel
 	# path_px drives drift so it's always in sync with actual travel distance
 	var drift := sin(path_px * _perp_drift_freq + _anim_phase) * _perp_drift_amp \
 			   + sin(path_px * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.30
 	# Combined lateral: drift + separation, clamped to road half-width
-	var lateral := clampf(drift + _sep_lateral, -SEP_ROAD_HALF, SEP_ROAD_HALF)
+	var spawn_spread := _spawn_spread_lateral * (1.0 - clampf(path_px / SPAWN_SPREAD_FADE_DISTANCE, 0.0, 1.0))
+	var lateral := clampf(drift + _sep_lateral + spawn_spread, -SEP_ROAD_HALF, SEP_ROAD_HALF)
 	# Float: sprite rises at upstroke peak (local Y = ⊥ to path on PathFollow2D)
-	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 5.0 * speed_ratio)
-	# Lean: tilt sprite into each step
-	_body_sprite.rotation = bob * 0.18
+	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 6.5 * speed_ratio)
+	# Lean: tilt sprite into each step — intensity scales with bob type
+	_body_sprite.rotation = bob * 0.22
 
 ## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
-## Called every hit (no throttle) for baked sprites.
+## Heavy squash is intentionally throttled so rapid-fire hits do not freeze gait animation.
 func _play_sprite_hit_impact(color: Color) -> void:
 	if not _body_baked or _body_sprite == null or not is_instance_valid(_body_sprite):
 		return
+	var now_msec := Time.get_ticks_msec()
+	if _hit_impact_active or now_msec - _last_sprite_hit_impact_msec < SPRITE_HIT_IMPACT_COOLDOWN_MSEC:
+		return
+	_last_sprite_hit_impact_msec = now_msec
 	if _hit_impact_tween != null and _hit_impact_tween.is_valid():
 		_hit_impact_tween.kill()
 	if _death_glow_tween != null and _death_glow_tween.is_valid():
@@ -619,30 +657,47 @@ func _play_sprite_hit_impact(color: Color) -> void:
 		minf(color.g * 2.0, 1.0),
 		minf(color.b * 2.0, 1.0), 1.0)
 
+	# Per-type squish — tanks thud with rigid shudder; light units flex dramatically.
+	var squish_wide: float
+	var squish_flat: float
+	match visual_type:
+		"tank", "bulwark", "shieldbearer":
+			squish_wide = 1.30; squish_flat = 0.72
+		"swarm":
+			squish_wide = 1.50; squish_flat = 0.55
+		_:
+			squish_wide = 1.65; squish_flat = 0.45
+
 	var t := create_tween().set_parallel(true)
 	_hit_impact_tween = t
 
-	# Stronger squish: very wide + flat then elastic spring back
-	t.tween_property(_body_sprite, "scale",
-		Vector2(_bake_scale.x * 1.65, _bake_scale.y * 0.45), 0.045)\
-		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	t.chain().tween_property(_body_sprite, "scale", _bake_scale, 0.18)\
-		.set_trans(Tween.TRANS_SPRING).set_ease(Tween.EASE_OUT)
-
-	# Flash: instant bright white → element colour → white
+	# Squish [WAVE 1: 45ms] + instant white flash
 	_body_sprite.modulate = flash_white
 	t.tween_property(_body_sprite, "modulate", flash_col, 0.03)
-	t.chain().tween_property(_body_sprite, "modulate", Color.WHITE, 0.14)\
-		.set_trans(Tween.TRANS_EXPO)
+	t.tween_property(_body_sprite, "scale",
+		Vector2(_bake_scale.x * squish_wide, _bake_scale.y * squish_flat), 0.045)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
 
+	# Spring back [WAVE 2: 120ms]
+	t.chain().tween_property(_body_sprite, "scale", _bake_scale, 0.12)\
+		.set_trans(Tween.TRANS_SPRING).set_ease(Tween.EASE_OUT)
+
+	# Release freeze right after spring-back (~165ms); colour fade continues
+	# independently — walking animation resumes without fighting the scale tween.
 	t.chain().tween_callback(func() -> void:
 		_hit_impact_active = false
 		if _body_sprite != null and is_instance_valid(_body_sprite):
-			_body_sprite.rotation = 0.0   # restore lean after impact freeze
-			if health_visual_state < HealthVisualState.HEALTH_CRITICAL:
-				_body_sprite.modulate = Color.WHITE
+			_body_sprite.rotation = 0.0
 		if _death_glow_tween != null and _death_glow_tween.is_valid():
 			_death_glow_tween.play()
+	)
+	# Colour fade [WAVE 3: +110ms, parallel with callback]
+	t.tween_property(_body_sprite, "modulate", Color.WHITE, 0.11)\
+		.set_trans(Tween.TRANS_EXPO)
+	t.chain().tween_callback(func() -> void:
+		if _body_sprite != null and is_instance_valid(_body_sprite):
+			if health_visual_state < HealthVisualState.HEALTH_CRITICAL:
+				_body_sprite.modulate = Color.WHITE
 	)
 
 	# Separate quick shake — position.x (along path) rattles the sprite without
@@ -652,6 +707,10 @@ func _play_sprite_hit_impact(color: Color) -> void:
 		_hit_shake_tween.kill()
 		if _body_sprite != null and is_instance_valid(_body_sprite):
 			_body_sprite.position.x = 0.0
+	if _hit_jitter_tween != null and _hit_jitter_tween.is_valid():
+		_hit_jitter_tween.kill()
+		if _body_sprite != null and is_instance_valid(_body_sprite):
+			_body_sprite.position.y = 0.0
 	var shake_amp := 5.0 if (enemy_type == "swarm" or tags.has("swarm")) else 8.0
 	_hit_shake_tween = create_tween()
 	# No interval — shake starts at the same time as squish for immediate feedback
@@ -659,12 +718,25 @@ func _play_sprite_hit_impact(color: Color) -> void:
 	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x", -shake_amp * 0.65, 0.035).set_trans(Tween.TRANS_SPRING)
 	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  shake_amp * 0.30, 0.028).set_trans(Tween.TRANS_SPRING)
 	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  0.0, 0.025).set_trans(Tween.TRANS_SPRING)
+	# Perpendicular kick — small Y pop adds 2-D impact depth.
+	var jitter_y := shake_amp * 0.22
+	_hit_jitter_tween = create_tween()
+	_hit_jitter_tween.tween_property(_body_sprite, "position:y", -jitter_y, 0.025)\
+		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_hit_jitter_tween.chain().tween_property(_body_sprite, "position:y", 0.0, 0.055)\
+		.set_trans(Tween.TRANS_SPRING)
 
 ## Hit spark at the world-space impact point — bypasses screen shake entirely.
 ## Uses the enemy_impact pool for a tiny 3-ray burst + core dot.
 func _spawn_hit_spark(hit_pos: Vector2, color: Color) -> void:
 	if PerformanceFirebreak.disable_death_effects:
 		return
+	var now_msec := Time.get_ticks_msec()
+	var crowded := _get_nearby_enemy_count(CROWDED_ENEMY_RADIUS) >= CROWDED_ENEMY_THRESHOLD
+	var cooldown := CROWDED_HIT_SPARK_COOLDOWN_MSEC if crowded else HIT_SPARK_COOLDOWN_MSEC
+	if now_msec - _last_hit_spark_msec < cooldown:
+		return
+	_last_hit_spark_msec = now_msec
 	var pool := get_node_or_null("/root/VisualEffectPoolService")
 	if pool == null or not pool.has_method("acquire_scene"):
 		return
@@ -676,9 +748,25 @@ func _spawn_hit_spark(hit_pos: Vector2, color: Color) -> void:
 	if spark == null:
 		return
 	spark.global_position = hit_pos
-	spark.scale = Vector2(0.45, 0.45)   # tiny spark — not an explosion
+	spark.scale = Vector2.ONE * (0.32 if crowded else 0.45)   # tiny spark — not an explosion
 	if spark.has_method("setup"):
-		spark.setup("default", Color(color.r, color.g, color.b, 1.0), 0.12, 3)
+		spark.setup("default", Color(color.r, color.g, color.b, 0.9), 0.10 if crowded else 0.12, 2 if crowded else 3)
+
+func _get_nearby_enemy_count(radius: float) -> int:
+	var count := 0
+	var radius_sq := radius * radius
+	var pb: Node = get_node_or_null("/root/PerformanceBudget")
+	var enemies: Array = pb.get_enemies() if pb != null and pb.has_method("get_enemies") else get_tree().get_nodes_in_group("enemies")
+	for enemy in enemies:
+		if enemy == self or not is_instance_valid(enemy) or not (enemy is Node2D):
+			continue
+		if enemy.has_method("is_alive") and not enemy.is_alive():
+			continue
+		if global_position.distance_squared_to(enemy.global_position) <= radius_sq:
+			count += 1
+			if count >= CROWDED_ENEMY_THRESHOLD:
+				return count
+	return count
 
 ## Death pop — instant scale burst + fade before queue_free fires.
 func _play_sprite_death() -> void:
@@ -2768,8 +2856,12 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 	spawn_damage_number(int(final_damage), capture_pos, dn_color, source_id)
 	_play_hit_pulse()
 	if _body_baked:
-		# Always show impact squish regardless of flash throttle.
-		_play_sprite_hit_impact(hit_flash_color if is_flashing else dn_color)
+		# One heavy impact path only. flash_body() resolves comfort colour/LOD;
+		# this call owns the baked-sprite tween so rapid hits cannot double-trigger it.
+		var impact_color: Color = hit_flash_color if hit_flash_color.a > 0.0 else dn_color
+		if dn_color != Color.WHITE:
+			impact_color = dn_color
+		_play_sprite_hit_impact(impact_color)
 		# Hit spark: tiny burst at impact point — replaces screen shake as impact cue.
 		_spawn_hit_spark(capture_pos, dn_color)
 	_try_runner_hit_dash()
@@ -2876,14 +2968,16 @@ func _process_tower_status_effects(delta: float) -> void:
 
 func flash_body(damage_context: String = "") -> void:
 	var comfort := get_node_or_null("/root/VisualComfort")
-	# Baked-sprite impact handles its own throttling inside _play_sprite_hit_impact.
-	# Skip the VisualComfort throttle so every hit gets a shake response.
+	# Baked sprites resolve colour/LOD here, then take_damage() plays the single
+	# heavy impact path. Keeping tween ownership in one place avoids double hits.
 	if _body_baked:
 		var fc: Color = Color(1.0, 0.62, 0.26, 0.20)
 		if comfort != null and comfort.has_method("get_hit_flash_color"):
 			fc = comfort.get_hit_flash_color(damage_context)
+		hit_flash_color = fc
+		hit_flash_alpha = 0.0
+		is_flashing = false
 		_set_anim_lod_high()
-		_play_sprite_hit_impact(fc)
 		return
 	if comfort != null and comfort.has_method("should_skip_hit_flash") and comfort.should_skip_hit_flash():
 		return
@@ -2916,6 +3010,8 @@ func flash_body(damage_context: String = "") -> void:
 
 func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
 	if PerformanceFirebreak.disable_damage_numbers: return
+	if _get_nearby_enemy_count(CROWDED_ENEMY_RADIUS) >= CROWDED_ENEMY_THRESHOLD and amount < int(max_hp * 0.18):
+		return
 	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("allow_floating_damage_number"):
 		if not perf_service.allow_floating_damage_number():

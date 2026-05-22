@@ -15,15 +15,15 @@ const BOARD_FRAME          := Color(0.12, 0.54, 0.72, 0.34)
 const ROAD_PANEL           := Color(0.105, 0.125, 0.155, 1.0)
 const ROAD_PANEL_ALT       := Color(0.075, 0.095, 0.125, 1.0)
 const ROAD_EDGE_DARK       := Color(0.015, 0.02, 0.03, 0.95)
-const ROAD_EDGE_CYAN       := Color(0.12, 0.66, 0.90, 0.58)
-const ROAD_CENTER_GLOW     := Color(0.12, 0.78, 1.0, 0.30)
-const ROAD_CENTER_LINE     := Color(0.56, 0.92, 1.0, 0.48)
+const ROAD_EDGE_CYAN       := Color(0.12, 0.66, 0.90, 0.48)
+const ROAD_CENTER_GLOW     := Color(0.12, 0.78, 1.0, 0.18)
+const ROAD_CENTER_LINE     := Color(0.56, 0.92, 1.0, 0.32)
 const ROAD_CORNER_GLOW     := Color(0.2, 0.95, 1.0, 0.12)
 const SPAWN_COLOR          := Color(1.0,  0.22, 0.12, 0.95)
 const CORE_COLOR           := Color(0.3,  0.95, 0.45, 0.95)
-const GUIDELINE_COLOR      := Color(1.0, 0.58, 0.18, 0.74)
-const GUIDELINE_SHADOW     := Color(0.0, 0.0, 0.0, 0.50)
-const PATH_DOT_COLOR       := Color(0.16, 0.88, 1.0, 0.54)
+const GUIDELINE_COLOR      := Color(1.0, 0.58, 0.18, 0.56)
+const GUIDELINE_SHADOW     := Color(0.0, 0.0, 0.0, 0.36)
+const PATH_DOT_COLOR       := Color(0.16, 0.88, 1.0, 0.38)
 
 # ------------------------------------------------------------------ state
 var _grid_origin: Vector2 = Vector2.ZERO
@@ -245,8 +245,8 @@ func _draw_road_tiles() -> void:
 	if pts.size() >= 2:
 		draw_polyline(pts, ROAD_EDGE_DARK, _grid_size * 0.42, false)
 		draw_polyline(pts, ROAD_PANEL, _grid_size * 0.34, false)
-		draw_polyline(pts, ROAD_CENTER_GLOW, _grid_size * 0.10, false)
-		draw_polyline(pts, ROAD_CENTER_LINE, 1.6, false)
+		draw_polyline(pts, ROAD_CENTER_GLOW, _grid_size * 0.07, false)
+		draw_polyline(pts, ROAD_CENTER_LINE, 1.1, false)
 
 	# Small cyan nodes at each cell center increase readability for fixed-path tests.
 	for cell in _road_cells:
@@ -372,21 +372,21 @@ func _draw_guideline_path() -> void:
 		return
 
 	# Place chevrons based on index so even straight routes are readable.
-	const ARROW_STEP := 4
+	const ARROW_STEP := 5
 	for i in range(1, path_size - 1):
 		if i % ARROW_STEP != 0:
 			continue
 		var from_pos: Vector2 = _cell_center(_guideline_cells[i])
 		var to_pos: Vector2 = _cell_center(_guideline_cells[i + 1])
 		var dir: Vector2 = from_pos.direction_to(to_pos)
-		_draw_chevron(from_pos.lerp(to_pos, 0.35), dir, _grid_size * 0.34)
+		_draw_chevron(from_pos.lerp(to_pos, 0.35), dir, _grid_size * 0.30)
 
 	# Final arrow into core.
 	var last_idx: int = path_size - 1
 	var last_pos: Vector2 = _cell_center(_guideline_cells[last_idx])
 	var prev_pos: Vector2 = _cell_center(_guideline_cells[last_idx - 1])
 	var last_dir: Vector2 = prev_pos.direction_to(last_pos)
-	_draw_chevron(prev_pos.lerp(last_pos, 0.55), last_dir, _grid_size * 0.42)
+	_draw_chevron(prev_pos.lerp(last_pos, 0.55), last_dir, _grid_size * 0.36)
 
 
 func _draw_chevron(at: Vector2, dir: Vector2, size: float) -> void:
@@ -402,8 +402,8 @@ func _draw_chevron(at: Vector2, dir: Vector2, size: float) -> void:
 	var shadow_tip := tip + Vector2(0, 2)
 	var shadow_left := left + Vector2(0, 2)
 	var shadow_right := right + Vector2(0, 2)
-	draw_line(shadow_left, shadow_tip, GUIDELINE_SHADOW, 2.8)
-	draw_line(shadow_right, shadow_tip, GUIDELINE_SHADOW, 2.8)
-	draw_line(back, tip, Color(0.25, 0.09, 0.02, 0.42), 2.0)
-	draw_line(left, tip, GUIDELINE_COLOR, 2.0)
-	draw_line(right, tip, GUIDELINE_COLOR, 2.0)
+	draw_line(shadow_left, shadow_tip, GUIDELINE_SHADOW, 2.0)
+	draw_line(shadow_right, shadow_tip, GUIDELINE_SHADOW, 2.0)
+	draw_line(back, tip, Color(0.25, 0.09, 0.02, 0.26), 1.2)
+	draw_line(left, tip, GUIDELINE_COLOR, 1.45)
+	draw_line(right, tip, GUIDELINE_COLOR, 1.45)
