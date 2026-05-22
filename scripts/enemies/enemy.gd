@@ -316,8 +316,8 @@ func setup(config: Dictionary) -> void:
 	# not adjacent values from a modulo strip.
 	var iid_f := float(get_instance_id())
 	_anim_phase      = fmod(iid_f * 2.39996, TAU)
-	_perp_drift_amp  = _get_type_drift_amp(visual_type) * (0.55 + fmod(iid_f * 0.61803, 1.0) * 0.9)
-	_perp_drift_freq = 0.028 + fmod(iid_f * 0.38196, 0.018)
+	_perp_drift_amp  = _get_type_drift_amp(visual_type) * (0.7 + fmod(iid_f * 0.61803, 1.0) * 0.6)
+	_perp_drift_freq = 0.045 + fmod(iid_f * 0.38196, 0.025)
 	_sep_check_timer = fmod(iid_f * 0.15700, SEP_SCAN_INTERVAL)  # stagger first scan
 
 	is_active = true
@@ -485,7 +485,7 @@ func _update_health_visual_state(force_redraw: bool = false) -> void:
 # ── Baker-style body sprite ──────────────────────────────────────────────────
 
 func _request_baked_enemy_texture() -> void:
-	if is_gallery_preview or PERFORMANCE_VISUAL_MODE:
+	if is_gallery_preview:
 		return
 	# Defer until we're in the scene tree so add_child / callbacks work safely.
 	if not is_inside_tree():
@@ -507,7 +507,7 @@ func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 		_body_sprite = Sprite2D.new()
 		_body_sprite.name = "BakedBodySprite"
 		_body_sprite.centered = true
-		_body_sprite.z_index = -1   # behind parent _draw() so overlays render on top
+		_body_sprite.z_index = 0
 		_body_sprite.z_as_relative = true
 		add_child(_body_sprite)
 		move_child(_body_sprite, 0)
@@ -528,13 +528,13 @@ func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 ## Per-type lateral drift amplitude (px). Fast/small types drift more; tanks barely move.
 func _get_type_drift_amp(vtype: String) -> float:
 	match vtype:
-		"swarm":       return 7.5
-		"fast", "runner", "fast_flyer": return 6.0
-		"cloaked":     return 5.0
-		"basic", "healer", "splitter", "disruptor": return 4.0
-		"hunter", "flyer", "armored_flyer": return 3.5
-		"tank", "bulwark", "shieldbearer": return 1.8
-		_:             return 4.0
+		"swarm":       return 9.0
+		"fast", "runner", "fast_flyer": return 7.5
+		"cloaked":     return 7.0
+		"basic", "healer", "splitter", "disruptor": return 6.0
+		"hunter", "flyer", "armored_flyer": return 5.5
+		"tank", "bulwark", "shieldbearer": return 3.0
+		_:             return 6.0
 
 ## Lazy separation — pushes _sep_target away from nearby overlapping enemies.
 ## Called ~every 0.4 s per enemy (staggered), NOT every frame.
@@ -553,16 +553,15 @@ func _update_separation() -> void:
 		if dx * dx + dy * dy > SEP_SCAN_RADIUS_SQ: continue   # world-distance guard
 		if not other.has_method("get_path_progress"): continue
 		if absf(my_prog - other.get_path_progress()) > 32.0: continue  # far on path
-		# Determine push direction from relative lateral positions
+		# Determine push direction — must differ between the two enemies in a pair
 		var other_lat: float = float(other.get("_sep_lateral"))
 		var gap := _sep_lateral - other_lat
 		var push_dir: float
 		if absf(gap) > 2.0:
-			push_dir = signf(gap)          # reinforce whichever side we're already on
-		elif _anim_phase > PI:
-			push_dir = 1.0                 # tie-break: consistent per-enemy preference
+			push_dir = signf(gap)           # already separated: reinforce it
 		else:
-			push_dir = -1.0
+			# Tie-break via relative instance IDs — guarantees opposite dirs per pair
+			push_dir = 1.0 if get_instance_id() > other.get_instance_id() else -1.0
 		var dist_sq := dx * dx + dy * dy
 		push += push_dir * SEP_PUSH_MAX * (1.0 - dist_sq / SEP_SCAN_RADIUS_SQ)
 	# Decay toward 0 when alone; clamp to road half-width
@@ -575,26 +574,32 @@ func _update_sprite_movement_anim() -> void:
 	if not _body_baked or _body_sprite == null or _hit_impact_active:
 		return
 	var speed_ratio := clampf(speed / maxf(base_speed, 1.0), 0.0, 2.2)
-	if speed_ratio < 0.04:
+	if speed_ratio < 0.02:
 		_body_sprite.scale    = _bake_scale
 		_body_sprite.position = Vector2.ZERO
 		_body_sprite.rotation = 0.0
 		return
-	# Staggered bob: unique phase per enemy breaks the in-sync marching look
-	var bob := sin(progress * 0.057 + _anim_phase) * speed_ratio
+	# get_path_progress() works for BOTH PathFollow2D (progress) and dynamic-path
+	# enemies (dynamic_travel_distance). Using progress directly would freeze dynamic-path
+	# enemies at phase = 0, giving no animation.
+	var path_px := get_path_progress()
+	# Staggered bob: unique phase per enemy; ~1 cycle every 70 px of travel
+	var bob := sin(path_px * 0.090 + _anim_phase) * speed_ratio
+	# Squash-stretch: exaggerated so it reads at small sprite sizes
 	_body_sprite.scale = Vector2(
-		_bake_scale.x * (1.0 - bob * 0.050),
-		_bake_scale.y * (1.0 + bob * 0.072)
+		_bake_scale.x * (1.0 - bob * 0.18),   # narrow on upstroke
+		_bake_scale.y * (1.0 + bob * 0.25)    # tall on upstroke, short on downstroke
 	)
-	# Primary slow weave ⊥ to path + secondary faster overtone = organic swarm feel
-	var drift := sin(progress * _perp_drift_freq + _anim_phase) * _perp_drift_amp \
-			   + sin(progress * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.28
-	# Combined lateral: drift + separation offset, clamped to road half-width
+	# Primary slow weave ⊥ to path + secondary overtone = organic swarm feel
+	# path_px drives drift so it's always in sync with actual travel distance
+	var drift := sin(path_px * _perp_drift_freq + _anim_phase) * _perp_drift_amp \
+			   + sin(path_px * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.30
+	# Combined lateral: drift + separation, clamped to road half-width
 	var lateral := clampf(drift + _sep_lateral, -SEP_ROAD_HALF, SEP_ROAD_HALF)
-	# Float upward at step peak (local Y = ⊥ to path on PathFollow2D)
-	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 2.2 * speed_ratio)
-	# Lean into step
-	_body_sprite.rotation = bob * 0.09
+	# Float: sprite rises at upstroke peak (local Y = ⊥ to path on PathFollow2D)
+	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 5.0 * speed_ratio)
+	# Lean: tilt sprite into each step
+	_body_sprite.rotation = bob * 0.18
 
 ## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
 ## Called every hit (no throttle) for baked sprites.
@@ -645,13 +650,15 @@ func _play_sprite_hit_impact(color: Color) -> void:
 	# _hit_impact_active blocks _update_sprite_movement_anim so no conflict.
 	if _hit_shake_tween != null and _hit_shake_tween.is_valid():
 		_hit_shake_tween.kill()
-	var shake_amp := 3.5 if (enemy_type == "swarm" or tags.has("swarm")) else 5.0
+		if _body_sprite != null and is_instance_valid(_body_sprite):
+			_body_sprite.position.x = 0.0
+	var shake_amp := 5.0 if (enemy_type == "swarm" or tags.has("swarm")) else 8.0
 	_hit_shake_tween = create_tween()
-	_hit_shake_tween.tween_interval(0.038)  # let squish fire first
-	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  shake_amp, 0.022).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x", -shake_amp * 0.7, 0.030).set_trans(Tween.TRANS_SPRING)
-	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  shake_amp * 0.35, 0.024).set_trans(Tween.TRANS_SPRING)
-	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  0.0, 0.028).set_trans(Tween.TRANS_SPRING)
+	# No interval — shake starts at the same time as squish for immediate feedback
+	_hit_shake_tween.tween_property(_body_sprite, "position:x",  shake_amp, 0.030).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x", -shake_amp * 0.65, 0.035).set_trans(Tween.TRANS_SPRING)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  shake_amp * 0.30, 0.028).set_trans(Tween.TRANS_SPRING)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  0.0, 0.025).set_trans(Tween.TRANS_SPRING)
 
 ## Hit spark at the world-space impact point — bypasses screen shake entirely.
 ## Uses the enemy_impact pool for a tiny 3-ray burst + core dot.
@@ -2091,10 +2098,12 @@ func _process_inner(delta: float) -> void:
 	_anim_frame_counter += 1
 	if _body_baked:
 		# Smart LOD: LOW priority updates every 3rd frame; HIGH every frame.
-		# pulse_time not needed when baked (sprite animation uses 'progress' only).
 		var skip := (_anim_lod == ANIM_LOD_LOW) and (_anim_frame_counter % 3 != 0)
 		if not skip:
 			_update_sprite_movement_anim()
+			# Redraw overlay arcs only when something is active (shield/slow)
+			if shield_remaining > 0 or active_slow_percent > 0:
+				queue_redraw()
 		# Separation: lazy scan + per-frame lerp. Lerp cost = ~3 floats, free.
 		_sep_check_timer -= delta
 		if _sep_check_timer <= 0.0:
@@ -2867,6 +2876,15 @@ func _process_tower_status_effects(delta: float) -> void:
 
 func flash_body(damage_context: String = "") -> void:
 	var comfort := get_node_or_null("/root/VisualComfort")
+	# Baked-sprite impact handles its own throttling inside _play_sprite_hit_impact.
+	# Skip the VisualComfort throttle so every hit gets a shake response.
+	if _body_baked:
+		var fc: Color = Color(1.0, 0.62, 0.26, 0.20)
+		if comfort != null and comfort.has_method("get_hit_flash_color"):
+			fc = comfort.get_hit_flash_color(damage_context)
+		_set_anim_lod_high()
+		_play_sprite_hit_impact(fc)
+		return
 	if comfort != null and comfort.has_method("should_skip_hit_flash") and comfort.should_skip_hit_flash():
 		return
 	if comfort != null and comfort.has_method("allow_flash"):
@@ -2884,9 +2902,6 @@ func flash_body(damage_context: String = "") -> void:
 	hit_flash_alpha = minf(hit_flash_color.a, 0.22)
 	is_flashing = hit_flash_alpha > 0.01
 	_set_anim_lod_high()   # hit = always full animation
-	if _body_baked:
-		_play_sprite_hit_impact(hit_flash_color)
-		return
 	queue_redraw()
 
 	var duration := 0.08
