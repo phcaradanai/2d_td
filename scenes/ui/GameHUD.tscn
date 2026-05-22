@@ -264,10 +264,12 @@ layout_mode = 2
 text = "Target Mode:"
 
 [node name="TargetModeOptionButton" type="OptionButton" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=1674738007]
+visible = false
 custom_minimum_size = Vector2(0, 35)
 layout_mode = 2
 
 [node name="TowerUpgradeCostLabel" type="Label" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=560849420]
+visible = false
 layout_mode = 2
 text = "Upgrade: 40 Gold"
 
@@ -275,11 +277,13 @@ text = "Upgrade: 40 Gold"
 layout_mode = 2
 
 [node name="UpgradeTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=161536428]
+visible = false
 custom_minimum_size = Vector2(0, 48)
 layout_mode = 2
 text = "Upgrade"
 
 [node name="DeselectTowerButton" type="Button" parent="Root/ScreenLayout/MainContent/RightSidebarContainer/RightSidebar/MarginContainer/VBoxContainer" unique_id=430641691]
+visible = false
 custom_minimum_size = Vector2(0, 0)
 layout_mode = 2
 text = ""

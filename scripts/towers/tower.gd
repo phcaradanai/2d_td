@@ -15,6 +15,7 @@ const TowerConstructionComponentScript = preload("res://scripts/components/tower
 const TowerConstructionConfigScript = preload("res://scripts/config/tower_construction_config.gd")
 const TowerMuzzleAnchorConfigScript = preload("res://scripts/config/tower_muzzle_anchor_config.gd")
 const TowerMuzzleDebugOverlayScript = preload("res://scripts/components/tower_muzzle_debug_overlay.gd")
+const TowerHitVFXDispatcherScript = preload("res://scripts/services/tower_hit_vfx_dispatcher.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -1634,6 +1635,8 @@ func _perform_aura_attack() -> void:
 		allow_minor_impacts = bool(perf_service.get_budget("allow_minor_impacts"))
 	var toxic_vfx_spawned := 0
 	var toxic_vfx_limit := _get_toxic_vfx_limit(quality_name)
+	var aura_hit_vfx_spawned := 0
+	var aura_hit_vfx_limit := _get_aura_hit_vfx_limit(quality_name)
 	
 	# Visual effect for aura
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
@@ -1703,7 +1706,7 @@ func _perform_aura_attack() -> void:
 	# Build status effects once — applied to every enemy in range, not per-enemy.
 	var _prebuilt_effects := _build_attack_status_effects()
 	# Hoist pool/container lookups outside the enemy loop (was N lookups, now 1).
-	var _imp_pool := get_node_or_null("/root/ImpactVFXPool") if allow_minor_impacts else null
+	var _imp_pool := get_node_or_null("/root/ImpactVFXPool") if allow_minor_impacts and not PerformanceFirebreak.disable_impact_effects else null
 	var _aura_impact_container: Node = container
 
 	for enemy in enemies:
@@ -1718,8 +1721,33 @@ func _perform_aura_attack() -> void:
 			if aura_vfx_type == "toxic_bloom":
 				if allow_minor_impacts and toxic_vfx_spawned < toxic_vfx_limit:
 					_spawn_disease_attack_vfx(enemy_pos, container, tower_color, secondary_color, accent_color, quality_name)
+					if aura_hit_vfx_spawned < aura_hit_vfx_limit:
+						TowerHitVFXDispatcherScript.spawn(
+							self,
+							enemy_pos,
+							"toxic",
+							0.0,
+							tower_color,
+							secondary_color,
+							accent_color,
+							0.0
+						)
+						aura_hit_vfx_spawned += 1
 					toxic_vfx_spawned += 1
 				continue
+
+			if allow_minor_impacts and aura_hit_vfx_spawned < aura_hit_vfx_limit:
+				TowerHitVFXDispatcherScript.spawn(
+					self,
+					enemy_pos,
+					_get_lightweight_aura_hit_vfx_mode(aura_vfx_type),
+					0.0,
+					tower_color,
+					secondary_color,
+					accent_color,
+					0.0
+				)
+				aura_hit_vfx_spawned += 1
 
 			# Small impact effect on each enemy
 			if allow_minor_impacts:
@@ -1965,6 +1993,38 @@ func _get_toxic_vfx_limit(quality_name: String) -> int:
 			return 4
 		_:
 			return 6
+
+func _get_aura_hit_vfx_limit(quality_name: String) -> int:
+	match quality_name:
+		"LOW":
+			return 0
+		"BALANCED", "MED":
+			return 3
+		_:
+			return 5
+
+func _get_lightweight_aura_hit_vfx_mode(aura_vfx_type: String) -> String:
+	if aura_vfx_type == "toxic_bloom":
+		return "toxic"
+	if aura_vfx_type == "void_bloom":
+		return "void"
+	if slow_percent > 0.0 or slow_duration > 0.0:
+		if visual_type == "void_vortex":
+			return "void"
+		if visual_type == "toxin_vial" or visual_type == "spore_cap":
+			return "toxic"
+		return "frost"
+	match visual_type:
+		"ember_bloom", "furnace":
+			return "fire_blast"
+		"storm_turbine", "lightning":
+			return "chain"
+		"bio_vine", "root_cage", "support_halo":
+			return "nature"
+		"void_orb", "void_flower", "chaos_orb":
+			return "void"
+		_:
+			return "single"
 
 func play_fire_recoil() -> void:
 	# Recoil effect: Kick the turret sprite or pivot backward

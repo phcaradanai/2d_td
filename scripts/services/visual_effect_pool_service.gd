@@ -9,6 +9,7 @@ const DiseaseAttackScript := preload("res://scripts/effects/disease_attack_vfx.g
 const SawbladeAoeScript := preload("res://scripts/effects/sawblade_aoe_effect.gd")
 const LightningArcScript := preload("res://scripts/effects/lightning_arc.gd")
 const BleedParticleScript := preload("res://scripts/effects/bleed_particle.gd")
+const TowerHitVFXScript := preload("res://scripts/effects/tower_hit_vfx.gd")
 const DamageNumberScene := preload("res://scenes/effects/DamageNumber.tscn")
 const DeathPopScene := preload("res://scenes/effects/DeathPopEffect.tscn")
 const SplashEffectScene := preload("res://scenes/effects/SplashEffect.tscn")
@@ -25,6 +26,7 @@ const KEY_DISEASE_ATTACK := "disease_attack_vfx"
 const KEY_SAWBLADE_AOE := "sawblade_aoe"
 const KEY_LIGHTNING_ARC := "lightning_arc"
 const KEY_BLEED_PARTICLE := "bleed_particle"
+const KEY_TOWER_HIT_VFX := "tower_hit_vfx"
 
 const CAP_ATTACK := "attack_vfx"
 const CAP_DAMAGE := "damage_number"
@@ -46,6 +48,7 @@ const BASE_PREWARM := {
 	KEY_SAWBLADE_AOE: 4,
 	KEY_LIGHTNING_ARC: 12,
 	KEY_BLEED_PARTICLE: 18,
+	KEY_TOWER_HIT_VFX: 26,
 }
 
 var _free_by_key: Dictionary = {}
@@ -73,6 +76,7 @@ func prewarm_level_pools() -> void:
 	_prewarm_script(KEY_SAWBLADE_AOE, SawbladeAoeScript, BASE_PREWARM[KEY_SAWBLADE_AOE], CAP_ATTACK)
 	_prewarm_script(KEY_LIGHTNING_ARC, LightningArcScript, BASE_PREWARM[KEY_LIGHTNING_ARC], CAP_ATTACK)
 	_prewarm_script(KEY_BLEED_PARTICLE, BleedParticleScript, BASE_PREWARM[KEY_BLEED_PARTICLE], CAP_ENEMY_IMPACT)
+	_prewarm_script(KEY_TOWER_HIT_VFX, TowerHitVFXScript, BASE_PREWARM[KEY_TOWER_HIT_VFX], CAP_ATTACK)
 	if not _prewarmed_once:
 		_prewarm_registered_tower_attack_vfx()
 		_prewarmed_once = true

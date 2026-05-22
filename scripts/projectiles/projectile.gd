@@ -7,6 +7,7 @@ const ELEMENTAL_DEBUG_FLOATING_TEXT := false
 const ELEMENTAL_DEBUG_FLOATING_TEXT_META := "elemental_debug_floating_text_enabled"
 const ELEMENTAL_DEBUG_FLOATING_TEXT_LAST_MSEC_META := "elemental_debug_floating_text_last_msec"
 const ELEMENTAL_DEBUG_FLOATING_TEXT_MIN_INTERVAL_MSEC := 90
+const TowerHitVFXDispatcherScript := preload("res://scripts/services/tower_hit_vfx_dispatcher.gd")
 
 const ENEMY_CATEGORY_LAND := "land"
 const ENEMY_CATEGORY_AIR := "air"
@@ -383,6 +384,7 @@ func hit_target() -> void:
 			var impact_angle = (hit_global - global_position).angle()
 			# Use tower element color (modulate) for the impact spark color.
 			var impact_col := Color(modulate.r, modulate.g, modulate.b, 1.0)
+			_spawn_tower_hit_vfx(hit_global, impact_angle)
 			_spawn_impact_effect(hit_global, impact_col, impact_angle)
 			
 			if attack_type == "chain" and chain_jumps > 0:
@@ -423,6 +425,7 @@ func _apply_laser_pierce(origin: Vector2, base_damage: float) -> void:
 		en.take_damage(final_pierce, en_pos, source_id, attack_type)
 		_apply_damage_amp_to_enemy(en)
 		_apply_status_effects_to_enemy(en)
+		_spawn_tower_hit_vfx(en_pos, rotation)
 		_spawn_impact_effect(en_pos, Color(modulate.r, modulate.g, modulate.b, 0.7), rotation)
 		pierced += 1
 
@@ -487,6 +490,52 @@ func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angl
 		if effect.has_method("setup"):
 			effect.setup(color, scale_val, attack_type, vfx_glow_color, vfx_accent_color)
 
+func _spawn_tower_hit_vfx(hit_pos: Vector2, hit_angle: float = 0.0, radius_hint: float = 0.0) -> void:
+	var mode := _get_tower_hit_vfx_mode()
+	var visual_radius := radius_hint if radius_hint > 0.0 else effect_radius
+	if not _tower_hit_vfx_uses_radius(mode):
+		visual_radius = 0.0
+	TowerHitVFXDispatcherScript.spawn(self, hit_pos, mode, visual_radius, vfx_core_color, vfx_glow_color, vfx_accent_color, hit_angle)
+
+func _get_tower_hit_vfx_mode() -> String:
+	var sid := source_id.to_lower()
+	if sid.begins_with("earth") or sid.begins_with("quaker") or sid.begins_with("flesh_golem") or sid.begins_with("gunpowder"):
+		return "seismic"
+	if sid.begins_with("hydro") or sid.begins_with("tidal") or sid.begins_with("water") or sid.begins_with("vapor"):
+		return "water"
+	if sid.begins_with("ice") or sid.begins_with("hail") or sid.begins_with("polar") or sid.begins_with("windstorm"):
+		return "frost"
+	if sid.begins_with("poison") or sid.begins_with("disease") or sid.begins_with("muck") or sid.begins_with("corrosion") or sid.begins_with("mushroom"):
+		return "toxic"
+	if sid.begins_with("darkness") or sid.begins_with("oblivion") or sid.begins_with("drowning") or sid.begins_with("voodoo"):
+		return "void"
+	if sid.begins_with("light") or sid.begins_with("nova") or sid.begins_with("laser"):
+		return "prism"
+	if sid.begins_with("fire") or sid.begins_with("flame") or sid.begins_with("flamethrower"):
+		return "fire_blast"
+	if sid.begins_with("nature") or sid.begins_with("roots") or sid.begins_with("life"):
+		return "nature"
+	if sid.begins_with("electricity") or sid.begins_with("jinx"):
+		return "chain"
+	if sid.begins_with("gold"):
+		return "gold"
+	if sid.begins_with("magic") or sid.begins_with("quark") or sid.begins_with("impulse") or sid.begins_with("periodic"):
+		return "arcane"
+	if attack_type == "splash":
+		return "splash"
+	if attack_type == "slow":
+		return "slow"
+	if attack_type == "chain":
+		return "chain"
+	if _is_beam_projectile():
+		return "beam"
+	if _is_flamethrower_projectile():
+		return "fire"
+	return "single"
+
+func _tower_hit_vfx_uses_radius(mode: String) -> bool:
+	return mode in ["splash", "seismic", "water", "toxic", "fire_blast", "arcane"]
+
 func _allow_impact_fx() -> bool:
 	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("get_budget"):
@@ -504,6 +553,7 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 		if combat_audio_service:
 			combat_audio_service.play_combat_event_sfx("projectile_hit")
 
+	_spawn_tower_hit_vfx(hit_pos, rotation, effect_radius)
 	_spawn_impact_effect(hit_pos, vfx_core_color, rotation)
 
 	# Spawn visual effect at hit position

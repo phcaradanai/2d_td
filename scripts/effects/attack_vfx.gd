@@ -128,6 +128,9 @@ func _jag_pts(lend: Vector2, n: int) -> PackedVector2Array:
 	pts.append(lend)
 	return pts
 
+func _compact_lend(lend: Vector2, max_len: float = 88.0) -> Vector2:
+	return Vector2(minf(lend.x, max_len), 0.0)
+
 # ── Draw implementations ──────────────────────────────────────────────────────
 
 func _draw_rapid_tracer(t: float, a: float, lend: Vector2) -> void:
@@ -160,7 +163,8 @@ func _draw_precision_beam(t: float, a: float, lend: Vector2) -> void:
 
 func _draw_flame_cone(t: float, a: float, lend: Vector2) -> void:
 	# Layered fire cone from muzzle toward target.
-	var cl := lend.x * 0.46 * (1.0 - t * 0.28)
+	var visual := _compact_lend(lend, 96.0)
+	var cl := visual.x * 0.46 * (1.0 - t * 0.28)
 	# Three cone layers (outer → inner, darker → brighter)
 	for layer in range(3):
 		var w  := (12.0 - float(layer) * 3.5) * (1.0 - t * 0.35)
@@ -247,18 +251,20 @@ func _draw_frost_beam(t: float, a: float, lend: Vector2) -> void:
 
 func _draw_poison_spray(t: float, a: float, lend: Vector2) -> void:
 	# Fan of 5 streaks toward target + endpoint blobs.
+	var visual := _compact_lend(lend, 90.0)
 	for i in range(5):
 		var spread := -0.38 + float(i) * 0.19
 		var rf     := (0.62 + float(i % 2) * 0.28) * (1.0 - t * 0.18)
-		var ep     := Vector2(lend.x * rf, lend.x * rf * tan(spread))
+		var ep     := Vector2(visual.x * rf, visual.x * rf * tan(spread))
 		draw_line(Vector2.ZERO, ep, _c(a * (0.75 - float(i) * 0.05)), 1.6, true)
 		draw_circle(ep, 2.8 * (1.0 - t), _c(a * 0.8))
 
 func _draw_spore_puff(t: float, a: float, lend: Vector2) -> void:
 	# Four small expanding circles fanning forward.
+	var visual := _compact_lend(lend, 84.0)
 	for i in range(4):
 		var f   := float(i) / 4.0
-		var off := Vector2(lend.x * (0.08 + f * 0.58), (float(i % 2) * 2.0 - 1.0) * 5.5)
+		var off := Vector2(visual.x * (0.08 + f * 0.58), (float(i % 2) * 2.0 - 1.0) * 5.5)
 		var r   := (3.0 + float(i) * 2.2) * (0.45 + t * 0.55)
 		draw_circle(off, r, _c(a * (0.38 - float(i) * 0.05)))
 		draw_arc(off, r, 0.0, TAU, 8, _c(a * 0.55), 1.0, true)
@@ -273,8 +279,9 @@ func _draw_void_rift(t: float, a: float, lend: Vector2) -> void:
 		var outer := Vector2(cos(ang), sin(ang)) * (rr + 5.0)
 		var inner := Vector2(cos(ang), sin(ang)) * rr
 		draw_line(outer, inner, _c(a * 0.55), 1.0)
-	draw_line(Vector2.ZERO, lend * 0.55, _c(a * 0.48), 2.2, true)
-	draw_circle(lend * 0.55, 3.5 * (1.0 - t), _c(a * 0.65))
+	draw_line(Vector2.ZERO, lend, _c(a * 0.22), 2.0, true)
+	draw_line(Vector2.ZERO, lend, _c(a * 0.36), 0.9, true)
+	draw_circle(lend, 3.5 * (1.0 - t), _c(a * 0.65))
 
 func _draw_earth_impact(t: float, a: float) -> void:
 	# Fan of stone shards + gravel core.
@@ -289,9 +296,10 @@ func _draw_earth_impact(t: float, a: float) -> void:
 
 func _draw_steam_burst(t: float, a: float, lend: Vector2) -> void:
 	# Three expanding puff discs directed forward.
+	var visual := _compact_lend(lend, 84.0)
 	for i in range(3):
 		var f := float(i) / 3.0
-		var c := Vector2(lend.x * (0.18 + f * 0.3), 0.0)
+		var c := Vector2(visual.x * (0.18 + f * 0.3), 0.0)
 		var r := (5.5 + float(i) * 4.5) * (0.28 + t * 0.72)
 		draw_circle(c, r, Color(color.r, color.g, color.b, a * (0.28 - float(i) * 0.06)))
 		draw_arc(c, r, 0.0, TAU, 12, _c(a * (0.55 - float(i) * 0.12)), 1.5, true)
@@ -325,9 +333,10 @@ func _draw_nature_vine(t: float, a: float, lend: Vector2) -> void:
 
 func _draw_acid_splash(t: float, a: float, lend: Vector2) -> void:
 	# Forward spray with drip circles + origin sizzle ring.
+	var visual := _compact_lend(lend, 90.0)
 	for i in range(5):
 		var spread := -0.42 + float(i) * 0.21
-		var dl     := (lend.length() * 0.5 + float(i % 2) * 18.0) * (1.0 - t * 0.28)
+		var dl     := (visual.length() * 0.5 + float(i % 2) * 18.0) * (1.0 - t * 0.28)
 		var ep     := Vector2(cos(spread) * dl, sin(spread) * dl)
 		draw_line(Vector2.ZERO, ep, _c(a * 0.58), 2.0, true)
 		draw_circle(ep, 2.8 * (1.0 - t), _c(a * 0.82))

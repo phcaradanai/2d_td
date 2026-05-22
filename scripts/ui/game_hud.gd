@@ -382,6 +382,7 @@ func _ready() -> void:
 	center_restart_button.pressed.connect(_on_restart_pressed)
 	
 	_setup_right_sidebar_layout()
+	_force_hide_legacy_tower_detail_surface()
 	_remove_selected_tower_controls_from_left_panel()
 	_assert_left_panel_has_no_selected_tower_actions()
 	_setup_hover_card()
@@ -988,6 +989,7 @@ func update_layout_for_viewport() -> void:
 		right_sidebar_container.size_flags_vertical = Control.SIZE_EXPAND_FILL
 		right_sidebar_container.visible = false
 		right_sidebar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_force_hide_legacy_tower_detail_surface()
 
 	_sync_tower_shop_list_width()
 	_apply_mobile_portrait_layout(portrait)
@@ -3754,32 +3756,64 @@ func show_tower_info(info: Dictionary) -> void:
 		target_mode_option_button.select(mode_index)
 	updating_target_mode_ui = false
 	
-	if info.get("is_max_tier", false):
+	var hud_upgrade_preview := {}
+	var scene := get_tree().current_scene
+	if scene != null and scene.has_method("get_selected_tower_upgrade_preview"):
+		var raw_preview = scene.call("get_selected_tower_upgrade_preview")
+		if raw_preview is Dictionary:
+			hud_upgrade_preview = raw_preview
+	var raw_next_ids = info.get("next_upgrade_ids", hud_upgrade_preview.get("next_upgrade_ids", []))
+	var has_next_upgrade := false
+	if raw_next_ids is Array:
+		has_next_upgrade = not raw_next_ids.is_empty()
+	if not has_next_upgrade:
+		has_next_upgrade = not str(hud_upgrade_preview.get("next_upgrade_id", "")).is_empty()
+	var upgrade_cost := int(info.get("upgrade_cost", hud_upgrade_preview.get("upgrade_cost", -1)))
+	var locked_reason := str(info.get("locked_reason", hud_upgrade_preview.get("locked_reason", ""))).strip_edges()
+	var current_gold := int(info.get("current_gold", _get_current_gold_for_hud()))
+	var can_upgrade_ui := bool(info.get("can_upgrade", false)) and bool(hud_upgrade_preview.get("can_upgrade", true))
+	var can_afford_upgrade_ui := bool(info.get("can_afford_upgrade", hud_upgrade_preview.get("can_afford", current_gold >= upgrade_cost)))
+	if info.get("is_max_tier", false) or not has_next_upgrade:
 		upgrade_tower_button.disabled = true
 		if _upgrade_text_label:
 			_upgrade_text_label.text = "MAX TIER"
 			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_3)
 		if _upgrade_cost_display:
 			_upgrade_cost_display.visible = false
-	elif info["can_upgrade"] and info["upgrade_cost"] > 0:
-		upgrade_tower_button.disabled = false
+	elif not locked_reason.is_empty():
+		upgrade_tower_button.disabled = true
 		if _upgrade_text_label:
-			_upgrade_text_label.text = "Upgrade  ·  Lv%d" % [int(info.get("tier", 1)) + 1]
-			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_1)
+			_upgrade_text_label.text = "LOCKED"
+			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_3)
 		if _upgrade_cost_display:
-			_upgrade_cost_display.configure(info["upgrade_cost"], true)
-			_upgrade_cost_display.visible = true
-	elif info["can_upgrade"]:
+			_upgrade_cost_display.visible = false
+	elif upgrade_cost <= 0:
 		upgrade_tower_button.disabled = true
 		if _upgrade_text_label:
 			_upgrade_text_label.text = "Upgrade (N/A)"
 			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_3)
 		if _upgrade_cost_display:
 			_upgrade_cost_display.visible = false
+	elif can_upgrade_ui and can_afford_upgrade_ui:
+		upgrade_tower_button.disabled = false
+		if _upgrade_text_label:
+			_upgrade_text_label.text = "Upgrade  ·  Lv%d" % [int(info.get("tier", 1)) + 1]
+			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_1)
+		if _upgrade_cost_display:
+			_upgrade_cost_display.configure(upgrade_cost, true)
+			_upgrade_cost_display.visible = true
+	elif can_upgrade_ui:
+		upgrade_tower_button.disabled = true
+		if _upgrade_text_label:
+			_upgrade_text_label.text = "Need Credits"
+			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.WARN)
+		if _upgrade_cost_display:
+			_upgrade_cost_display.configure(upgrade_cost, false)
+			_upgrade_cost_display.visible = true
 	else:
 		upgrade_tower_button.disabled = true
 		if _upgrade_text_label:
-			_upgrade_text_label.text = "MAX TIER"
+			_upgrade_text_label.text = "Upgrade (N/A)"
 			_upgrade_text_label.add_theme_color_override("font_color", NeonStyle.INK_3)
 		if _upgrade_cost_display:
 			_upgrade_cost_display.visible = false
@@ -4052,23 +4086,39 @@ func _hide_hover_card() -> void:
 
 func show_tower_info_panel() -> void:
 	tower_detail_has_selection = true
-	if _td_header_panel:
-		_td_header_panel.visible = false
-	if right_sidebar:
-		right_sidebar.visible = false
-	if no_selection_panel:
-		no_selection_panel.visible = false
+	_force_hide_legacy_tower_detail_surface()
 	_refresh_right_info_column_visibility()
 
 func hide_tower_info_panel() -> void:
 	tower_detail_has_selection = false
+	_force_hide_legacy_tower_detail_surface()
+	_refresh_right_info_column_visibility()
+
+func _force_hide_legacy_tower_detail_surface() -> void:
+	if right_sidebar_container:
+		right_sidebar_container.custom_minimum_size = Vector2.ZERO
+		right_sidebar_container.visible = false
+		right_sidebar_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if _td_header_panel:
 		_td_header_panel.visible = false
 	if right_sidebar:
 		right_sidebar.visible = false
+		right_sidebar.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	if no_selection_panel:
 		no_selection_panel.visible = false
-	_refresh_right_info_column_visibility()
+		no_selection_panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	for node in [
+		upgrade_tower_button,
+		deselect_tower_button,
+		target_mode_option_button,
+		tower_upgrade_cost_label,
+		tower_target_label,
+		tower_special_effect_label,
+		sell_tower_button,
+	]:
+		if node is Control:
+			node.visible = false
+			node.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 func enter_end_game_ui_state() -> void:
 	hide_tower_info_panel()
@@ -4967,6 +5017,7 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	_refresh_right_info_column_visibility()
 
 func _refresh_right_info_column_visibility() -> void:
+	_force_hide_legacy_tower_detail_surface()
 	if right_sidebar_container:
 		right_sidebar_container.custom_minimum_size.x = 0
 		right_sidebar_container.visible = false

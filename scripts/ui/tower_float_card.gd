@@ -26,6 +26,8 @@ const CARD_WIDTH  := 292.0
 const OFFSET_X    := 56.0    # gap from tower centre to near card edge
 const LEFT_GUARD  := 316.0   # left of drawable area (left drawer + gap)
 const TOP_GUARD   := 68.0    # top of drawable area (top HUD + gap)
+const SAFE_MARGIN := 8.0
+const OFFSCREEN_TOLERANCE := 96.0
 
 var _tracked_tower: Node2D = null
 var _updating_ui: bool = false
@@ -340,20 +342,49 @@ func _populate(info: Dictionary) -> void:
 		_tgt_opt.select(idx)
 
 	# Upgrade button
-	if is_max:
+	var upgrade_preview := _get_upgrade_preview_for_card()
+	var raw_next_ids = info.get("next_upgrade_ids", upgrade_preview.get("next_upgrade_ids", []))
+	var has_next_upgrade := false
+	if raw_next_ids is Array:
+		has_next_upgrade = not raw_next_ids.is_empty()
+	if not has_next_upgrade:
+		has_next_upgrade = not str(upgrade_preview.get("next_upgrade_id", "")).is_empty()
+	var upgrade_cost := int(info.get("upgrade_cost", upgrade_preview.get("upgrade_cost", -1)))
+	var locked_reason := str(info.get("locked_reason", upgrade_preview.get("locked_reason", ""))).strip_edges()
+	var current_gold := int(info.get("current_gold", _get_current_gold_for_card()))
+	var preview_can_upgrade := bool(upgrade_preview.get("can_upgrade", true))
+	var can_upgrade := bool(info.get("can_upgrade", false)) and preview_can_upgrade
+	var can_afford := bool(info.get("can_afford_upgrade", upgrade_preview.get("can_afford", current_gold >= upgrade_cost)))
+	if is_max or not has_next_upgrade:
 		_upg_btn.disabled = true
 		_upg_text_lbl.text = "MAX TIER"
 		_upg_text_lbl.add_theme_color_override("font_color", NeonStyle.INK_3)
 		_upg_cost_ctrl.visible = false
-	elif bool(info.get("can_upgrade", false)) and int(info.get("upgrade_cost", 0)) > 0:
+	elif not locked_reason.is_empty():
+		_upg_btn.disabled = true
+		_upg_text_lbl.text = "LOCKED"
+		_upg_text_lbl.add_theme_color_override("font_color", NeonStyle.INK_3)
+		_upg_cost_ctrl.visible = false
+	elif upgrade_cost <= 0:
+		_upg_btn.disabled = true
+		_upg_text_lbl.text = "Upgrade (N/A)"
+		_upg_text_lbl.add_theme_color_override("font_color", NeonStyle.INK_3)
+		_upg_cost_ctrl.visible = false
+	elif can_upgrade and can_afford:
 		_upg_btn.disabled = false
 		_upg_text_lbl.text = "Upgrade  ·  Lv%d" % (tier + 1)
 		_upg_text_lbl.add_theme_color_override("font_color", NeonStyle.INK_1)
-		_upg_cost_ctrl.configure(int(info.get("upgrade_cost", 0)), true)
+		_upg_cost_ctrl.configure(upgrade_cost, true)
+		_upg_cost_ctrl.visible = true
+	elif can_upgrade:
+		_upg_btn.disabled = true
+		_upg_text_lbl.text = "Need Credits"
+		_upg_text_lbl.add_theme_color_override("font_color", NeonStyle.WARN)
+		_upg_cost_ctrl.configure(upgrade_cost, false)
 		_upg_cost_ctrl.visible = true
 	else:
 		_upg_btn.disabled = true
-		_upg_text_lbl.text = "MAX TIER"
+		_upg_text_lbl.text = "Upgrade (N/A)"
 		_upg_text_lbl.add_theme_color_override("font_color", NeonStyle.INK_3)
 		_upg_cost_ctrl.visible = false
 
@@ -370,30 +401,61 @@ func _update_pos() -> void:
 	if vp == null:
 		return
 
+	# vp.get_canvas_transform() correctly maps world → screen pixels regardless
+	# of the project's stretch mode, unlike manual camera-based calculations.
 	var tower_screen: Vector2 = vp.get_canvas_transform() * _tracked_tower.global_position
-	var vp_size: Vector2      = vp.get_visible_rect().size
-	var card_size: Vector2    = _panel.get_combined_minimum_size()
-	if card_size == Vector2.ZERO:
-		card_size = Vector2(CARD_WIDTH, 300.0)
+	var vp_size: Vector2 = vp.get_visible_rect().size
 
-	# Preferred X: right of tower; flip left if off-screen.
+	var screen_bounds := Rect2(Vector2.ZERO, vp_size).grow(OFFSCREEN_TOLERANCE)
+	if not screen_bounds.has_point(tower_screen):
+		position = Vector2(-10000.0, -10000.0)
+		return
+
+	var card_size := _get_card_size()
+
+	# Preferred X: right of tower; flip left if card would overflow.
 	var px: float = tower_screen.x + OFFSET_X
-	if px + card_size.x > vp_size.x - 8.0:
+	if px + card_size.x > vp_size.x - SAFE_MARGIN:
 		px = tower_screen.x - card_size.x - OFFSET_X
 
-	# Preferred Y: card bottom sits ~20px above the tower centre.
+	# Preferred Y: above tower; flip below if card would go above top bar.
 	var py: float = tower_screen.y - card_size.y - 20.0
 	if py < TOP_GUARD + 4.0:
-		# Flip below the tower instead.
 		py = tower_screen.y + 36.0
 
-	# Clamp inside safe area.
-	px = clamp(px, LEFT_GUARD, vp_size.x - card_size.x - 8.0)
-	py = clamp(py, TOP_GUARD + 4.0, vp_size.y - card_size.y - 8.0)
+	px = clampf(px, LEFT_GUARD, vp_size.x - card_size.x - SAFE_MARGIN)
+	py = clampf(py, TOP_GUARD + 4.0, vp_size.y - card_size.y - SAFE_MARGIN)
 
-	position = Vector2(px, py)
+	position = Vector2(px, py).round()
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
+
+func _get_card_size() -> Vector2:
+	var card_size := _panel.size
+	if card_size.x <= 1.0 or card_size.y <= 1.0:
+		card_size = _panel.get_combined_minimum_size()
+	if card_size.x <= 1.0:
+		card_size.x = CARD_WIDTH
+	if card_size.y <= 1.0:
+		card_size.y = 300.0
+	return card_size
+
+func _get_upgrade_preview_for_card() -> Dictionary:
+	var scene := get_tree().current_scene
+	if scene != null and scene.has_method("get_selected_tower_upgrade_preview"):
+		var raw = scene.call("get_selected_tower_upgrade_preview")
+		if raw is Dictionary:
+			return raw
+	return {}
+
+func _get_current_gold_for_card() -> int:
+	var scene := get_tree().current_scene
+	if scene == null:
+		return 0
+	var gm := scene.get_node_or_null("GameManager")
+	if gm == null:
+		return 0
+	return int(gm.get("gold"))
 
 func _elements_short(elements: Array) -> String:
 	const SHORT := {
