@@ -40,8 +40,15 @@ class _BakeRenderer extends Node2D:
 		enemy_type          = p_vt
 
 	func _draw() -> void:
-		_draw_faux_3q_shadow()
+		var is_directional = visual_type in ["fast", "runner", "hunter", "fast_flyer"]
+		
+		if not is_directional:
+			_draw_faux_3q_shadow()
+
 		var body_offset := _get_faux_3q_body_offset()
+		if is_directional:
+			body_offset = Vector2.ZERO # Center directional enemies so they rotate cleanly
+
 		var body_scale := _get_faux_3q_body_scale()
 		draw_set_transform(body_offset + _get_faux_3q_side_offset(), 0.0, body_scale)
 		_draw_faux_3q_side_mass()
@@ -50,6 +57,9 @@ class _BakeRenderer extends Node2D:
 		_draw_faux_3q_depth_cue()
 		_draw_faux_3q_form_planes()
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+
+
 
 	func _draw_faux_3q_shadow() -> void:
 		var shadow := _get_faux_3q_shadow_profile()

@@ -121,6 +121,7 @@ var _bake_scale: Vector2 = Vector2(0.5, 0.5)   # set in _apply_baked_enemy_textu
 var _hit_impact_tween: Tween = null
 var _hit_impact_active: bool = false
 var _hit_jitter_tween: Tween = null
+var _shadow_node: Node2D = null
 var _last_sprite_hit_impact_msec: int = -1000000
 var _last_hit_spark_msec: int = -1000000
 const SPRITE_HIT_IMPACT_COOLDOWN_MSEC := 130
@@ -525,6 +526,32 @@ func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 		_body_sprite.z_as_relative = true
 		add_child(_body_sprite)
 		move_child(_body_sprite, 0)
+
+	if _uses_directional_visual(visual_type) and (_shadow_node == null or not is_instance_valid(_shadow_node)):
+		_shadow_node = Node2D.new()
+		_shadow_node.name = "DirectionalShadow"
+		_shadow_node.z_index = -1
+		_shadow_node.z_as_relative = true
+		var is_fast = visual_type in ["fast", "runner", "hunter"]
+		var rx = 14.2 if is_fast else 12.4
+		var ry = 3.8 if is_fast else 3.3
+		var alpha = 0.22 if is_fast else 0.15
+		_shadow_node.draw.connect(func():
+			var pts := PackedVector2Array()
+			for i in 22:
+				var a := float(i)/22.0*TAU
+				pts.append(Vector2(cos(a)*rx, sin(a)*ry))
+			_shadow_node.draw_colored_polygon(pts, Color(0,0,0,alpha))
+			var core := PackedVector2Array()
+			for i in 18:
+				var a := float(i)/18.0*TAU
+				core.append(Vector2(cos(a)*rx*0.58, sin(a)*ry*0.62))
+			_shadow_node.draw_colored_polygon(core, Color(0,0,0,alpha*0.72))
+		)
+		add_child(_shadow_node)
+		move_child(_shadow_node, 0)
+		_shadow_node.queue_redraw()
+
 	_bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM)
 	_body_sprite.texture = tex
 	_body_sprite.scale   = _bake_scale
@@ -625,8 +652,12 @@ func _update_sprite_movement_anim() -> void:
 	var speed_ratio := clampf(speed / maxf(base_speed, 1.0), 0.0, 2.2)
 	if speed_ratio < 0.02:
 		_body_sprite.scale    = _bake_scale
-		_body_sprite.position = Vector2.ZERO
+		_body_sprite.position = Vector2(0.0, -3.6 if _uses_directional_visual(visual_type) else 0.0)
 		_body_sprite.rotation = _get_body_visual_rotation()
+		if _uses_directional_visual(visual_type):
+			_body_sprite.flip_v = absf(wrapf(_body_sprite.rotation, -PI, PI)) > (PI / 2.0)
+		if _shadow_node != null and is_instance_valid(_shadow_node):
+			_shadow_node.position = Vector2(0.0, 9.8)
 		return
 	# get_path_progress() works for BOTH PathFollow2D (progress) and dynamic-path
 	# enemies (dynamic_travel_distance). Using progress directly would freeze dynamic-path
@@ -656,6 +687,10 @@ func _update_sprite_movement_anim() -> void:
 	# Lean: tilt sprite into each step — intensity scales with bob type
 	_body_sprite.rotation = bob * 0.22
 
+	if _shadow_node != null and is_instance_valid(_shadow_node):
+		_shadow_node.position = Vector2(0.0, lateral + 9.8)
+
+
 func _update_sprite_glide_motion(path_px: float, speed_ratio: float) -> void:
 	var glide := sin(path_px * 0.135 + _anim_phase) * speed_ratio
 	var micro := sin(path_px * 0.265 + _anim_phase * 0.73) * speed_ratio
@@ -672,9 +707,19 @@ func _update_sprite_glide_motion(path_px: float, speed_ratio: float) -> void:
 	var lateral := clampf(drift + _sep_lateral + spawn_spread, -SEP_ROAD_HALF, SEP_ROAD_HALF)
 	var slide_x := micro * (1.85 if visual_type == "runner" else 1.35)
 	var lift := absf(micro) * (0.34 if visual_type == "runner" else 0.26)
+	if _uses_directional_visual(visual_type):
+		lift += 3.6 # Replace baked body_offset so sprite floats correctly
+
 	_body_sprite.position = Vector2(slide_x, lateral - lift)
 	var bank := glide * (0.105 if visual_type == "runner" else 0.078)
 	_body_sprite.rotation = _get_body_visual_rotation() + bank
+	if _uses_directional_visual(visual_type):
+		_body_sprite.flip_v = absf(wrapf(_body_sprite.rotation, -PI, PI)) > (PI / 2.0)
+
+
+	if _shadow_node != null and is_instance_valid(_shadow_node):
+		_shadow_node.position = Vector2(slide_x, lateral + 9.8)
+
 
 ## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
 ## Heavy squash is intentionally throttled so rapid-fire hits do not freeze gait animation.
