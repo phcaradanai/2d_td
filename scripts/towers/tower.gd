@@ -1371,6 +1371,11 @@ func _input(event: InputEvent) -> void:
 		get_viewport().set_input_as_handled()
 
 func _process(delta: float) -> void:
+	FrameSpikeLogger.begin("tower_tick")
+	_process_inner_tower(delta)
+	FrameSpikeLogger.end("tower_tick")
+
+func _process_inner_tower(delta: float) -> void:
 	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
 		if CatalogPreviewModeScript.is_static_preview(self) or not CatalogPreviewModeScript.is_selected_demo(self):
 			set_process(false)
@@ -1423,8 +1428,10 @@ func _process(delta: float) -> void:
 		cached_target_valid = _is_valid_cached_target(current_target)
 	_update_aim_indicator(delta, cached_target_valid)
 	
-	idle_rotation += delta * 15.0 # Constant spin for visual flair
-	if (visual_type == "sawblade" or visual_type == "lightning") and Engine.get_process_frames() % 2 == 0:
+	idle_rotation += delta * 15.0
+	# Animated visuals only need redraw if NOT baked (baked = Sprite2D handles display).
+	if not use_sprite and (visual_type == "sawblade" or visual_type == "lightning") \
+			and Engine.get_process_frames() % 2 == 0:
 		queue_redraw()
 	
 	# Smooth visual rotation

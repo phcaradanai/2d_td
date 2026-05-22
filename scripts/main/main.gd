@@ -331,6 +331,10 @@ func _ready() -> void:
 	_update_world_layout()
 
 	return_to_menu()
+	# current_state is already MENU at startup, so set_game_phase's early-return guard
+	# prevents _refresh_ui_for_phase from running. Force the continue button here.
+	if main_menu and save_game_service:
+		main_menu.set_has_save(save_game_service.has_valid_save())
 
 	# [MetaLayer] Retry any pending online score submissions from previous sessions
 	if online_lb_client:

@@ -121,6 +121,23 @@ var _bake_scale: Vector2 = Vector2(0.5, 0.5)   # set in _apply_baked_enemy_textu
 var _hit_impact_tween: Tween = null
 var _hit_impact_active: bool = false
 
+# Per-enemy organic motion — set once in setup(), never changes.
+# Desync bobs, drift ⊥ to path, tilt on step — all GPU-side Sprite2D transforms.
+var _anim_phase: float = 0.0       # unique bob phase per enemy (0..TAU)
+var _perp_drift_amp: float = 0.0   # lateral drift amplitude in local-Y px
+var _perp_drift_freq: float = 0.0  # drift cycles per px of path progress
+
+# Lazy separation — scan nearby enemies every ~0.4 s, smoothly push apart visually.
+# Never moves off the path: only shifts _body_sprite.position.y (local ⊥ to path).
+var _sep_lateral: float = 0.0      # current smoothed lateral offset (px)
+var _sep_target: float = 0.0       # target lateral from last avoidance scan
+var _sep_check_timer: float = 0.0  # countdown to next scan
+
+const SEP_SCAN_INTERVAL   := 0.38   # base seconds between scans per enemy
+const SEP_SCAN_RADIUS_SQ  := 784.0  # 28 px² — world-space proximity filter
+const SEP_PUSH_MAX        := 7.0    # max px pushed per overlapping neighbour
+const SEP_ROAD_HALF       := 14.0   # max combined lateral offset from path center
+
 # Smart Visual LOD — prioritises CPU for hero moments, saves it for background creeps.
 # LOW (0): healthy, not in combat  → animate every 3rd frame, no glow
 # HIGH (2): low HP, hit recently   → animate every frame, red pulse glow
@@ -293,7 +310,16 @@ func setup(config: Dictionary) -> void:
 	if l_offset is Vector2:
 		h_offset = l_offset.x
 		v_offset = l_offset.y
-	
+
+	# Per-enemy organic motion seed.
+	# Use golden-ratio hash so consecutive spawns get well-separated phases,
+	# not adjacent values from a modulo strip.
+	var iid_f := float(get_instance_id())
+	_anim_phase      = fmod(iid_f * 2.39996, TAU)
+	_perp_drift_amp  = _get_type_drift_amp(visual_type) * (0.55 + fmod(iid_f * 0.61803, 1.0) * 0.9)
+	_perp_drift_freq = 0.028 + fmod(iid_f * 0.38196, 0.018)
+	_sep_check_timer = fmod(iid_f * 0.15700, SEP_SCAN_INTERVAL)  # stagger first scan
+
 	is_active = true
 	
 	if is_gallery_preview:
@@ -499,6 +525,51 @@ func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 	_body_baked = true
 	queue_redraw()
 
+## Per-type lateral drift amplitude (px). Fast/small types drift more; tanks barely move.
+func _get_type_drift_amp(vtype: String) -> float:
+	match vtype:
+		"swarm":       return 7.5
+		"fast", "runner", "fast_flyer": return 6.0
+		"cloaked":     return 5.0
+		"basic", "healer", "splitter", "disruptor": return 4.0
+		"hunter", "flyer", "armored_flyer": return 3.5
+		"tank", "bulwark", "shieldbearer": return 1.8
+		_:             return 4.0
+
+## Lazy separation — pushes _sep_target away from nearby overlapping enemies.
+## Called ~every 0.4 s per enemy (staggered), NOT every frame.
+func _update_separation() -> void:
+	var push := 0.0
+	var pb := get_node_or_null("/root/PerformanceBudget")
+	var enemies: Array = (pb.get_enemies() if pb != null and pb.has_method("get_enemies")
+						 else get_tree().get_nodes_in_group("enemies"))
+	var my_pos   := global_position
+	var my_prog  := get_path_progress()
+	for other in enemies:
+		if other == self or not is_instance_valid(other): continue
+		var op: Vector2 = other.global_position
+		var dx := op.x - my_pos.x
+		var dy := op.y - my_pos.y
+		if dx * dx + dy * dy > SEP_SCAN_RADIUS_SQ: continue   # world-distance guard
+		if not other.has_method("get_path_progress"): continue
+		if absf(my_prog - other.get_path_progress()) > 32.0: continue  # far on path
+		# Determine push direction from relative lateral positions
+		var other_lat: float = float(other.get("_sep_lateral"))
+		var gap := _sep_lateral - other_lat
+		var push_dir: float
+		if absf(gap) > 2.0:
+			push_dir = signf(gap)          # reinforce whichever side we're already on
+		elif _anim_phase > PI:
+			push_dir = 1.0                 # tie-break: consistent per-enemy preference
+		else:
+			push_dir = -1.0
+		var dist_sq := dx * dx + dy * dy
+		push += push_dir * SEP_PUSH_MAX * (1.0 - dist_sq / SEP_SCAN_RADIUS_SQ)
+	# Decay toward 0 when alone; clamp to road half-width
+	if absf(push) < 0.1:
+		push = _sep_target * -0.25   # gentle return to center when isolated
+	_sep_target = clampf(push, -SEP_ROAD_HALF, SEP_ROAD_HALF)
+
 ## Walking squash/stretch — called every frame when baked. No queue_redraw.
 func _update_sprite_movement_anim() -> void:
 	if not _body_baked or _body_sprite == null or _hit_impact_active:
@@ -507,15 +578,23 @@ func _update_sprite_movement_anim() -> void:
 	if speed_ratio < 0.04:
 		_body_sprite.scale    = _bake_scale
 		_body_sprite.position = Vector2.ZERO
+		_body_sprite.rotation = 0.0
 		return
-	# Squash/stretch gait: one cycle per ~110 px of path distance
-	var bob := sin(progress * 0.057) * speed_ratio
+	# Staggered bob: unique phase per enemy breaks the in-sync marching look
+	var bob := sin(progress * 0.057 + _anim_phase) * speed_ratio
 	_body_sprite.scale = Vector2(
-		_bake_scale.x * (1.0 - bob * 0.045),   # narrow when tall
-		_bake_scale.y * (1.0 + bob * 0.065)    # taller at step apex
+		_bake_scale.x * (1.0 - bob * 0.050),
+		_bake_scale.y * (1.0 + bob * 0.072)
 	)
-	# Subtle float at each step peak (local Y = perpendicular to path)
-	_body_sprite.position = Vector2(0.0, -absf(bob) * 1.6 * speed_ratio)
+	# Primary slow weave ⊥ to path + secondary faster overtone = organic swarm feel
+	var drift := sin(progress * _perp_drift_freq + _anim_phase) * _perp_drift_amp \
+			   + sin(progress * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.28
+	# Combined lateral: drift + separation offset, clamped to road half-width
+	var lateral := clampf(drift + _sep_lateral, -SEP_ROAD_HALF, SEP_ROAD_HALF)
+	# Float upward at step peak (local Y = ⊥ to path on PathFollow2D)
+	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 2.2 * speed_ratio)
+	# Lean into step
+	_body_sprite.rotation = bob * 0.09
 
 ## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
 ## Called every hit (no throttle) for baked sprites.
@@ -554,11 +633,25 @@ func _play_sprite_hit_impact(color: Color) -> void:
 	t.chain().tween_callback(func() -> void:
 		_hit_impact_active = false
 		if _body_sprite != null and is_instance_valid(_body_sprite):
+			_body_sprite.rotation = 0.0   # restore lean after impact freeze
 			if health_visual_state < HealthVisualState.HEALTH_CRITICAL:
 				_body_sprite.modulate = Color.WHITE
 		if _death_glow_tween != null and _death_glow_tween.is_valid():
 			_death_glow_tween.play()
 	)
+
+	# Separate quick shake — position.x (along path) rattles the sprite without
+	# fighting PathFollow2D which resets global position from progress every frame.
+	# _hit_impact_active blocks _update_sprite_movement_anim so no conflict.
+	if _hit_shake_tween != null and _hit_shake_tween.is_valid():
+		_hit_shake_tween.kill()
+	var shake_amp := 3.5 if (enemy_type == "swarm" or tags.has("swarm")) else 5.0
+	_hit_shake_tween = create_tween()
+	_hit_shake_tween.tween_interval(0.038)  # let squish fire first
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  shake_amp, 0.022).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x", -shake_amp * 0.7, 0.030).set_trans(Tween.TRANS_SPRING)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  shake_amp * 0.35, 0.024).set_trans(Tween.TRANS_SPRING)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  0.0, 0.028).set_trans(Tween.TRANS_SPRING)
 
 ## Hit spark at the world-space impact point — bypasses screen shake entirely.
 ## Uses the enemy_impact pool for a tiny 3-ray burst + core dot.
@@ -2002,6 +2095,12 @@ func _process_inner(delta: float) -> void:
 		var skip := (_anim_lod == ANIM_LOD_LOW) and (_anim_frame_counter % 3 != 0)
 		if not skip:
 			_update_sprite_movement_anim()
+		# Separation: lazy scan + per-frame lerp. Lerp cost = ~3 floats, free.
+		_sep_check_timer -= delta
+		if _sep_check_timer <= 0.0:
+			_sep_check_timer = SEP_SCAN_INTERVAL + fmod(float(get_instance_id()) * 0.0370, 0.14)
+			_update_separation()
+		_sep_lateral = lerpf(_sep_lateral, _sep_target, minf(delta * 5.5, 1.0))
 	else:
 		pulse_time += delta
 		_draw_timer += delta

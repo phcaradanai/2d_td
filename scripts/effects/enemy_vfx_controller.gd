@@ -418,6 +418,8 @@ func _spawn_impact(mode: String, color: Color, duration: float, amount: float = 
 			impact.global_position = (owner_enemy as Node2D).global_position
 	else:
 		impact = pool.acquire_script(ImpactScript, vfx_root, "enemy_impact", "enemy_impact") as Node2D
+		if impact != null:
+			impact.position = Vector2.ZERO  # reparent() keeps global pos; reset to enemy center
 	if impact == null:
 		return
 	impact.name = "ImpactVFX"

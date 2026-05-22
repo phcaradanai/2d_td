@@ -147,9 +147,14 @@ func setup_status_effects(effects: Array) -> void:
 			status_effects.append(raw_effect.duplicate(true))
 
 func _process(delta: float) -> void:
+	FrameSpikeLogger.begin("projectile_tick")
+	_process_projectile(delta)
+	FrameSpikeLogger.end("projectile_tick")
+
+func _process_projectile(delta: float) -> void:
 	if game_manager != null and game_manager.is_paused:
 		return
-		
+
 	var has_live_target := target != null and is_instance_valid(target)
 	if has_live_target:
 		last_known_target_pos = _get_hit_anchor_global_position(target)
