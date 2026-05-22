@@ -287,8 +287,6 @@ func _update_tower_panel(tower: Node2D) -> void:
 		return
 	var cfg := _get_current_tower_config(tower)
 	var upgrade_id := _pick_upgrade_id(tower)
-	_set_control_visible("right_sidebar_container", true)
-	_set_control_visible("right_sidebar", true)
 	_set_label_text("tower_name_label", _get_tower_display_name(tower))
 	_set_label_text("tower_level_label", "Tier: %s" % str(cfg.get("tier", cfg.get("level", tower.get("level")))))
 	_set_label_text("tower_damage_label", "Damage: %s" % _fmt_number(cfg.get("damage", tower.get("damage"))))
@@ -297,26 +295,6 @@ func _update_tower_panel(tower: Node2D) -> void:
 	_set_label_text("tower_splash_label", "Splash: %s" % _fmt_number(cfg.get("splash_radius", tower.get("splash_radius"))))
 	_set_label_text("tower_slow_label", _build_effect_summary(cfg))
 	_hide_unused_branch_container()
-	var upgrade_btn = game_hud.get("upgrade_tower_button")
-	if upgrade_btn is Button and is_instance_valid(upgrade_btn):
-		upgrade_btn.visible = true
-		if upgrade_id == "":
-			upgrade_btn.text = "No Upgrade"
-			upgrade_btn.disabled = true
-		else:
-			var upgrade_cfg := _get_tower_config(upgrade_id)
-			var cost := int(upgrade_cfg.get("upgrade_cost", upgrade_cfg.get("cost", 0)))
-			upgrade_btn.text = "Upgrade  $%d" % cost
-			upgrade_btn.disabled = false
-	var sell_btn = game_hud.get("sell_tower_button")
-	if sell_btn is Button and is_instance_valid(sell_btn):
-		sell_btn.visible = true
-		sell_btn.disabled = false
-		sell_btn.text = "Sell  +%d" % _get_sell_refund(tower)
-	var deselect_btn = game_hud.get("deselect_tower_button")
-	if deselect_btn is Button and is_instance_valid(deselect_btn):
-		deselect_btn.visible = true
-		deselect_btn.disabled = false
 
 func _hide_unused_branch_container() -> void:
 	if game_hud == null:
