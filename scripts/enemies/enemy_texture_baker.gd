@@ -48,6 +48,7 @@ class _BakeRenderer extends Node2D:
 		draw_set_transform(body_offset, 0.0, body_scale)
 		_ROUTER._dispatch_simple(self, visual_type, 16.0)
 		_draw_faux_3q_depth_cue()
+		_draw_faux_3q_form_planes()
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 	func _draw_faux_3q_shadow() -> void:
@@ -240,6 +241,209 @@ class _BakeRenderer extends Node2D:
 			Vector2(11.4, 7.0),
 			Vector2(5.4, 2.2),
 		]), Color(0.0, 0.0, 0.0, lower_alpha * 0.42))
+
+	func _draw_faux_3q_form_planes() -> void:
+		match visual_type:
+			"fast":
+				_draw_arrow_form_planes(
+					Color(0.74, 1.0, 0.54, 0.28),
+					Color(0.015, 0.10, 0.045, 0.34),
+					Color(0.08, 0.30, 0.12, 0.22),
+					1.00
+				)
+			"runner":
+				_draw_arrow_form_planes(
+					Color(0.86, 1.0, 0.46, 0.30),
+					Color(0.03, 0.12, 0.035, 0.36),
+					Color(0.95, 0.38, 0.08, 0.18),
+					1.02
+				)
+			"hunter":
+				_draw_arrow_form_planes(
+					Color(1.0, 0.34, 0.76, 0.25),
+					Color(0.055, 0.010, 0.090, 0.38),
+					Color(0.62, 0.04, 0.96, 0.18),
+					1.05
+				)
+			"splitter":
+				_draw_crystal_form_planes(
+					Color(1.0, 0.62, 0.16, 0.26),
+					Color(0.24, 0.055, 0.012, 0.34),
+					Color(1.0, 0.25, 0.06, 0.18),
+					1.03
+				)
+			"basic", "healer", "cloaked", "disruptor":
+				_draw_crystal_form_planes(
+					_get_type_top_plane_color(),
+					_get_type_lower_plane_color(),
+					_get_type_side_plane_color(),
+					0.94
+				)
+			"flyer", "fast_flyer", "armored_flyer":
+				_draw_diamond_form_planes(
+					_get_type_top_plane_color(),
+					_get_type_lower_plane_color(),
+					_get_type_side_plane_color(),
+					0.92
+				)
+			"tank", "bulwark", "shieldbearer":
+				_draw_block_form_planes(
+					_get_type_top_plane_color(),
+					_get_type_lower_plane_color(),
+					_get_type_side_plane_color(),
+					1.05
+				)
+			"swarm":
+				_draw_swarm_form_planes()
+			_:
+				_draw_crystal_form_planes(
+					Color(0.88, 1.0, 1.0, 0.18),
+					Color(0.0, 0.0, 0.0, 0.24),
+					Color(0.0, 0.10, 0.14, 0.16),
+					0.92
+				)
+
+	func _draw_arrow_form_planes(top: Color, lower: Color, side: Color, scale: float) -> void:
+		var s := scale
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-9.8, -5.8) * s,
+			Vector2(2.0, -7.1) * s,
+			Vector2(12.6, -1.0) * s,
+			Vector2(3.1, -1.0) * s,
+			Vector2(-8.2, -2.9) * s,
+		]), top)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-9.4, 2.4) * s,
+			Vector2(2.6, 2.0) * s,
+			Vector2(11.2, 0.2) * s,
+			Vector2(5.5, 6.6) * s,
+			Vector2(-7.4, 5.0) * s,
+		]), lower)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(4.0, -1.2) * s,
+			Vector2(13.2, 0.0) * s,
+			Vector2(4.8, 4.3) * s,
+			Vector2(1.4, 1.2) * s,
+		]), side)
+		draw_line(Vector2(-6.8, -2.4) * s, Vector2(6.4, -0.5) * s, Color(1.0, 1.0, 1.0, top.a * 0.58), 0.85, true)
+		draw_line(Vector2(-7.2, 4.7) * s, Vector2(6.4, 5.4) * s, Color(0.0, 0.0, 0.0, lower.a * 0.72), 1.0, true)
+
+	func _draw_crystal_form_planes(top: Color, lower: Color, side: Color, scale: float) -> void:
+		var s := scale
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-7.8, -9.6) * s,
+			Vector2(4.2, -10.2) * s,
+			Vector2(9.8, -3.0) * s,
+			Vector2(0.8, -0.6) * s,
+			Vector2(-8.8, -3.2) * s,
+		]), top)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-9.8, 2.2) * s,
+			Vector2(0.0, 4.0) * s,
+			Vector2(9.6, 1.5) * s,
+			Vector2(5.8, 10.6) * s,
+			Vector2(-5.8, 10.8) * s,
+		]), lower)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(3.5, -4.0) * s,
+			Vector2(10.5, -1.4) * s,
+			Vector2(8.5, 7.4) * s,
+			Vector2(1.0, 4.0) * s,
+		]), side)
+		draw_line(Vector2(-6.0, -4.0) * s, Vector2(4.8, -2.0) * s, Color(1.0, 1.0, 1.0, top.a * 0.48), 0.75, true)
+
+	func _draw_diamond_form_planes(top: Color, lower: Color, side: Color, scale: float) -> void:
+		var s := scale
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(0.0, -11.2) * s,
+			Vector2(9.5, -1.8) * s,
+			Vector2(0.0, 1.0) * s,
+			Vector2(-9.5, -1.8) * s,
+		]), top)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-9.6, 0.8) * s,
+			Vector2(0.0, 3.6) * s,
+			Vector2(9.6, 0.8) * s,
+			Vector2(0.0, 11.0) * s,
+		]), lower)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(1.0, -0.6) * s,
+			Vector2(10.5, -1.8) * s,
+			Vector2(0.8, 9.8) * s,
+			Vector2(0.0, 3.6) * s,
+		]), side)
+
+	func _draw_block_form_planes(top: Color, lower: Color, side: Color, scale: float) -> void:
+		var s := scale
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-10.8, -8.2) * s,
+			Vector2(9.2, -8.5) * s,
+			Vector2(12.0, -2.2) * s,
+			Vector2(2.5, 0.8) * s,
+			Vector2(-11.2, -1.5) * s,
+		]), top)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-12.0, 1.0) * s,
+			Vector2(12.0, 0.6) * s,
+			Vector2(9.2, 10.0) * s,
+			Vector2(-8.8, 10.0) * s,
+		]), lower)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(5.5, -5.4) * s,
+			Vector2(12.4, -1.8) * s,
+			Vector2(10.4, 8.4) * s,
+			Vector2(4.2, 2.8) * s,
+		]), side)
+
+	func _draw_swarm_form_planes() -> void:
+		for c in [Vector2(-6.0, -3.0), Vector2(6.0, -3.0), Vector2(0.0, 5.2)]:
+			_draw_flat_ellipse(c + Vector2(-1.2, -2.0), 4.0, 2.0, Color(0.88, 1.0, 0.70, 0.16))
+			_draw_flat_ellipse(c + Vector2(0.8, 2.2), 4.2, 1.9, Color(0.0, 0.06, 0.03, 0.18))
+
+	func _get_type_top_plane_color() -> Color:
+		match visual_type:
+			"healer":
+				return Color(0.78, 1.0, 0.78, 0.22)
+			"cloaked":
+				return Color(0.72, 0.74, 1.0, 0.13)
+			"disruptor":
+				return Color(0.82, 0.58, 1.0, 0.20)
+			"tank", "bulwark", "shieldbearer", "armored_flyer":
+				return Color(1.0, 0.64, 0.22, 0.20)
+			"flyer", "fast_flyer":
+				return Color(0.62, 1.0, 1.0, 0.18)
+			_:
+				return Color(0.82, 1.0, 1.0, 0.18)
+
+	func _get_type_lower_plane_color() -> Color:
+		match visual_type:
+			"healer":
+				return Color(0.02, 0.10, 0.035, 0.24)
+			"cloaked":
+				return Color(0.01, 0.01, 0.05, 0.18)
+			"disruptor":
+				return Color(0.035, 0.0, 0.07, 0.28)
+			"tank", "bulwark", "shieldbearer", "armored_flyer":
+				return Color(0.14, 0.055, 0.015, 0.32)
+			"flyer", "fast_flyer":
+				return Color(0.0, 0.045, 0.070, 0.21)
+			_:
+				return Color(0.0, 0.030, 0.040, 0.24)
+
+	func _get_type_side_plane_color() -> Color:
+		match visual_type:
+			"healer":
+				return Color(0.05, 0.20, 0.07, 0.15)
+			"cloaked":
+				return Color(0.08, 0.08, 0.18, 0.10)
+			"disruptor":
+				return Color(0.20, 0.04, 0.34, 0.16)
+			"tank", "bulwark", "shieldbearer", "armored_flyer":
+				return Color(0.42, 0.18, 0.04, 0.14)
+			"flyer", "fast_flyer":
+				return Color(0.04, 0.22, 0.28, 0.12)
+			_:
+				return Color(0.04, 0.18, 0.20, 0.12)
 
 # ── SubViewport ───────────────────────────────────────────────────────────────
 var _vp:   SubViewport  = null

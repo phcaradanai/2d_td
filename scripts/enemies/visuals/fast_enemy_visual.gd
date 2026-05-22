@@ -34,8 +34,11 @@ static func draw_simple(enemy: Node2D, size: float) -> void:
 	var shell := _nature_color(Color(0.20, 0.92, 0.48, 0.88), health_state)
 	var dark := Color(0.015, 0.035, 0.030, 0.92)
 	var core := Color(0.76, 1.00, 0.68, 0.95)
+	var top := Color(0.68, 1.0, 0.42, 0.82)
+	var side := Color(0.07, 0.28, 0.12, 0.94)
+	var lower := Color(0.018, 0.075, 0.040, 0.96)
 
-	# Cheap, readable arrow-packet silhouette: same identity as high detail mode.
+	# Faceted arrow-packet hull: top, lower side, and nose planes survive baking.
 	var body := PackedVector2Array([
 		Vector2(size * 1.10, 0.0),
 		Vector2(size * 0.16, -size * 0.42),
@@ -46,9 +49,31 @@ static func draw_simple(enemy: Node2D, size: float) -> void:
 	])
 
 	_draw_poly_outline(enemy, B.scale_polygon(body, 1.10), dark, Color(0.0, 0.0, 0.0, 0.72), 1.0)
-	_draw_poly_outline(enemy, body, Color(shell.r * 0.36, shell.g * 0.42, shell.b * 0.34, 0.88), shell, 1.25)
+	enemy.draw_colored_polygon(body, lower)
+	enemy.draw_colored_polygon(PackedVector2Array([
+		Vector2(size * 1.02, -size * 0.02),
+		Vector2(size * 0.14, -size * 0.36),
+		Vector2(-size * 0.72, -size * 0.24),
+		Vector2(-size * 0.30, -size * 0.03),
+		Vector2(size * 0.30, -size * 0.06),
+	]), Color(top.r, top.g, top.b, 0.58))
+	enemy.draw_colored_polygon(PackedVector2Array([
+		Vector2(-size * 0.76, size * 0.10),
+		Vector2(size * 0.26, size * 0.08),
+		Vector2(size * 0.94, size * 0.00),
+		Vector2(size * 0.15, size * 0.36),
+		Vector2(-size * 0.74, size * 0.24),
+	]), side)
+	enemy.draw_colored_polygon(PackedVector2Array([
+		Vector2(size * 0.30, -size * 0.08),
+		Vector2(size * 1.05, 0.0),
+		Vector2(size * 0.28, size * 0.18),
+		Vector2(size * 0.08, 0.0),
+	]), Color(shell.r, shell.g, shell.b, 0.96))
+	enemy.draw_polyline(_closed(body), Color(shell.r, shell.g, shell.b, 0.92), 1.25, true)
 
-	enemy.draw_line(Vector2(-size * 0.60, 0.0), Vector2(size * 0.42, 0.0), Color(core.r, core.g, core.b, 0.72), 1.5)
+	enemy.draw_line(Vector2(-size * 0.58, -size * 0.05), Vector2(size * 0.42, -size * 0.02), Color(core.r, core.g, core.b, 0.62), 1.1)
+	enemy.draw_line(Vector2(-size * 0.58, size * 0.13), Vector2(size * 0.34, size * 0.12), Color(0.0, 0.0, 0.0, 0.50), 1.2)
 	enemy.draw_circle(Vector2(size * 0.32, 0.0), size * 0.18, Color(0.02, 0.08, 0.05, 0.92))
 	enemy.draw_circle(Vector2(size * 0.32, 0.0), size * 0.105, core)
 

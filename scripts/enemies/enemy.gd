@@ -134,6 +134,7 @@ const CROWDED_ENEMY_THRESHOLD := 7
 var _anim_phase: float = 0.0       # unique bob phase per enemy (0..TAU)
 var _perp_drift_amp: float = 0.0   # lateral drift amplitude in local-Y px
 var _perp_drift_freq: float = 0.0  # drift cycles per px of path progress
+var _visual_heading_angle: float = 0.0
 
 # Lazy separation — scan nearby enemies every ~0.4 s, smoothly push apart visually.
 # Visual angle is locked, so this is a screen-local Y offset and never moves gameplay hitboxes.
@@ -592,13 +593,29 @@ func _update_separation() -> void:
 		push = _sep_target * -0.25   # gentle return to center when isolated
 	_sep_target = clampf(push, -SEP_ROAD_HALF, SEP_ROAD_HALF)
 
-## Per-type bob intensity — tanks plod with heavy stillness; fast/runner dart more.
+func _uses_glide_motion(vtype: String) -> bool:
+	return vtype == "fast" or vtype == "runner" or vtype == "fast_flyer" or vtype == "hunter"
+
+func _uses_directional_visual(vtype: String) -> bool:
+	return vtype == "fast" or vtype == "runner" or vtype == "fast_flyer" or vtype == "hunter"
+
+func _record_visual_movement_delta(delta_pos: Vector2) -> void:
+	if delta_pos.length_squared() <= 0.01:
+		return
+	_visual_heading_angle = delta_pos.angle()
+
+func _get_body_visual_rotation() -> float:
+	if _uses_directional_visual(visual_type):
+		return _visual_heading_angle
+	return 0.0
+
+## Per-type bob intensity — pointed fast units glide; compact bodies can bounce.
 func _get_type_bob_intensity(vtype: String) -> float:
 	match vtype:
 		"tank", "bulwark", "shieldbearer": return 0.55
 		"swarm":                           return 0.85
-		"fast", "runner", "fast_flyer":    return 1.28
-		"hunter":                          return 1.12
+		"fast", "runner", "fast_flyer":    return 0.34
+		"hunter":                          return 0.48
 		_:                                 return 1.0
 
 ## Walking squash/stretch — called every frame when baked. No queue_redraw.
@@ -609,12 +626,16 @@ func _update_sprite_movement_anim() -> void:
 	if speed_ratio < 0.02:
 		_body_sprite.scale    = _bake_scale
 		_body_sprite.position = Vector2.ZERO
-		_body_sprite.rotation = 0.0
+		_body_sprite.rotation = _get_body_visual_rotation()
 		return
 	# get_path_progress() works for BOTH PathFollow2D (progress) and dynamic-path
 	# enemies (dynamic_travel_distance). Using progress directly would freeze dynamic-path
 	# enemies at phase = 0, giving no animation.
 	var path_px := get_path_progress()
+	if _uses_glide_motion(visual_type):
+		_update_sprite_glide_motion(path_px, speed_ratio)
+		return
+
 	var bob_intensity := _get_type_bob_intensity(visual_type)
 	# Staggered bob: unique phase per enemy; ~1 cycle every 70 px of travel
 	var bob := sin(path_px * 0.090 + _anim_phase) * speed_ratio * bob_intensity
@@ -634,6 +655,26 @@ func _update_sprite_movement_anim() -> void:
 	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 6.5 * speed_ratio)
 	# Lean: tilt sprite into each step — intensity scales with bob type
 	_body_sprite.rotation = bob * 0.22
+
+func _update_sprite_glide_motion(path_px: float, speed_ratio: float) -> void:
+	var glide := sin(path_px * 0.135 + _anim_phase) * speed_ratio
+	var micro := sin(path_px * 0.265 + _anim_phase * 0.73) * speed_ratio
+	var compression := absf(glide)
+	var scale_x := 1.0 + compression * (0.070 if visual_type == "runner" else 0.055)
+	var scale_y := 1.0 - compression * (0.040 if visual_type == "runner" else 0.032)
+	_body_sprite.scale = Vector2(_bake_scale.x * scale_x, _bake_scale.y * scale_y)
+
+	var drift := (
+		sin(path_px * _perp_drift_freq + _anim_phase) * _perp_drift_amp * 0.42
+		+ sin(path_px * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.12
+	)
+	var spawn_spread := _spawn_spread_lateral * (1.0 - clampf(path_px / SPAWN_SPREAD_FADE_DISTANCE, 0.0, 1.0))
+	var lateral := clampf(drift + _sep_lateral + spawn_spread, -SEP_ROAD_HALF, SEP_ROAD_HALF)
+	var slide_x := micro * (1.85 if visual_type == "runner" else 1.35)
+	var lift := absf(micro) * (0.34 if visual_type == "runner" else 0.26)
+	_body_sprite.position = Vector2(slide_x, lateral - lift)
+	var bank := glide * (0.105 if visual_type == "runner" else 0.078)
+	_body_sprite.rotation = _get_body_visual_rotation() + bank
 
 ## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
 ## Heavy squash is intentionally throttled so rapid-fire hits do not freeze gait animation.
@@ -665,6 +706,8 @@ func _play_sprite_hit_impact(color: Color) -> void:
 			squish_wide = 1.30; squish_flat = 0.72
 		"swarm":
 			squish_wide = 1.50; squish_flat = 0.55
+		"fast", "runner", "fast_flyer", "hunter":
+			squish_wide = 1.26; squish_flat = 0.78
 		_:
 			squish_wide = 1.65; squish_flat = 0.45
 
@@ -687,7 +730,7 @@ func _play_sprite_hit_impact(color: Color) -> void:
 	t.chain().tween_callback(func() -> void:
 		_hit_impact_active = false
 		if _body_sprite != null and is_instance_valid(_body_sprite):
-			_body_sprite.rotation = 0.0
+			_body_sprite.rotation = _get_body_visual_rotation()
 		if _death_glow_tween != null and _death_glow_tween.is_valid():
 			_death_glow_tween.play()
 	)
@@ -700,30 +743,29 @@ func _play_sprite_hit_impact(color: Color) -> void:
 				_body_sprite.modulate = Color.WHITE
 	)
 
-	# Separate quick shake — position.x (along path) rattles the sprite without
-	# fighting PathFollow2D which resets global position from progress every frame.
-	# _hit_impact_active blocks _update_sprite_movement_anim so no conflict.
+	# Separate quick shake anchored at the current visual offset. Do not reset
+	# position to Vector2.ZERO here; dense groups use different lateral offsets,
+	# and collapsing all hit creeps back to one center line reads like a bug.
 	if _hit_shake_tween != null and _hit_shake_tween.is_valid():
 		_hit_shake_tween.kill()
-		if _body_sprite != null and is_instance_valid(_body_sprite):
-			_body_sprite.position.x = 0.0
 	if _hit_jitter_tween != null and _hit_jitter_tween.is_valid():
 		_hit_jitter_tween.kill()
-		if _body_sprite != null and is_instance_valid(_body_sprite):
-			_body_sprite.position.y = 0.0
-	var shake_amp := 5.0 if (enemy_type == "swarm" or tags.has("swarm")) else 8.0
+	var hit_anchor := _body_sprite.position
+	var impact_seed := fmod(float(get_instance_id()) * 0.61803398875, 1.0)
+	var shake_sign := 1.0 if impact_seed >= 0.5 else -1.0
+	var shake_amp := (5.0 if (enemy_type == "swarm" or tags.has("swarm")) else 8.0) * (0.78 + impact_seed * 0.34)
+	var jitter_y := shake_amp * (0.15 + impact_seed * 0.12)
 	_hit_shake_tween = create_tween()
-	# No interval — shake starts at the same time as squish for immediate feedback
-	_hit_shake_tween.tween_property(_body_sprite, "position:x",  shake_amp, 0.030).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x", -shake_amp * 0.65, 0.035).set_trans(Tween.TRANS_SPRING)
-	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  shake_amp * 0.30, 0.028).set_trans(Tween.TRANS_SPRING)
-	_hit_shake_tween.chain().tween_property(_body_sprite, "position:x",  0.0, 0.025).set_trans(Tween.TRANS_SPRING)
-	# Perpendicular kick — small Y pop adds 2-D impact depth.
-	var jitter_y := shake_amp * 0.22
-	_hit_jitter_tween = create_tween()
-	_hit_jitter_tween.tween_property(_body_sprite, "position:y", -jitter_y, 0.025)\
+	_hit_shake_tween.tween_property(_body_sprite, "position",
+		hit_anchor + Vector2(shake_amp * shake_sign, -jitter_y), 0.026 + impact_seed * 0.010)\
 		.set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
-	_hit_jitter_tween.chain().tween_property(_body_sprite, "position:y", 0.0, 0.055)\
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position",
+		hit_anchor + Vector2(-shake_amp * 0.55 * shake_sign, jitter_y * 0.35), 0.034 + impact_seed * 0.010)\
+		.set_trans(Tween.TRANS_SPRING)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position",
+		hit_anchor + Vector2(shake_amp * 0.22 * shake_sign, -jitter_y * 0.18), 0.026 + impact_seed * 0.008)\
+		.set_trans(Tween.TRANS_SPRING)
+	_hit_shake_tween.chain().tween_property(_body_sprite, "position", hit_anchor, 0.026)\
 		.set_trans(Tween.TRANS_SPRING)
 
 ## Hit spark at the world-space impact point — bypasses screen shake entirely.
@@ -2598,7 +2640,9 @@ func _move_toward_hero(target_pos: Vector2, delta: float) -> void:
 	if to_target.length_squared() <= 1.0:
 		return
 	var dir: Vector2 = to_target.normalized()
-	global_position += dir * speed * hunter_chase_speed_multiplier * delta
+	var move_delta := dir * speed * hunter_chase_speed_multiplier * delta
+	global_position += move_delta
+	_record_visual_movement_delta(move_delta)
 	_face_hunter_target(target_pos, delta)
 
 func _face_hunter_target(_target_pos: Vector2, _delta: float) -> void:
@@ -2711,7 +2755,9 @@ func _process_pathing(delta: float) -> void:
 	if use_dynamic_pathing:
 		_process_dynamic_pathing(delta)
 		return
+	var before_pos := global_position
 	progress += speed * delta
+	_record_visual_movement_delta(global_position - before_pos)
 	_lock_visual_orientation()
 	_sync_spatial_target_cache(true)
 	if progress_ratio >= 1.0:
@@ -2767,14 +2813,18 @@ func _process_dynamic_pathing(delta: float) -> void:
 	var to_target := target - global_position
 	var step := speed * delta
 	if to_target.length() <= maxf(step, dynamic_target_reached_distance):
+		var snap_delta := target - global_position
 		global_position = target
+		_record_visual_movement_delta(snap_delta)
 		dynamic_path_index += 1
 		if dynamic_path_index >= dynamic_path.size():
 			reach_base()
 		return
 
 	var dir := to_target.normalized()
-	global_position += dir * step
+	var move_delta := dir * step
+	global_position += move_delta
+	_record_visual_movement_delta(move_delta)
 	_lock_visual_orientation()
 	dynamic_travel_distance += step
 	_sync_spatial_target_cache(true)

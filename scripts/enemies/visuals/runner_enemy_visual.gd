@@ -14,8 +14,11 @@ static func draw_simple(enemy: Node2D, size: float) -> void:
 	var health_state := int(enemy.get("health_visual_state"))
 	var armor := B.apply_health_tint(NATURE_ARMOR, health_state)
 	var core := B.apply_health_tint(SIGNAL_CORE, health_state)
+	var top := B.apply_health_tint(Color(0.84, 1.0, 0.36, 1.0), health_state)
+	var side := Color(0.10, 0.30, 0.10, 0.98)
+	var underside := Color(0.020, 0.070, 0.030, 0.98)
 
-	# Cheap sprint wedge: long, low, and readable as a ground runner.
+	# Faceted sprint wedge: readable as a thick ground hull after texture baking.
 	var body := PackedVector2Array([
 		Vector2(size * 0.95, 0.0),
 		Vector2(size * 0.28, -size * 0.46),
@@ -25,10 +28,32 @@ static func draw_simple(enemy: Node2D, size: float) -> void:
 		Vector2(size * 0.28, size * 0.46),
 	])
 	enemy.draw_colored_polygon(B.scale_polygon(body, B.ENEMY_OUTLINE_THICKNESS), B.ENEMY_OUTLINE_COLOR)
-	enemy.draw_colored_polygon(body, Color(armor.r, armor.g, armor.b, 0.92))
+	enemy.draw_colored_polygon(body, underside)
+	enemy.draw_colored_polygon(PackedVector2Array([
+		Vector2(size * 0.86, -size * 0.02),
+		Vector2(size * 0.24, -size * 0.38),
+		Vector2(-size * 0.70, -size * 0.24),
+		Vector2(-size * 0.42, -size * 0.02),
+		Vector2(size * 0.26, -size * 0.06),
+	]), Color(top.r, top.g, top.b, 0.64))
+	enemy.draw_colored_polygon(PackedVector2Array([
+		Vector2(-size * 0.74, size * 0.08),
+		Vector2(size * 0.28, size * 0.08),
+		Vector2(size * 0.86, 0.0),
+		Vector2(size * 0.18, size * 0.34),
+		Vector2(-size * 0.72, size * 0.23),
+	]), side)
+	enemy.draw_colored_polygon(PackedVector2Array([
+		Vector2(size * 0.24, -size * 0.08),
+		Vector2(size * 0.94, 0.0),
+		Vector2(size * 0.24, size * 0.18),
+		Vector2(size * 0.02, 0.0),
+	]), Color(armor.r, armor.g, armor.b, 0.96))
+	enemy.draw_polyline(PackedVector2Array([body[0], body[1], body[2], body[3], body[4], body[5], body[0]]), Color(NATURE_EDGE.r, NATURE_EDGE.g, NATURE_EDGE.b, 0.72), 1.1, true)
 
 	# One center line and one compact core preserve identity in performance mode.
-	enemy.draw_line(Vector2(-size * 0.58, 0.0), Vector2(size * 0.62, 0.0), Color(NATURE_EDGE.r, NATURE_EDGE.g, NATURE_EDGE.b, 0.55), 1.25, true)
+	enemy.draw_line(Vector2(-size * 0.58, -size * 0.04), Vector2(size * 0.58, -size * 0.02), Color(NATURE_EDGE.r, NATURE_EDGE.g, NATURE_EDGE.b, 0.52), 1.0, true)
+	enemy.draw_line(Vector2(-size * 0.58, size * 0.13), Vector2(size * 0.40, size * 0.10), Color(0.0, 0.0, 0.0, 0.52), 1.1, true)
 	enemy.draw_circle(Vector2(size * 0.34, 0.0), size * 0.22, B.ENEMY_OUTLINE_COLOR)
 	enemy.draw_circle(Vector2(size * 0.34, 0.0), size * 0.15, Color(core.r, core.g, core.b, 0.95))
 
