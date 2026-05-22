@@ -434,6 +434,7 @@ func begin_upgrade_construction(target_tower_id: String, new_config: Dictionary)
 	var duration := TowerConstructionConfigScript.get_upgrade_seconds(new_config)
 	return _start_construction("upgrade", duration, {
 		"target_tower_id": target_tower_id,
+		"from_tower_id": tower_id,
 	})
 
 func is_constructing() -> bool:
