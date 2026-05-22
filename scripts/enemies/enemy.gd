@@ -136,7 +136,7 @@ var _perp_drift_amp: float = 0.0   # lateral drift amplitude in local-Y px
 var _perp_drift_freq: float = 0.0  # drift cycles per px of path progress
 
 # Lazy separation — scan nearby enemies every ~0.4 s, smoothly push apart visually.
-# Never moves off the path: only shifts _body_sprite.position.y (local ⊥ to path).
+# Visual angle is locked, so this is a screen-local Y offset and never moves gameplay hitboxes.
 var _sep_lateral: float = 0.0      # current smoothed lateral offset (px)
 var _sep_target: float = 0.0       # target lateral from last avoidance scan
 var _sep_check_timer: float = 0.0  # countdown to next scan
@@ -623,14 +623,14 @@ func _update_sprite_movement_anim() -> void:
 		_bake_scale.x * (1.0 - bob * 0.20),   # narrow on upstroke
 		_bake_scale.y * (1.0 + bob * 0.30)    # tall on upstroke, short on downstroke
 	)
-	# Primary slow weave ⊥ to path + secondary overtone = organic swarm feel
+	# Primary screen-local weave + secondary overtone = organic swarm feel
 	# path_px drives drift so it's always in sync with actual travel distance
 	var drift := sin(path_px * _perp_drift_freq + _anim_phase) * _perp_drift_amp \
 			   + sin(path_px * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.30
 	# Combined lateral: drift + separation, clamped to road half-width
 	var spawn_spread := _spawn_spread_lateral * (1.0 - clampf(path_px / SPAWN_SPREAD_FADE_DISTANCE, 0.0, 1.0))
 	var lateral := clampf(drift + _sep_lateral + spawn_spread, -SEP_ROAD_HALF, SEP_ROAD_HALF)
-	# Float: sprite rises at upstroke peak (local Y = ⊥ to path on PathFollow2D)
+	# Float: sprite rises at upstroke peak. Visual angle is locked, so Y stays screen-local.
 	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 6.5 * speed_ratio)
 	# Lean: tilt sprite into each step — intensity scales with bob type
 	_body_sprite.rotation = bob * 0.22
@@ -2142,6 +2142,7 @@ func _draw_cyber_disruptor(color: Color, size: float) -> void:
 @export var is_gallery_preview := false
 
 func _ready() -> void:
+	_lock_visual_orientation()
 	body = get_node_or_null("Body") as ColorRect
 	visual_root = _resolve_visual_root()
 
@@ -2158,6 +2159,12 @@ func _ready() -> void:
 	_sync_spatial_target_cache(true)
 
 	_ensure_vfx_controller()
+
+func _lock_visual_orientation() -> void:
+	# Creep textures are baked in one faux 3/4 top-down angle. Keeping the
+	# PathFollow2D from rotating prevents the baked shadow from flipping on turns.
+	rotates = false
+	rotation = 0.0
 
 func _exit_tree() -> void:
 	_sync_spatial_target_cache(false)
@@ -2594,11 +2601,8 @@ func _move_toward_hero(target_pos: Vector2, delta: float) -> void:
 	global_position += dir * speed * hunter_chase_speed_multiplier * delta
 	_face_hunter_target(target_pos, delta)
 
-func _face_hunter_target(target_pos: Vector2, delta: float) -> void:
-	var dir: Vector2 = target_pos - global_position
-	if dir.length_squared() <= 1.0:
-		return
-	rotation = lerp_angle(rotation, dir.angle(), 10.0 * delta)
+func _face_hunter_target(_target_pos: Vector2, _delta: float) -> void:
+	_lock_visual_orientation()
 
 func _attack_hero(hero: Node) -> void:
 	if hunter_attack_timer > 0.0:
@@ -2703,10 +2707,12 @@ func _draw_hunter_compass_needle(pos: Vector2, dir: Vector2, color: Color, size:
 func _process_pathing(delta: float) -> void:
 	if is_dead_flag or reached_base_flag:
 		return
+	_lock_visual_orientation()
 	if use_dynamic_pathing:
 		_process_dynamic_pathing(delta)
 		return
 	progress += speed * delta
+	_lock_visual_orientation()
 	_sync_spatial_target_cache(true)
 	if progress_ratio >= 1.0:
 		reach_base()
@@ -2769,7 +2775,7 @@ func _process_dynamic_pathing(delta: float) -> void:
 
 	var dir := to_target.normalized()
 	global_position += dir * step
-	rotation = lerp_angle(rotation, dir.angle(), 10.0 * delta)
+	_lock_visual_orientation()
 	dynamic_travel_distance += step
 	_sync_spatial_target_cache(true)
 

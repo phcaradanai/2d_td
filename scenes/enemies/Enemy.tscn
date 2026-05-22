@@ -4,6 +4,7 @@
 
 [node name="Enemy" type="PathFollow2D" unique_id=115495457]
 loop = false
+rotates = false
 script = ExtResource("1_enemy_script")
 
 [node name="Body" type="ColorRect" parent="." unique_id=12204949]

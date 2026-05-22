@@ -43,6 +43,8 @@ class _BakeRenderer extends Node2D:
 		_draw_faux_3q_shadow()
 		var body_offset := _get_faux_3q_body_offset()
 		var body_scale := _get_faux_3q_body_scale()
+		draw_set_transform(body_offset + _get_faux_3q_side_offset(), 0.0, body_scale)
+		_draw_faux_3q_side_mass()
 		draw_set_transform(body_offset, 0.0, body_scale)
 		_ROUTER._dispatch_simple(self, visual_type, 16.0)
 		_draw_faux_3q_depth_cue()
@@ -68,66 +70,176 @@ class _BakeRenderer extends Node2D:
 	func _get_faux_3q_body_offset() -> Vector2:
 		match visual_type:
 			"tank", "bulwark", "shieldbearer", "armored_flyer":
-				return Vector2(0.0, -2.4)
-			"swarm", "fast_flyer", "flyer", "disruptor":
 				return Vector2(0.0, -3.2)
+			"swarm", "fast_flyer", "flyer", "disruptor":
+				return Vector2(0.0, -4.0)
 			"fast", "runner", "hunter":
-				return Vector2(0.0, -2.8)
+				return Vector2(0.0, -3.6)
 			_:
-				return Vector2(0.0, -2.5)
+				return Vector2(0.0, -3.3)
 
 	func _get_faux_3q_body_scale() -> Vector2:
 		match visual_type:
 			"tank", "bulwark", "shieldbearer":
-				return Vector2(1.0, 0.88)
+				return Vector2(1.03, 0.82)
 			"swarm", "flyer", "fast_flyer", "armored_flyer", "disruptor":
-				return Vector2(1.0, 0.92)
+				return Vector2(1.02, 0.86)
 			"fast", "runner", "hunter":
-				return Vector2(1.02, 0.90)
+				return Vector2(1.05, 0.84)
 			_:
-				return Vector2(1.0, 0.90)
+				return Vector2(1.02, 0.84)
+
+	func _get_faux_3q_side_offset() -> Vector2:
+		match visual_type:
+			"tank", "bulwark", "shieldbearer":
+				return Vector2(0.0, 5.4)
+			"swarm", "flyer", "fast_flyer", "disruptor":
+				return Vector2(0.0, 4.4)
+			"fast", "runner", "hunter":
+				return Vector2(0.0, 4.8)
+			_:
+				return Vector2(0.0, 5.0)
 
 	func _get_faux_3q_shadow_profile() -> Dictionary:
 		match visual_type:
 			"tank", "bulwark", "shieldbearer":
-				return {"center": Vector2(0.0, 8.8), "rx": 15.5, "ry": 5.0, "alpha": 0.24}
+				return {"center": Vector2(0.0, 10.2), "rx": 16.2, "ry": 4.7, "alpha": 0.26}
 			"swarm":
-				return {"center": Vector2(0.0, 9.5), "rx": 16.0, "ry": 5.2, "alpha": 0.16}
+				return {"center": Vector2(0.0, 10.5), "rx": 16.0, "ry": 4.9, "alpha": 0.18}
 			"flyer", "fast_flyer", "disruptor":
-				return {"center": Vector2(0.0, 10.2), "rx": 12.0, "ry": 3.6, "alpha": 0.14}
+				return {"center": Vector2(0.0, 11.0), "rx": 12.4, "ry": 3.3, "alpha": 0.15}
 			"armored_flyer":
-				return {"center": Vector2(0.0, 10.0), "rx": 15.5, "ry": 4.5, "alpha": 0.16}
+				return {"center": Vector2(0.0, 10.8), "rx": 15.8, "ry": 4.2, "alpha": 0.17}
 			"fast", "runner", "hunter":
-				return {"center": Vector2(0.0, 8.4), "rx": 13.8, "ry": 4.0, "alpha": 0.20}
+				return {"center": Vector2(0.0, 9.8), "rx": 14.2, "ry": 3.8, "alpha": 0.22}
 			_:
-				return {"center": Vector2(0.0, 8.2), "rx": 12.8, "ry": 4.0, "alpha": 0.20}
+				return {"center": Vector2(0.0, 9.6), "rx": 13.2, "ry": 3.8, "alpha": 0.22}
+
+	func _draw_faux_3q_side_mass() -> void:
+		var p := _get_faux_3q_body_profile()
+		var w := float(p.get("w", 15.0))
+		var h := float(p.get("h", 13.0))
+		var alpha := float(p.get("alpha", 0.24))
+		var side := Color(0.0, 0.0, 0.0, alpha)
+		var side_deep := Color(0.0, 0.0, 0.0, minf(alpha + 0.10, 0.38))
+		var side_warm := Color(0.08, 0.035, 0.018, minf(alpha * 0.42, 0.13))
+
+		match visual_type:
+			"fast", "runner", "hunter", "fast_flyer":
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(w * 0.98, 0.0),
+					Vector2(w * 0.18, -h * 0.32),
+					Vector2(-w * 0.76, -h * 0.20),
+					Vector2(-w * 0.52, h * 0.34),
+					Vector2(w * 0.12, h * 0.48),
+					Vector2(w * 0.86, h * 0.20),
+				]), side)
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(-w * 0.52, h * 0.24),
+					Vector2(w * 0.14, h * 0.36),
+					Vector2(w * 0.84, h * 0.12),
+					Vector2(w * 0.58, h * 0.50),
+					Vector2(-w * 0.38, h * 0.60),
+				]), side_deep)
+			"swarm":
+				for c in [Vector2(-w * 0.38, -h * 0.16), Vector2(w * 0.38, -h * 0.16), Vector2(0.0, h * 0.30)]:
+					_draw_flat_ellipse(c + Vector2(0.0, h * 0.16), w * 0.34, h * 0.26, side)
+				_draw_flat_ellipse(Vector2(0.0, h * 0.34), w * 0.78, h * 0.22, side_deep)
+			"tank", "bulwark", "shieldbearer", "armored_flyer":
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(-w * 0.82, -h * 0.20),
+					Vector2(w * 0.82, -h * 0.20),
+					Vector2(w * 0.76, h * 0.48),
+					Vector2(w * 0.42, h * 0.70),
+					Vector2(-w * 0.42, h * 0.70),
+					Vector2(-w * 0.76, h * 0.48),
+				]), side)
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(-w * 0.72, h * 0.24),
+					Vector2(w * 0.72, h * 0.24),
+					Vector2(w * 0.52, h * 0.72),
+					Vector2(-w * 0.52, h * 0.72),
+				]), side_deep)
+			_:
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(0.0, -h * 0.66),
+					Vector2(w * 0.64, -h * 0.32),
+					Vector2(w * 0.82, h * 0.10),
+					Vector2(w * 0.50, h * 0.62),
+					Vector2(0.0, h * 0.78),
+					Vector2(-w * 0.50, h * 0.62),
+					Vector2(-w * 0.82, h * 0.10),
+					Vector2(-w * 0.64, -h * 0.32),
+				]), side)
+				draw_colored_polygon(PackedVector2Array([
+					Vector2(-w * 0.58, h * 0.18),
+					Vector2(w * 0.58, h * 0.18),
+					Vector2(w * 0.44, h * 0.70),
+					Vector2(0.0, h * 0.86),
+					Vector2(-w * 0.44, h * 0.70),
+				]), side_deep)
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(-w * 0.42, h * 0.52),
+			Vector2(w * 0.42, h * 0.52),
+			Vector2(w * 0.30, h * 0.68),
+			Vector2(-w * 0.30, h * 0.68),
+		]), side_warm)
+
+	func _draw_flat_ellipse(center: Vector2, rx: float, ry: float, color: Color) -> void:
+		var points := PackedVector2Array()
+		for i in range(16):
+			var a := float(i) / 16.0 * TAU
+			points.append(center + Vector2(cos(a) * rx, sin(a) * ry))
+		draw_colored_polygon(points, color)
+
+	func _get_faux_3q_body_profile() -> Dictionary:
+		match visual_type:
+			"tank", "bulwark", "shieldbearer":
+				return {"w": 17.5, "h": 15.5, "alpha": 0.26}
+			"armored_flyer":
+				return {"w": 16.5, "h": 14.5, "alpha": 0.22}
+			"swarm":
+				return {"w": 16.5, "h": 13.8, "alpha": 0.17}
+			"fast", "runner", "hunter", "fast_flyer":
+				return {"w": 16.0, "h": 13.0, "alpha": 0.22}
+			"flyer", "disruptor":
+				return {"w": 14.5, "h": 12.5, "alpha": 0.18}
+			_:
+				return {"w": 15.0, "h": 13.0, "alpha": 0.23}
 
 	func _draw_faux_3q_depth_cue() -> void:
-		var top_alpha := 0.075
-		var lower_alpha := 0.105
+		var top_alpha := 0.12
+		var lower_alpha := 0.16
 		match visual_type:
 			"tank", "bulwark", "shieldbearer", "armored_flyer":
-				top_alpha = 0.060
-				lower_alpha = 0.120
+				top_alpha = 0.10
+				lower_alpha = 0.19
 			"swarm", "fast", "runner", "fast_flyer":
-				top_alpha = 0.085
-				lower_alpha = 0.090
+				top_alpha = 0.13
+				lower_alpha = 0.13
 			"cloaked":
-				top_alpha = 0.045
-				lower_alpha = 0.075
+				top_alpha = 0.07
+				lower_alpha = 0.10
 
 		draw_colored_polygon(PackedVector2Array([
-			Vector2(-9.5, -10.5),
-			Vector2(5.5, -11.0),
-			Vector2(11.5, -3.0),
-			Vector2(-5.5, -1.5),
+			Vector2(-10.8, -11.2),
+			Vector2(3.8, -11.8),
+			Vector2(10.8, -5.6),
+			Vector2(6.0, -2.2),
+			Vector2(-6.5, -2.0),
 		]), Color(1.0, 1.0, 1.0, top_alpha))
 		draw_colored_polygon(PackedVector2Array([
-			Vector2(-12.0, 4.0),
-			Vector2(12.0, 3.4),
-			Vector2(8.0, 11.2),
-			Vector2(-8.0, 11.6),
+			Vector2(-12.6, 1.8),
+			Vector2(12.2, 1.0),
+			Vector2(9.2, 11.8),
+			Vector2(-8.4, 12.2),
 		]), Color(0.0, 0.0, 0.0, lower_alpha))
+		draw_colored_polygon(PackedVector2Array([
+			Vector2(5.0, -7.0),
+			Vector2(12.4, -2.0),
+			Vector2(11.4, 7.0),
+			Vector2(5.4, 2.2),
+		]), Color(0.0, 0.0, 0.0, lower_alpha * 0.42))
 
 # ── SubViewport ───────────────────────────────────────────────────────────────
 var _vp:   SubViewport  = null

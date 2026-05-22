@@ -10,6 +10,7 @@
 curve = SubResource("Curve2D_w2fpf")
 
 [node name="Enemy" type="PathFollow2D" parent="Path2D" unique_id=2068548314]
+rotates = false
 script = ExtResource("1_6h0xr")
 
 [node name="Body" type="ColorRect" parent="Path2D/Enemy" unique_id=425916931]
