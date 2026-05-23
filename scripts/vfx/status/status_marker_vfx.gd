@@ -43,7 +43,7 @@ func _process(delta: float) -> void:
 	if _redraw_timer <= 0.0:
 		_redraw_timer = _REDRAW_INTERVAL
 		visible = _has_any_active()
-	if visible:
+	if visible and (Engine.get_process_frames() + get_instance_id()) % 2 == 0:
 		queue_redraw()
 
 func _has_any_active() -> bool:

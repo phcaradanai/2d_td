@@ -37,6 +37,8 @@ var _road_cells:      Array[Vector2i] = []
 var _guideline_cells: Array[Vector2i] = []
 var _draw_guideline:  bool = false
 
+var _baked_sprite: Sprite2D = null
+
 
 # ================================================================== setup
 func _ready() -> void:
@@ -99,6 +101,7 @@ func setup(p_level_manager: Node) -> void:
 
 	_draw_guideline = not _guideline_cells.is_empty()
 	queue_redraw()
+	_bake_map()  # Fire-and-forget: replaces draw commands with a single Sprite2D
 
 
 # =============================================================== helpers
@@ -180,6 +183,82 @@ func _path_points_from_cells(cells: Array[Vector2i]) -> PackedVector2Array:
 	for cell in cells:
 		points.append(_cell_center(cell))
 	return points
+
+
+func _setup_raw(
+		p_origin: Vector2, p_grid_size: float, p_cols: int, p_rows: int,
+		p_spawn: Array[Vector2i], p_base: Array[Vector2i],
+		p_road: Array[Vector2i], p_guide: Array[Vector2i],
+		p_draw_guide: bool) -> void:
+	_grid_origin     = p_origin
+	_grid_size       = p_grid_size
+	_grid_cols       = p_cols
+	_grid_rows       = p_rows
+	_spawn_cells     = p_spawn
+	_base_cells      = p_base
+	_road_cells      = p_road
+	_guideline_cells = p_guide
+	_draw_guideline  = p_draw_guide
+	queue_redraw()
+
+
+func _bake_map() -> void:
+	var orig_parent := get_parent()
+	if orig_parent == null or not is_inside_tree():
+		return
+
+	var tw   := float(_grid_cols) * _grid_size
+	var th   := float(_grid_rows) * _grid_size
+	var pad  := int(_grid_size * 0.85)   # covers board_rect.grow(pad*1.35) padding
+	var vp_w := int(tw) + pad * 2
+	var vp_h := int(th) + pad * 2
+
+	if vp_w > 4096 or vp_h > 4096:
+		return  # Map too large to bake — keep procedural draw
+
+	var vp := SubViewport.new()
+	vp.size                       = Vector2i(vp_w, vp_h)
+	vp.transparent_bg             = false
+	vp.render_target_update_mode  = SubViewport.UPDATE_DISABLED
+	vp.render_target_clear_mode   = SubViewport.CLEAR_MODE_ALWAYS
+	orig_parent.add_child(vp)
+
+	var cam := Camera2D.new()
+	cam.position = Vector2(pad + tw * 0.5, pad + th * 0.5)
+	cam.enabled  = true
+	vp.add_child(cam)
+	cam.make_current()
+
+	var clone := MazeMapRenderer.new()
+	vp.add_child(clone)
+	clone._setup_raw(
+		Vector2(pad, pad), _grid_size, _grid_cols, _grid_rows,
+		_spawn_cells.duplicate(), _base_cells.duplicate(),
+		_road_cells.duplicate(), _guideline_cells.duplicate(), _draw_guideline
+	)
+
+	vp.render_target_update_mode = SubViewport.UPDATE_ONCE
+	await get_tree().process_frame
+	await get_tree().process_frame
+
+	var img: Image = vp.get_texture().get_image()
+	vp.render_target_update_mode = SubViewport.UPDATE_DISABLED
+	vp.queue_free()
+
+	if img == null or img.is_empty():
+		return  # Bake failed — keep procedural draw
+
+	var tex := ImageTexture.create_from_image(img)
+	_baked_sprite             = Sprite2D.new()
+	_baked_sprite.texture     = tex
+	_baked_sprite.centered    = false
+	_baked_sprite.z_index     = z_index
+	_baked_sprite.z_as_relative = z_as_relative
+	_baked_sprite.position    = orig_parent.to_local(to_global(_grid_origin - Vector2(pad, pad)))
+	orig_parent.add_child(_baked_sprite)
+	orig_parent.move_child(_baked_sprite, 0)  # Keep below towers/enemies (same slot as this node)
+
+	visible = false  # Remove ~700 cached draw commands from the render pipeline
 
 
 # =================================================================== draw

@@ -24,12 +24,12 @@ const DISPLAY_MODE_SERVICE_SCRIPT = preload("res://scripts/services/display_mode
 const SETTINGS_SERVICE_SCRIPT = preload("res://scripts/services/settings_service.gd")
 const SCENE_NAVIGATION_SERVICE_SCRIPT = preload("res://scripts/services/scene_navigation_service.gd")
 const SETTINGS_MENU_SCENE = preload("res://scenes/ui/settings_menu.tscn")
-const LEVEL_ACCESS_SERVICE_SCRIPT  = preload("res://scripts/services/level_access_service.gd")
-const REMOTE_ACCESS_CONFIG_PATH    = "res://scripts/services/remote_access_config_service.gd"
-const RUNTIME_IDENTITY_PATH        = "res://scripts/services/runtime_identity_service.gd"
-const DEMO_GATE_MODAL_PATH         = "res://scripts/ui/demo_gate_modal.gd"
+const LEVEL_ACCESS_SERVICE_SCRIPT = preload("res://scripts/services/level_access_service.gd")
+const REMOTE_ACCESS_CONFIG_PATH = "res://scripts/services/remote_access_config_service.gd"
+const RUNTIME_IDENTITY_PATH = "res://scripts/services/runtime_identity_service.gd"
+const DEMO_GATE_MODAL_PATH = "res://scripts/ui/demo_gate_modal.gd"
 
-enum GameState { MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY }
+enum GameState {MENU, LEVEL_SELECT, BUILD, WAVE, WAVE_COMPLETE, PAUSED, GAME_OVER, VICTORY}
 enum AutoClearState {
 	IDLE,
 	SOLVING,
@@ -97,12 +97,12 @@ var enemy_route_overlay: Node2D = null
 var selected_tower: Node2D = null
 var current_state: GameState = GameState.MENU
 var _show_wave_complete_status_feedback: bool = false
-var _last_shop_ids_hash: int = 0  # Guards _refresh_elemental_shop against redundant rebuilds.
+var _last_shop_ids_hash: int = 0 # Guards _refresh_elemental_shop against redundant rebuilds.
 
 # ── Wave preview cache ──────────────────────────────────────────────────────
 # Caches per-level wave summaries so SpawnFormationPlanner is not run every UI refresh.
 # Key: level_id (int). Invalidated on level start / wave data reload.
-var _wave_preview_cache: Dictionary = {}  # level_id (int) -> Array[Dictionary]
+var _wave_preview_cache: Dictionary = {} # level_id (int) -> Array[Dictionary]
 var wave_preview_cache_hits: int = 0
 var wave_preview_cache_misses: int = 0
 
@@ -116,15 +116,15 @@ var _last_wi_running: bool = false
 # ── Debug performance counters ───────────────────────────────────────────────
 var tower_preview_active_count: int = 0
 var tower_preview_redraw_count: int = 0
-var _touch_points: Dictionary = {}   # active touch indices for two-finger deselect
+var _touch_points: Dictionary = {} # active touch indices for two-finger deselect
 var current_level_path: String = ""
 var current_level_id: String = ""
 var selected_level_id: int = 0
 
 var pending_unlock_level_id: String = ""
-var save_game_service: Node = null  # [MetaLayer] Run-state save/continue
+var save_game_service: Node = null # [MetaLayer] Run-state save/continue
 var leaderboard_service: Node = null
-var online_lb_client: Node = null   # [MetaLayer] Online leaderboard client
+var online_lb_client: Node = null # [MetaLayer] Online leaderboard client
 var leaderboard_panel: Node = null
 var current_hero: Node = null
 var hero_panel: Node = null
@@ -152,10 +152,10 @@ var display_mode_service: Node = null
 var settings_service: Node = null
 var scene_navigation_service: Node = null
 var settings_menu: CanvasLayer = null
-var runtime_identity_service: Node = null     # [Identity] Stable install/session/runtime IDs
-var level_access_service: Node = null         # [DemoGate] Level/wave access control
+var runtime_identity_service: Node = null # [Identity] Stable install/session/runtime IDs
+var level_access_service: Node = null # [DemoGate] Level/wave access control
 var remote_access_config_service: Node = null # [DemoGate] Remote OTA config fetcher
-var _demo_gate_modal: CanvasLayer = null      # [DemoGate] Shared locked/complete modal
+var _demo_gate_modal: CanvasLayer = null # [DemoGate] Shared locked/complete modal
 
 func _ready() -> void:
 	process_mode = Node.PROCESS_MODE_ALWAYS
@@ -250,11 +250,11 @@ func _ready() -> void:
 	scene_navigation_service.name = "SceneNavigationService"
 	add_child(scene_navigation_service)
 	scene_navigation_service.bind({
-		"go_to_main_menu": Callable(self, "return_to_menu"),
-		"go_to_level_select": Callable(self, "_on_level_select_requested"),
-		"restart_current_level": Callable(self, "restart_level"),
-		"stop_auto_next_wave_countdown": Callable(self, "_stop_auto_next_wave_countdown"),
-		"clear_transient_combat_ui": Callable(self, "_clear_transient_combat_ui"),
+		"go_to_main_menu": Callable(self , "return_to_menu"),
+		"go_to_level_select": Callable(self , "_on_level_select_requested"),
+		"restart_current_level": Callable(self , "restart_level"),
+		"stop_auto_next_wave_countdown": Callable(self , "_stop_auto_next_wave_countdown"),
+		"clear_transient_combat_ui": Callable(self , "_clear_transient_combat_ui"),
 	})
 
 	# [Identity] Runtime identity — stable install_id + fresh session_id each launch.
@@ -352,16 +352,16 @@ func _get_gameplay_controller_binder() -> RefCounted:
 	return _gameplay_controller_binder
 
 func _get_gameplay_layout_controller() -> RefCounted:
-	return _get_gameplay_controller_binder().get_gameplay_layout_controller(self)
+	return _get_gameplay_controller_binder().get_gameplay_layout_controller(self )
 
 func _get_elemental_pick_controller() -> RefCounted:
-	return _get_gameplay_controller_binder().get_elemental_pick_controller(self)
+	return _get_gameplay_controller_binder().get_elemental_pick_controller(self )
 
 func _get_wave_flow_controller() -> RefCounted:
-	return _get_gameplay_controller_binder().get_wave_flow_controller(self)
+	return _get_gameplay_controller_binder().get_wave_flow_controller(self )
 
 func _get_tower_interaction_controller() -> RefCounted:
-	return _get_gameplay_controller_binder().get_tower_interaction_controller(self)
+	return _get_gameplay_controller_binder().get_tower_interaction_controller(self )
 
 func _get_visible_viewport_size_for_layout() -> Vector2:
 	return get_viewport().get_visible_rect().size
@@ -1392,7 +1392,7 @@ func start_game(level_path: String) -> void:
 	var _level_num := level_id_to_int(_level_id_str)
 	if level_access_service and not level_access_service.can_play_level(_level_num):
 		if OS.is_debug_build():
-			var _reason : String = level_access_service.get_locked_reason(_level_num) if level_access_service else "unknown"
+			var _reason: String = level_access_service.get_locked_reason(_level_num) if level_access_service else "unknown"
 			print("[DemoGate] start_game BLOCKED path=%s base=%s level_num=%d reason=%s mode=%s source=%s resolved_from=%s" % [
 				level_path,
 				_level_id_str,
@@ -1404,7 +1404,7 @@ func start_game(level_path: String) -> void:
 			])
 		if _demo_gate_modal:
 			var _cfg_for_modal := get_level_config(_level_id_str)
-			var _level_name : String = _cfg_for_modal.get("name", _level_id_str.replace("level_", "Level "))
+			var _level_name: String = _cfg_for_modal.get("name", _level_id_str.replace("level_", "Level "))
 			_demo_gate_modal.show_locked(_level_name)
 		return
 	if save_game_service:
@@ -1414,7 +1414,7 @@ func start_game(level_path: String) -> void:
 func start_level(level_path: String) -> void:
 	current_level_path = level_path
 	_invalidate_wave_preview_cache()
-	_last_shop_ids_hash = 0  # Force shop rebuild for this level.
+	_last_shop_ids_hash = 0 # Force shop rebuild for this level.
 
 	# STANDARD: Ensure engine is unpaused when starting a level
 	get_tree().paused = false
@@ -1681,7 +1681,7 @@ func _spawn_hero_unit() -> void:
 	if hero_panel:
 		hero_panel.set_deployed(current_hero, current_hero.active_duration_max)
 		
-	if OS.is_debug_build(): 
+	if OS.is_debug_build():
 		print("[HeroDeploy] deployed hero=Guardian duration=%.1f" % current_hero.active_duration_max)
 		print("[HeroDeploy] deploy requested cost=%d gold=%d" % [level_manager.hero_config.get("deploy_cost", 100), game_manager.gold])
 
@@ -1865,7 +1865,7 @@ func _on_tower_placed(tower: Node2D, _tower_id: String, _cost: int) -> void:
 	if tower.has_signal("clicked"):
 		tower.clicked.connect(_on_placed_tower_clicked)
 	if tower.has_signal("upgrade_completed"):
-		var upgrade_callback := Callable(self, "_on_tower_upgrade_completed")
+		var upgrade_callback := Callable(self , "_on_tower_upgrade_completed")
 		if not tower.is_connected("upgrade_completed", upgrade_callback):
 			tower.connect("upgrade_completed", upgrade_callback)
 	if audio_manager:
@@ -1900,7 +1900,7 @@ func _select_tower(tower: Node2D) -> void:
 		if selected_tower.has_method("set_selected"):
 			selected_tower.set_selected(true)
 		if game_hud:
-			var _info : Dictionary = selected_tower.get_info()
+			var _info: Dictionary = selected_tower.get_info()
 			game_hud.show_tower_info(_info)
 			if game_hud.has_method("show_tower_float_card"):
 				game_hud.show_tower_float_card(_info, selected_tower)
@@ -1973,7 +1973,6 @@ func _on_upgrade_tower_requested() -> void:
 	elif game_hud:
 		game_hud.set_build_status("Not enough gold!")
 	_play_ui_click()
-
 
 
 ## Reads upgrade_cost from a tower config dict — the cost to upgrade INTO it.
@@ -2234,7 +2233,7 @@ func _on_game_over() -> void:
 	if save_manager and level_manager:
 		improvements = save_manager.update_level_record(level_manager.level_id, summary)
 		# [DemoGate] Only submit to leaderboard when permitted.
-		var _lb_allowed : bool = (level_access_service == null or level_access_service.can_submit_leaderboard())
+		var _lb_allowed: bool = (level_access_service == null or level_access_service.can_submit_leaderboard())
 		if leaderboard_service and _lb_allowed:
 			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
 		# [MetaLayer] Submit to online leaderboard (async, no crash if offline)
@@ -2287,7 +2286,7 @@ func _on_victory() -> void:
 		if level_select: level_select.update_ui(save_manager)
 
 		# [DemoGate] Only submit to leaderboard when permitted.
-		var _lb_ok : bool = (level_access_service == null or level_access_service.can_submit_leaderboard())
+		var _lb_ok: bool = (level_access_service == null or level_access_service.can_submit_leaderboard())
 		if leaderboard_service and _lb_ok:
 			rank = leaderboard_service.submit_score(level_manager.level_id, summary, save_manager.get_player_name())
 		# [MetaLayer] Submit to online leaderboard (async, no crash if offline)
@@ -2711,7 +2710,7 @@ func _ensure_sandbox_panel() -> void:
 	_add_sandbox_separator(box, "Elements")
 	for element_id in ["light", "darkness", "water", "fire", "nature", "earth"]:
 		var eid := str(element_id)
-		_add_sandbox_button(box, "+1 " + eid.capitalize(), Callable(self, "_sandbox_add_element").bind(eid, 1))
+		_add_sandbox_button(box, "+1 " + eid.capitalize(), Callable(self , "_sandbox_add_element").bind(eid, 1))
 	_add_sandbox_button(box, "All +1", func():
 		for eid in ["light", "darkness", "water", "fire", "nature", "earth"]:
 			_sandbox_add_element(eid, 1)
@@ -3297,7 +3296,6 @@ func collect_existing_towers_for_solver() -> Array[Dictionary]:
 			continue
 
 		result.append({"type": type, "cell": cell, "level": lvl})
-		print(" - ", type, " at ", cell, " (Lv", lvl, ") pos=", tower.global_position)
 
 	return result
 
@@ -3369,7 +3367,7 @@ func _on_verifier_state_changed(state: int, msg: String) -> void:
 	var state_failed = 9 # AutoPlayState.FAILED
 	
 	if debug_panel:
-		var is_fail = (state == state_failed) 
+		var is_fail = (state == state_failed)
 		debug_panel.update_verifier_status(msg, is_fail)
 	
 	if state == state_completed and balance_solver and not last_auto_clear_result.is_empty():

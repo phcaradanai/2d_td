@@ -83,7 +83,7 @@ func _process(delta: float) -> void:
 	if elapsed >= lifetime:
 		_release_to_pool()
 		return
-	if not PerformanceFirebreak.disable_all_attack_vfx:
+	if not PerformanceFirebreak.disable_all_attack_vfx and (Engine.get_process_frames() + get_instance_id()) % 2 == 0:
 		queue_redraw()
 
 func _begin_pooled_lifecycle() -> void:
