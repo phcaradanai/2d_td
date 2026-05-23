@@ -89,16 +89,6 @@ func _print_spike(delta_ms: float, sections: Dictionary) -> void:
 		total_spike_frames, delta_ms, fps, node_count, draw_calls, vfx_active
 	])
 
-func _count_active_vfx() -> int:
-	var pool := get_node_or_null("/root/VisualEffectPoolService")
-	if pool == null:
-		return get_tree().get_nodes_in_group("attack_vfx").size()
-	var total := 0
-	var active_by_key: Dictionary = pool.get("_active_by_key") if pool.get("_active_by_key") != null else {}
-	for key in active_by_key:
-		total += (active_by_key[key] as Array).size()
-	return total
-
 	if sections.is_empty():
 		print("  (no sections timed this frame)")
 		return
@@ -124,3 +114,13 @@ func _count_active_vfx() -> int:
 	print("  ── Total timed: %.2f ms  /  frame: %.2f ms ────────────────" % [
 		float(total_us) / 1000.0, delta_ms
 	])
+
+func _count_active_vfx() -> int:
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	if pool == null:
+		return get_tree().get_nodes_in_group("attack_vfx").size()
+	var total := 0
+	var active_by_key: Dictionary = pool.get("_active_by_key") if pool.get("_active_by_key") != null else {}
+	for key in active_by_key:
+		total += (active_by_key[key] as Array).size()
+	return total
