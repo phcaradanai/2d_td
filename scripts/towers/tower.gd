@@ -1329,6 +1329,11 @@ func _ready() -> void:
 		_request_tower_visual_redraw_if_dirty()
 		return
 
+	if range_area:
+		range_area.set_physics_process(false)
+		range_area.collision_layer = 0
+		range_area.collision_mask = 0
+
 	if click_area:
 		click_area.input_pickable = true
 		click_area.input_event.connect(_on_click_area_input_event)

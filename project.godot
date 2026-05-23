@@ -43,6 +43,11 @@ window/size/borderless=true
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 
+[physics]
+
+common/max_physics_steps_per_frame=2
+common/physics_ticks_per_second=30
+
 [rendering]
 
 textures/vram_compression/import_etc2_astc=true
