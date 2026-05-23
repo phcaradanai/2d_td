@@ -103,19 +103,19 @@ var hit_flash_alpha: float = 0.0
 var _hit_flash_tween: Tween = null
 var _hit_pulse_tween: Tween = null
 var _hit_shake_tween: Tween = null
-const PERFORMANCE_VISUAL_MODE := true   # Simplified silhouette rendering for 60 FPS
-const ENEMY_VISUAL_REDRAW_INTERVAL := 0.125  # 8 FPS visual update (was 1/30 = 30 FPS)
+const PERFORMANCE_VISUAL_MODE := true # Simplified silhouette rendering for 60 FPS
+const ENEMY_VISUAL_REDRAW_INTERVAL := 0.125 # 8 FPS visual update (was 1/30 = 30 FPS)
 const ENEMY_OUTLINE_COLOR := Color(0.0, 0.0, 0.0, 0.74)
 const ENEMY_OUTLINE_THICKNESS := 2.0
 const SHOW_FLOATING_DAMAGE_NUMBERS := false
-enum HealthVisualState { HEALTH_OK, HEALTH_DAMAGED, HEALTH_CRITICAL }
+enum HealthVisualState {HEALTH_OK, HEALTH_DAMAGED, HEALTH_CRITICAL}
 var health_visual_state: int = HealthVisualState.HEALTH_OK
 
 # Baker-style body sprite — replaces procedural _draw() body (15→1 draw call).
 var _body_sprite: Sprite2D = null
 var _body_baked: bool = false
 var _baked_health_state: int = -1
-var _bake_scale: Vector2 = Vector2(0.5, 0.5)   # set in _apply_baked_enemy_texture
+var _bake_scale: Vector2 = Vector2(0.5, 0.5) # set in _apply_baked_enemy_texture
 
 # Sprite animation state (no queue_redraw needed — GPU-side transforms only)
 var _hit_impact_tween: Tween = null
@@ -132,31 +132,31 @@ const CROWDED_ENEMY_THRESHOLD := 7
 
 # Per-enemy organic motion — set once in setup(), never changes.
 # Desync bobs, drift ⊥ to path, tilt on step — all GPU-side Sprite2D transforms.
-var _anim_phase: float = 0.0       # unique bob phase per enemy (0..TAU)
-var _perp_drift_amp: float = 0.0   # lateral drift amplitude in local-Y px
-var _perp_drift_freq: float = 0.0  # drift cycles per px of path progress
+var _anim_phase: float = 0.0 # unique bob phase per enemy (0..TAU)
+var _perp_drift_amp: float = 0.0 # lateral drift amplitude in local-Y px
+var _perp_drift_freq: float = 0.0 # drift cycles per px of path progress
 var _visual_heading_angle: float = 0.0
 
 # Lazy separation — scan nearby enemies every ~0.4 s, smoothly push apart visually.
 # Visual angle is locked, so this is a screen-local Y offset and never moves gameplay hitboxes.
-var _sep_lateral: float = 0.0      # current smoothed lateral offset (px)
-var _sep_target: float = 0.0       # target lateral from last avoidance scan
-var _sep_check_timer: float = 0.0  # countdown to next scan
+var _sep_lateral: float = 0.0 # current smoothed lateral offset (px)
+var _sep_target: float = 0.0 # target lateral from last avoidance scan
+var _sep_check_timer: float = 0.0 # countdown to next scan
 var _spawn_spread_lateral: float = 0.0 # early visual-only lane offset; fades with progress
 
-const SEP_SCAN_INTERVAL   := 0.38   # base seconds between scans per enemy
-const SEP_SCAN_RADIUS_SQ  := 784.0  # 28 px² — world-space proximity filter
-const SEP_PUSH_MAX        := 7.0    # max px pushed per overlapping neighbour
-const SEP_ROAD_HALF       := 14.0   # max combined lateral offset from path center
+const SEP_SCAN_INTERVAL := 0.38 # base seconds between scans per enemy
+const SEP_SCAN_RADIUS_SQ := 784.0 # 28 px² — world-space proximity filter
+const SEP_PUSH_MAX := 7.0 # max px pushed per overlapping neighbour
+const SEP_ROAD_HALF := 14.0 # max combined lateral offset from path center
 const SPAWN_SPREAD_FADE_DISTANCE := 220.0
 
 # Smart Visual LOD — prioritises CPU for hero moments, saves it for background creeps.
 # LOW (0): healthy, not in combat  → animate every 3rd frame, no glow
 # HIGH (2): low HP, hit recently   → animate every frame, red pulse glow
-const ANIM_LOD_LOW  := 0
+const ANIM_LOD_LOW := 0
 const ANIM_LOD_HIGH := 2
 var _anim_lod: int = ANIM_LOD_LOW
-var _anim_frame_counter: int = 0   # incremented in _process, used to skip frames
+var _anim_frame_counter: int = 0 # incremented in _process, used to skip frames
 var _death_glow_tween: Tween = null
 
 # Shield and disrupt aura scan intervals — prevent O(n) group walks every frame.
@@ -219,6 +219,7 @@ var split_triggered_once: bool = false
 @onready var visual_root: Node2D = _resolve_visual_root()
 
 func _resolve_visual_root() -> Node2D:
+	return EnemyBakedSpriteService._resolve_visual_root(self)
 	var n := get_node_or_null("Body")
 	if n is Node2D:
 		return n
@@ -252,7 +253,7 @@ var vfx_controller: Node = null
 
 
 func setup(config: Dictionary) -> void:
-	EnemySetupService.apply_setup(self, config)
+	EnemySetupService.apply_setup(self , config)
 
 func normalize_enemy_category(raw_category) -> String:
 	var normalized = str(raw_category).strip_edges().to_lower()
@@ -293,7 +294,7 @@ func get_vfx_controller() -> Node:
 	return vfx_controller
 
 func _draw() -> void:
-	EnemyVisualRenderer.draw_enemy(self)
+	EnemyVisualRenderer.draw_enemy(self )
 
 func _update_health_visual_state(force_redraw: bool = false) -> void:
 	var hp_ratio: float = 1.0
@@ -318,6 +319,7 @@ func _update_health_visual_state(force_redraw: bool = false) -> void:
 # ── Baker-style body sprite ──────────────────────────────────────────────────
 
 func _request_baked_enemy_texture() -> void:
+	EnemyBakedSpriteService._request_baked_enemy_texture(self)
 	if is_gallery_preview:
 		return
 	# Defer until we're in the scene tree so add_child / callbacks work safely.
@@ -325,8 +327,8 @@ func _request_baked_enemy_texture() -> void:
 		call_deferred("_request_baked_enemy_texture")
 		return
 	var vt: String = str(visual_type)
-	var hs: int    = health_visual_state
-	var captured   := self
+	var hs: int = health_visual_state
+	var captured := self
 	EnemyTextureBaker.request_texture(vt, hs, func(tex: ImageTexture) -> void:
 		if not is_instance_valid(captured):
 			return
@@ -334,6 +336,7 @@ func _request_baked_enemy_texture() -> void:
 	)
 
 func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
+	EnemyBakedSpriteService._apply_baked_enemy_texture(self, tex)
 	if tex == null:
 		return
 	if _body_sprite == null or not is_instance_valid(_body_sprite):
@@ -357,14 +360,14 @@ func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 		_shadow_node.draw.connect(func():
 			var pts := PackedVector2Array()
 			for i in 22:
-				var a := float(i)/22.0*TAU
-				pts.append(Vector2(cos(a)*rx, sin(a)*ry))
-			_shadow_node.draw_colored_polygon(pts, Color(0,0,0,alpha))
+				var a := float(i) / 22.0 * TAU
+				pts.append(Vector2(cos(a) * rx, sin(a) * ry))
+			_shadow_node.draw_colored_polygon(pts, Color(0, 0, 0, alpha))
 			var core := PackedVector2Array()
 			for i in 18:
-				var a := float(i)/18.0*TAU
-				core.append(Vector2(cos(a)*rx*0.58, sin(a)*ry*0.62))
-			_shadow_node.draw_colored_polygon(core, Color(0,0,0,alpha*0.72))
+				var a := float(i) / 18.0 * TAU
+				core.append(Vector2(cos(a) * rx * 0.58, sin(a) * ry * 0.62))
+			_shadow_node.draw_colored_polygon(core, Color(0, 0, 0, alpha * 0.72))
 		)
 		add_child(_shadow_node)
 		move_child(_shadow_node, 0)
@@ -372,38 +375,40 @@ func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 
 	_bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM)
 	_body_sprite.texture = tex
-	_body_sprite.scale   = _bake_scale
+	_body_sprite.scale = _bake_scale
 	_body_sprite.visible = true
-	_baked_health_state  = health_visual_state
+	_baked_health_state = health_visual_state
 	if not _body_baked:
 		# First time baked: pop-in spawn animation
 		_body_sprite.scale = Vector2.ZERO
 		var spawn_tw := create_tween()
-		spawn_tw.tween_property(_body_sprite, "scale", _bake_scale, 0.18)\
+		spawn_tw.tween_property(_body_sprite, "scale", _bake_scale, 0.18) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	_body_baked = true
 	queue_redraw()
 
 ## Per-type lateral drift amplitude (px). Fast/small types drift more; tanks barely move.
 func _get_type_drift_amp(vtype: String) -> float:
+	return EnemyBakedSpriteService._get_type_drift_amp(self, vtype)
 	match vtype:
-		"swarm":       return 9.0
+		"swarm": return 9.0
 		"fast", "runner", "fast_flyer": return 7.5
-		"cloaked":     return 7.0
+		"cloaked": return 7.0
 		"basic", "healer", "splitter", "disruptor": return 6.0
 		"hunter", "flyer", "armored_flyer": return 5.5
 		"tank", "bulwark", "shieldbearer": return 3.0
-		_:             return 6.0
+		_: return 6.0
 
 ## Spawn spread is visual-only and decays during the first few road tiles.
 ## It keeps dense starts from reading as one stacked train without moving gameplay hitboxes.
 func _get_type_spawn_spread(vtype: String) -> float:
+	return EnemyBakedSpriteService._get_type_spawn_spread(self, vtype)
 	match vtype:
-		"swarm":                           return 10.0
-		"fast", "runner", "fast_flyer":    return 8.5
+		"swarm": return 10.0
+		"fast", "runner", "fast_flyer": return 8.5
 		"tank", "bulwark", "shieldbearer": return 4.5
-		"flyer", "armored_flyer":          return 6.0
-		_:                                 return 7.0
+		"flyer", "armored_flyer": return 6.0
+		_: return 7.0
 
 ## Lazy separation — pushes _sep_target away from nearby overlapping enemies.
 ## Called ~every 0.4 s per enemy (staggered), NOT every frame.
@@ -412,22 +417,22 @@ func _update_separation() -> void:
 	var pb := get_node_or_null("/root/PerformanceBudget")
 	var enemies: Array = (pb.get_enemies() if pb != null and pb.has_method("get_enemies")
 						 else get_tree().get_nodes_in_group("enemies"))
-	var my_pos   := global_position
-	var my_prog  := get_path_progress()
+	var my_pos := global_position
+	var my_prog := get_path_progress()
 	for other in enemies:
 		if other == self or not is_instance_valid(other): continue
 		var op: Vector2 = other.global_position
 		var dx := op.x - my_pos.x
 		var dy := op.y - my_pos.y
-		if dx * dx + dy * dy > SEP_SCAN_RADIUS_SQ: continue   # world-distance guard
+		if dx * dx + dy * dy > SEP_SCAN_RADIUS_SQ: continue # world-distance guard
 		if not other.has_method("get_path_progress"): continue
-		if absf(my_prog - other.get_path_progress()) > 32.0: continue  # far on path
+		if absf(my_prog - other.get_path_progress()) > 32.0: continue # far on path
 		# Determine push direction — must differ between the two enemies in a pair
 		var other_lat: float = float(other.get("_sep_lateral"))
 		var gap := _sep_lateral - other_lat
 		var push_dir: float
 		if absf(gap) > 2.0:
-			push_dir = signf(gap)           # already separated: reinforce it
+			push_dir = signf(gap) # already separated: reinforce it
 		else:
 			# Tie-break via relative instance IDs — guarantees opposite dirs per pair
 			push_dir = 1.0 if get_instance_id() > other.get_instance_id() else -1.0
@@ -435,41 +440,47 @@ func _update_separation() -> void:
 		push += push_dir * SEP_PUSH_MAX * (1.0 - dist_sq / SEP_SCAN_RADIUS_SQ)
 	# Decay toward 0 when alone; clamp to road half-width
 	if absf(push) < 0.1:
-		push = _sep_target * -0.25   # gentle return to center when isolated
+		push = _sep_target * -0.25 # gentle return to center when isolated
 	_sep_target = clampf(push, -SEP_ROAD_HALF, SEP_ROAD_HALF)
 
 func _uses_glide_motion(vtype: String) -> bool:
+	return EnemyBakedSpriteService._uses_glide_motion(self, vtype)
 	return vtype == "fast" or vtype == "runner" or vtype == "fast_flyer" or vtype == "hunter"
 
 func _uses_directional_visual(vtype: String) -> bool:
+	return EnemyBakedSpriteService._uses_directional_visual(self, vtype)
 	return vtype == "fast" or vtype == "runner" or vtype == "fast_flyer" or vtype == "hunter"
 
 func _record_visual_movement_delta(delta_pos: Vector2) -> void:
+	EnemyBakedSpriteService._record_visual_movement_delta(self, delta_pos)
 	if delta_pos.length_squared() <= 0.01:
 		return
 	_visual_heading_angle = delta_pos.angle()
 
 func _get_body_visual_rotation() -> float:
+	return EnemyBakedSpriteService._get_body_visual_rotation(self)
 	if _uses_directional_visual(visual_type):
 		return _visual_heading_angle
 	return 0.0
 
 ## Per-type bob intensity — pointed fast units glide; compact bodies can bounce.
 func _get_type_bob_intensity(vtype: String) -> float:
+	return EnemyBakedSpriteService._get_type_bob_intensity(self, vtype)
 	match vtype:
 		"tank", "bulwark", "shieldbearer": return 0.55
-		"swarm":                           return 0.85
-		"fast", "runner", "fast_flyer":    return 0.34
-		"hunter":                          return 0.48
-		_:                                 return 1.0
+		"swarm": return 0.85
+		"fast", "runner", "fast_flyer": return 0.34
+		"hunter": return 0.48
+		_: return 1.0
 
 ## Walking squash/stretch — called every frame when baked. No queue_redraw.
 func _update_sprite_movement_anim() -> void:
+	EnemyBakedSpriteService._update_sprite_movement_anim(self)
 	if not _body_baked or _body_sprite == null or _hit_impact_active:
 		return
 	var speed_ratio := clampf(speed / maxf(base_speed, 1.0), 0.0, 2.2)
 	if speed_ratio < 0.02:
-		_body_sprite.scale    = _bake_scale
+		_body_sprite.scale = _bake_scale
 		_body_sprite.position = Vector2(0.0, -3.6 if _uses_directional_visual(visual_type) else 0.0)
 		_body_sprite.rotation = _get_body_visual_rotation()
 		if _uses_directional_visual(visual_type):
@@ -490,8 +501,8 @@ func _update_sprite_movement_anim() -> void:
 	var bob := sin(path_px * 0.090 + _anim_phase) * speed_ratio * bob_intensity
 	# Squash-stretch: exaggerated so it reads at small sprite sizes
 	_body_sprite.scale = Vector2(
-		_bake_scale.x * (1.0 - bob * 0.20),   # narrow on upstroke
-		_bake_scale.y * (1.0 + bob * 0.30)    # tall on upstroke, short on downstroke
+		_bake_scale.x * (1.0 - bob * 0.20), # narrow on upstroke
+		_bake_scale.y * (1.0 + bob * 0.30) # tall on upstroke, short on downstroke
 	)
 	# Primary screen-local weave + secondary overtone = organic swarm feel
 	# path_px drives drift so it's always in sync with actual travel distance
@@ -510,6 +521,7 @@ func _update_sprite_movement_anim() -> void:
 
 
 func _update_sprite_glide_motion(path_px: float, speed_ratio: float) -> void:
+	EnemyBakedSpriteService._update_sprite_glide_motion(self, path_px, speed_ratio)
 	var glide := sin(path_px * 0.135 + _anim_phase) * speed_ratio
 	var micro := sin(path_px * 0.265 + _anim_phase * 0.73) * speed_ratio
 	var compression := absf(glide)
@@ -567,7 +579,7 @@ func _play_sprite_death() -> void:
 		_death_glow_tween.kill()
 	# Pop: burst scale + instant white flash → transparent before queue_free
 	var imp := _get_death_importance()
-	_body_sprite.scale   = _bake_scale * clampf(1.15 + imp * 0.12, 1.15, 1.6)
+	_body_sprite.scale = _bake_scale * clampf(1.15 + imp * 0.12, 1.15, 1.6)
 	_body_sprite.modulate = Color(2.2, 2.2, 2.2, 0.0)
 
 ## Escalate LOD: full-rate animation + hit emphasis from now on.
@@ -579,7 +591,7 @@ func _start_near_death_glow() -> void:
 	if not _body_baked or _body_sprite == null or not is_instance_valid(_body_sprite):
 		return
 	if _death_glow_tween != null and _death_glow_tween.is_valid():
-		return  # already pulsing
+		return # already pulsing
 	_death_glow_tween = create_tween().set_loops()
 	_death_glow_tween.tween_property(_body_sprite, "modulate",
 		Color(1.6, 0.55, 0.55, 1.0), 0.28).set_trans(Tween.TRANS_SINE)
@@ -629,8 +641,8 @@ func _process_inner(delta: float) -> void:
 	if game_manager != null and (game_manager.is_paused or game_manager.is_game_over):
 		return
 
-	if is_gallery_preview or CatalogPreviewMode.is_preview_node(self):
-		if not CatalogPreviewMode.is_selected_demo(self):
+	if is_gallery_preview or CatalogPreviewMode.is_preview_node(self ):
+		if not CatalogPreviewMode.is_selected_demo(self ):
 			set_process(false)
 			queue_redraw()
 			return
@@ -710,14 +722,14 @@ func _process_inner(delta: float) -> void:
 		armor_reduction_remaining -= delta
 		if armor_reduction_remaining <= 0:
 			armor_reduction_bonus_percent = 0.0
-			enemy_modifier_changed.emit(self, "armor_reduction", 0.0)
+			enemy_modifier_changed.emit(self , "armor_reduction", 0.0)
 
 	if root_remaining > 0:
 		root_remaining -= delta
 		if root_remaining <= 0:
 			root_slow_percent = 0.0
 			update_effective_speed()
-			enemy_modifier_changed.emit(self, "root", 0.0)
+			enemy_modifier_changed.emit(self , "root", 0.0)
 
 	_dot_tick_timer -= delta
 	_dot_tick_accum += delta
@@ -763,29 +775,29 @@ func _process_inner(delta: float) -> void:
 		_process_pathing(delta)
 
 func _configure_runner_role(config: Dictionary) -> void:
-	EnemyRoleRunner._configure_runner_role(self, config)
+	EnemyRoleRunner._configure_runner_role(self , config)
 
 func _process_runner_role(delta: float) -> void:
-	EnemyRoleRunner._process_runner_role(self, delta)
+	EnemyRoleRunner._process_runner_role(self , delta)
 
 func _trigger_runner_dash(reason: String = "burst") -> void:
-	EnemyRoleRunner._trigger_runner_dash(self, reason)
+	EnemyRoleRunner._trigger_runner_dash(self , reason)
 
 func _try_runner_hit_dash() -> void:
-	EnemyRoleRunner._try_runner_hit_dash(self)
+	EnemyRoleRunner._try_runner_hit_dash(self )
 
 func _process_shield_aura() -> void:
-	EnemySkillService._process_shield_aura(self)
+	EnemySkillService._process_shield_aura(self )
 
 func _get_skill_reduction() -> float:
-	return EnemySkillService._get_skill_reduction(self)
+	return EnemySkillService._get_skill_reduction(self )
 
 func _process_healer_aura() -> void:
-	EnemySkillService._process_healer_aura(self)
+	EnemySkillService._process_healer_aura(self )
 
 
 func _process_disrupt_aura() -> void:
-	EnemySkillService._process_disrupt_aura(self)
+	EnemySkillService._process_disrupt_aura(self )
 
 func heal(amount: float, _source: Variant = null) -> float:
 	if is_dead_flag or reached_base_flag or hp >= max_hp:
@@ -799,76 +811,76 @@ func heal(amount: float, _source: Variant = null) -> float:
 	return applied
 
 func apply_shield(duration: float, reduction: float = shield_reduction, source: Variant = null) -> void:
-	EnemyStatusService.apply_shield(self, duration, reduction, source)
+	EnemyStatusService.apply_shield(self , duration, reduction, source)
 
 func apply_vulnerability(multiplier: float, duration: float) -> void:
-	EnemyStatusService.apply_vulnerability(self, multiplier, duration)
+	EnemyStatusService.apply_vulnerability(self , multiplier, duration)
 
 func apply_damage_amp(multiplier: float, duration: float) -> void:
-	EnemyStatusService.apply_damage_amp(self, multiplier, duration)
+	EnemyStatusService.apply_damage_amp(self , multiplier, duration)
 
 func apply_armor_reduction(percent: float, duration: float) -> void:
-	EnemyStatusService.apply_armor_reduction(self, percent, duration)
+	EnemyStatusService.apply_armor_reduction(self , percent, duration)
 
 func apply_damage_over_time(damage_per_second: float, duration: float, source_id: String = "", attack_type: String = "dot") -> void:
-	EnemyStatusService.apply_damage_over_time(self, damage_per_second, duration, source_id, attack_type)
+	EnemyStatusService.apply_damage_over_time(self , damage_per_second, duration, source_id, attack_type)
 
 func apply_root(duration: float, snare_percent: float = 1.0) -> void:
-	EnemyStatusService.apply_root(self, duration, snare_percent)
+	EnemyStatusService.apply_root(self , duration, snare_percent)
 
 func apply_delayed_damage(amount: float, delay: float, source_id: String = "", attack_type: String = "delayed") -> void:
-	EnemyStatusService.apply_delayed_damage(self, amount, delay, source_id, attack_type)
+	EnemyStatusService.apply_delayed_damage(self , amount, delay, source_id, attack_type)
 
 func _process_hunter_ai(delta: float) -> void:
-	EnemyRoleHunter._process_hunter_ai(self, delta)
+	EnemyRoleHunter._process_hunter_ai(self , delta)
 
 func _update_hunter_target() -> void:
-	EnemyRoleHunter._update_hunter_target(self)
+	EnemyRoleHunter._update_hunter_target(self )
 
 func _is_hero_huntable(hero: Node) -> bool:
-	return EnemyRoleHunter._is_hero_huntable(self, hero)
+	return EnemyRoleHunter._is_hero_huntable(self , hero)
 
 func _clear_hunter_target() -> void:
-	EnemyRoleHunter._clear_hunter_target(self)
+	EnemyRoleHunter._clear_hunter_target(self )
 
 func _move_toward_hero(target_pos: Vector2, delta: float) -> void:
-	EnemyRoleHunter._move_toward_hero(self, target_pos, delta)
+	EnemyRoleHunter._move_toward_hero(self , target_pos, delta)
 
 func _face_hunter_target(_target_pos: Vector2, _delta: float) -> void:
-	EnemyRoleHunter._face_hunter_target(self, _target_pos, _delta)
+	EnemyRoleHunter._face_hunter_target(self , _target_pos, _delta)
 
 func _attack_hero(hero: Node) -> void:
-	EnemyRoleHunter._attack_hero(self, hero)
+	EnemyRoleHunter._attack_hero(self , hero)
 
 func _process_pathing(delta: float) -> void:
-	EnemyMovementService._process_pathing(self, delta)
+	EnemyMovementService._process_pathing(self , delta)
 
 func set_dynamic_pathing(manager: Node, spawn_cell: Vector2i) -> void:
-	EnemyMovementService.set_dynamic_pathing(self, manager, spawn_cell)
+	EnemyMovementService.set_dynamic_pathing(self , manager, spawn_cell)
 
 func set_pathfinding_manager(manager: Node) -> void:
-	EnemyMovementService.set_pathfinding_manager(self, manager)
+	EnemyMovementService.set_pathfinding_manager(self , manager)
 
 func request_path_to_core() -> void:
-	EnemyMovementService.request_path_to_core(self)
+	EnemyMovementService.request_path_to_core(self )
 
 func on_navigation_grid_changed(version: int) -> void:
-	EnemyMovementService.on_navigation_grid_changed(self, version)
+	EnemyMovementService.on_navigation_grid_changed(self , version)
 
 func _process_dynamic_pathing(delta: float) -> void:
-	EnemyMovementService._process_dynamic_pathing(self, delta)
+	EnemyMovementService._process_dynamic_pathing(self , delta)
 
 func _recalculate_dynamic_path() -> void:
-	EnemyMovementService._recalculate_dynamic_path(self)
+	EnemyMovementService._recalculate_dynamic_path(self )
 
 func _sync_spatial_target_cache(register_if_missing: bool) -> void:
-	EnemyMovementService._sync_spatial_target_cache(self, register_if_missing)
+	EnemyMovementService._sync_spatial_target_cache(self , register_if_missing)
 
 func get_last_damage_source() -> String:
 	return last_damage_source
 
 func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "", p_attack_type: String = "single") -> void:
-	if CatalogPreviewMode.is_preview_node(self):
+	if CatalogPreviewMode.is_preview_node(self ):
 		return
 	if is_dead_flag or reached_base_flag: return
 	
@@ -918,29 +930,29 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 		dn_color = Color(0.58, 1.0, 0.28)
 
 	spawn_damage_number(int(final_damage), capture_pos, dn_color, source_id)
-	EnemyHitFeedbackService._play_hit_pulse(self)
+	EnemyHitFeedbackService._play_hit_pulse(self )
 	if _body_baked:
 		# One heavy impact path only. flash_body() resolves comfort colour/LOD;
 		# this call owns the baked-sprite tween so rapid hits cannot double-trigger it.
 		var impact_color: Color = hit_flash_color if hit_flash_color.a > 0.0 else dn_color
 		if dn_color != Color.WHITE:
 			impact_color = dn_color
-		EnemyHitFeedbackService._play_sprite_hit_impact(self, impact_color)
+		EnemyHitFeedbackService._play_sprite_hit_impact(self , impact_color)
 		# Hit spark: tiny burst at impact point — replaces screen shake as impact cue.
-		EnemyHitFeedbackService._spawn_hit_spark(self, capture_pos, dn_color)
+		EnemyHitFeedbackService._spawn_hit_spark(self , capture_pos, dn_color)
 	_try_runner_hit_dash()
 	if enemy_type == "swarm" or tags.has("swarm"):
-		EnemyHitFeedbackService._trigger_swarm_hit_reaction(self)
-		EnemyHitFeedbackService._spawn_swarm_hit_effect(self, capture_pos)
+		EnemyHitFeedbackService._trigger_swarm_hit_reaction(self )
+		EnemyHitFeedbackService._spawn_swarm_hit_effect(self , capture_pos)
 	
 	if hp <= 0:
 		die(capture_pos)
 
 func apply_slow(percent: float, duration: float) -> void:
-	EnemyStatusService.apply_slow(self, percent, duration)
+	EnemyStatusService.apply_slow(self , percent, duration)
 
 func clear_slow() -> void:
-	EnemyStatusService.clear_slow(self)
+	EnemyStatusService.clear_slow(self )
 
 func _configure_formation_speed() -> void:
 	if formation_speed_limit > 0.0 and formation_limit_duration > 0.0 and base_speed > 0.0:
@@ -974,46 +986,46 @@ func _process_formation_speed(delta: float) -> void:
 		update_effective_speed()
 
 func update_effective_speed() -> void:
-	EnemyStatusService.update_effective_speed(self)
+	EnemyStatusService.update_effective_speed(self )
 
 func _process_tower_status_effects(delta: float) -> void:
-	EnemyStatusService._process_tower_status_effects(self, delta)
+	EnemyStatusService._process_tower_status_effects(self , delta)
 
 func flash_body(damage_context: String = "") -> void:
-	EnemyHitFeedbackService.flash_body(self, damage_context)
+	EnemyHitFeedbackService.flash_body(self , damage_context)
 
 func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
-	EnemyHitFeedbackService.spawn_damage_number(self, amount, hit_global, color, source_id)
+	EnemyHitFeedbackService.spawn_damage_number(self , amount, hit_global, color, source_id)
 
 func die(death_global: Vector2 = Vector2.ZERO) -> void:
-	EnemyDeathService.die(self, death_global)
+	EnemyDeathService.die(self , death_global)
 
 func _handle_split_on_death(_death_pos: Vector2) -> void:
-	EnemySkillService._handle_split_on_death(self, _death_pos)
+	EnemySkillService._handle_split_on_death(self , _death_pos)
 
 func notify_stealth_deferred(preferred_target: Node) -> void:
-	EnemySkillService.notify_stealth_deferred(self, preferred_target)
+	EnemySkillService.notify_stealth_deferred(self , preferred_target)
 
 func notify_stealth_targetable() -> void:
-	EnemySkillService.notify_stealth_targetable(self)
+	EnemySkillService.notify_stealth_targetable(self )
 
 func _clear_disrupted_towers() -> void:
-	EnemySkillService._clear_disrupted_towers(self)
+	EnemySkillService._clear_disrupted_towers(self )
 
 func _get_death_burst_color() -> Color:
-	return EnemyDeathService._get_death_burst_color(self)
+	return EnemyDeathService._get_death_burst_color(self )
 
 func _get_death_importance() -> float:
-	return EnemyDeathService._get_death_importance(self)
+	return EnemyDeathService._get_death_importance(self )
 
 func _trigger_death_shake() -> void:
-	EnemyDeathService._trigger_death_shake(self)
+	EnemyDeathService._trigger_death_shake(self )
 
 func spawn_death_effect(death_global: Vector2) -> void:
-	EnemyDeathService.spawn_death_effect(self, death_global)
+	EnemyDeathService.spawn_death_effect(self , death_global)
 
 func reach_base() -> void:
-	EnemyDeathService.reach_base(self)
+	EnemyDeathService.reach_base(self )
 
 func is_alive() -> bool:
 	return hp > 0 and not reached_base_flag and not is_dead_flag
