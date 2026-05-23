@@ -178,3 +178,15 @@ If any checkbox is left unchecked, explain why in the report.
 ## Element UI Rule
 Never render raw element_id, element_index, or numeric enum values directly in UI.
 All element UI must go through ElementIcon / ElementDisplay helper.
+
+## SFX performance rules:
+- No tower may spawn a new AudioStreamPlayer node per shot.
+- Use pooled AudioStreamPlayer2D or AudioStreamPolyphonic.
+- Max tower SFX polyphony should be capped globally.
+- Same tower family sound must have a cooldown bucket.
+- AoE/status effects play one aggregate sound per cast, not one sound per affected creep.
+- Chain/jump effects may play only the first 2–3 audible jumps.
+- Status DoT ticks should usually be silent.
+- Use visual feedback for continuous effects instead of continuous audio.
+- All one-shot tower SFX should be short, usually 0.08–0.45 seconds.
+- Avoid heavy reverb, long tails, and strong low-end bass.

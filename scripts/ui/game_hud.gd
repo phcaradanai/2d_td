@@ -17,6 +17,7 @@ signal performance_settings_changed(settings: Dictionary)
 signal settings_requested()
 signal pause_level_select_requested()
 signal reset_audio_requested()
+signal speed_change_requested(multiplier: float)
 signal next_level_requested()
 signal back_to_map_requested()
 
@@ -47,9 +48,13 @@ const ELEMENT_SHORT_LABELS := {
 @onready var start_wave_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/StartWaveButton
 @onready var settings_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/SettingsButton
 @onready var pause_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/PauseButton
+@onready var speed_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/SpeedButton
 @onready var restart_button: Button = $Root/ScreenLayout/TopBar/MarginContainer/HBoxContainer/RestartButton
 var interest_status_label: Label = null
 var start_wave_countdown_badge: Label = null
+const SPEED_STEPS: Array[float] = [1.0, 2.0, 4.0]
+const SPEED_LABELS: Array[String] = ["1x", "2x", "4x"]
+var _speed_index: int = 0
 var top_bar_total_waves: int = 0
 var credits_chip: HUDStatChipControl = null
 var core_chip: HUDStatChipControl = null
@@ -377,7 +382,8 @@ func _ready() -> void:
 	_configure_start_wave_button_layout()
 	settings_button.pressed.connect(func(): settings_requested.emit())
 	pause_button.pressed.connect(func(): pause_requested.emit())
-	
+	speed_button.pressed.connect(_on_speed_button_pressed)
+
 	restart_button.pressed.connect(_on_restart_pressed)
 	center_restart_button.pressed.connect(_on_restart_pressed)
 	
@@ -3416,6 +3422,15 @@ func refresh_start_wave_button(total_waves: int, next_wave_number: int, wave_nam
 
 	set_next_wave_preview(next_wave_number, wave_name, true)
 	set_start_wave_action_state(can_start or manual_first_wave, wave_running, countdown_active, countdown_remaining, next_wave_number)
+
+func _on_speed_button_pressed() -> void:
+	_speed_index = (_speed_index + 1) % SPEED_STEPS.size()
+	speed_button.text = SPEED_LABELS[_speed_index]
+	speed_change_requested.emit(SPEED_STEPS[_speed_index])
+
+func reset_speed() -> void:
+	_speed_index = 0
+	speed_button.text = SPEED_LABELS[0]
 
 func set_paused(paused: bool) -> void:
 	if paused:

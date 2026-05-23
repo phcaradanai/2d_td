@@ -988,6 +988,8 @@ func _connect_signals() -> void:
 		game_hud.tower_build_selected.connect(_on_tower_build_selected)
 		game_hud.cancel_build_requested.connect(_on_cancel_build_requested)
 		game_hud.pause_requested.connect(_on_pause_requested)
+		if game_hud.has_signal("speed_change_requested"):
+			game_hud.speed_change_requested.connect(_on_speed_change_requested)
 		game_hud.restart_requested.connect(restart_level)
 		if game_hud.has_signal("settings_requested"):
 			game_hud.settings_requested.connect(_on_settings_requested)
@@ -1295,6 +1297,9 @@ func _check_blocking_access_states() -> void:
 # --- Session Flow ---
 
 func return_to_menu() -> void:
+	Engine.time_scale = 1.0
+	if game_hud and game_hud.has_method("reset_speed"):
+		game_hud.reset_speed()
 	set_game_phase(GameState.MENU)
 	_clear_route_preview()
 	_resume_game()
@@ -1303,6 +1308,9 @@ func return_to_menu() -> void:
 		audio_manager.play_music("menu")
 
 func _on_level_select_requested() -> void:
+	Engine.time_scale = 1.0
+	if game_hud and game_hud.has_method("reset_speed"):
+		game_hud.reset_speed()
 	_fetch_remote_access_config()
 	set_game_phase(GameState.LEVEL_SELECT)
 	_clear_route_preview()
@@ -1447,6 +1455,10 @@ func restart_level() -> void:
 	if OS.is_debug_build(): print("[Main] restart_level requested for: ", current_level_path)
 	if get_tree().paused:
 		get_tree().paused = false
+
+	Engine.time_scale = 1.0
+	if game_hud and game_hud.has_method("reset_speed"):
+		game_hud.reset_speed()
 
 	if game_hud:
 		game_hud.exit_end_game_ui_state()
@@ -1678,6 +1690,9 @@ func _spawn_hero_unit() -> void:
 
 func _on_restart_requested() -> void:
 	restart_level()
+
+func _on_speed_change_requested(multiplier: float) -> void:
+	Engine.time_scale = multiplier
 
 func _on_pause_requested() -> void:
 	if game_manager:
