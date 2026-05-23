@@ -36,7 +36,7 @@ static func _request_baked_enemy_texture(enemy: Node2D) -> void:
 	var vt: String = str(enemy.visual_type)
 	var hs: int = enemy.health_visual_state
 	var captured := enemy
-	enemy.EnemyTextureBaker.request_texture(vt, hs, func(tex: ImageTexture) -> void:
+	EnemyTextureBaker.request_texture(vt, hs, func(tex: ImageTexture) -> void:
 		if not is_instance_valid(captured):
 			return
 		captured.EnemyBakedSpriteService._apply_baked_enemy_texture(enemy, tex)
@@ -80,7 +80,7 @@ static func _apply_baked_enemy_texture(enemy: Node2D, tex: ImageTexture) -> void
 		enemy.move_child(enemy._shadow_node, 0)
 		enemy._shadow_node.queue_redraw()
 
-	enemy._bake_scale = Vector2.ONE / float(enemy.EnemyTextureBaker.BAKE_ZOOM)
+	enemy._bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM)
 	enemy._body_sprite.texture = tex
 	enemy._body_sprite.scale = enemy._bake_scale
 	enemy._body_sprite.visible = true
@@ -229,4 +229,3 @@ static func _update_sprite_glide_motion(enemy: Node2D, path_px: float, speed_rat
 
 ## Hit impact squish + colour flash — no enemy.queue_redraw, all Tween/modulate.
 ## Heavy squash is intentionally throttled so rapid-fire hits do not freeze gait animation.
-
