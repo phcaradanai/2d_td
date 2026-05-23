@@ -47,7 +47,8 @@ func _process(_delta: float) -> void:
 			trail_points.append(global_position)
 			if trail_points.size() > max_trail_points:
 				trail_points.pop_front()
-		queue_redraw()
+		if (Engine.get_process_frames() + get_instance_id()) % 2 == 0:
+			queue_redraw()
 
 func _draw() -> void:
 	if show_trail and trail_points.size() >= 2:

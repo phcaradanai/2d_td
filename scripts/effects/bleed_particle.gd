@@ -26,10 +26,9 @@ func _process(delta: float) -> void:
 		return
 	
 	global_position += velocity * delta
-	# Gravity-ish
 	velocity.y += 100 * delta
-	
-	queue_redraw()
+	if (Engine.get_process_frames() + get_instance_id()) % 2 == 0:
+		queue_redraw()
 
 func _release_to_pool() -> void:
 	var pool := get_node_or_null("/root/VisualEffectPoolService")

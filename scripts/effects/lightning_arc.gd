@@ -43,7 +43,8 @@ func _process(delta: float) -> void:
 		_release_to_pool()
 		return
 	
-	queue_redraw()
+	if (Engine.get_process_frames() + get_instance_id()) % 2 == 0:
+		queue_redraw()
 
 func _release_to_pool() -> void:
 	var pool := get_node_or_null("/root/VisualEffectPoolService")

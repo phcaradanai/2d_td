@@ -34,7 +34,7 @@ func _process(delta: float) -> void:
 	time += delta
 	if time >= duration:
 		_release_to_pool()
-	else:
+	elif (Engine.get_process_frames() + get_instance_id()) % 2 == 0:
 		queue_redraw()
 
 func _release_to_pool() -> void:
