@@ -13,6 +13,12 @@ static func draw_enemy(enemy: Node2D) -> void:
 			enemy.draw_circle(Vector2.ZERO, SIZE * 1.35,
 				Color(enemy.hit_flash_color.r, enemy.hit_flash_color.g, enemy.hit_flash_color.b, enemy.hit_flash_alpha))
 		return
+	# Pre-bake: skip the 50+ draw-call procedural renderer for gameplay enemies.
+	# The baked-sprite pop-in animation handles the visual transition seamlessly.
+	# Preserve procedural visual only for gallery/catalog preview contexts.
+	var is_preview: bool = enemy.is_gallery_preview or bool(enemy.get_meta("catalog_preview_mode", false))
+	if not is_preview:
+		return
 	if enemy.visual_type == "hunter":
 		EnemyHunterVisual.draw(enemy)
 		return

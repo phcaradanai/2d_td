@@ -33,11 +33,9 @@ static func process(enemy: Node2D, delta: float) -> void:
 			enemy._update_separation()
 		enemy._sep_lateral = lerpf(enemy._sep_lateral, enemy._sep_target, minf(delta * 5.5, 1.0))
 	else:
+		# Non-baked gameplay enemy: gallery/preview paths already returned above.
+		# draw_enemy returns immediately for these — no queue_redraw needed.
 		enemy.pulse_time += delta
-		enemy._draw_timer += delta
-		if enemy._draw_timer >= enemy.ENEMY_VISUAL_REDRAW_INTERVAL:
-			enemy._draw_timer -= enemy.ENEMY_VISUAL_REDRAW_INTERVAL
-			enemy.queue_redraw()
 
 	if not enemy.is_active or enemy.is_dead_flag or enemy.reached_base_flag:
 		return
