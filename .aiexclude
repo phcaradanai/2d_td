@@ -1,0 +1,19 @@
+# Ignore the newly created archive folder containing all old documentation, logs, scripts, and backups
+archive/
+
+# Non-game scripts and server configurations
+*.py
+Dockerfile
+nginx.conf
+
+# Logs and compressed archives
+*.log
+*.zip
+
+# Unrelated project folders
+backend/
+builds/
+reports/
+scratch/
+tools/
+data/

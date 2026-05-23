@@ -22,6 +22,7 @@ signal next_level_requested()
 signal back_to_map_requested()
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+const ElementGuideModal = preload("res://scripts/ui/element_guide_modal.gd")
 const ElementIconControl = preload("res://scripts/ui/element_icon.gd")
 const TowerRowTrimControl = preload("res://scripts/ui/tower_row_trim.gd")
 const BuildSectionHeaderControl = preload("res://scripts/ui/build_section_header.gd")
@@ -341,6 +342,7 @@ const ELEMENT_UI_META := {
 }
 
 ## Modal nodes
+var _element_guide_modal: CanvasLayer = null
 var _em_overlay: Control = null
 var _em_panel: PanelContainer = null
 var _em_selected: String = ""
@@ -394,7 +396,8 @@ func _ready() -> void:
 	_setup_hover_card()
 	_ensure_elemental_shop_ui()
 	_ensure_element_modal()
-	
+	_ensure_element_guide_modal()
+
 	# Instantiate Result Panel
 	result_panel = RESULT_PANEL_SCENE.instantiate()
 	$Root.add_child(result_panel)
@@ -1968,6 +1971,8 @@ func set_tower_prices(prices: Dictionary) -> void:
 func set_element_levels(levels: Dictionary) -> void:
 	current_element_levels = levels.duplicate(true)
 	_refresh_element_mastery_strip()
+	if _element_guide_modal != null and is_instance_valid(_element_guide_modal):
+		_element_guide_modal.set_element_levels(current_element_levels)
 
 func show_element_choice(levels: Dictionary, pending_picks: int = 1, interest_rate_label: String = "2%", next_interest_rate_label: String = "3%", can_upgrade_interest: bool = true, interest_upgrade_count: int = 0, interest_max_upgrades: int = 5) -> void:
 	_ensure_element_modal()
@@ -2100,9 +2105,41 @@ func _ensure_build_towers_header_ui(container: Control) -> void:
 	element_status_label.visible = false
 	element_status_label.custom_minimum_size = Vector2.ZERO
 
+	var mastery_header_hbox := HBoxContainer.new()
+	mastery_header_hbox.name = "ElementMasteryHeaderRow"
+	mastery_header_hbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mastery_header_hbox.add_theme_constant_override("separation", 4)
+	build_towers_header_block.add_child(mastery_header_hbox)
+
 	var mastery_row := _make_build_section_header("Element Mastery", true)
 	mastery_row.name = "ElementMasteryTitleRow"
-	build_towers_header_block.add_child(mastery_row)
+	mastery_row.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	mastery_header_hbox.add_child(mastery_row)
+
+	var guide_btn := Button.new()
+	guide_btn.name = "ElementGuideBtn"
+	guide_btn.text = "?"
+	guide_btn.custom_minimum_size = Vector2(22.0, 22.0)
+	guide_btn.focus_mode = Control.FOCUS_NONE
+	guide_btn.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	guide_btn.tooltip_text = "Element Guide"
+	var guide_btn_style := StyleBoxFlat.new()
+	guide_btn_style.bg_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.10)
+	guide_btn_style.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.40)
+	guide_btn_style.set_border_width_all(1)
+	guide_btn_style.set_corner_radius_all(11)
+	var guide_btn_hover_style := guide_btn_style.duplicate() as StyleBoxFlat
+	guide_btn_hover_style.bg_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.22)
+	guide_btn_hover_style.border_color = NeonStyle.CYAN
+	guide_btn.add_theme_stylebox_override("normal",  guide_btn_style)
+	guide_btn.add_theme_stylebox_override("hover",   guide_btn_hover_style)
+	guide_btn.add_theme_stylebox_override("pressed", guide_btn_style)
+	guide_btn.add_theme_stylebox_override("focus",   StyleBoxEmpty.new())
+	guide_btn.add_theme_color_override("font_color",       NeonStyle.CYAN)
+	guide_btn.add_theme_color_override("font_hover_color", NeonStyle.INK_1)
+	guide_btn.add_theme_font_size_override("font_size", 12)
+	guide_btn.pressed.connect(_open_element_guide)
+	mastery_header_hbox.add_child(guide_btn)
 
 	element_mastery_grid = GridContainer.new()
 	element_mastery_grid.name = "ElementMasteryGrid"
@@ -2276,6 +2313,22 @@ func _sync_tower_shop_list_width() -> void:
 		sidebar_width = left_sidebar.size.x if left_sidebar.size.x > 0.0 else left_sidebar.custom_minimum_size.x
 	var content_width: float = max(210.0, sidebar_width - 42.0)
 	tower_shop_list.custom_minimum_size.x = content_width
+
+## ── Element Guide Modal ──────────────────────────────────────────────────────
+
+func _ensure_element_guide_modal() -> void:
+	if _element_guide_modal != null and is_instance_valid(_element_guide_modal):
+		return
+	_element_guide_modal = ElementGuideModal.new()
+	_element_guide_modal.name = "ElementGuideModal"
+	add_child(_element_guide_modal)
+	if not current_element_levels.is_empty():
+		_element_guide_modal.set_element_levels(current_element_levels)
+
+func _open_element_guide(element_id: String = "") -> void:
+	_ensure_element_guide_modal()
+	_element_guide_modal.set_element_levels(current_element_levels)
+	_element_guide_modal.open_at(element_id)
 
 ## ── Element Modal builder (UI-ELEMENT-1) ─────────────────────────────────────
 ## Built once; show/hide by toggling _em_overlay.visible.
