@@ -107,7 +107,6 @@ static func _sync_spatial_target_cache(enemy: Node2D, register_if_missing: bool)
 	if cache == null:
 		return
 	if register_if_missing:
-		if cache.has_method("update_enemy_bucket"):
-			cache.call("update_enemy_bucket", enemy)
-	elif cache.has_method("unregister_enemy"):
-		cache.call("unregister_enemy", enemy)
+		cache.update_enemy_bucket(enemy)
+	else:
+		cache.unregister_enemy(enemy)

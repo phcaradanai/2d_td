@@ -220,29 +220,6 @@ var split_triggered_once: bool = false
 
 func _resolve_visual_root() -> Node2D:
 	return EnemyBakedSpriteService._resolve_visual_root(self)
-	var n := get_node_or_null("Body")
-	if n is Node2D:
-		return n
-	if n != null:
-		# Legacy enemy scenes keep Body as a hidden ColorRect while procedural
-		# visuals draw on this PathFollow2D. That is valid and should not warn
-		# once per spawned enemy.
-		return self
-
-	n = get_node_or_null("VisualRoot")
-	if n is Node2D:
-		return n
-
-	n = get_node_or_null("Model")
-	if n is Node2D:
-		return n
-
-	n = get_node_or_null("Sprite")
-	if n is Node2D:
-		return n
-
-	DebugLog.warn_once("enemy_no_visual_root", "[Enemy] No Body/VisualRoot/Model/Sprite found, using self fallback.")
-	return self
 @onready var damage_number_scene: PackedScene = preload("res://scenes/effects/DamageNumber.tscn")
 @onready var death_pop_scene: PackedScene = preload("res://scenes/effects/DeathPopEffect.tscn")
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
@@ -320,262 +297,42 @@ func _update_health_visual_state(force_redraw: bool = false) -> void:
 
 func _request_baked_enemy_texture() -> void:
 	EnemyBakedSpriteService._request_baked_enemy_texture(self)
-	return
-	if is_gallery_preview:
-		return
-	# Defer until we're in the scene tree so add_child / callbacks work safely.
-	if not is_inside_tree():
-		call_deferred("_request_baked_enemy_texture")
-		return
-	var vt: String = str(visual_type)
-	var hs: int = health_visual_state
-	var captured := self
-	EnemyTextureBaker.request_texture(vt, hs, func(tex: ImageTexture) -> void:
-		if not is_instance_valid(captured):
-			return
-		captured._apply_baked_enemy_texture(tex)
-	)
 
 func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 	EnemyBakedSpriteService._apply_baked_enemy_texture(self, tex)
-	return
-	if tex == null:
-		return
-	if _body_sprite == null or not is_instance_valid(_body_sprite):
-		_body_sprite = Sprite2D.new()
-		_body_sprite.name = "BakedBodySprite"
-		_body_sprite.centered = true
-		_body_sprite.z_index = 0
-		_body_sprite.z_as_relative = true
-		add_child(_body_sprite)
-		move_child(_body_sprite, 0)
 
-	if _uses_directional_visual(visual_type) and (_shadow_node == null or not is_instance_valid(_shadow_node)):
-		_shadow_node = Node2D.new()
-		_shadow_node.name = "DirectionalShadow"
-		_shadow_node.z_index = -1
-		_shadow_node.z_as_relative = true
-		var is_fast = visual_type in ["fast", "runner", "hunter"]
-		var rx = 14.2 if is_fast else 12.4
-		var ry = 3.8 if is_fast else 3.3
-		var alpha = 0.22 if is_fast else 0.15
-		_shadow_node.draw.connect(func():
-			var pts := PackedVector2Array()
-			for i in 22:
-				var a := float(i) / 22.0 * TAU
-				pts.append(Vector2(cos(a) * rx, sin(a) * ry))
-			_shadow_node.draw_colored_polygon(pts, Color(0, 0, 0, alpha))
-			var core := PackedVector2Array()
-			for i in 18:
-				var a := float(i) / 18.0 * TAU
-				core.append(Vector2(cos(a) * rx * 0.58, sin(a) * ry * 0.62))
-			_shadow_node.draw_colored_polygon(core, Color(0, 0, 0, alpha * 0.72))
-		)
-		add_child(_shadow_node)
-		move_child(_shadow_node, 0)
-		_shadow_node.queue_redraw()
-
-	_bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM)
-	_body_sprite.texture = tex
-	_body_sprite.scale = _bake_scale
-	_body_sprite.visible = true
-	_baked_health_state = health_visual_state
-	if not _body_baked:
-		# First time baked: pop-in spawn animation
-		_body_sprite.scale = Vector2.ZERO
-		var spawn_tw := create_tween()
-		spawn_tw.tween_property(_body_sprite, "scale", _bake_scale, 0.18) \
-			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	_body_baked = true
-	queue_redraw()
-
-## Per-type lateral drift amplitude (px). Fast/small types drift more; tanks barely move.
 func _get_type_drift_amp(vtype: String) -> float:
 	return EnemyBakedSpriteService._get_type_drift_amp(self, vtype)
-	match vtype:
-		"swarm": return 9.0
-		"fast", "runner", "fast_flyer": return 7.5
-		"cloaked": return 7.0
-		"basic", "healer", "splitter", "disruptor": return 6.0
-		"hunter", "flyer", "armored_flyer": return 5.5
-		"tank", "bulwark", "shieldbearer": return 3.0
-		_: return 6.0
 
-## Spawn spread is visual-only and decays during the first few road tiles.
-## It keeps dense starts from reading as one stacked train without moving gameplay hitboxes.
 func _get_type_spawn_spread(vtype: String) -> float:
 	return EnemyBakedSpriteService._get_type_spawn_spread(self, vtype)
-	match vtype:
-		"swarm": return 10.0
-		"fast", "runner", "fast_flyer": return 8.5
-		"tank", "bulwark", "shieldbearer": return 4.5
-		"flyer", "armored_flyer": return 6.0
-		_: return 7.0
 
-## Lazy separation — pushes _sep_target away from nearby overlapping enemies.
-## Called ~every 0.4 s per enemy (staggered), NOT every frame.
 func _update_separation() -> void:
 	EnemyVisualCrowdService._update_separation(self)
-	return
-	var push := 0.0
-	var pb := get_node_or_null("/root/PerformanceBudget")
-	var enemies: Array = (pb.get_enemies() if pb != null and pb.has_method("get_enemies")
-						 else get_tree().get_nodes_in_group("enemies"))
-	var my_pos := global_position
-	var my_prog := get_path_progress()
-	for other in enemies:
-		if other == self or not is_instance_valid(other): continue
-		var op: Vector2 = other.global_position
-		var dx := op.x - my_pos.x
-		var dy := op.y - my_pos.y
-		if dx * dx + dy * dy > SEP_SCAN_RADIUS_SQ: continue # world-distance guard
-		if not other.has_method("get_path_progress"): continue
-		if absf(my_prog - other.get_path_progress()) > 32.0: continue # far on path
-		# Determine push direction — must differ between the two enemies in a pair
-		var other_lat: float = float(other.get("_sep_lateral"))
-		var gap := _sep_lateral - other_lat
-		var push_dir: float
-		if absf(gap) > 2.0:
-			push_dir = signf(gap) # already separated: reinforce it
-		else:
-			# Tie-break via relative instance IDs — guarantees opposite dirs per pair
-			push_dir = 1.0 if get_instance_id() > other.get_instance_id() else -1.0
-		var dist_sq := dx * dx + dy * dy
-		push += push_dir * SEP_PUSH_MAX * (1.0 - dist_sq / SEP_SCAN_RADIUS_SQ)
-	# Decay toward 0 when alone; clamp to road half-width
-	if absf(push) < 0.1:
-		push = _sep_target * -0.25 # gentle return to center when isolated
-	_sep_target = clampf(push, -SEP_ROAD_HALF, SEP_ROAD_HALF)
 
 func _uses_glide_motion(vtype: String) -> bool:
 	return EnemyBakedSpriteService._uses_glide_motion(self, vtype)
-	return vtype == "fast" or vtype == "runner" or vtype == "fast_flyer" or vtype == "hunter"
 
 func _uses_directional_visual(vtype: String) -> bool:
 	return EnemyBakedSpriteService._uses_directional_visual(self, vtype)
-	return vtype == "fast" or vtype == "runner" or vtype == "fast_flyer" or vtype == "hunter"
 
 func _record_visual_movement_delta(delta_pos: Vector2) -> void:
 	EnemyBakedSpriteService._record_visual_movement_delta(self, delta_pos)
-	return
-	if delta_pos.length_squared() <= 0.01:
-		return
-	_visual_heading_angle = delta_pos.angle()
 
 func _get_body_visual_rotation() -> float:
 	return EnemyBakedSpriteService._get_body_visual_rotation(self)
-	if _uses_directional_visual(visual_type):
-		return _visual_heading_angle
-	return 0.0
 
-## Per-type bob intensity — pointed fast units glide; compact bodies can bounce.
 func _get_type_bob_intensity(vtype: String) -> float:
 	return EnemyBakedSpriteService._get_type_bob_intensity(self, vtype)
-	match vtype:
-		"tank", "bulwark", "shieldbearer": return 0.55
-		"swarm": return 0.85
-		"fast", "runner", "fast_flyer": return 0.34
-		"hunter": return 0.48
-		_: return 1.0
 
-## Walking squash/stretch — called every frame when baked. No queue_redraw.
 func _update_sprite_movement_anim() -> void:
 	EnemyBakedSpriteService._update_sprite_movement_anim(self)
-	return
-	if not _body_baked or _body_sprite == null or _hit_impact_active:
-		return
-	var speed_ratio := clampf(speed / maxf(base_speed, 1.0), 0.0, 2.2)
-	if speed_ratio < 0.02:
-		_body_sprite.scale = _bake_scale
-		_body_sprite.position = Vector2(0.0, -3.6 if _uses_directional_visual(visual_type) else 0.0)
-		_body_sprite.rotation = _get_body_visual_rotation()
-		if _uses_directional_visual(visual_type):
-			_body_sprite.flip_v = absf(wrapf(_body_sprite.rotation, -PI, PI)) > (PI / 2.0)
-		if _shadow_node != null and is_instance_valid(_shadow_node):
-			_shadow_node.position = Vector2(0.0, 9.8)
-		return
-	# get_path_progress() works for BOTH PathFollow2D (progress) and dynamic-path
-	# enemies (dynamic_travel_distance). Using progress directly would freeze dynamic-path
-	# enemies at phase = 0, giving no animation.
-	var path_px := get_path_progress()
-	if _uses_glide_motion(visual_type):
-		_update_sprite_glide_motion(path_px, speed_ratio)
-		return
-
-	var bob_intensity := _get_type_bob_intensity(visual_type)
-	# Staggered bob: unique phase per enemy; ~1 cycle every 70 px of travel
-	var bob := sin(path_px * 0.090 + _anim_phase) * speed_ratio * bob_intensity
-	# Squash-stretch: exaggerated so it reads at small sprite sizes
-	_body_sprite.scale = Vector2(
-		_bake_scale.x * (1.0 - bob * 0.20), # narrow on upstroke
-		_bake_scale.y * (1.0 + bob * 0.30) # tall on upstroke, short on downstroke
-	)
-	# Primary screen-local weave + secondary overtone = organic swarm feel
-	# path_px drives drift so it's always in sync with actual travel distance
-	var drift := sin(path_px * _perp_drift_freq + _anim_phase) * _perp_drift_amp \
-			   + sin(path_px * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.30
-	# Combined lateral: drift + separation, clamped to road half-width
-	var spawn_spread := _spawn_spread_lateral * (1.0 - clampf(path_px / SPAWN_SPREAD_FADE_DISTANCE, 0.0, 1.0))
-	var lateral := clampf(drift + _sep_lateral + spawn_spread, -SEP_ROAD_HALF, SEP_ROAD_HALF)
-	# Float: sprite rises at upstroke peak. Visual angle is locked, so Y stays screen-local.
-	_body_sprite.position = Vector2(0.0, lateral - absf(bob) * 6.5 * speed_ratio)
-	# Lean: tilt sprite into each step — intensity scales with bob type
-	_body_sprite.rotation = bob * 0.22
-
-	if _shadow_node != null and is_instance_valid(_shadow_node):
-		_shadow_node.position = Vector2(0.0, lateral + 9.8)
-
 
 func _update_sprite_glide_motion(path_px: float, speed_ratio: float) -> void:
 	EnemyBakedSpriteService._update_sprite_glide_motion(self, path_px, speed_ratio)
-	return
-	var glide := sin(path_px * 0.135 + _anim_phase) * speed_ratio
-	var micro := sin(path_px * 0.265 + _anim_phase * 0.73) * speed_ratio
-	var compression := absf(glide)
-	var scale_x := 1.0 + compression * (0.070 if visual_type == "runner" else 0.055)
-	var scale_y := 1.0 - compression * (0.040 if visual_type == "runner" else 0.032)
-	_body_sprite.scale = Vector2(_bake_scale.x * scale_x, _bake_scale.y * scale_y)
 
-	var drift := (
-		sin(path_px * _perp_drift_freq + _anim_phase) * _perp_drift_amp * 0.42
-		+ sin(path_px * _perp_drift_freq * 2.1 + _anim_phase + 1.4) * _perp_drift_amp * 0.12
-	)
-	var spawn_spread := _spawn_spread_lateral * (1.0 - clampf(path_px / SPAWN_SPREAD_FADE_DISTANCE, 0.0, 1.0))
-	var lateral := clampf(drift + _sep_lateral + spawn_spread, -SEP_ROAD_HALF, SEP_ROAD_HALF)
-	var slide_x := micro * (1.85 if visual_type == "runner" else 1.35)
-	var lift := absf(micro) * (0.34 if visual_type == "runner" else 0.26)
-	if _uses_directional_visual(visual_type):
-		lift += 3.6 # Replace baked body_offset so sprite floats correctly
-
-	_body_sprite.position = Vector2(slide_x, lateral - lift)
-	var bank := glide * (0.105 if visual_type == "runner" else 0.078)
-	_body_sprite.rotation = _get_body_visual_rotation() + bank
-	if _uses_directional_visual(visual_type):
-		_body_sprite.flip_v = absf(wrapf(_body_sprite.rotation, -PI, PI)) > (PI / 2.0)
-
-
-	if _shadow_node != null and is_instance_valid(_shadow_node):
-		_shadow_node.position = Vector2(slide_x, lateral + 9.8)
-
-
-## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
-## Heavy squash is intentionally throttled so rapid-fire hits do not freeze gait animation.
 func _get_nearby_enemy_count(radius: float) -> int:
 	return EnemyVisualCrowdService._get_nearby_enemy_count(self, radius)
-	var count := 0
-	var radius_sq := radius * radius
-	var pb: Node = get_node_or_null("/root/PerformanceBudget")
-	var enemies: Array = pb.get_enemies() if pb != null and pb.has_method("get_enemies") else get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
-		if enemy == self or not is_instance_valid(enemy) or not (enemy is Node2D):
-			continue
-		if enemy.has_method("is_alive") and not enemy.is_alive():
-			continue
-		if global_position.distance_squared_to(enemy.global_position) <= radius_sq:
-			count += 1
-			if count >= CROWDED_ENEMY_THRESHOLD:
-				return count
-	return count
 
 ## Death pop — instant scale burst + fade before queue_free fires.
 func _play_sprite_death() -> void:
@@ -764,38 +521,9 @@ func clear_slow() -> void:
 
 func _configure_formation_speed() -> void:
 	EnemyFormationService._configure_formation_speed(self)
-	return
-	if formation_speed_limit > 0.0 and formation_limit_duration > 0.0 and base_speed > 0.0:
-		formation_target_multiplier = clampf(formation_speed_limit / base_speed, 0.25, 1.0)
-		formation_speed_multiplier = formation_target_multiplier
-	elif formation_limit_duration > 0.0 and formation_config_multiplier < 1.0:
-		formation_target_multiplier = clampf(formation_config_multiplier, 0.25, 1.0)
-		formation_speed_multiplier = formation_target_multiplier
-	else:
-		formation_target_multiplier = 1.0
-		formation_speed_multiplier = 1.0
-	if formation_speed_multiplier < 1.0:
-		enemy_modifier_changed.emit(self , "formation_speed_multiplier", formation_speed_multiplier)
 
 func _process_formation_speed(delta: float) -> void:
 	EnemyFormationService._process_formation_speed(self, delta)
-	return
-	if formation_limit_duration > 0.0:
-		formation_limit_duration -= delta
-		if formation_limit_duration <= 0.0:
-			formation_limit_duration = 0.0
-			formation_target_multiplier = 1.0
-			enemy_modifier_changed.emit(self , "formation_speed_multiplier", formation_target_multiplier)
-			if vfx_controller and (tags.has("fast") or tags.has("runner") or enemy_type in ["fast", "runner", "hunter", "fast_flyer"]):
-				vfx_controller.play_runner_burst()
-			if OS.is_debug_build() and _verbose_combat:
-				print("[SpawnFormation] release throttle enemy=%s base_speed=%.1f effective_speed=%.1f" % [enemy_type, base_speed, speed])
-	if formation_speed_multiplier != formation_target_multiplier:
-		if formation_speed_multiplier > formation_target_multiplier:
-			formation_speed_multiplier = formation_target_multiplier
-		else:
-			formation_speed_multiplier = move_toward(formation_speed_multiplier, formation_target_multiplier, formation_release_rate * delta)
-		update_effective_speed()
 
 func update_effective_speed() -> void:
 	EnemyStatusService.update_effective_speed(self )
@@ -844,24 +572,6 @@ func is_alive() -> bool:
 
 func _update_swarm_pack_density() -> void:
 	EnemyVisualCrowdService._update_swarm_pack_density(self)
-	return
-	var nearby := 0
-	for node in get_tree().get_nodes_in_group("enemies"):
-		if node == self:
-			continue
-		if not is_instance_valid(node) or not (node is Node2D):
-			continue
-		if node.has_method("is_alive") and not node.is_alive():
-			continue
-		var node_tags: Array = node.get("tags")
-		if str(node.get("enemy_type")) != "swarm" and not node_tags.has("swarm"):
-			continue
-		var other := node as Node2D
-		if global_position.distance_to(other.global_position) <= 42.0:
-			nearby += 1
-			if nearby >= 6:
-				break
-	swarm_pack_density = clampf(float(nearby) / 6.0, 0.0, 1.0)
 
 func get_priority_score() -> float:
 	var score = 1.0

@@ -306,15 +306,10 @@ func _draw_beam_sliver() -> void:
 	draw_circle(Vector2(18, 0), 2.0, vfx_core_color)
 
 func _get_hit_anchor_global_position(node: Variant) -> Vector2:
-	if node != null and is_instance_valid(node):
-		if node.has_method("get_hit_anchor_global_position"):
-			return node.get_hit_anchor_global_position()
-		if node.has_method("get_hit_origin"):
-			return node.get_hit_origin()
-		if node.has_method("get_aim_point"):
-			return node.get_aim_point()
-		if node is Node2D:
-			return node.global_position
+	# Hot path: called every frame per projectile — avoid has_method reflection.
+	# All game targets (enemies, heroes) are Node2D; global_position matches their hit origin.
+	if node != null and is_instance_valid(node) and node is Node2D:
+		return node.global_position
 	return global_position
 
 func _refresh_vfx_palette() -> void:
@@ -404,7 +399,9 @@ func _apply_laser_pierce(origin: Vector2, base_damage: float) -> void:
 	var pierce_damage := base_damage * 0.65
 	var max_pierce := 2
 	var enemies_sorted: Array = []
-	for en in get_tree().get_nodes_in_group("enemies"):
+	var _pb_laser := get_node_or_null("/root/PerformanceBudget")
+	var _laser_enemies: Array = _pb_laser.get_enemies() if _pb_laser != null else get_tree().get_nodes_in_group("enemies")
+	for en in _laser_enemies:
 		if not is_instance_valid(en) or en == target: continue
 		if not en.has_method("is_alive") or not en.is_alive(): continue
 		if not can_affect_enemy(en): continue
@@ -452,8 +449,8 @@ func _handle_chain_jump(hit_pos: Vector2) -> void:
 func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 	var best_target = null
 	var min_dist = chain_range
-	
-	var enemies = get_tree().get_nodes_in_group("enemies")
+	var _pb_chain := get_node_or_null("/root/PerformanceBudget")
+	var enemies: Array = _pb_chain.get_enemies() if _pb_chain != null else get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
 			if chained_enemies.has(enemy): continue
@@ -578,7 +575,8 @@ func apply_area_effect(hit_pos: Vector2) -> void:
 				effect.setup(effect_radius, effect_color)
 		
 	# Find enemies in radius
-	var enemies = get_tree().get_nodes_in_group("enemies")
+	var _pb_splash := get_node_or_null("/root/PerformanceBudget")
+	var enemies: Array = _pb_splash.get_enemies() if _pb_splash != null else get_tree().get_nodes_in_group("enemies")
 	for enemy in enemies:
 		if is_instance_valid(enemy) and enemy.has_method("is_alive") and enemy.is_alive():
 			if not can_affect_enemy(enemy):

@@ -53,7 +53,9 @@ static func _get_nearby_enemy_count(enemy: Node2D, radius: float) -> int:
 
 static func _update_swarm_pack_density(enemy: Node2D) -> void:
 	var nearby := 0
-	for node in enemy.get_tree().get_nodes_in_group("enemies"):
+	var pb: Node = enemy.get_node_or_null("/root/PerformanceBudget")
+	var enemies: Array = pb.get_enemies() if pb != null and pb.has_method("get_enemies") else enemy.get_tree().get_nodes_in_group("enemies")
+	for node in enemies:
 		if node == enemy:
 			continue
 		if not is_instance_valid(node) or not (node is Node2D):

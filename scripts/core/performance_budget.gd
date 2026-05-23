@@ -49,9 +49,11 @@ func _ready() -> void:
 	name = "PerformanceBudget"
 
 func _process(delta: float) -> void:
-	# Refresh enemy cache once per frame — shared by all tower targeting scans.
-	_enemy_list_cache = get_tree().get_nodes_in_group("enemies")
-	_enemy_cache_frame = Engine.get_process_frames()
+	# Refresh enemy cache only if not already updated this frame via update_enemy_cache().
+	var frame := Engine.get_process_frames()
+	if frame - _enemy_cache_frame > 0:
+		_enemy_list_cache = get_tree().get_nodes_in_group("enemies")
+		_enemy_cache_frame = frame
 
 	_fps_timer += delta
 	if _fps_timer >= FPS_SAMPLE_INTERVAL:
