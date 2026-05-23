@@ -252,96 +252,7 @@ var vfx_controller: Node = null
 
 
 func setup(config: Dictionary) -> void:
-	enemy_type = config.get("id", config.get("enemy_type", "basic"))
-	enemy_category = normalize_enemy_category(config.get("category", ENEMY_CATEGORY_LAND))
-	display_name = config.get("name", "Enemy")
-	visual_type = config.get("visual_type", "basic")
-	tags = Array(config.get("tags", []))
-	skill_id = config.get("skill", "")
-	skill_params = config.get("skill_params", {})
-	
-	if skill_id == "healer":
-		skill_timer = float(skill_params.get("initial_delay", skill_params.get("interval", 1.0)))
-	else:
-		skill_timer = float(skill_params.get("initial_delay", 0.0))
-	
-	is_stealth = (skill_id == "stealth" or tags.has("stealth"))
-	if is_stealth:
-		modulate.a = 0.4 # Visual feedback for stealth
-
-	if enemy_category == ENEMY_CATEGORY_LAND:
-		add_to_group("ground_enemies")
-	else:
-		remove_from_group("ground_enemies")
-	
-	is_bulwark = (enemy_type == "bulwark" or tags.has("shield"))
-	is_hunter = (enemy_type == "hunter" or tags.has("anti_hero"))
-	is_runner = (enemy_type == "runner" or tags.has("runner"))
-	if is_runner:
-		_configure_runner_role(config)
-	if is_hunter:
-		aggro_range = float(config.get("aggro_range", skill_params.get("aggro_range", aggro_range)))
-		# Keep Hunter readable without covering too much map area. Existing configs can still tune it,
-		# but clamp the gameplay/visual radius to a tighter anti-hero zone.
-		aggro_range = clampf(aggro_range, 75.0, 110.0)
-		hunter_attack_range = float(config.get("hunter_attack_range", skill_params.get("attack_range", hunter_attack_range)))
-		hunter_attack_damage = float(config.get("hunter_attack_damage", skill_params.get("attack_damage", hunter_attack_damage)))
-		hunter_attack_cooldown = float(config.get("hunter_attack_cooldown", skill_params.get("attack_cooldown", hunter_attack_cooldown)))
-		hunter_chase_speed_multiplier = float(config.get("hunter_chase_speed_multiplier", skill_params.get("chase_speed_multiplier", hunter_chase_speed_multiplier)))
-	
-	max_hp = config.get("max_hp", config.get("hp", 30.0))
-	hp = max_hp
-	base_speed = config.get("speed", 100.0)
-	if is_runner:
-		# Keep Fast as the constant-speed enemy. Runner should be slightly calmer by default,
-		# then become threatening through dash/panic windows.
-		base_speed *= runner_base_speed_scale
-	speed = base_speed
-	reward_gold = config.get("reward_gold", 5)
-	base_damage = config.get("base_damage", 1)
-	
-	formation_speed_limit = config.get("formation_speed_limit", -1.0)
-	formation_limit_duration = config.get("formation_limit_duration", 0.0)
-	formation_config_multiplier = float(config.get("formation_speed_multiplier", 1.0))
-	formation_release_rate = float(config.get("formation_release_rate", formation_release_rate))
-	_configure_formation_speed()
-	update_effective_speed()
-	
-	_update_health_visual_state(true)
-	apply_visuals()
-	_ensure_vfx_controller()
-	_request_baked_enemy_texture()
-	
-	if is_gallery_preview:
-		CatalogPreviewMode.mark_preview_tree(self, true, false)
-		set_process(false)
-		set_physics_process(false)
-		queue_redraw()
-		
-	var l_offset = config.get("local_offset", Vector2.ZERO)
-	if l_offset is Vector2:
-		h_offset = l_offset.x
-		v_offset = l_offset.y
-
-	# Per-enemy organic motion seed.
-	# Use golden-ratio hash so consecutive spawns get well-separated phases,
-	# not adjacent values from a modulo strip.
-	var iid_f := float(get_instance_id())
-	_anim_phase      = fmod(iid_f * 2.39996, TAU)
-	_perp_drift_amp  = _get_type_drift_amp(visual_type) * (0.7 + fmod(iid_f * 0.61803, 1.0) * 0.6)
-	_perp_drift_freq = 0.045 + fmod(iid_f * 0.38196, 0.025)
-	var spread_dir := 1.0 if fmod(iid_f * 0.754877, 1.0) >= 0.5 else -1.0
-	var spread_mag := 0.55 + fmod(iid_f * 0.31831, 1.0) * 0.45
-	_spawn_spread_lateral = _get_type_spawn_spread(visual_type) * spread_dir * spread_mag
-	_sep_check_timer = 0.04 + fmod(iid_f * 0.15700, 0.14)  # quick first scan, still staggered
-
-	is_active = true
-	
-	if is_gallery_preview:
-		CatalogPreviewMode.mark_preview_tree(self, true, false)
-		set_process(false)
-		set_physics_process(false)
-		queue_redraw()
+	EnemySetupService.apply_setup(self, config)
 
 func normalize_enemy_category(raw_category) -> String:
 	var normalized = str(raw_category).strip_edges().to_lower()
@@ -2235,6 +2146,8 @@ func _ready() -> void:
 
 	apply_visuals()
 
+	loop = false
+
 	if is_gallery_preview:
 		set_process(true)
 		set_physics_process(false)
@@ -2399,142 +2312,29 @@ func _process_inner(delta: float) -> void:
 		_process_pathing(delta)
 
 func _configure_runner_role(config: Dictionary) -> void:
-	var params: Dictionary = config.get("skill_params", {})
-	runner_dash_cooldown = float(config.get("runner_dash_cooldown", params.get("dash_cooldown", runner_dash_cooldown)))
-	runner_dash_timer = float(config.get("runner_initial_dash_delay", params.get("initial_dash_delay", minf(runner_dash_timer, runner_dash_cooldown))))
-	runner_dash_duration = float(config.get("runner_dash_duration", params.get("dash_duration", runner_dash_duration)))
-	runner_dash_speed_multiplier = float(config.get("runner_dash_speed_multiplier", params.get("dash_speed_multiplier", runner_dash_speed_multiplier)))
-	runner_dash_damage_reduction = clampf(float(config.get("runner_dash_damage_reduction", params.get("dash_damage_reduction", runner_dash_damage_reduction))), 0.0, 0.85)
-	runner_panic_threshold = clampf(float(config.get("runner_panic_threshold", params.get("panic_threshold", runner_panic_threshold))), 0.05, 0.95)
-	runner_panic_speed_multiplier = float(config.get("runner_panic_speed_multiplier", params.get("panic_speed_multiplier", runner_panic_speed_multiplier)))
-	runner_base_speed_scale = clampf(float(config.get("runner_base_speed_scale", params.get("base_speed_scale", runner_base_speed_scale))), 0.55, 1.15)
-	# Make target-mode and formation rules recognize Runner as pressure even if old config has no tag.
-	if not tags.has("runner"):
-		tags.append("runner")
+	EnemyRoleRunner._configure_runner_role(self, config)
 
 func _process_runner_role(delta: float) -> void:
-	if not is_runner:
-		return
-
-	var hp_ratio: float = hp / maxf(max_hp, 1.0)
-	if not runner_panic_active and hp_ratio <= runner_panic_threshold:
-		runner_panic_active = true
-		if vfx_controller:
-			vfx_controller.play_runner_burst()
-		_spawn_impact_particle(Color(1.0, 0.24, 0.06, 0.72))
-		enemy_modifier_changed.emit(self , "runner_panic", runner_panic_speed_multiplier)
-		update_effective_speed()
-
-	if runner_dash_remaining > 0.0:
-		runner_dash_remaining = maxf(0.0, runner_dash_remaining - delta)
-		if runner_dash_remaining <= 0.0:
-			enemy_modifier_changed.emit(self , "runner_dash", 1.0)
-			update_effective_speed()
-	else:
-		runner_dash_timer -= delta
-		if runner_dash_timer <= 0.0:
-			_trigger_runner_dash("cooldown")
+	EnemyRoleRunner._process_runner_role(self, delta)
 
 func _trigger_runner_dash(reason: String = "burst") -> void:
-	if not is_runner or is_dead_flag or reached_base_flag:
-		return
-	runner_dash_remaining = runner_dash_duration
-	runner_dash_timer = runner_dash_cooldown
-	update_effective_speed()
-	if vfx_controller:
-		vfx_controller.play_runner_burst()
-	_spawn_impact_particle(Color(1.0, 0.46, 0.08, 0.56))
-	enemy_modifier_changed.emit(self , "runner_dash", runner_dash_speed_multiplier)
-	if OS.is_debug_build() and _verbose_combat:
-		print("[RunnerRole] dash reason=%s speed=%.1f reduction=%.2f" % [reason, speed, runner_dash_damage_reduction])
+	EnemyRoleRunner._trigger_runner_dash(self, reason)
 
 func _try_runner_hit_dash() -> void:
-	if not is_runner or runner_dash_remaining > 0.0:
-		return
-	# Being hit can force a burst, but only when the dash is mostly ready. This avoids
-	# endless hit-triggered dashing against rapid towers while still making Runner feel evasive.
-	if runner_dash_timer <= runner_dash_cooldown * 0.25:
-		_trigger_runner_dash("hit")
+	EnemyRoleRunner._try_runner_hit_dash(self)
 
 func _process_shield_aura() -> void:
-	if CatalogPreviewMode.is_preview_node(self):
-		return
-	var radius = float(skill_params.get("radius", shield_radius))
-	var reduction = _get_skill_reduction()
-	var pb: Node = get_node_or_null("/root/PerformanceBudget")
-	var enemies: Array = pb.get_enemies() if pb else get_tree().get_nodes_in_group("enemies")
-	for enemy in enemies:
-		if enemy != self and is_instance_valid(enemy) and enemy.has_method("apply_shield"):
-			if enemy.has_method("is_alive") and not enemy.is_alive():
-				continue
-			if global_position.distance_to(enemy.global_position) <= radius:
-				enemy.apply_shield(0.25, reduction, self ) # Short duration, refreshed by aura
+	EnemySkillService._process_shield_aura(self)
 
 func _get_skill_reduction() -> float:
-	var raw = skill_params.get("reduction", skill_params.get("shield_reduction", shield_reduction))
-	return clampf(float(raw), 0.0, 0.9)
+	return EnemySkillService._get_skill_reduction(self)
 
 func _process_healer_aura() -> void:
-	if CatalogPreviewMode.is_preview_node(self):
-		return
-	var radius = float(skill_params.get("radius", 100.0))
-	var amount = float(skill_params.get("heal_amount", 5.0))
-	var pb: Node = get_node_or_null("/root/PerformanceBudget")
-	var enemies: Array = pb.get_enemies() if pb else get_tree().get_nodes_in_group("enemies")
-	var healed_targets: Array = []
-	for enemy in enemies:
-		if enemy != self and is_instance_valid(enemy) and enemy.has_method("heal"):
-			if enemy.has_method("is_alive") and not enemy.is_alive():
-				continue
-			if global_position.distance_to(enemy.global_position) <= radius:
-				var hp_before := float(enemy.get_current_hp()) if enemy.has_method("get_current_hp") else 0.0
-				var applied := float(enemy.heal(amount, self ))
-				if applied > 0.0:
-					var hp_after := float(enemy.get_current_hp()) if enemy.has_method("get_current_hp") else hp_before + applied
-					healed_targets.append(enemy)
-					healed.emit(enemy, applied, self )
-					enemy_healed.emit(enemy, self , applied, hp_before, hp_after)
-					enemy_modifier_changed.emit(enemy, "healed", applied)
-					if OS.is_debug_build() and _verbose_combat:
-						print("[EnemyFeature][Healer] source=%s target=%s amount=%.1f hp=%.1f/%.1f" % [
-							enemy_type,
-							enemy.get_enemy_type() if enemy.has_method("get_enemy_type") else str(enemy.name),
-							applied,
-							float(enemy.get_current_hp()) if enemy.has_method("get_current_hp") else 0.0,
-							float(enemy.max_hp) if "max_hp" in enemy else 0.0
-						])
-	if not healed_targets.is_empty():
-		healer_heal_tick.emit(self , healed_targets, amount)
+	EnemySkillService._process_healer_aura(self)
 
 
 func _process_disrupt_aura() -> void:
-	if CatalogPreviewMode.is_preview_node(self):
-		return
-	var radius = float(skill_params.get("radius", 150.0))
-	var penalty = clampf(float(skill_params.get("fire_rate_penalty", 0.5)), 0.05, 1.0)
-	var _ts_dis := get_node_or_null("/root/TargetingService")
-	var towers: Array = _ts_dis.get_towers() if _ts_dis else get_tree().get_nodes_in_group("towers")
-	var currently_affected: Array[Node] = []
-	for tower in towers:
-		if not is_instance_valid(tower) or not tower.has_method("apply_fire_rate_modifier"):
-			continue
-		if global_position.distance_to(tower.global_position) <= radius:
-			tower.apply_fire_rate_modifier(self , penalty)
-			currently_affected.append(tower)
-			disrupted_towers[tower.get_instance_id()] = tower
-			disrupted_tower.emit(tower, penalty, self )
-			if OS.is_debug_build() and _verbose_combat:
-				var effective = tower.get_effective_fire_rate() if tower.has_method("get_effective_fire_rate") else 0.0
-				print("[EnemyFeature][Disruptor] source=%s tower=%s penalty=%.2f effective_interval=%.2f" % [enemy_type, str(tower.name), penalty, effective])
-	for key in disrupted_towers.keys():
-		var tower = disrupted_towers[key]
-		if not is_instance_valid(tower) or not currently_affected.has(tower):
-			if is_instance_valid(tower) and tower.has_method("remove_fire_rate_modifier"):
-				tower.remove_fire_rate_modifier(self )
-				disruption_removed.emit(tower, self )
-			disrupted_towers.erase(key)
-	if vfx_controller:
-		vfx_controller.update_disrupted_towers(currently_affected)
+	EnemySkillService._process_disrupt_aura(self)
 
 func heal(amount: float, _source: Variant = null) -> float:
 	if is_dead_flag or reached_base_flag or hp >= max_hp:
@@ -2548,166 +2348,46 @@ func heal(amount: float, _source: Variant = null) -> float:
 	return applied
 
 func apply_shield(duration: float, reduction: float = shield_reduction, source: Variant = null) -> void:
-	if shield_remaining <= 0:
-		queue_redraw()
-	shield_remaining = max(shield_remaining, duration)
-	active_shield_reduction = clampf(reduction, 0.0, 0.9)
-	active_shield_source = source
-	enemy_modifier_changed.emit(self , "shield_reduction", active_shield_reduction)
-	if vfx_controller:
-		vfx_controller.set_protected_icon(active_shield_reduction > 0.0)
+	EnemyStatusService.apply_shield(self, duration, reduction, source)
 
 func apply_vulnerability(multiplier: float, duration: float) -> void:
-	if duration <= 0.0:
-		return
-	# Keep the highest multiplier
-	if multiplier >= vulnerability_multiplier:
-		vulnerability_multiplier = multiplier
-		vulnerability_remaining = duration
-	elif duration > vulnerability_remaining and multiplier == vulnerability_multiplier:
-		vulnerability_remaining = duration
+	EnemyStatusService.apply_vulnerability(self, multiplier, duration)
 
 func apply_damage_amp(multiplier: float, duration: float) -> void:
-	apply_vulnerability(multiplier, duration)
+	EnemyStatusService.apply_damage_amp(self, multiplier, duration)
 
 func apply_armor_reduction(percent: float, duration: float) -> void:
-	if duration <= 0.0 or percent <= 0.0:
-		return
-	if percent >= armor_reduction_bonus_percent:
-		armor_reduction_bonus_percent = percent
-		armor_reduction_remaining = duration
-		enemy_modifier_changed.emit(self, "armor_reduction", percent)
-	elif duration > armor_reduction_remaining and is_equal_approx(percent, armor_reduction_bonus_percent):
-		armor_reduction_remaining = duration
+	EnemyStatusService.apply_armor_reduction(self, percent, duration)
 
 func apply_damage_over_time(damage_per_second: float, duration: float, source_id: String = "", attack_type: String = "dot") -> void:
-	if damage_per_second <= 0.0 or duration <= 0.0:
-		return
-	active_dot_effects.append({
-		"damage_per_second": damage_per_second,
-		"remaining": duration,
-		"source_id": source_id,
-		"attack_type": attack_type
-	})
+	EnemyStatusService.apply_damage_over_time(self, damage_per_second, duration, source_id, attack_type)
 
 func apply_root(duration: float, snare_percent: float = 1.0) -> void:
-	if duration <= 0.0:
-		return
-	var clamped_percent := clampf(snare_percent, 0.0, 1.0)
-	if clamped_percent >= root_slow_percent:
-		root_slow_percent = clamped_percent
-		root_remaining = duration
-		update_effective_speed()
-		enemy_modifier_changed.emit(self, "root", clamped_percent)
-	elif duration > root_remaining and is_equal_approx(clamped_percent, root_slow_percent):
-		root_remaining = duration
+	EnemyStatusService.apply_root(self, duration, snare_percent)
 
 func apply_delayed_damage(amount: float, delay: float, source_id: String = "", attack_type: String = "delayed") -> void:
-	if amount <= 0.0:
-		return
-	delayed_damage_effects.append({
-		"amount": amount,
-		"remaining": maxf(0.0, delay),
-		"source_id": source_id,
-		"attack_type": attack_type
-	})
+	EnemyStatusService.apply_delayed_damage(self, amount, delay, source_id, attack_type)
 
 func _process_hunter_ai(delta: float) -> void:
-	hunter_attack_timer = maxf(0.0, hunter_attack_timer - delta)
-	hunter_scan_rotation += delta * 2.8
-	if hunter_state != HunterState.PATHING:
-		hunter_lock_fx_time += delta
-	else:
-		hunter_lock_fx_time = maxf(0.0, hunter_lock_fx_time - delta * 3.0)
-
-	_update_hunter_target()
-
-	if hunter_target != null and is_instance_valid(hunter_target):
-		var dist := global_position.distance_to(hunter_target.global_position)
-		if dist <= hunter_attack_range:
-			hunter_state = HunterState.AGGRO_ATTACKING
-			_face_hunter_target(hunter_target.global_position, delta)
-			_attack_hero(hunter_target)
-			return
-
-		hunter_state = HunterState.AGGRO_CHASING
-		_move_toward_hero(hunter_target.global_position, delta)
-		return
-
-	if hunter_state != HunterState.PATHING:
-		if OS.is_debug_build(): print("[HunterAI] return_to_path reason=no_valid_hero")
-	_clear_hunter_target()
-	_process_pathing(delta)
+	EnemyRoleHunter._process_hunter_ai(self, delta)
 
 func _update_hunter_target() -> void:
-	if hunter_target != null:
-		if _is_hero_huntable(hunter_target) and global_position.distance_to(hunter_target.global_position) <= aggro_range:
-			return
-		_clear_hunter_target()
-
-	var nearest_hero: Node2D = null
-	var nearest_dist := INF
-	var heroes = get_tree().get_nodes_in_group("heroes")
-	for hero_node in heroes:
-		if not (hero_node is Node2D):
-			continue
-		var hero := hero_node as Node2D
-		if not _is_hero_huntable(hero):
-			continue
-		var dist := global_position.distance_to(hero.global_position)
-		if dist <= aggro_range and dist < nearest_dist:
-			nearest_dist = dist
-			nearest_hero = hero
-
-	if nearest_hero != null:
-		if hunter_state == HunterState.PATHING and OS.is_debug_build() and _verbose_combat:
-			print("[HunterAI] aggro hero distance=%.1f" % nearest_dist)
-		hunter_target = nearest_hero
-	else:
-		hunter_state = HunterState.PATHING
+	EnemyRoleHunter._update_hunter_target(self)
 
 func _is_hero_huntable(hero: Node) -> bool:
-	if hero == null or not is_instance_valid(hero):
-		return false
-	if hero.has_method("is_alive"):
-		return hero.is_alive()
-	var active_value = hero.get("is_active")
-	if active_value != null:
-		return bool(active_value)
-	return true
+	return EnemyRoleHunter._is_hero_huntable(self, hero)
 
 func _clear_hunter_target() -> void:
-	hunter_target = null
-	hunter_state = HunterState.PATHING
+	EnemyRoleHunter._clear_hunter_target(self)
 
 func _move_toward_hero(target_pos: Vector2, delta: float) -> void:
-	var to_target: Vector2 = target_pos - global_position
-	if to_target.length_squared() <= 1.0:
-		return
-	var dir: Vector2 = to_target.normalized()
-	var move_delta := dir * speed * hunter_chase_speed_multiplier * delta
-	global_position += move_delta
-	_record_visual_movement_delta(move_delta)
-	_face_hunter_target(target_pos, delta)
+	EnemyRoleHunter._move_toward_hero(self, target_pos, delta)
 
 func _face_hunter_target(_target_pos: Vector2, _delta: float) -> void:
-	_lock_visual_orientation()
+	EnemyRoleHunter._face_hunter_target(self, _target_pos, _delta)
 
 func _attack_hero(hero: Node) -> void:
-	if hunter_attack_timer > 0.0:
-		return
-	if not _is_hero_huntable(hero):
-		_clear_hunter_target()
-		return
-
-	if hero.has_method("take_damage"):
-		hero.take_damage(hunter_attack_damage)
-		hunter_attack_timer = hunter_attack_cooldown
-		_spawn_impact_particle(Color(1.0, 0.25, 0.08, 0.75))
-		if OS.is_debug_build(): print("[HunterAI] attack_hero damage=%.1f" % hunter_attack_damage)
-
-	if not _is_hero_huntable(hero):
-		_clear_hunter_target()
+	EnemyRoleHunter._attack_hero(self, hero)
 
 func _draw_hunter_role_telegraph(size: float) -> void:
 	var is_locked: bool = hunter_state != HunterState.PATHING and hunter_target != null and is_instance_valid(hunter_target)
@@ -2794,112 +2474,28 @@ func _draw_hunter_compass_needle(pos: Vector2, dir: Vector2, color: Color, size:
 	draw_circle(center_hot, maxf(1.5, needle_width * 0.38), Color(1.0, 1.0, 1.0, color.a * 0.85))
 
 func _process_pathing(delta: float) -> void:
-	if is_dead_flag or reached_base_flag:
-		return
-	_lock_visual_orientation()
-	if use_dynamic_pathing:
-		_process_dynamic_pathing(delta)
-		return
-	var before_pos := global_position
-	progress += speed * delta
-	_record_visual_movement_delta(global_position - before_pos)
-	_lock_visual_orientation()
-	_sync_spatial_target_cache(true)
-	if progress_ratio >= 1.0:
-		reach_base()
+	EnemyMovementService._process_pathing(self, delta)
 
 func set_dynamic_pathing(manager: Node, spawn_cell: Vector2i) -> void:
-	pathfinding_manager = manager
-	use_dynamic_pathing = pathfinding_manager != null and enemy_category == ENEMY_CATEGORY_LAND
-	if not use_dynamic_pathing:
-		return
-
-	var start_cell: Vector2i = pathfinding_manager.nearest_walkable_cell(spawn_cell)
-	global_position = pathfinding_manager.cell_to_world(start_cell)
-	_sync_spatial_target_cache(true)
-	last_path_grid_version = -1
-	_recalculate_dynamic_path()
+	EnemyMovementService.set_dynamic_pathing(self, manager, spawn_cell)
 
 func set_pathfinding_manager(manager: Node) -> void:
-	pathfinding_manager = manager
-	use_dynamic_pathing = pathfinding_manager != null and enemy_category == ENEMY_CATEGORY_LAND
-	if use_dynamic_pathing:
-		add_to_group("ground_enemies")
+	EnemyMovementService.set_pathfinding_manager(self, manager)
 
 func request_path_to_core() -> void:
-	_recalculate_dynamic_path()
+	EnemyMovementService.request_path_to_core(self)
 
 func on_navigation_grid_changed(version: int) -> void:
-	if enemy_category == ENEMY_CATEGORY_AIR or not use_dynamic_pathing:
-		return
-	if version == last_path_grid_version:
-		return
-	_recalculate_dynamic_path()
+	EnemyMovementService.on_navigation_grid_changed(self, version)
 
 func _process_dynamic_pathing(delta: float) -> void:
-	if is_dead_flag or reached_base_flag:
-		return
-	if pathfinding_manager == null or not is_instance_valid(pathfinding_manager):
-		return
-
-	if last_path_grid_version != int(pathfinding_manager.grid_version):
-		_recalculate_dynamic_path()
-
-	if dynamic_path.is_empty():
-		_recalculate_dynamic_path()
-		if dynamic_path.is_empty():
-			return
-
-	if dynamic_path_index >= dynamic_path.size():
-		reach_base()
-		return
-
-	var target := dynamic_path[dynamic_path_index]
-	var to_target := target - global_position
-	var step := speed * delta
-	if to_target.length() <= maxf(step, dynamic_target_reached_distance):
-		var snap_delta := target - global_position
-		global_position = target
-		_record_visual_movement_delta(snap_delta)
-		dynamic_path_index += 1
-		if dynamic_path_index >= dynamic_path.size():
-			reach_base()
-		return
-
-	var dir := to_target.normalized()
-	var move_delta := dir * step
-	global_position += move_delta
-	_record_visual_movement_delta(move_delta)
-	_lock_visual_orientation()
-	dynamic_travel_distance += step
-	_sync_spatial_target_cache(true)
+	EnemyMovementService._process_dynamic_pathing(self, delta)
 
 func _recalculate_dynamic_path() -> void:
-	if pathfinding_manager == null or not is_instance_valid(pathfinding_manager):
-		dynamic_path = PackedVector2Array()
-		return
-
-	var current_cell: Vector2i = pathfinding_manager.world_to_cell(global_position)
-	if not pathfinding_manager.is_cell_walkable(current_cell):
-		current_cell = pathfinding_manager.nearest_walkable_cell(current_cell)
-		global_position = pathfinding_manager.cell_to_world(current_cell)
-
-	dynamic_path = pathfinding_manager.get_path_world_points(global_position)
-	last_path_grid_version = int(pathfinding_manager.grid_version)
-	dynamic_path_index = 0
-	if dynamic_path.size() > 1 and global_position.distance_to(dynamic_path[0]) <= dynamic_target_reached_distance:
-		dynamic_path_index = 1
-	_sync_spatial_target_cache(true)
+	EnemyMovementService._recalculate_dynamic_path(self)
 
 func _sync_spatial_target_cache(register_if_missing: bool) -> void:
-	var cache := get_node_or_null("/root/SpatialTargetCache")
-	if cache == null:
-		return
-	if register_if_missing:
-		if cache.has_method("update_enemy_bucket"):
-			cache.call("update_enemy_bucket", self)
-	elif cache.has_method("unregister_enemy"):
-		cache.call("unregister_enemy", self)
+	EnemyMovementService._sync_spatial_target_cache(self, register_if_missing)
 
 func get_last_damage_source() -> String:
 	return last_damage_source
@@ -2974,18 +2570,10 @@ func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: S
 		die(capture_pos)
 
 func apply_slow(percent: float, duration: float) -> void:
-	if percent >= active_slow_percent:
-		active_slow_percent = percent
-		status_speed_multiplier = max(1.0 - active_slow_percent, 0.25)
-		slow_remaining = duration
-		update_effective_speed()
-	elif duration > slow_remaining and percent == active_slow_percent:
-		slow_remaining = duration
+	EnemyStatusService.apply_slow(self, percent, duration)
 
 func clear_slow() -> void:
-	active_slow_percent = 0.0
-	slow_remaining = 0.0
-	update_effective_speed()
+	EnemyStatusService.clear_slow(self)
 
 func _configure_formation_speed() -> void:
 	if formation_speed_limit > 0.0 and formation_limit_duration > 0.0 and base_speed > 0.0:
@@ -3019,53 +2607,10 @@ func _process_formation_speed(delta: float) -> void:
 		update_effective_speed()
 
 func update_effective_speed() -> void:
-	var slow_multiplier: float = max(1.0 - active_slow_percent, 0.25)
-	var root_multiplier: float = max(1.0 - root_slow_percent, 0.25)
-	status_speed_multiplier = min(slow_multiplier, root_multiplier)
-	var runner_multiplier := 1.0
-	if is_runner:
-		if runner_panic_active:
-			runner_multiplier *= runner_panic_speed_multiplier
-		if runner_dash_remaining > 0.0:
-			runner_multiplier *= runner_dash_speed_multiplier
-	speed = base_speed * formation_speed_multiplier * status_speed_multiplier * runner_multiplier
+	EnemyStatusService.update_effective_speed(self)
 
 func _process_tower_status_effects(delta: float) -> void:
-	if CatalogPreviewMode.is_preview_node(self):
-		return
-	if not active_dot_effects.is_empty():
-		var expired_dot_indexes: Array[int] = []
-		for i in range(active_dot_effects.size()):
-			var effect: Dictionary = active_dot_effects[i]
-			var remaining := float(effect.get("remaining", 0.0))
-			var tick_delta := minf(delta, remaining)
-			if tick_delta > 0.0:
-				var damage_per_second := float(effect.get("damage_per_second", 0.0))
-				var source := str(effect.get("source_id", ""))
-				var attack_type := str(effect.get("attack_type", "dot"))
-				take_damage(damage_per_second * tick_delta, global_position, source, attack_type)
-			remaining -= delta
-			if remaining <= 0.0:
-				expired_dot_indexes.append(i)
-			else:
-				effect["remaining"] = remaining
-				active_dot_effects[i] = effect
-		for j in range(expired_dot_indexes.size() - 1, -1, -1):
-			active_dot_effects.remove_at(expired_dot_indexes[j])
-
-	if not delayed_damage_effects.is_empty():
-		var triggered_indexes: Array[int] = []
-		for i in range(delayed_damage_effects.size()):
-			var effect: Dictionary = delayed_damage_effects[i]
-			var remaining := float(effect.get("remaining", 0.0)) - delta
-			if remaining <= 0.0:
-				take_damage(float(effect.get("amount", 0.0)), global_position, str(effect.get("source_id", "")), str(effect.get("attack_type", "delayed")))
-				triggered_indexes.append(i)
-			else:
-				effect["remaining"] = remaining
-				delayed_damage_effects[i] = effect
-		for j in range(triggered_indexes.size() - 1, -1, -1):
-			delayed_damage_effects.remove_at(triggered_indexes[j])
+	EnemyStatusService._process_tower_status_effects(self, delta)
 
 func flash_body(damage_context: String = "") -> void:
 	var comfort := get_node_or_null("/root/VisualComfort")
@@ -3137,131 +2682,34 @@ func spawn_damage_number(amount: int, hit_global: Vector2, color: Color = Color.
 		dn.setup(amount, color)
 
 func die(death_global: Vector2 = Vector2.ZERO) -> void:
-	if is_dead_flag: return
-	is_dead_flag = true
-	is_active = false
-	_play_sprite_death()
-	_clear_disrupted_towers()
-	if vfx_controller:
-		vfx_controller.fade_out()
-	
-	var gm = get_tree().current_scene.get_node_or_null("GameManager")
-	if gm and gm.battle_telemetry:
-		gm.battle_telemetry.log_enemy_kill(last_damage_source, enemy_type)
-		
-	var capture_pos = death_global if death_global != Vector2.ZERO else global_position
-	spawn_death_effect(capture_pos)
-	
-	if skill_id == "split_on_death":
-		_handle_split_on_death(capture_pos)
-		
-	died.emit(self , reward_gold)
-	queue_free()
+	EnemyDeathService.die(self, death_global)
 
 func _handle_split_on_death(_death_pos: Vector2) -> void:
-	if split_triggered_once:
-		return
-	split_triggered_once = true
-	var count = skill_params.get("count", 2)
-	var type = skill_params.get("type", "basic")
-	split_triggered.emit(self , type, count)
-	if vfx_controller:
-		vfx_controller.play_split_burst(str(type), int(count))
-
-	var wave_manager = get_tree().current_scene.get_node_or_null("WaveManager")
-	if wave_manager and wave_manager.has_method("spawn_enemy_at_progress"):
-		for i in range(count):
-			var offset := Vector2((i - (count - 1) / 2.0) * 12.0, 0.0)
-			if use_dynamic_pathing and wave_manager.has_method("spawn_enemy_at_world_position"):
-				wave_manager.spawn_enemy_at_world_position(type, global_position + offset)
-			else:
-				var offset_prog = (i - (count - 1) / 2.0) * 20.0
-				wave_manager.spawn_enemy_at_progress(type, progress + offset_prog, get_parent())
+	EnemySkillService._handle_split_on_death(self, _death_pos)
 
 func notify_stealth_deferred(preferred_target: Node) -> void:
-	stealth_targeting_deferred.emit(self , preferred_target)
-	if vfx_controller:
-		vfx_controller.mark_cloaked_deferred(preferred_target)
-	if OS.is_debug_build() and _verbose_combat:
-		print("[EnemyFeature][Cloaked] deferred=%s preferred=%s" % [enemy_type, preferred_target.get_enemy_type() if preferred_target and preferred_target.has_method("get_enemy_type") else str(preferred_target)])
+	EnemySkillService.notify_stealth_deferred(self, preferred_target)
 
 func notify_stealth_targetable() -> void:
-	if vfx_controller:
-		vfx_controller.mark_cloaked_targetable()
+	EnemySkillService.notify_stealth_targetable(self)
 
 func _clear_disrupted_towers() -> void:
-	for key in disrupted_towers.keys():
-		var tower = disrupted_towers[key]
-		if is_instance_valid(tower) and tower.has_method("remove_fire_rate_modifier"):
-			tower.remove_fire_rate_modifier(self )
-			disruption_removed.emit(tower, self )
-	disrupted_towers.clear()
-	if vfx_controller:
-		vfx_controller.clear_all_disrupted_towers()
+	EnemySkillService._clear_disrupted_towers(self)
 
 func _get_death_burst_color() -> Color:
-	match visual_type:
-		"basic":        return Color(0.20, 0.80, 1.00, 1.0)
-		"fast":         return Color(0.00, 1.00, 0.70, 1.0)
-		"tank":         return Color(1.00, 0.45, 0.10, 1.0)
-		"bulwark":      return Color(0.10, 0.60, 1.00, 1.0)
-		"hunter":       return Color(1.00, 0.10, 0.40, 1.0)
-		"healer":       return Color(0.40, 1.00, 0.60, 1.0)
-		"disruptor":    return Color(1.00, 0.55, 0.15, 1.0)
-		"splitter":     return Color(0.90, 0.45, 1.00, 1.0)
-		"shieldbearer": return Color(0.35, 0.90, 1.00, 1.0)
-		"runner":       return Color(0.15, 1.00, 0.50, 1.0)
-		"cloaked":      return Color(0.75, 0.75, 1.00, 1.0)
-		"flyer":        return Color(0.45, 0.90, 1.00, 1.0)
-		"fast_flyer":   return Color(0.00, 0.90, 0.60, 1.0)
-		"armored_flyer":return Color(1.00, 0.60, 0.20, 1.0)
-	return Color(0.70, 0.85, 1.00, 1.0)
+	return EnemyDeathService._get_death_burst_color(self)
 
 func _get_death_importance() -> float:
-	# Returns 1.0 for normal, 2.0+ for tankier enemies — used to scale explosion size.
-	var hp_tier := clampf(max_hp / 80.0, 1.0, 4.0)
-	match visual_type:
-		"tank","bulwark","armored_flyer": return clampf(hp_tier * 1.4, 1.8, 4.0)
-		"splitter","healer","disruptor":  return clampf(hp_tier * 1.1, 1.2, 3.0)
-	return clampf(hp_tier, 1.0, 2.5)
+	return EnemyDeathService._get_death_importance(self)
 
 func _trigger_death_shake() -> void:
-	var main := get_tree().current_scene
-	if not main.has_method("shake_camera"):
-		return
-	var imp := _get_death_importance()
-	var strength := clampf(imp * 1.8, 1.0, 6.0)
-	main.shake_camera(strength, 0.8)
+	EnemyDeathService._trigger_death_shake(self)
 
 func spawn_death_effect(death_global: Vector2) -> void:
-	_trigger_death_shake()
-	if not PerformanceFirebreak.disable_death_effects:
-		if death_pop_scene:
-			var pool := get_node_or_null("/root/VisualEffectPoolService")
-			var effect: Node = null
-			if pool != null and pool.has_method("acquire_scene"):
-				effect = pool.acquire_scene("death_pop", get_tree().current_scene, "death_pop")
-			if effect == null:
-				return
-			var imp := _get_death_importance()
-			effect.global_position = death_global
-			effect.scale = Vector2.ONE * clampf(imp * 0.72, 0.72, 2.2)
-			if effect.has_method("setup"):
-				if enemy_type == "swarm" or tags.has("swarm"):
-					effect.setup("swarm_death", swarm_core_glow_color, 0.32, swarm_death_particle_count)
-				else:
-					var burst_color := _get_death_burst_color()
-					var particles  := clampi(int(imp * 4.0), 4, 10)
-					var dur        := clampf(0.25 + imp * 0.06, 0.25, 0.42)
-					effect.setup("default", burst_color, dur, particles)
+	EnemyDeathService.spawn_death_effect(self, death_global)
 
 func reach_base() -> void:
-	if reached_base_flag: return
-	reached_base_flag = true
-	is_active = false
-	
-	reached_base.emit(self , base_damage, global_position)
-	queue_free()
+	EnemyDeathService.reach_base(self)
 
 func is_alive() -> bool:
 	return hp > 0 and not reached_base_flag and not is_dead_flag
