@@ -39,7 +39,7 @@ static func _request_baked_enemy_texture(enemy: Node2D) -> void:
 	EnemyTextureBaker.request_texture(vt, hs, func(tex: ImageTexture) -> void:
 		if not is_instance_valid(captured):
 			return
-		captured.EnemyBakedSpriteService._apply_baked_enemy_texture(enemy, tex)
+		EnemyBakedSpriteService._apply_baked_enemy_texture(captured, tex)
 	)
 
 
