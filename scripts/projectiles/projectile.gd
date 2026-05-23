@@ -436,15 +436,19 @@ func _handle_chain_jump(hit_pos: Vector2) -> void:
 			if arc != null:
 				arc.setup(hit_pos, _get_hit_anchor_global_position(next_target), vfx_core_color)
 		
-		var next_proj = duplicate()
-		get_parent().add_child(next_proj)
+		var _proj_pool := get_node_or_null("/root/ProjectilePool")
+		var next_proj: Node
+		if _proj_pool != null:
+			next_proj = _proj_pool.acquire(get_parent())
+		else:
+			next_proj = duplicate()
+			get_parent().add_child(next_proj)
 		next_proj.global_position = hit_pos
 		next_proj.setup(next_target, damage * chain_falloff, speed, "chain", effect_radius, slow_percent, slow_duration, target_categories, source_id, vulnerability_percent, vulnerability_duration, attack_elements_override)
 		next_proj.setup_chain(chain_jumps - 1, chain_range, chain_falloff, chained_enemies)
-		# Propagate status effects (slow, hex, etc.) to every chain bounce.
 		if not status_effects.is_empty() and next_proj.has_method("setup_status_effects"):
 			next_proj.setup_status_effects(status_effects)
-		next_proj.modulate = modulate # Keep lightning color
+		next_proj.modulate = modulate
 
 func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 	var best_target = null

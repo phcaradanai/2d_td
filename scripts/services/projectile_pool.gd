@@ -8,7 +8,7 @@
 ##   # When done: call ProjectilePool.release(proj) instead of queue_free()
 extends Node
 
-const POOL_SIZE := 40
+const POOL_SIZE := 200
 const ProjectileScene := preload("res://scenes/projectiles/Projectile.tscn")
 
 var _free_list: Array[Node] = []
