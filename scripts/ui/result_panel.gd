@@ -17,6 +17,9 @@ const DEBUG_ACCESS_SCRIPT := preload("res://scripts/debug/debug_access.gd")
 @onready var gold_label: Label = %GoldValue
 @onready var waves_label: Label = %WavesValue
 @onready var enemies_label: Label = %EnemiesValue
+@onready var leaked_label: Label = %LeakedValue
+@onready var gold_spent_label: Label = %GoldSpentValue
+@onready var mvp_tower_label: Label = %MVPTowerValue
 @onready var time_label: Label = %TimeValue
 @onready var rank_label: Label = %RankLabel
 
@@ -89,6 +92,15 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 	waves_label.text = str(summary.get("waves_completed", 0)) + " / " + str(summary.get("total_waves", 0))
 	enemies_label.text = str(summary.get("enemies_killed", 0))
 	time_label.text = _format_time(summary.get("clear_time", 0))
+
+	var leaked = summary.get("enemies_leaked", 0)
+	leaked_label.text = str(leaked)
+	leaked_label.add_theme_color_override("font_color", Color(1.0, 0.4, 0.3) if leaked > 0 else Color(0.3, 1.0, 0.5))
+
+	gold_spent_label.text = str(summary.get("gold_spent", 0))
+
+	var damage_map = current_report_data.get("damage_by_tower_type", {})
+	mvp_tower_label.text = _get_top_key(damage_map) if not damage_map.is_empty() else "-"
 	
 	perfect_clear_badge.visible = summary.get("is_perfect", false)
 	next_button.visible = is_victory
@@ -157,15 +169,6 @@ func _setup_record_feedback(improvements: Dictionary, summary: Dictionary = {}) 
 		
 	if not current_report_data.is_empty():
 		var m = current_report_data
-		var best_tower = ""
-		var max_dmg = 0.0
-		for t_id in m.get("damage_by_tower_type", {}):
-			if m["damage_by_tower_type"][t_id] > max_dmg:
-				max_dmg = m["damage_by_tower_type"][t_id]
-				best_tower = t_id
-		if best_tower != "":
-			messages.append("MVP TOWER: " + best_tower.to_upper().replace("_TOWER", ""))
-			
 		var total_leaks = m.get("enemies_leaked_total", 0)
 		if total_leaks > 0:
 			var top_leak = ""
@@ -175,7 +178,7 @@ func _setup_record_feedback(improvements: Dictionary, summary: Dictionary = {}) 
 					max_leaks = m["enemies_leaked_by_type"][etype]
 					top_leak = etype
 			messages.append(str(total_leaks) + " LEAKS (" + top_leak.to_upper() + ")")
-		
+
 		_hide_balance_tool_nodes()
 		
 	if messages.size() > 0:
