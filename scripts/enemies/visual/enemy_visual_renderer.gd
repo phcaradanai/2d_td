@@ -32,7 +32,7 @@ static func _draw_simple_silhouette(enemy: Node2D, size: float) -> void:
 			color = enemy.COLOR_NEON_FAST if enemy.visual_type == "fast" else Color(1.0, 0.35, 0.05)
 			body_pts = PackedVector2Array([Vector2(0, -size * 1.1), Vector2(size * 0.5, size * 0.4), Vector2(0, size * 0.2), Vector2(-size * 0.5, size * 0.4)])
 		"tank":
-			color = enemy._apply_health_tint(enemy.COLOR_NEON_TANK)
+			color = EnemyDrawUtils._apply_health_tint(enemy, enemy.COLOR_NEON_TANK)
 			var tank_rect := Rect2(Vector2(-size * 0.9, -size * 0.7), Vector2(size * 1.8, size * 1.4))
 			enemy.draw_rect(tank_rect.grow(enemy.ENEMY_OUTLINE_THICKNESS), enemy.ENEMY_OUTLINE_COLOR)
 			enemy.draw_rect(tank_rect, Color(color.r, color.g, color.b, 0.9))
@@ -48,7 +48,7 @@ static func _draw_simple_silhouette(enemy: Node2D, size: float) -> void:
 			color = enemy.COLOR_NEON_HUNTER
 			body_pts = PackedVector2Array([Vector2(0, -size * 1.2), Vector2(size * 0.6, size * 0.6), Vector2(0, size * 0.2), Vector2(-size * 0.6, size * 0.6)])
 		"swarm":
-			color = enemy._apply_health_tint(enemy.COLOR_NEON_FAST)
+			color = EnemyDrawUtils._apply_health_tint(enemy, enemy.COLOR_NEON_FAST)
 			enemy.draw_circle(Vector2(-size * 0.5, -size * 0.3), size * 0.4 + enemy.ENEMY_OUTLINE_THICKNESS, enemy.ENEMY_OUTLINE_COLOR)
 			enemy.draw_circle(Vector2(size * 0.5, -size * 0.3), size * 0.4 + enemy.ENEMY_OUTLINE_THICKNESS, enemy.ENEMY_OUTLINE_COLOR)
 			enemy.draw_circle(Vector2(0, size * 0.4), size * 0.4 + enemy.ENEMY_OUTLINE_THICKNESS, enemy.ENEMY_OUTLINE_COLOR)
@@ -80,8 +80,8 @@ static func _draw_simple_silhouette(enemy: Node2D, size: float) -> void:
 			color = Color(0.8, 0.8, 0.8)
 			body_pts = PackedVector2Array([Vector2(0, -size), Vector2(size * 0.7, size * 0.5), Vector2(-size * 0.7, size * 0.5)])
 	if body_pts.size() > 0:
-		color = enemy._apply_health_tint(color)
-		enemy.draw_colored_polygon(enemy._scale_polygon(body_pts, enemy.ENEMY_OUTLINE_THICKNESS), enemy.ENEMY_OUTLINE_COLOR)
+		color = EnemyDrawUtils._apply_health_tint(enemy, color)
+		enemy.draw_colored_polygon(EnemyDrawUtils._scale_polygon(body_pts, enemy.ENEMY_OUTLINE_THICKNESS), enemy.ENEMY_OUTLINE_COLOR)
 		enemy.draw_colored_polygon(body_pts, Color(color.r, color.g, color.b, 0.85))
 	enemy.draw_circle(Vector2.ZERO, size * 0.3, Color.WHITE)
 
@@ -167,7 +167,7 @@ static func _draw_cyber_node(enemy: Node2D, color: Color, size: float) -> void:
 	var accent_hot: Color = Color(accent.r, accent.g, accent.b, 1.0)
 
 	# --- Ground contact ---
-	var body_shadow: PackedVector2Array = enemy._ellipse_points(Vector2(0.0, size * 0.28), size * 1.30, size * 0.78, 36, 0.0)
+	var body_shadow: PackedVector2Array = EnemyDrawUtils._ellipse_points(Vector2(0.0, size * 0.28), size * 1.30, size * 0.78, 36, 0.0)
 	enemy.draw_colored_polygon(body_shadow, Color(0.0, 0.0, 0.0, 0.28))
 
 	# Local +X is treated as travel direction.
@@ -192,7 +192,7 @@ static func _draw_cyber_node(enemy: Node2D, color: Color, size: float) -> void:
 	# --- Main shell ---
 	var body_rx: float = size * 1.04
 	var body_ry: float = size * 0.70
-	var body_shape: PackedVector2Array = enemy._ellipse_points(center, body_rx, body_ry, 42, -0.05)
+	var body_shape: PackedVector2Array = EnemyDrawUtils._ellipse_points(center, body_rx, body_ry, 42, -0.05)
 	enemy.draw_colored_polygon(body_shape, shell_body)
 	var body_shadow_poly: PackedVector2Array = PackedVector2Array([
 		center + Vector2(-size * 0.98, -size * 0.04),
