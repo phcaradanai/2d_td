@@ -3,7 +3,7 @@ extends Node
 const DONE_FLAG_PATH := "user://tutorial_done"
 
 const PANEL_W   := 640.0
-const PANEL_H   := 150.0
+const PANEL_H   := 175.0
 const PANEL_TOP := 62.0   # just below HUD bar
 
 enum Step { INACTIVE, BUILD_HINT, PLACE_HINT, WAVE_HINT, DONE }
@@ -172,8 +172,7 @@ func _build_overlay() -> void:
 	bg.border_width_top    = 2
 	bg.border_width_bottom = 2
 	bg.border_color        = Color(0.15, 0.75, 1.00, 1.0)
-	bg.shadow_color        = Color(0.05, 0.55, 1.00, 0.45)
-	bg.shadow_size         = 8
+	bg.shadow_size         = 0
 	for corner in ["top_left","top_right","bottom_left","bottom_right"]:
 		bg.set("corner_radius_" + corner, 8)
 	_panel.add_theme_stylebox_override("panel", bg)
@@ -232,8 +231,8 @@ func _build_overlay() -> void:
 	_prev_button.anchor_bottom = 1.0
 	_prev_button.offset_left   = -342
 	_prev_button.offset_right  = -236
-	_prev_button.offset_top    = -32
-	_prev_button.offset_bottom = -6
+	_prev_button.offset_top    = -38
+	_prev_button.offset_bottom = -10
 	_prev_button.add_theme_color_override("font_color", Color(0.60, 0.75, 0.90))
 	_prev_button.pressed.connect(_on_prev_pressed)
 	_panel.add_child(_prev_button)
@@ -246,8 +245,8 @@ func _build_overlay() -> void:
 	_next_button.anchor_bottom = 1.0
 	_next_button.offset_left   = -228
 	_next_button.offset_right  = -122
-	_next_button.offset_top    = -32
-	_next_button.offset_bottom = -6
+	_next_button.offset_top    = -38
+	_next_button.offset_bottom = -10
 	_next_button.add_theme_color_override("font_color", Color(0.15, 0.85, 1.00))
 	_next_button.pressed.connect(_on_next_pressed)
 	_panel.add_child(_next_button)
@@ -260,8 +259,8 @@ func _build_overlay() -> void:
 	_skip_button.anchor_bottom = 1.0
 	_skip_button.offset_left   = -114
 	_skip_button.offset_right  = -8
-	_skip_button.offset_top    = -32
-	_skip_button.offset_bottom = -6
+	_skip_button.offset_top    = -38
+	_skip_button.offset_bottom = -10
 	_skip_button.add_theme_color_override("font_color", Color(0.45, 0.55, 0.65))
 	_skip_button.pressed.connect(_on_skip)
 	_panel.add_child(_skip_button)
@@ -269,16 +268,19 @@ func _build_overlay() -> void:
 	_panel.visible = false
 
 func _show_step(step: Step) -> void:
-	if _panel == null:
+	if _panel == null or _overlay == null:
 		return
 	var title := _panel.get_node_or_null("TitleLabel")
 	if title:
 		title.text = STEP_TITLES.get(step, "")
 	_label.text = STEP_BODY.get(step, "")
+	_overlay.visible = true
 	_panel.visible = true
 
 func _hide_overlay() -> void:
-	if _panel:
+	if _overlay and is_instance_valid(_overlay):
+		_overlay.visible = false
+	if _panel and is_instance_valid(_panel):
 		_panel.visible = false
 	_step = Step.INACTIVE
 

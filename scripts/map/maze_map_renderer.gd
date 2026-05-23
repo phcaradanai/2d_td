@@ -218,7 +218,7 @@ func _bake_map() -> void:
 
 	var vp := SubViewport.new()
 	vp.size                       = Vector2i(vp_w, vp_h)
-	vp.transparent_bg             = false
+	vp.transparent_bg             = true
 	vp.render_target_update_mode  = SubViewport.UPDATE_DISABLED
 	vp.render_target_clear_mode   = SubViewport.CLEAR_MODE_ALWAYS
 	orig_parent.add_child(vp)
