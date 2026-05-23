@@ -413,6 +413,7 @@ func _get_type_spawn_spread(vtype: String) -> float:
 ## Lazy separation — pushes _sep_target away from nearby overlapping enemies.
 ## Called ~every 0.4 s per enemy (staggered), NOT every frame.
 func _update_separation() -> void:
+	EnemyVisualCrowdService._update_separation(self)
 	var push := 0.0
 	var pb := get_node_or_null("/root/PerformanceBudget")
 	var enemies: Array = (pb.get_enemies() if pb != null and pb.has_method("get_enemies")
@@ -554,6 +555,7 @@ func _update_sprite_glide_motion(path_px: float, speed_ratio: float) -> void:
 ## Hit impact squish + colour flash — no queue_redraw, all Tween/modulate.
 ## Heavy squash is intentionally throttled so rapid-fire hits do not freeze gait animation.
 func _get_nearby_enemy_count(radius: float) -> int:
+	return EnemyVisualCrowdService._get_nearby_enemy_count(self, radius)
 	var count := 0
 	var radius_sq := radius * radius
 	var pb: Node = get_node_or_null("/root/PerformanceBudget")
@@ -1031,6 +1033,7 @@ func is_alive() -> bool:
 	return hp > 0 and not reached_base_flag and not is_dead_flag
 
 func _update_swarm_pack_density() -> void:
+	EnemyVisualCrowdService._update_swarm_pack_density(self)
 	var nearby := 0
 	for node in get_tree().get_nodes_in_group("enemies"):
 		if node == self:
