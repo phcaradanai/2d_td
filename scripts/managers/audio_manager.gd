@@ -523,5 +523,12 @@ func _warn_missing(key: String) -> void:
 		warned_missing[key] = true
 		if OS.is_debug_build(): print("[AudioManager] Warning: ", key)
 
+func _exit_tree() -> void:
+	if music_player and is_instance_valid(music_player):
+		music_player.stop()
+		music_player.stream = null
+	sfx_cache.clear()
+	music_cache.clear()
+
 func _linear_to_db(linear: float) -> float: return linear_to_db(linear)
 func _db_to_linear(db: float) -> float: return db_to_linear(db)

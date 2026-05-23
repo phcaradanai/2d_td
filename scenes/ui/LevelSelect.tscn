@@ -1,11 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://d1k3j5l8n2m1"]
+[gd_scene format=3 uid="uid://ublwpesdh1ni"]
 
-[ext_resource type="Script" path="res://scripts/ui/level_select.gd" id="1_level_script"]
+[ext_resource type="Script" uid="uid://dcgagrcpaxdvf" path="res://scripts/ui/level_select.gd" id="1_level_script"]
 
-[node name="LevelSelect" type="CanvasLayer"]
+[node name="LevelSelect" type="CanvasLayer" unique_id=1464616079]
 script = ExtResource("1_level_script")
 
-[node name="Root" type="Control" parent="."]
+[node name="Root" type="Control" parent="." unique_id=2093009462]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="Root"]
+[node name="Background" type="ColorRect" parent="Root" unique_id=871922362]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,7 +22,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.1, 0.15, 1)
 
-[node name="Title" type="Label" parent="Root"]
+[node name="Title" type="Label" parent="Root" unique_id=187733438]
 layout_mode = 1
 anchors_preset = 5
 anchor_left = 0.5
@@ -36,7 +36,7 @@ theme_override_font_sizes/font_size = 40
 text = "SELECT LEVEL"
 horizontal_alignment = 1
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Root"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Root" unique_id=1954942463]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -51,58 +51,58 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 20
 
-[node name="Level1Container" type="VBoxContainer" parent="Root/VBoxContainer"]
+[node name="Level1Container" type="VBoxContainer" parent="Root/VBoxContainer" unique_id=32839804]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Level1Button" type="Button" parent="Root/VBoxContainer/Level1Container"]
+[node name="Level1Button" type="Button" parent="Root/VBoxContainer/Level1Container" unique_id=40768744]
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Level 1: Training Grounds"
 
-[node name="Level1Record" type="Label" parent="Root/VBoxContainer/Level1Container"]
+[node name="Level1Record" type="Label" parent="Root/VBoxContainer/Level1Container" unique_id=1061668254]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 14
 text = "Best: --"
 horizontal_alignment = 1
 
-[node name="Level2Container" type="VBoxContainer" parent="Root/VBoxContainer"]
+[node name="Level2Container" type="VBoxContainer" parent="Root/VBoxContainer" unique_id=1426784979]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Level2Button" type="Button" parent="Root/VBoxContainer/Level2Container"]
+[node name="Level2Button" type="Button" parent="Root/VBoxContainer/Level2Container" unique_id=2061609388]
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Level 2: Crossroad Bend"
 
-[node name="Level2Record" type="Label" parent="Root/VBoxContainer/Level2Container"]
+[node name="Level2Record" type="Label" parent="Root/VBoxContainer/Level2Container" unique_id=242800393]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 14
 text = "Best: --"
 horizontal_alignment = 1
 
-[node name="Level3Container" type="VBoxContainer" parent="Root/VBoxContainer"]
+[node name="Level3Container" type="VBoxContainer" parent="Root/VBoxContainer" unique_id=1081634131]
 layout_mode = 2
 theme_override_constants/separation = 5
 
-[node name="Level3Button" type="Button" parent="Root/VBoxContainer/Level3Container"]
+[node name="Level3Button" type="Button" parent="Root/VBoxContainer/Level3Container" unique_id=454943968]
 custom_minimum_size = Vector2(300, 60)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "Level 3: Iron Route"
 
-[node name="Level3Record" type="Label" parent="Root/VBoxContainer/Level3Container"]
+[node name="Level3Record" type="Label" parent="Root/VBoxContainer/Level3Container" unique_id=31207199]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.8, 0.8, 0.8, 1)
 theme_override_font_sizes/font_size = 14
 text = "Best: --"
 horizontal_alignment = 1
 
-[node name="BackButton" type="Button" parent="Root"]
+[node name="BackButton" type="Button" parent="Root" unique_id=405773386]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 1
 anchors_preset = 2

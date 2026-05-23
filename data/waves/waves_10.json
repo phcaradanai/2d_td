@@ -1,360 +1,421 @@
 [
-	{
-		"wave": 1,
-		"name": "Iron Front",
-		"reward": 55,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 7,
-				"interval": 0.68
-			},
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.65
-			},
-			{
-				"type": "basic",
-				"count": 30,
-				"interval": 0.16
-			}
-		],
-		"intel": "Area 2 elite. Supports are doubled. Establish kill priority immediately."
-	},
-	{
-		"wave": 2,
-		"name": "Splinter Tide",
-		"reward": 65,
-		"groups": [
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.82
-			},
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.07
-			},
-			{
-				"type": "runner",
-				"count": 20,
-				"interval": 0.16
-			}
-		],
-		"intel": "Nine Fragmenters. If Healers keep them alive, each spawns three nodes. AoE is mandatory."
-	},
-	{
-		"wave": 3,
-		"name": "Shield Wall",
-		"reward": 78,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 10,
-				"interval": 0.65
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.14
-			}
-		],
-		"intel": "Triple Shieldbearer screen. Focus fire on one at a time — overlapping domes stack protection."
-	},
-	{
-		"wave": 4,
-		"name": "The Long March",
-		"reward": 105,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			},
-			{
-				"type": "splitter",
-				"count": 16,
-				"interval": 0.8
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.62
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.15
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08
-			}
-		],
-		"intel": "Maximum Area 2 pressure. Every support type at once. Final exam before the Forest River."
-	},
-	{
-		"wave": 5,
-		"name": "Runner Flood",
-		"reward": 90,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 35,
-				"interval": 0.14
-			},
-			{
-				"type": "fast",
-				"count": 35,
-				"interval": 0.14
-			},
-			{
-				"type": "swarm",
-				"count": 75,
-				"interval": 0.07
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			}
-		],
-		"intel": "All speed types flood through. Both Slow towers must be active."
-	},
-	{
-		"wave": 6,
-		"name": "Armored Wave",
-		"reward": 96,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 24,
-				"interval": 0.6
-			},
-			{
-				"type": "shieldbearer",
-				"count": 10,
-				"interval": 0.62
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			},
-			{
-				"type": "basic",
-				"count": 35,
-				"interval": 0.15
-			}
-		],
-		"intel": "Maximum tank density behind a full support screen. Focus fire — never spray."
-	},
-	{
-		"wave": 7,
-		"name": "Fragment Flood",
-		"reward": 100,
-		"groups": [
-			{
-				"type": "splitter",
-				"count": 22,
-				"interval": 0.78
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.32
-			},
-			{
-				"type": "swarm",
-				"count": 75,
-				"interval": 0.07
-			},
-			{
-				"type": "runner",
-				"count": 20,
-				"interval": 0.15
-			}
-		],
-		"intel": "Massive Fragmenter wave. AoE is mandatory — Healer priority to prevent regeneration."
-	},
-	{
-		"wave": 8,
-		"name": "Elite Surge",
-		"reward": 108,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 10,
-				"interval": 0.62
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.32
-			},
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.78
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.62
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.15
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08
-			}
-		],
-		"intel": "All elite types. Priority order: Healer → Shieldbearer → Splitter → Tank."
-	},
-	{
-		"wave": 9,
-		"name": "Storm Column",
-		"reward": 115,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 12,
-				"interval": 0.6
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.32
-			},
-			{
-				"type": "splitter",
-				"count": 20,
-				"interval": 0.76
-			},
-			{
-				"type": "tank",
-				"count": 22,
-				"interval": 0.6
-			},
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.07
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.15
-			}
-		],
-		"intel": "Near-maximum output. Upgrade everything possible before this arrives."
-	},
-	{
-		"wave": 10,
-		"name": "Corruption Overflow",
-		"reward": 125,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 12,
-				"interval": 0.6
-			},
-			{
-				"type": "healer",
-				"count": 12,
-				"interval": 0.3
-			},
-			{
-				"type": "splitter",
-				"count": 22,
-				"interval": 0.76
-			},
-			{
-				"type": "tank",
-				"count": 22,
-				"interval": 0.6
-			},
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.07
-			},
-			{
-				"type": "runner",
-				"count": 25,
-				"interval": 0.14
-			}
-		],
-		"intel": "Area 2 penultimate. Healer → Shieldbearer → Splitter kill order. No shortcuts."
-	},
-	{
-		"wave": 11,
-		"name": "Area 2 Boss Finale",
-		"reward": 145,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 14,
-				"interval": 0.58
-			},
-			{
-				"type": "healer",
-				"count": 14,
-				"interval": 0.3
-			},
-			{
-				"type": "splitter",
-				"count": 24,
-				"interval": 0.74
-			},
-			{
-				"type": "tank",
-				"count": 24,
-				"interval": 0.58
-			},
-			{
-				"type": "swarm",
-				"count": 80,
-				"interval": 0.07
-			},
-			{
-				"type": "runner",
-				"count": 28,
-				"interval": 0.14
-			}
-		],
-		"intel": "Area 2 finale. Maximum support, maximum count. This is the standard everything else is measured against."
-	}
+  {
+    "wave": 1,
+    "name": "Iron Front",
+    "reward": 55,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 7,
+        "interval": 0.68
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36
+      },
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.65
+      },
+      {
+        "type": "basic",
+        "count": 30,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Area 2 elite. Supports are doubled. Establish kill priority immediately."
+  },
+  {
+    "wave": 2,
+    "name": "Splinter Tide",
+    "reward": 65,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.82
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36
+      },
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.07
+      },
+      {
+        "type": "runner",
+        "count": 20,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Nine Fragmenters. If Healers keep them alive, each spawns three nodes. AoE is mandatory."
+  },
+  {
+    "wave": 3,
+    "name": "Shield Wall",
+    "reward": 78,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 10,
+        "interval": 0.65
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.14,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Triple Shieldbearer screen. Focus fire on one at a time — overlapping domes stack protection."
+  },
+  {
+    "wave": 4,
+    "name": "The Long March",
+    "reward": 105,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 16,
+        "interval": 0.8
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.62
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08
+      }
+    ],
+    "intel": "Maximum Area 2 pressure. Every support type at once. Final exam before the Forest River."
+  },
+  {
+    "wave": 5,
+    "name": "Runner Flood",
+    "reward": 90,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 35,
+        "interval": 0.14,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "fast",
+        "count": 35,
+        "interval": 0.14,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 75,
+        "interval": 0.07
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      }
+    ],
+    "intel": "All speed types flood through. Both Slow towers must be active."
+  },
+  {
+    "wave": 6,
+    "name": "Armored Wave",
+    "reward": 96,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 24,
+        "interval": 0.6
+      },
+      {
+        "type": "shieldbearer",
+        "count": 10,
+        "interval": 0.62
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "basic",
+        "count": 35,
+        "interval": 0.15
+      }
+    ],
+    "intel": "Maximum tank density behind a full support screen. Focus fire — never spray."
+  },
+  {
+    "wave": 7,
+    "name": "Fragment Flood",
+    "reward": 100,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 22,
+        "interval": 0.78
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.32,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 75,
+        "interval": 0.07
+      },
+      {
+        "type": "runner",
+        "count": 20,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Massive Fragmenter wave. AoE is mandatory — Healer priority to prevent regeneration."
+  },
+  {
+    "wave": 8,
+    "name": "Elite Surge",
+    "reward": 108,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 10,
+        "interval": 0.62
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.32,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.78
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.62
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08
+      }
+    ],
+    "intel": "All elite types. Priority order: Healer → Shieldbearer → Splitter → Tank."
+  },
+  {
+    "wave": 9,
+    "name": "Storm Column",
+    "reward": 115,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 12,
+        "interval": 0.6
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.32,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 20,
+        "interval": 0.76
+      },
+      {
+        "type": "tank",
+        "count": 22,
+        "interval": 0.6
+      },
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.07
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Near-maximum output. Upgrade everything possible before this arrives."
+  },
+  {
+    "wave": 10,
+    "name": "Corruption Overflow",
+    "reward": 125,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 12,
+        "interval": 0.6
+      },
+      {
+        "type": "healer",
+        "count": 12,
+        "interval": 0.3,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 22,
+        "interval": 0.76
+      },
+      {
+        "type": "tank",
+        "count": 22,
+        "interval": 0.6
+      },
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.07
+      },
+      {
+        "type": "runner",
+        "count": 25,
+        "interval": 0.14,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Area 2 penultimate. Healer → Shieldbearer → Splitter kill order. No shortcuts."
+  },
+  {
+    "wave": 11,
+    "name": "Area 2 Boss Finale",
+    "reward": 145,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 14,
+        "interval": 0.58
+      },
+      {
+        "type": "healer",
+        "count": 14,
+        "interval": 0.3,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 24,
+        "interval": 0.74
+      },
+      {
+        "type": "tank",
+        "count": 24,
+        "interval": 0.58
+      },
+      {
+        "type": "swarm",
+        "count": 80,
+        "interval": 0.07
+      },
+      {
+        "type": "runner",
+        "count": 28,
+        "interval": 0.14,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "boss",
+        "count": 2,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "Area 2 finale. Maximum support, maximum count. This is the standard everything else is measured against. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

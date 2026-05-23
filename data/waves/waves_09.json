@@ -1,312 +1,361 @@
 [
-	{
-		"wave": 1,
-		"name": "Opening Move",
-		"reward": 50,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5
-			},
-			{
-				"type": "healer",
-				"count": 5,
-				"interval": 0.38
-			},
-			{
-				"type": "tank",
-				"count": 12,
-				"interval": 0.7
-			},
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.16
-			}
-		],
-		"intel": "Support enemies working together. Kill Healer first, then Shieldbearer, then tanks."
-	},
-	{
-		"wave": 2,
-		"name": "Swarm Screen",
-		"reward": 58,
-		"groups": [
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.07
-			},
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5
-			},
-			{
-				"type": "tank",
-				"count": 12,
-				"interval": 0.7
-			},
-			{
-				"type": "runner",
-				"count": 18,
-				"interval": 0.16
-			}
-		],
-		"intel": "Swarms screen the heavies. AoE clears the chaff — then focus on shield source."
-	},
-	{
-		"wave": 3,
-		"name": "Splitter Healer",
-		"reward": 66,
-		"groups": [
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "splitter",
-				"count": 14,
-				"interval": 0.82
-			},
-			{
-				"type": "fast",
-				"count": 28,
-				"interval": 0.15
-			}
-		],
-		"intel": "Healers keep Fragmenters alive longer. If a healed Splitter dies at full HP, fragments are at full strength."
-	},
-	{
-		"wave": 4,
-		"name": "Combo Stack",
-		"reward": 74,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 7,
-				"interval": 0.68
-			},
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "splitter",
-				"count": 12,
-				"interval": 0.82
-			},
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.65
-			},
-			{
-				"type": "swarm",
-				"count": 55,
-				"interval": 0.08
-			}
-		],
-		"intel": "Full support stack. Prioritise supports, AoE the swarms, never let tanks reach the end."
-	},
-	{
-		"wave": 5,
-		"name": "Runner Surge",
-		"reward": 70,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 30,
-				"interval": 0.15
-			},
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.14
-			},
-			{
-				"type": "swarm",
-				"count": 65,
-				"interval": 0.08
-			},
-			{
-				"type": "healer",
-				"count": 6,
-				"interval": 0.36
-			}
-		],
-		"intel": "All-speed wave with healer support. Kill healer first — speed units follow."
-	},
-	{
-		"wave": 6,
-		"name": "Heavy Shield",
-		"reward": 76,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.65
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.16
-			}
-		],
-		"intel": "Double shield + healer combo. Overlapping domes require priority targeting."
-	},
-	{
-		"wave": 7,
-		"name": "Split Screen",
-		"reward": 80,
-		"groups": [
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.8
-			},
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.07
-			},
-			{
-				"type": "shieldbearer",
-				"count": 6,
-				"interval": 0.65
-			},
-			{
-				"type": "runner",
-				"count": 18,
-				"interval": 0.16
-			}
-		],
-		"intel": "Splitters behind a swarm screen behind a shield. Peel layers from front to back."
-	},
-	{
-		"wave": 8,
-		"name": "Chaos Column",
-		"reward": 86,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 7,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			},
-			{
-				"type": "splitter",
-				"count": 16,
-				"interval": 0.8
-			},
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.65
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08
-			},
-			{
-				"type": "runner",
-				"count": 16,
-				"interval": 0.16
-			}
-		],
-		"intel": "All support types simultaneously. This is the hardest wave so far. Every tower type earns its place."
-	},
-	{
-		"wave": 9,
-		"name": "Bridge Siege",
-		"reward": 92,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			},
-			{
-				"type": "splitter",
-				"count": 16,
-				"interval": 0.8
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.15
-			},
-			{
-				"type": "swarm",
-				"count": 65,
-				"interval": 0.07
-			},
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.62
-			}
-		],
-		"intel": "Maximum support density. Kill order critical: Healer → Shieldbearer → Splitter → rest."
-	},
-	{
-		"wave": 10,
-		"name": "Swarm Bridge Finale",
-		"reward": 115,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 10,
-				"interval": 0.62
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.32
-			},
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.78
-			},
-			{
-				"type": "runner",
-				"count": 25,
-				"interval": 0.15
-			},
-			{
-				"type": "swarm",
-				"count": 75,
-				"interval": 0.07
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.6
-			}
-		],
-		"intel": "All support types simultaneously. This is the hardest wave so far. Every tower type earns its place here."
-	}
+  {
+    "wave": 1,
+    "name": "Opening Move",
+    "reward": 50,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5
+      },
+      {
+        "type": "healer",
+        "count": 5,
+        "interval": 0.38
+      },
+      {
+        "type": "tank",
+        "count": 12,
+        "interval": 0.7
+      },
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Support enemies working together. Kill Healer first, then Shieldbearer, then tanks."
+  },
+  {
+    "wave": 2,
+    "name": "Swarm Screen",
+    "reward": 58,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.07
+      },
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5
+      },
+      {
+        "type": "tank",
+        "count": 12,
+        "interval": 0.7
+      },
+      {
+        "type": "runner",
+        "count": 18,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Swarms screen the heavies. AoE clears the chaff — then focus on shield source."
+  },
+  {
+    "wave": 3,
+    "name": "Splitter Healer",
+    "reward": 66,
+    "groups": [
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 14,
+        "interval": 0.82
+      },
+      {
+        "type": "fast",
+        "count": 28,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Healers keep Fragmenters alive longer. If a healed Splitter dies at full HP, fragments are at full strength."
+  },
+  {
+    "wave": 4,
+    "name": "Combo Stack",
+    "reward": 74,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 7,
+        "interval": 0.68
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 12,
+        "interval": 0.82
+      },
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.65
+      },
+      {
+        "type": "swarm",
+        "count": 55,
+        "interval": 0.08
+      }
+    ],
+    "intel": "Full support stack. Prioritise supports, AoE the swarms, never let tanks reach the end."
+  },
+  {
+    "wave": 5,
+    "name": "Runner Surge",
+    "reward": 70,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 30,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.14,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 65,
+        "interval": 0.08
+      },
+      {
+        "type": "healer",
+        "count": 6,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      }
+    ],
+    "intel": "All-speed wave with healer support. Kill healer first — speed units follow."
+  },
+  {
+    "wave": 6,
+    "name": "Heavy Shield",
+    "reward": 76,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.65
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Double shield + healer combo. Overlapping domes require priority targeting."
+  },
+  {
+    "wave": 7,
+    "name": "Split Screen",
+    "reward": 80,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.8
+      },
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.07
+      },
+      {
+        "type": "shieldbearer",
+        "count": 6,
+        "interval": 0.65
+      },
+      {
+        "type": "runner",
+        "count": 18,
+        "interval": 0.16,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Splitters behind a swarm screen behind a shield. Peel layers from front to back."
+  },
+  {
+    "wave": 8,
+    "name": "Chaos Column",
+    "reward": 86,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 7,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 16,
+        "interval": 0.8
+      },
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.65
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08
+      },
+      {
+        "type": "runner",
+        "count": 16,
+        "interval": 0.16,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "All support types simultaneously. This is the hardest wave so far. Every tower type earns its place."
+  },
+  {
+    "wave": 9,
+    "name": "Bridge Siege",
+    "reward": 92,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 16,
+        "interval": 0.8
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 65,
+        "interval": 0.07
+      },
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.62
+      }
+    ],
+    "intel": "Maximum support density. Kill order critical: Healer → Shieldbearer → Splitter → rest."
+  },
+  {
+    "wave": 10,
+    "name": "Swarm Bridge Finale",
+    "reward": 115,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 10,
+        "interval": 0.62
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.32,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.78
+      },
+      {
+        "type": "runner",
+        "count": 25,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 75,
+        "interval": 0.07
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.6
+      },
+      {
+        "type": "boss",
+        "count": 2,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "All support types simultaneously. This is the hardest wave so far. Every tower type earns its place here. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

@@ -6,13 +6,13 @@
 [ext_resource type="PackedScene" uid="uid://d4k3j5l8n2m1" path="res://scenes/ui/GameHUD.tscn" id="4_game_hud"]
 [ext_resource type="Script" uid="uid://c43p6vujca57d" path="res://scripts/managers/build_manager.gd" id="5_build_manager"]
 [ext_resource type="Script" uid="uid://dl7jd3lqyec2f" path="res://scripts/ui/build_preview.gd" id="6_build_preview"]
-[ext_resource type="PackedScene" path="res://scenes/ui/MainMenu.tscn" id="7_main_menu"]
+[ext_resource type="PackedScene" uid="uid://c8n4j2k8m1p2" path="res://scenes/ui/MainMenu.tscn" id="7_main_menu"]
 [ext_resource type="PackedScene" path="res://scenes/ui/LevelSelect.tscn" id="8_level_select"]
 [ext_resource type="Script" uid="uid://bhg4qstpis2ks" path="res://scripts/core/save_manager.gd" id="9_save_manager"]
 [ext_resource type="Script" uid="uid://d2sb635lpjyq8" path="res://scripts/managers/audio_manager.gd" id="10_audio_manager"]
 [ext_resource type="Script" uid="uid://dv41ycbtr7u6x" path="res://scripts/ui/camera_shake.gd" id="11_camera_shake"]
 [ext_resource type="PackedScene" path="res://scenes/ui/DebugPanel.tscn" id="12_debug_panel"]
-[ext_resource type="Script" path="res://scripts/managers/element_td_realtime_action_bridge.gd" id="13_realtime_bridge"]
+[ext_resource type="Script" uid="uid://txuic7lh2xlt" path="res://scripts/managers/element_td_realtime_action_bridge.gd" id="13_realtime_bridge"]
 
 [node name="Main" type="Node2D" unique_id=1149536152]
 script = ExtResource("1_main_script")

@@ -10,9 +10,15 @@
     "armor_element": "earth",
     "movement_type": "ground",
     "visual_type": "basic",
-    "tags": ["core", "baseline"],
+    "tags": [
+      "core",
+      "baseline"
+    ],
     "description": "Standard digital virus node. Balanced and predictable. Armor: Earth.",
-    "counter_towers": ["basic", "rapid"]
+    "counter_towers": [
+      "basic",
+      "rapid"
+    ]
   },
   "fast": {
     "id": "fast",
@@ -25,9 +31,15 @@
     "armor_element": "nature",
     "movement_type": "ground",
     "visual_type": "fast",
-    "tags": ["fast", "fragile"],
+    "tags": [
+      "fast",
+      "fragile"
+    ],
     "description": "Accelerated data packet. Hard to hit with slow-firing towers. Armor: Nature.",
-    "counter_towers": ["rapid", "slow"]
+    "counter_towers": [
+      "rapid",
+      "slow"
+    ]
   },
   "tank": {
     "id": "tank",
@@ -40,9 +52,16 @@
     "armor_element": "earth",
     "movement_type": "ground",
     "visual_type": "tank",
-    "tags": ["heavy", "armored"],
+    "tags": [
+      "heavy",
+      "armored"
+    ],
     "description": "Reinforced industrial drone. Takes heavy fire to neutralize. Armor: Earth.",
-    "counter_towers": ["sniper", "sawblade", "cannon"]
+    "counter_towers": [
+      "sniper",
+      "sawblade",
+      "cannon"
+    ]
   },
   "bulwark": {
     "id": "bulwark",
@@ -55,14 +74,22 @@
     "armor_element": "light",
     "movement_type": "ground",
     "visual_type": "bulwark",
-    "tags": ["heavy", "shield", "frontline"],
+    "tags": [
+      "heavy",
+      "shield",
+      "frontline"
+    ],
     "skill": "shield_aura",
     "skill_params": {
       "radius": 120,
       "reduction": 0.35
     },
     "description": "Shield generator unit. Leads heavy convoys with a protective energy dome. Armor: Light.",
-    "counter_towers": ["cannon", "lightning", "slow"]
+    "counter_towers": [
+      "cannon",
+      "lightning",
+      "slow"
+    ]
   },
   "hunter": {
     "id": "hunter",
@@ -75,9 +102,17 @@
     "armor_element": "darkness",
     "movement_type": "ground",
     "visual_type": "hunter",
-    "tags": ["anti_hero", "fast", "danger"],
+    "tags": [
+      "anti_hero",
+      "fast",
+      "danger"
+    ],
     "description": "A lethal virus that targets your Guardian directly. Armor: Darkness.",
-    "counter_towers": ["sniper", "basic", "lightning"]
+    "counter_towers": [
+      "sniper",
+      "basic",
+      "lightning"
+    ]
   },
   "swarm": {
     "id": "swarm",
@@ -90,9 +125,16 @@
     "armor_element": "water",
     "movement_type": "ground",
     "visual_type": "swarm",
-    "tags": ["swarm", "small"],
+    "tags": [
+      "swarm",
+      "small"
+    ],
     "description": "Fragments of corrupted code. Weak individually, dangerous in numbers. Armor: Water.",
-    "counter_towers": ["cannon", "lightning", "sawblade"]
+    "counter_towers": [
+      "cannon",
+      "lightning",
+      "sawblade"
+    ]
   },
   "runner": {
     "id": "runner",
@@ -105,9 +147,15 @@
     "armor_element": "nature",
     "movement_type": "ground",
     "visual_type": "runner",
-    "tags": ["fast", "runner"],
+    "tags": [
+      "fast",
+      "runner"
+    ],
     "description": "High-speed infiltration unit. Requires slowing or rapid fire. Armor: Nature.",
-    "counter_towers": ["slow", "rapid"]
+    "counter_towers": [
+      "slow",
+      "rapid"
+    ]
   },
   "shieldbearer": {
     "id": "shieldbearer",
@@ -120,14 +168,22 @@
     "armor_element": "light",
     "movement_type": "ground",
     "visual_type": "shieldbearer",
-    "tags": ["support", "shield", "heavy"],
+    "tags": [
+      "support",
+      "shield",
+      "heavy"
+    ],
     "skill": "shield_aura",
     "skill_params": {
       "radius": 90,
       "shield_reduction": 0.25
     },
     "description": "Projects an energy shield around nearby enemies. Armor: Light.",
-    "counter_towers": ["cannon", "lightning", "slow"]
+    "counter_towers": [
+      "cannon",
+      "lightning",
+      "slow"
+    ]
   },
   "healer": {
     "id": "healer",
@@ -140,7 +196,10 @@
     "armor_element": "water",
     "movement_type": "ground",
     "visual_type": "healer",
-    "tags": ["support", "healing"],
+    "tags": [
+      "support",
+      "healing"
+    ],
     "skill": "healer",
     "skill_params": {
       "radius": 120,
@@ -148,7 +207,10 @@
       "interval": 1.0
     },
     "description": "Restores integrity to nearby corrupted units. Armor: Water.",
-    "counter_towers": ["sniper", "basic"]
+    "counter_towers": [
+      "sniper",
+      "basic"
+    ]
   },
   "splitter": {
     "id": "splitter",
@@ -161,14 +223,20 @@
     "armor_element": "fire",
     "movement_type": "ground",
     "visual_type": "splitter",
-    "tags": ["heavy", "splitter"],
+    "tags": [
+      "heavy",
+      "splitter"
+    ],
     "skill": "split_on_death",
     "skill_params": {
       "count": 3,
       "type": "basic"
     },
     "description": "Unstable entity that splits into smaller nodes upon destruction. Armor: Fire.",
-    "counter_towers": ["cannon", "lightning"]
+    "counter_towers": [
+      "cannon",
+      "lightning"
+    ]
   },
   "cloaked": {
     "id": "cloaked",
@@ -181,10 +249,16 @@
     "armor_element": "darkness",
     "movement_type": "ground",
     "visual_type": "cloaked",
-    "tags": ["stealth", "medium"],
+    "tags": [
+      "stealth",
+      "medium"
+    ],
     "skill": "stealth",
     "description": "Effect: Towers prefer other enemies first. Can be targeted only when no other valid enemy is in range. Armor: Darkness.",
-    "counter_towers": ["rapid", "lightning"]
+    "counter_towers": [
+      "rapid",
+      "lightning"
+    ]
   },
   "flyer": {
     "id": "flyer",
@@ -197,9 +271,16 @@
     "armor_element": "light",
     "movement_type": "air",
     "visual_type": "flyer",
-    "tags": ["air", "scout"],
+    "tags": [
+      "air",
+      "scout"
+    ],
     "description": "Standard aerial drone. Bypasses ground-only defenses. Armor: Light.",
-    "counter_towers": ["sniper", "lightning", "rapid"]
+    "counter_towers": [
+      "sniper",
+      "lightning",
+      "rapid"
+    ]
   },
   "fast_flyer": {
     "id": "fast_flyer",
@@ -212,9 +293,15 @@
     "armor_element": "nature",
     "movement_type": "air",
     "visual_type": "fast_flyer",
-    "tags": ["air", "fast"],
+    "tags": [
+      "air",
+      "fast"
+    ],
     "description": "High-speed aerial intruder. Hard to track without precision fire. Armor: Nature.",
-    "counter_towers": ["sniper", "lightning"]
+    "counter_towers": [
+      "sniper",
+      "lightning"
+    ]
   },
   "armored_flyer": {
     "id": "armored_flyer",
@@ -227,9 +314,16 @@
     "armor_element": "earth",
     "movement_type": "air",
     "visual_type": "armored_flyer",
-    "tags": ["air", "heavy", "armored"],
+    "tags": [
+      "air",
+      "heavy",
+      "armored"
+    ],
     "description": "Tough aerial unit designed to absorb anti-air fire. Armor: Earth.",
-    "counter_towers": ["sniper", "lightning"]
+    "counter_towers": [
+      "sniper",
+      "lightning"
+    ]
   },
   "disruptor": {
     "id": "disruptor",
@@ -242,13 +336,52 @@
     "armor_element": "darkness",
     "movement_type": "air",
     "visual_type": "disruptor",
-    "tags": ["air", "support", "disruptor"],
+    "tags": [
+      "air",
+      "support",
+      "disruptor"
+    ],
     "skill": "disrupt_aura",
     "skill_params": {
       "radius": 150,
       "fire_rate_penalty": 0.5
     },
     "description": "Emits an EMP field that slows down tower reload cycles. Armor: Darkness.",
-    "counter_towers": ["sniper", "lightning"]
+    "counter_towers": [
+      "sniper",
+      "lightning"
+    ]
+  },
+  "boss": {
+    "id": "boss",
+    "name": "Apex Sentinel",
+    "max_hp": 1800,
+    "speed": 24,
+    "reward_gold": 80,
+    "base_damage": 5,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "bulwark",
+    "tags": [
+      "heavy",
+      "boss",
+      "frontline"
+    ],
+    "affixes": [
+      "mechanical",
+      "undead"
+    ],
+    "skill": "shield_aura",
+    "skill_params": {
+      "radius": 140,
+      "reduction": 0.25
+    },
+    "description": "End-of-level Apex Sentinel. Cycles through mechanical invulnerability and revives once on death. Composite armor resists all elements equally.",
+    "counter_towers": [
+      "cannon",
+      "lightning",
+      "poison"
+    ]
   }
 }

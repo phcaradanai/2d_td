@@ -2,6 +2,8 @@ class_name EnemyDeathService
 extends RefCounted
 
 static func _get_death_burst_color(enemy: Node2D) -> Color:
+	if enemy.enemy_type == "boss" or enemy.tags.has("boss"):
+		return Color(1.00, 0.85, 0.10, 1.0)  # gold
 	match enemy.visual_type:
 		"basic":        return Color(0.20, 0.80, 1.00, 1.0)
 		"fast":         return Color(0.00, 1.00, 0.70, 1.0)
@@ -20,6 +22,8 @@ static func _get_death_burst_color(enemy: Node2D) -> Color:
 	return Color(0.70, 0.85, 1.00, 1.0)
 
 static func _get_death_importance(enemy: Node2D) -> float:
+	if enemy.enemy_type == "boss" or enemy.tags.has("boss"):
+		return 4.0  # max importance — largest burst, strongest shake
 	var hp_tier := clampf(enemy.max_hp / 80.0, 1.0, 4.0)
 	match enemy.visual_type:
 		"tank","bulwark","armored_flyer": return clampf(hp_tier * 1.4, 1.8, 4.0)

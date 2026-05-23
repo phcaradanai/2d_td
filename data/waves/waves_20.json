@@ -1,616 +1,815 @@
 [
-	{
-		"wave": 1,
-		"name": "Phase 1: Ground Formation",
-		"reward": 50,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 14,
-				"interval": 0.7
-			},
-			{
-				"type": "basic",
-				"count": 22,
-				"interval": 0.16
-			},
-			{
-				"type": "swarm",
-				"count": 35,
-				"interval": 0.09,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.16,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Split pressure. Spaced tanks on Lane A, fast runners on Lane B. Lightning covers clusters."
-	},
-	{
-		"wave": 2,
-		"name": "Phase 2: Air Breach",
-		"reward": 60,
-		"groups": [
-			{
-				"type": "flyer",
-				"count": 22,
-				"interval": 0.38
-			},
-			{
-				"type": "fast_flyer",
-				"count": 35,
-				"interval": 0.24,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 14,
-				"interval": 0.68,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Air Breach. Fast flyers on Lane B will punish slow tracking. Armored flyers require high single-target DPS."
-	},
-	{
-		"wave": 3,
-		"name": "Phase 3: Support Core",
-		"reward": 75,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 8,
-				"interval": 0.85
-			},
-			{
-				"type": "shieldbearer",
-				"count": 12,
-				"interval": 0.6
-			},
-			{
-				"type": "healer",
-				"count": 12,
-				"interval": 0.32
-			},
-			{
-				"type": "disruptor",
-				"count": 10,
-				"interval": 0.72,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 28,
-				"interval": 0.15,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Bulwarks protect allies on Lane A. Disruptors on Lane B will disable your key towers. Hero intervention recommended."
-	},
-	{
-		"wave": 4,
-		"name": "Phase 4: Hunter Assault",
-		"reward": 100,
-		"groups": [
-			{
-				"type": "hunter",
-				"count": 25,
-				"interval": 0.55
-			},
-			{
-				"type": "cloaked",
-				"count": 35,
-				"interval": 0.45
-			},
-			{
-				"type": "splitter",
-				"count": 28,
-				"interval": 1.2,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 40,
-				"interval": 0.28,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Hunter Assault. Cloaked units bypass basic targeting. Splitters on Lane B require rapid area control."
-	},
-	{
-		"wave": 5,
-		"name": "Phase 5: Reinforcement",
-		"reward": 110,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 10,
-				"interval": 1.0
-			},
-			{
-				"type": "healer",
-				"count": 20,
-				"interval": 0.55
-			},
-			{
-				"type": "armored_flyer",
-				"count": 25,
-				"interval": 0.62
-			},
-			{
-				"type": "hunter",
-				"count": 20,
-				"interval": 0.55
-			},
-			{
-				"type": "disruptor",
-				"count": 18,
-				"interval": 0.65,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 40,
-				"interval": 0.2,
-				"path": "lane_b"
-			},
-			{
-				"type": "cloaked",
-				"count": 25,
-				"interval": 0.48,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Massive split. Mixed defence is mandatory. Use Hero to stabilize the most pressured lane."
-	},
-	{
-		"wave": 6,
-		"name": "Surge Alpha",
-		"reward": 115,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 12,
-				"interval": 0.85
-			},
-			{
-				"type": "shieldbearer",
-				"count": 14,
-				"interval": 0.58
-			},
-			{
-				"type": "healer",
-				"count": 14,
-				"interval": 0.3
-			},
-			{
-				"type": "disruptor",
-				"count": 10,
-				"interval": 0.72,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 22,
-				"interval": 0.64,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 38,
-				"interval": 0.24,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Staggered waves still arriving. Kill Disruptors immediately to preserve AA rate."
-	},
-	{
-		"wave": 7,
-		"name": "Surge Beta",
-		"reward": 120,
-		"groups": [
-			{
-				"type": "hunter",
-				"count": 25,
-				"interval": 0.5
-			},
-			{
-				"type": "cloaked",
-				"count": 35,
-				"interval": 0.42
-			},
-			{
-				"type": "fast_flyer",
-				"count": 40,
-				"interval": 0.22
-			},
-			{
-				"type": "bulwark",
-				"count": 12,
-				"interval": 0.85,
-				"path": "lane_b"
-			},
-			{
-				"type": "splitter",
-				"count": 28,
-				"interval": 0.85,
-				"path": "lane_b"
-			},
-			{
-				"type": "healer",
-				"count": 16,
-				"interval": 0.3,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Hunter + stealth on A, Bulwark convoy on B. Guardian needed on B — Sniper protects on A."
-	},
-	{
-		"wave": 8,
-		"name": "Surge Gamma",
-		"reward": 126,
-		"groups": [
-			{
-				"type": "disruptor",
-				"count": 12,
-				"interval": 0.7
-			},
-			{
-				"type": "armored_flyer",
-				"count": 26,
-				"interval": 0.62
-			},
-			{
-				"type": "bulwark",
-				"count": 14,
-				"interval": 0.82
-			},
-			{
-				"type": "hunter",
-				"count": 22,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "shieldbearer",
-				"count": 14,
-				"interval": 0.56,
-				"path": "lane_b"
-			},
-			{
-				"type": "splitter",
-				"count": 28,
-				"interval": 0.82,
-				"path": "lane_b"
-			},
-			{
-				"type": "cloaked",
-				"count": 30,
-				"interval": 0.42,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Both lanes at maximum threat level. No tower is wasted."
-	},
-	{
-		"wave": 9,
-		"name": "Iron Tide",
-		"reward": 132,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 16,
-				"interval": 0.8
-			},
-			{
-				"type": "shieldbearer",
-				"count": 16,
-				"interval": 0.54
-			},
-			{
-				"type": "healer",
-				"count": 18,
-				"interval": 0.28
-			},
-			{
-				"type": "tank",
-				"count": 28,
-				"interval": 0.58
-			},
-			{
-				"type": "fast_flyer",
-				"count": 40,
-				"interval": 0.22,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 26,
-				"interval": 0.62,
-				"path": "lane_b"
-			},
-			{
-				"type": "disruptor",
-				"count": 12,
-				"interval": 0.7,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Maximum ground convoy on A, maximum air on B. Guardian + AA simultaneously required."
-	},
-	{
-		"wave": 10,
-		"name": "Sky Dominion",
-		"reward": 138,
-		"groups": [
-			{
-				"type": "disruptor",
-				"count": 14,
-				"interval": 0.68
-			},
-			{
-				"type": "armored_flyer",
-				"count": 28,
-				"interval": 0.6
-			},
-			{
-				"type": "fast_flyer",
-				"count": 42,
-				"interval": 0.2
-			},
-			{
-				"type": "bulwark",
-				"count": 16,
-				"interval": 0.8,
-				"path": "lane_b"
-			},
-			{
-				"type": "healer",
-				"count": 20,
-				"interval": 0.26,
-				"path": "lane_b"
-			},
-			{
-				"type": "hunter",
-				"count": 25,
-				"interval": 0.48,
-				"path": "lane_b"
-			},
-			{
-				"type": "cloaked",
-				"count": 30,
-				"interval": 0.4,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Air supremacy on A, stealth convoy on B. Kill Disruptors to restore AA. Guardian on B for Bulwark."
-	},
-	{
-		"wave": 11,
-		"name": "Ground Zero",
-		"reward": 144,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 18,
-				"interval": 0.78
-			},
-			{
-				"type": "shieldbearer",
-				"count": 18,
-				"interval": 0.52
-			},
-			{
-				"type": "healer",
-				"count": 20,
-				"interval": 0.26
-			},
-			{
-				"type": "splitter",
-				"count": 30,
-				"interval": 0.8
-			},
-			{
-				"type": "disruptor",
-				"count": 14,
-				"interval": 0.68,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 42,
-				"interval": 0.2,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 28,
-				"interval": 0.6,
-				"path": "lane_b"
-			},
-			{
-				"type": "hunter",
-				"count": 25,
-				"interval": 0.48,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Every elite type at maximum density across both lanes. No idle towers."
-	},
-	{
-		"wave": 12,
-		"name": "Final Surge",
-		"reward": 150,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 20,
-				"interval": 0.76
-			},
-			{
-				"type": "shieldbearer",
-				"count": 20,
-				"interval": 0.5
-			},
-			{
-				"type": "healer",
-				"count": 22,
-				"interval": 0.24
-			},
-			{
-				"type": "hunter",
-				"count": 28,
-				"interval": 0.46
-			},
-			{
-				"type": "disruptor",
-				"count": 16,
-				"interval": 0.66,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 30,
-				"interval": 0.58,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 45,
-				"interval": 0.18,
-				"path": "lane_b"
-			},
-			{
-				"type": "cloaked",
-				"count": 32,
-				"interval": 0.4,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Near-maximum output on both lanes. Upgrade everything. No shortcuts."
-	},
-	{
-		"wave": 13,
-		"name": "Last Stand",
-		"reward": 158,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 22,
-				"interval": 0.74
-			},
-			{
-				"type": "shieldbearer",
-				"count": 22,
-				"interval": 0.48
-			},
-			{
-				"type": "healer",
-				"count": 24,
-				"interval": 0.22
-			},
-			{
-				"type": "splitter",
-				"count": 32,
-				"interval": 0.78
-			},
-			{
-				"type": "disruptor",
-				"count": 18,
-				"interval": 0.64,
-				"path": "lane_b"
-			},
-			{
-				"type": "armored_flyer",
-				"count": 32,
-				"interval": 0.56,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 48,
-				"interval": 0.18,
-				"path": "lane_b"
-			},
-			{
-				"type": "hunter",
-				"count": 30,
-				"interval": 0.44,
-				"path": "lane_b"
-			},
-			{
-				"type": "cloaked",
-				"count": 32,
-				"interval": 0.38,
-				"path": "lane_b"
-			}
-		],
-		"intel": "One wave before the finale. Every tower at maximum. This is the last chance to upgrade."
-	},
-	{
-		"wave": 14,
-		"name": "Command Siege Finale",
-		"reward": 185,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 24,
-				"interval": 0.9
-			},
-			{
-				"type": "healer",
-				"count": 24,
-				"interval": 0.26
-			},
-			{
-				"type": "armored_flyer",
-				"count": 30,
-				"interval": 0.58
-			},
-			{
-				"type": "hunter",
-				"count": 28,
-				"interval": 0.46
-			},
-			{
-				"type": "disruptor",
-				"count": 20,
-				"interval": 0.68,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast_flyer",
-				"count": 48,
-				"interval": 0.18,
-				"path": "lane_b"
-			},
-			{
-				"type": "cloaked",
-				"count": 30,
-				"interval": 0.38,
-				"path": "lane_b"
-			},
-			{
-				"type": "bulwark",
-				"count": 8,
-				"interval": 0.6,
-				"path": "lane_b"
-			},
-			{
-				"type": "shieldbearer",
-				"count": 16,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "splitter",
-				"count": 28,
-				"interval": 0.8,
-				"path": "lane_b"
-			}
-		],
-		"intel": "The final stand. Massive split pressure. Mixed defence is mandatory. Use Hero to stabilize the most pressured lane."
-	}
+  {
+    "wave": 1,
+    "name": "Phase 1: Ground Formation",
+    "reward": 50,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.7
+      },
+      {
+        "type": "basic",
+        "count": 22,
+        "interval": 0.16
+      },
+      {
+        "type": "swarm",
+        "count": 35,
+        "interval": 0.09,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.16,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Split pressure. Spaced tanks on Lane A, fast runners on Lane B. Lightning covers clusters."
+  },
+  {
+    "wave": 2,
+    "name": "Phase 2: Air Breach",
+    "reward": 60,
+    "groups": [
+      {
+        "type": "flyer",
+        "count": 22,
+        "interval": 0.38
+      },
+      {
+        "type": "fast_flyer",
+        "count": 35,
+        "interval": 0.24,
+        "path": "lane_b"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 14,
+        "interval": 0.68,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Air Breach. Fast flyers on Lane B will punish slow tracking. Armored flyers require high single-target DPS."
+  },
+  {
+    "wave": 3,
+    "name": "Phase 3: Support Core",
+    "reward": 75,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.85,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 12,
+        "interval": 0.6,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 12,
+        "interval": 0.32,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 10,
+        "interval": 0.72,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 28,
+        "interval": 0.15,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Bulwarks protect allies on Lane A. Disruptors on Lane B will disable your key towers. Hero intervention recommended."
+  },
+  {
+    "wave": 4,
+    "name": "Phase 4: Hunter Assault",
+    "reward": 100,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 25,
+        "interval": 0.55,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "cloaked",
+        "count": 35,
+        "interval": 0.45,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 28,
+        "interval": 1.2,
+        "path": "lane_b",
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 40,
+        "interval": 0.28,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Hunter Assault. Cloaked units bypass basic targeting. Splitters on Lane B require rapid area control."
+  },
+  {
+    "wave": 5,
+    "name": "Phase 5: Reinforcement",
+    "reward": 110,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 10,
+        "interval": 1.0,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 20,
+        "interval": 0.55,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "armored_flyer",
+        "count": 25,
+        "interval": 0.62,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 20,
+        "interval": 0.55,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 18,
+        "interval": 0.65,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 40,
+        "interval": 0.2,
+        "path": "lane_b"
+      },
+      {
+        "type": "cloaked",
+        "count": 25,
+        "interval": 0.48,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "Massive split. Mixed defence is mandatory. Use Hero to stabilize the most pressured lane."
+  },
+  {
+    "wave": 6,
+    "name": "Surge Alpha",
+    "reward": 115,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 12,
+        "interval": 0.85,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 14,
+        "interval": 0.58,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 14,
+        "interval": 0.3,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 10,
+        "interval": 0.72,
+        "path": "lane_b"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 22,
+        "interval": 0.64,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 38,
+        "interval": 0.24,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Staggered waves still arriving. Kill Disruptors immediately to preserve AA rate."
+  },
+  {
+    "wave": 7,
+    "name": "Surge Beta",
+    "reward": 120,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 25,
+        "interval": 0.5,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "cloaked",
+        "count": 35,
+        "interval": 0.42,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 40,
+        "interval": 0.22
+      },
+      {
+        "type": "bulwark",
+        "count": 12,
+        "interval": 0.85,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 28,
+        "interval": 0.85,
+        "path": "lane_b",
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 16,
+        "interval": 0.3,
+        "path": "lane_b",
+        "affixes": [
+          "healing"
+        ]
+      }
+    ],
+    "intel": "Hunter + stealth on A, Bulwark convoy on B. Guardian needed on B — Sniper protects on A."
+  },
+  {
+    "wave": 8,
+    "name": "Surge Gamma",
+    "reward": 126,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 12,
+        "interval": 0.7
+      },
+      {
+        "type": "armored_flyer",
+        "count": 26,
+        "interval": 0.62,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "bulwark",
+        "count": 14,
+        "interval": 0.82,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 22,
+        "interval": 0.5,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 14,
+        "interval": 0.56,
+        "path": "lane_b",
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 28,
+        "interval": 0.82,
+        "path": "lane_b",
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "cloaked",
+        "count": 30,
+        "interval": 0.42,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "Both lanes at maximum threat level. No tower is wasted."
+  },
+  {
+    "wave": 9,
+    "name": "Iron Tide",
+    "reward": 132,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 16,
+        "interval": 0.8,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 16,
+        "interval": 0.54,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 18,
+        "interval": 0.28,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 28,
+        "interval": 0.58,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 40,
+        "interval": 0.22,
+        "path": "lane_b"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 26,
+        "interval": 0.62,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 12,
+        "interval": 0.7,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Maximum ground convoy on A, maximum air on B. Guardian + AA simultaneously required."
+  },
+  {
+    "wave": 10,
+    "name": "Sky Dominion",
+    "reward": 138,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 14,
+        "interval": 0.68
+      },
+      {
+        "type": "armored_flyer",
+        "count": 28,
+        "interval": 0.6,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 42,
+        "interval": 0.2
+      },
+      {
+        "type": "bulwark",
+        "count": 16,
+        "interval": 0.8,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 20,
+        "interval": 0.26,
+        "path": "lane_b",
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 25,
+        "interval": 0.48,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "cloaked",
+        "count": 30,
+        "interval": 0.4,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "Air supremacy on A, stealth convoy on B. Kill Disruptors to restore AA. Guardian on B for Bulwark."
+  },
+  {
+    "wave": 11,
+    "name": "Ground Zero",
+    "reward": 144,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 18,
+        "interval": 0.78,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 18,
+        "interval": 0.52,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 20,
+        "interval": 0.26,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 30,
+        "interval": 0.8,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 14,
+        "interval": 0.68,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 42,
+        "interval": 0.2,
+        "path": "lane_b"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 28,
+        "interval": 0.6,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 25,
+        "interval": 0.48,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "Every elite type at maximum density across both lanes. No idle towers."
+  },
+  {
+    "wave": 12,
+    "name": "Final Surge",
+    "reward": 150,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 20,
+        "interval": 0.76,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 20,
+        "interval": 0.5,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 22,
+        "interval": 0.24,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 28,
+        "interval": 0.46,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 16,
+        "interval": 0.66,
+        "path": "lane_b"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 30,
+        "interval": 0.58,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 45,
+        "interval": 0.18,
+        "path": "lane_b"
+      },
+      {
+        "type": "cloaked",
+        "count": 32,
+        "interval": 0.4,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "Near-maximum output on both lanes. Upgrade everything. No shortcuts."
+  },
+  {
+    "wave": 13,
+    "name": "Last Stand",
+    "reward": 158,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 22,
+        "interval": 0.74,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 22,
+        "interval": 0.48,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 24,
+        "interval": 0.22,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 32,
+        "interval": 0.78,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 18,
+        "interval": 0.64,
+        "path": "lane_b"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 32,
+        "interval": 0.56,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 48,
+        "interval": 0.18,
+        "path": "lane_b"
+      },
+      {
+        "type": "hunter",
+        "count": 30,
+        "interval": 0.44,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "cloaked",
+        "count": 32,
+        "interval": 0.38,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "One wave before the finale. Every tower at maximum. This is the last chance to upgrade."
+  },
+  {
+    "wave": 14,
+    "name": "Command Siege Finale",
+    "reward": 185,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 24,
+        "interval": 0.9,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 24,
+        "interval": 0.26,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "armored_flyer",
+        "count": 30,
+        "interval": 0.58,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 28,
+        "interval": 0.46,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 20,
+        "interval": 0.68,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 48,
+        "interval": 0.18,
+        "path": "lane_b"
+      },
+      {
+        "type": "cloaked",
+        "count": 30,
+        "interval": 0.38,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.6,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 16,
+        "interval": 0.5,
+        "path": "lane_b",
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 28,
+        "interval": 0.8,
+        "path": "lane_b",
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "boss",
+        "count": 3,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "The final stand. Massive split pressure. Mixed defence is mandatory. Use Hero to stabilize the most pressured lane. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

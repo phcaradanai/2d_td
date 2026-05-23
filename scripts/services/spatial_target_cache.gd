@@ -27,7 +27,7 @@ func register_enemy(enemy: Node2D) -> void:
 		return
 	_enemy_ids[id] = true
 	_enemies.append(enemy)
-	var key := _bucket_key_for_world(enemy.global_position)
+	var key: int = _bucket_key_for_world(enemy.global_position)
 	_enemy_bucket_keys[id] = key
 	_bucket_add_enemy(key, enemy)
 
@@ -39,9 +39,8 @@ func unregister_enemy(enemy: Node2D) -> void:
 		return
 	_enemy_ids.erase(id)
 	_enemies.erase(enemy)
-	var old_key: String = _enemy_bucket_keys.get(id, "")
-	if old_key != "":
-		_bucket_remove_enemy(old_key, enemy)
+	if _enemy_bucket_keys.has(id):
+		_bucket_remove_enemy(_enemy_bucket_keys[id], enemy)
 	_enemy_bucket_keys.erase(id)
 
 func update_enemy_bucket(enemy: Node2D) -> void:
@@ -51,11 +50,11 @@ func update_enemy_bucket(enemy: Node2D) -> void:
 	if not _enemy_ids.has(id):
 		register_enemy(enemy)
 		return
-	var old_key: String = _enemy_bucket_keys.get(id, "")
-	var next_key := _bucket_key_for_world(enemy.global_position)
+	var old_key: int = _enemy_bucket_keys.get(id, 0)
+	var next_key: int = _bucket_key_for_world(enemy.global_position)
 	if old_key == next_key:
 		return
-	if old_key != "":
+	if _enemy_bucket_keys.has(id):
 		_bucket_remove_enemy(old_key, enemy)
 	_enemy_bucket_keys[id] = next_key
 	_bucket_add_enemy(next_key, enemy)
@@ -71,7 +70,7 @@ func get_candidates_in_radius(center: Vector2, radius: float) -> Array[Node2D]:
 	var max_y := int(floor((center.y + r) * _inv_bucket_size))
 	for y in range(min_y, max_y + 1):
 		for x in range(min_x, max_x + 1):
-			var key := _cell_key(x, y)
+			var key: int = _cell_key(x, y)
 			if not _buckets.has(key):
 				continue
 			var bucket: Array = _buckets[key]
@@ -83,20 +82,21 @@ func get_candidates_in_radius(center: Vector2, radius: float) -> Array[Node2D]:
 func get_registered_enemy_count() -> int:
 	return _enemies.size()
 
-func _bucket_key_for_world(world_pos: Vector2) -> String:
+func _bucket_key_for_world(world_pos: Vector2) -> int:
 	var x := int(floor(world_pos.x * _inv_bucket_size))
 	var y := int(floor(world_pos.y * _inv_bucket_size))
 	return _cell_key(x, y)
 
-func _cell_key(x: int, y: int) -> String:
-	return "%d,%d" % [x, y]
+# Pack two 32-bit coords into one 64-bit int — no string allocation per bucket op.
+func _cell_key(x: int, y: int) -> int:
+	return (x & 0xFFFFFFFF) | ((y & 0xFFFFFFFF) << 32)
 
-func _bucket_add_enemy(key: String, enemy: Node2D) -> void:
+func _bucket_add_enemy(key: int, enemy: Node2D) -> void:
 	var bucket: Array = _buckets.get(key, [])
 	bucket.append(enemy)
 	_buckets[key] = bucket
 
-func _bucket_remove_enemy(key: String, enemy: Node2D) -> void:
+func _bucket_remove_enemy(key: int, enemy: Node2D) -> void:
 	if not _buckets.has(key):
 		return
 	var bucket: Array = _buckets[key]

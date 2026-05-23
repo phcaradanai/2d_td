@@ -1,11 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8n4j2k8m1p2"]
+[gd_scene format=3 uid="uid://c8n4j2k8m1p2"]
 
-[ext_resource type="Script" path="res://scripts/ui/main_menu.gd" id="1_menu_script"]
+[ext_resource type="Script" uid="uid://dfq5ajpwhuw7e" path="res://scripts/ui/main_menu.gd" id="1_menu_script"]
 
-[node name="MainMenu" type="CanvasLayer"]
+[node name="MainMenu" type="CanvasLayer" unique_id=333816711]
 script = ExtResource("1_menu_script")
 
-[node name="Root" type="Control" parent="."]
+[node name="Root" type="Control" parent="." unique_id=1820975193]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -13,7 +13,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Background" type="ColorRect" parent="Root"]
+[node name="Background" type="ColorRect" parent="Root" unique_id=784691898]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -22,7 +22,7 @@ grow_horizontal = 2
 grow_vertical = 2
 color = Color(0.05, 0.05, 0.1, 1)
 
-[node name="Title" type="Label" parent="Root"]
+[node name="Title" type="Label" parent="Root" unique_id=1027044549]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -43,7 +43,7 @@ text = "TOWER DEFENSE"
 horizontal_alignment = 1
 vertical_alignment = 1
 
-[node name="NameContainer" type="VBoxContainer" parent="Root"]
+[node name="NameContainer" type="VBoxContainer" parent="Root" unique_id=1196286042]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -58,22 +58,22 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 6
 
-[node name="NameLabel" type="Label" parent="Root/NameContainer"]
+[node name="NameLabel" type="Label" parent="Root/NameContainer" unique_id=1024492688]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.85, 1.0, 1)
+theme_override_colors/font_color = Color(0.7, 0.85, 1, 1)
 theme_override_font_sizes/font_size = 14
 text = "PLAYER NAME"
 horizontal_alignment = 1
 
-[node name="PlayerNameInput" type="LineEdit" parent="Root/NameContainer"]
+[node name="PlayerNameInput" type="LineEdit" parent="Root/NameContainer" unique_id=1362511196]
 custom_minimum_size = Vector2(300, 42)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 placeholder_text = "Enter your name..."
-max_length = 20
 alignment = 1
+max_length = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Root"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Root" unique_id=1208201137]
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
@@ -88,44 +88,44 @@ grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 12
 
-[node name="PlayButton" type="Button" parent="Root/VBoxContainer"]
+[node name="PlayButton" type="Button" parent="Root/VBoxContainer" unique_id=1099926677]
 custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "PLAY NEW GAME"
 
-[node name="ContinueButton" type="Button" parent="Root/VBoxContainer"]
+[node name="ContinueButton" type="Button" parent="Root/VBoxContainer" unique_id=77987213]
 custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
-text = "CONTINUE"
 disabled = true
+text = "CONTINUE"
 
-[node name="SettingsButton" type="Button" parent="Root/VBoxContainer"]
+[node name="SettingsButton" type="Button" parent="Root/VBoxContainer" unique_id=175100550]
 custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "SETTINGS"
 
-[node name="LeaderboardButton" type="Button" parent="Root/VBoxContainer"]
+[node name="LeaderboardButton" type="Button" parent="Root/VBoxContainer" unique_id=601959684]
 custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "LEADERBOARD"
 
-[node name="CreditsButton" type="Button" parent="Root/VBoxContainer"]
+[node name="CreditsButton" type="Button" parent="Root/VBoxContainer" unique_id=1655038480]
 custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "CREDITS"
 
-[node name="QuitButton" type="Button" parent="Root/VBoxContainer"]
+[node name="QuitButton" type="Button" parent="Root/VBoxContainer" unique_id=985884094]
 custom_minimum_size = Vector2(220, 48)
 layout_mode = 2
 theme_override_font_sizes/font_size = 20
 text = "QUIT"
 
-[node name="VersionLabel" type="Label" parent="Root"]
+[node name="VersionLabel" type="Label" parent="Root" unique_id=1935553665]
 layout_mode = 1
 anchors_preset = 3
 anchor_left = 1.0
@@ -143,7 +143,7 @@ theme_override_font_sizes/font_size = 12
 text = "v0.1.0 Prototype"
 horizontal_alignment = 2
 
-[node name="CreditsPanel" type="PanelContainer" parent="Root"]
+[node name="CreditsPanel" type="PanelContainer" parent="Root" unique_id=1575817309]
 visible = false
 layout_mode = 1
 anchors_preset = 8
@@ -158,31 +158,31 @@ offset_bottom = 180.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="MarginContainer" type="MarginContainer" parent="Root/CreditsPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="Root/CreditsPanel" unique_id=790406869]
 layout_mode = 2
 theme_override_constants/margin_left = 25
 theme_override_constants/margin_top = 25
 theme_override_constants/margin_right = 25
 theme_override_constants/margin_bottom = 25
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Root/CreditsPanel/MarginContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="Root/CreditsPanel/MarginContainer" unique_id=2131081328]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="Title" type="Label" parent="Root/CreditsPanel/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="Root/CreditsPanel/MarginContainer/VBoxContainer" unique_id=299600445]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "CREDITS"
 horizontal_alignment = 1
 
-[node name="HSeparator" type="HSeparator" parent="Root/CreditsPanel/MarginContainer/VBoxContainer"]
+[node name="HSeparator" type="HSeparator" parent="Root/CreditsPanel/MarginContainer/VBoxContainer" unique_id=1497758297]
 layout_mode = 2
 
-[node name="ScrollContainer" type="ScrollContainer" parent="Root/CreditsPanel/MarginContainer/VBoxContainer"]
+[node name="ScrollContainer" type="ScrollContainer" parent="Root/CreditsPanel/MarginContainer/VBoxContainer" unique_id=1007805301]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="CreditsText" type="Label" parent="Root/CreditsPanel/MarginContainer/VBoxContainer/ScrollContainer"]
+[node name="CreditsText" type="Label" parent="Root/CreditsPanel/MarginContainer/VBoxContainer/ScrollContainer" unique_id=464092545]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.9, 0.9, 0.9, 1)
@@ -202,7 +202,7 @@ Space: Pause"
 horizontal_alignment = 1
 autowrap_mode = 3
 
-[node name="CloseCreditsButton" type="Button" parent="Root/CreditsPanel/MarginContainer/VBoxContainer"]
+[node name="CloseCreditsButton" type="Button" parent="Root/CreditsPanel/MarginContainer/VBoxContainer" unique_id=615766447]
 custom_minimum_size = Vector2(100, 40)
 layout_mode = 2
 size_flags_horizontal = 4

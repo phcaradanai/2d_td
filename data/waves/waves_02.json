@@ -1,166 +1,173 @@
 [
-	{
-		"wave": 1,
-		"name": "Patrol Line",
-		"reward": 25,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.2
-			}
-		],
-		"intel": "Normal patrol. Enemies slow at corners — place towers at the bend for maximum exposure."
-	},
-	{
-		"wave": 2,
-		"name": "Fast Approach",
-		"reward": 30,
-		"groups": [
-			{
-				"type": "fast",
-				"count": 25,
-				"interval": 0.16
-			},
-			{
-				"type": "basic",
-				"count": 18,
-				"interval": 0.22
-			}
-		],
-		"intel": "Signal Runners cluster at the bend. Ideal Cannon placement moment."
-	},
-	{
-		"wave": 3,
-		"name": "Heavy Pressure",
-		"reward": 38,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 10,
-				"interval": 0.72
-			},
-			{
-				"type": "basic",
-				"count": 22,
-				"interval": 0.18
-			}
-		],
-		"intel": "Heavy Shells arrive. Target them early while they round the corner."
-	},
-	{
-		"wave": 4,
-		"name": "Rush and Brace",
-		"reward": 42,
-		"groups": [
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.15
-			},
-			{
-				"type": "tank",
-				"count": 8,
-				"interval": 0.78
-			},
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.18
-			}
-		],
-		"intel": "Mixed column. Runners sprint ahead — do not let either type slip through."
-	},
-	{
-		"wave": 5,
-		"name": "Bend Assault",
-		"reward": 48,
-		"groups": [
-			{
-				"type": "fast",
-				"count": 35,
-				"interval": 0.14
-			},
-			{
-				"type": "tank",
-				"count": 12,
-				"interval": 0.7
-			},
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.16
-			}
-		],
-		"intel": "Maximum bend pressure. Prioritise tanks while Rapid handles runners."
-	},
-	{
-		"wave": 6,
-		"name": "Swarm Tide",
-		"reward": 45,
-		"groups": [
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08
-			},
-			{
-				"type": "basic",
-				"count": 20,
-				"interval": 0.16
-			}
-		],
-		"intel": "Data Swarm introduced. Single-target towers cannot keep up — AoE is mandatory now."
-	},
-	{
-		"wave": 7,
-		"name": "Runner Pack",
-		"reward": 52,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 20,
-				"interval": 0.18
-			},
-			{
-				"type": "fast",
-				"count": 25,
-				"interval": 0.15
-			},
-			{
-				"type": "tank",
-				"count": 8,
-				"interval": 0.72
-			}
-		],
-		"intel": "Cyber Runners are the fastest ground unit. Slow Tower + Rapid combination stops them."
-	},
-	{
-		"wave": 8,
-		"name": "Bend Finale",
-		"reward": 62,
-		"groups": [
-			{
-				"type": "swarm",
-				"count": 50,
-				"interval": 0.09
-			},
-			{
-				"type": "runner",
-				"count": 18,
-				"interval": 0.18
-			},
-			{
-				"type": "tank",
-				"count": 14,
-				"interval": 0.65
-			},
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.16
-			}
-		],
-		"intel": "All types. Swarm screen, runners sprint, tanks absorb. Every tower earns its place."
-	}
+  {
+    "wave": 1,
+    "name": "Patrol Line",
+    "reward": 25,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.2
+      }
+    ],
+    "intel": "Normal patrol. Enemies slow at corners — place towers at the bend for maximum exposure."
+  },
+  {
+    "wave": 2,
+    "name": "Fast Approach",
+    "reward": 30,
+    "groups": [
+      {
+        "type": "fast",
+        "count": 25,
+        "interval": 0.16
+      },
+      {
+        "type": "basic",
+        "count": 18,
+        "interval": 0.22
+      }
+    ],
+    "intel": "Signal Runners cluster at the bend. Ideal Cannon placement moment."
+  },
+  {
+    "wave": 3,
+    "name": "Heavy Pressure",
+    "reward": 38,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 10,
+        "interval": 0.72
+      },
+      {
+        "type": "basic",
+        "count": 22,
+        "interval": 0.18
+      }
+    ],
+    "intel": "Heavy Shells arrive. Target them early while they round the corner."
+  },
+  {
+    "wave": 4,
+    "name": "Rush and Brace",
+    "reward": 42,
+    "groups": [
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.15
+      },
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.78
+      },
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.18
+      }
+    ],
+    "intel": "Mixed column. Runners sprint ahead — do not let either type slip through."
+  },
+  {
+    "wave": 5,
+    "name": "Bend Assault",
+    "reward": 48,
+    "groups": [
+      {
+        "type": "fast",
+        "count": 35,
+        "interval": 0.14
+      },
+      {
+        "type": "tank",
+        "count": 12,
+        "interval": 0.7
+      },
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Maximum bend pressure. Prioritise tanks while Rapid handles runners."
+  },
+  {
+    "wave": 6,
+    "name": "Swarm Tide",
+    "reward": 45,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08
+      },
+      {
+        "type": "basic",
+        "count": 20,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Data Swarm introduced. Single-target towers cannot keep up — AoE is mandatory now."
+  },
+  {
+    "wave": 7,
+    "name": "Runner Pack",
+    "reward": 52,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 20,
+        "interval": 0.18
+      },
+      {
+        "type": "fast",
+        "count": 25,
+        "interval": 0.15
+      },
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.72
+      }
+    ],
+    "intel": "Cyber Runners are the fastest ground unit. Slow Tower + Rapid combination stops them."
+  },
+  {
+    "wave": 8,
+    "name": "Bend Finale",
+    "reward": 62,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 50,
+        "interval": 0.09
+      },
+      {
+        "type": "runner",
+        "count": 18,
+        "interval": 0.18
+      },
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.65
+      },
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.16
+      },
+      {
+        "type": "boss",
+        "count": 1,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "All types. Swarm screen, runners sprint, tanks absorb. Every tower earns its place. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

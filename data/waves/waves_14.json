@@ -1,355 +1,482 @@
 [
-	{
-		"wave": 1,
-		"name": "Shield March",
-		"reward": 60,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 6,
-				"interval": 0.65
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.65
-			},
-			{
-				"type": "basic",
-				"count": 35,
-				"interval": 0.15
-			}
-		],
-		"intel": "Bulwark leads the convoy. Its dome protects everything behind it. Hit it before the column closes."
-	},
-	{
-		"wave": 2,
-		"name": "Healed Convoy",
-		"reward": 70,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 7,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.34
-			},
-			{
-				"type": "tank",
-				"count": 24,
-				"interval": 0.62
-			},
-			{
-				"type": "basic",
-				"count": 35,
-				"interval": 0.15
-			}
-		],
-		"intel": "Bulwark convoy with Healers embedded. If Bulwark survives long enough, Healers restore its HP. Priority: Bulwark first."
-	},
-	{
-		"wave": 3,
-		"name": "Double Column",
-		"reward": 80,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 7,
-				"interval": 0.65
-			},
-			{
-				"type": "shieldbearer",
-				"count": 10,
-				"interval": 0.6
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.34
-			},
-			{
-				"type": "tank",
-				"count": 24,
-				"interval": 0.6
-			}
-		],
-		"intel": "Bulwark + Shieldbearer combine domes. Guardian breaks the Bulwark — towers handle Shieldbearers."
-	},
-	{
-		"wave": 4,
-		"name": "Hunter Guard",
-		"reward": 90,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 7,
-				"interval": 0.65
-			},
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.78
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.34
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.62
-			},
-			{
-				"type": "hunter",
-				"count": 10,
-				"interval": 0.2
-			}
-		],
-		"intel": "Hunters follow the convoy to threaten Guardian. Deploy Guardian only after Hunters are neutralised."
-	},
-	{
-		"wave": 5,
-		"name": "Convoy Rush",
-		"reward": 86,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 8,
-				"interval": 0.65
-			},
-			{
-				"type": "fast",
-				"count": 35,
-				"interval": 0.14
-			},
-			{
-				"type": "runner",
-				"count": 25,
-				"interval": 0.15
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			}
-		],
-		"intel": "Speed wave escorts the Bulwark. Slow towers stop the escorts — Guardian takes the Bulwark."
-	},
-	{
-		"wave": 6,
-		"name": "Shield Wall",
-		"reward": 92,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 8,
-				"interval": 0.65
-			},
-			{
-				"type": "shieldbearer",
-				"count": 12,
-				"interval": 0.58
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.34
-			},
-			{
-				"type": "tank",
-				"count": 22,
-				"interval": 0.6
-			},
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.15
-			}
-		],
-		"intel": "Triple-layered dome protection. Focus fire strips domes one at a time."
-	},
-	{
-		"wave": 7,
-		"name": "Hunter Ambush",
-		"reward": 96,
-		"groups": [
-			{
-				"type": "hunter",
-				"count": 14,
-				"interval": 0.2
-			},
-			{
-				"type": "bulwark",
-				"count": 8,
-				"interval": 0.65
-			},
-			{
-				"type": "splitter",
-				"count": 20,
-				"interval": 0.76
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.32
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.6
-			}
-		],
-		"intel": "Hunters flank while Bulwark convoy presses forward. Deploy Guardian late or with Sniper cover."
-	},
-	{
-		"wave": 8,
-		"name": "Grand Column",
-		"reward": 102,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 10,
-				"interval": 0.72
-			},
-			{
-				"type": "shieldbearer",
-				"count": 12,
-				"interval": 0.58
-			},
-			{
-				"type": "healer",
-				"count": 12,
-				"interval": 0.3
-			},
-			{
-				"type": "tank",
-				"count": 24,
-				"interval": 0.6
-			},
-			{
-				"type": "hunter",
-				"count": 12,
-				"interval": 0.2
-			}
-		],
-		"intel": "Two Bulwark convoys staggered. Guardian clears first — must recharge before second arrives."
-	},
-	{
-		"wave": 9,
-		"name": "March of Iron",
-		"reward": 108,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 10,
-				"interval": 0.7
-			},
-			{
-				"type": "shieldbearer",
-				"count": 12,
-				"interval": 0.58
-			},
-			{
-				"type": "healer",
-				"count": 12,
-				"interval": 0.3
-			},
-			{
-				"type": "splitter",
-				"count": 22,
-				"interval": 0.74
-			},
-			{
-				"type": "hunter",
-				"count": 12,
-				"interval": 0.2
-			},
-			{
-				"type": "tank",
-				"count": 22,
-				"interval": 0.6
-			}
-		],
-		"intel": "Full elite convoy with Hunters. Guardian on ground, Sniper protects Guardian from Hunters."
-	},
-	{
-		"wave": 10,
-		"name": "Elite March",
-		"reward": 115,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 12,
-				"interval": 0.68
-			},
-			{
-				"type": "shieldbearer",
-				"count": 14,
-				"interval": 0.56
-			},
-			{
-				"type": "healer",
-				"count": 14,
-				"interval": 0.3
-			},
-			{
-				"type": "splitter",
-				"count": 22,
-				"interval": 0.74
-			},
-			{
-				"type": "hunter",
-				"count": 14,
-				"interval": 0.2
-			},
-			{
-				"type": "tank",
-				"count": 24,
-				"interval": 0.58
-			}
-		],
-		"intel": "Maximum convoy density. Every special type in one column."
-	},
-	{
-		"wave": 11,
-		"name": "Shield March Finale",
-		"reward": 135,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 14,
-				"interval": 0.72
-			},
-			{
-				"type": "shieldbearer",
-				"count": 14,
-				"interval": 0.56
-			},
-			{
-				"type": "healer",
-				"count": 16,
-				"interval": 0.28
-			},
-			{
-				"type": "splitter",
-				"count": 24,
-				"interval": 0.72
-			},
-			{
-				"type": "hunter",
-				"count": 14,
-				"interval": 0.2
-			},
-			{
-				"type": "tank",
-				"count": 24,
-				"interval": 0.58
-			}
-		],
-		"intel": "Two Bulwark convoys separated by time. Guardian clears the first — must recharge before the second arrives."
-	}
+  {
+    "wave": 1,
+    "name": "Shield March",
+    "reward": 60,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 6,
+        "interval": 0.65
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.65
+      },
+      {
+        "type": "basic",
+        "count": 35,
+        "interval": 0.15
+      }
+    ],
+    "intel": "Bulwark leads the convoy. Its dome protects everything behind it. Hit it before the column closes."
+  },
+  {
+    "wave": 2,
+    "name": "Healed Convoy",
+    "reward": 70,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 7,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.34
+      },
+      {
+        "type": "tank",
+        "count": 24,
+        "interval": 0.62
+      },
+      {
+        "type": "basic",
+        "count": 35,
+        "interval": 0.15
+      }
+    ],
+    "intel": "Bulwark convoy with Healers embedded. If Bulwark survives long enough, Healers restore its HP. Priority: Bulwark first."
+  },
+  {
+    "wave": 3,
+    "name": "Double Column",
+    "reward": 80,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 7,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 10,
+        "interval": 0.6,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 24,
+        "interval": 0.6,
+        "affixes": [
+          "mechanical"
+        ]
+      }
+    ],
+    "intel": "Bulwark + Shieldbearer combine domes. Guardian breaks the Bulwark — towers handle Shieldbearers."
+  },
+  {
+    "wave": 4,
+    "name": "Hunter Guard",
+    "reward": 90,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 7,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.78
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.62,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 10,
+        "interval": 0.2,
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "Hunters follow the convoy to threaten Guardian. Deploy Guardian only after Hunters are neutralised."
+  },
+  {
+    "wave": 5,
+    "name": "Convoy Rush",
+    "reward": 86,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "fast",
+        "count": 35,
+        "interval": 0.14,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "runner",
+        "count": 25,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      }
+    ],
+    "intel": "Speed wave escorts the Bulwark. Slow towers stop the escorts — Guardian takes the Bulwark."
+  },
+  {
+    "wave": 6,
+    "name": "Shield Wall",
+    "reward": 92,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 12,
+        "interval": 0.58,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 22,
+        "interval": 0.6,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.15
+      }
+    ],
+    "intel": "Triple-layered dome protection. Focus fire strips domes one at a time."
+  },
+  {
+    "wave": 7,
+    "name": "Hunter Ambush",
+    "reward": 96,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 14,
+        "interval": 0.2,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 20,
+        "interval": 0.76
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.32,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.6,
+        "affixes": [
+          "mechanical"
+        ]
+      }
+    ],
+    "intel": "Hunters flank while Bulwark convoy presses forward. Deploy Guardian late or with Sniper cover."
+  },
+  {
+    "wave": 8,
+    "name": "Grand Column",
+    "reward": 102,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 10,
+        "interval": 0.72,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 12,
+        "interval": 0.58,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 12,
+        "interval": 0.3,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 24,
+        "interval": 0.6,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 12,
+        "interval": 0.2,
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "Two Bulwark convoys staggered. Guardian clears first — must recharge before second arrives."
+  },
+  {
+    "wave": 9,
+    "name": "March of Iron",
+    "reward": 108,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 10,
+        "interval": 0.7,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 12,
+        "interval": 0.58,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 12,
+        "interval": 0.3,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 22,
+        "interval": 0.74
+      },
+      {
+        "type": "hunter",
+        "count": 12,
+        "interval": 0.2,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 22,
+        "interval": 0.6,
+        "affixes": [
+          "mechanical"
+        ]
+      }
+    ],
+    "intel": "Full elite convoy with Hunters. Guardian on ground, Sniper protects Guardian from Hunters."
+  },
+  {
+    "wave": 10,
+    "name": "Elite March",
+    "reward": 115,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 12,
+        "interval": 0.68,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 14,
+        "interval": 0.56,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 14,
+        "interval": 0.3,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 22,
+        "interval": 0.74
+      },
+      {
+        "type": "hunter",
+        "count": 14,
+        "interval": 0.2,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 24,
+        "interval": 0.58,
+        "affixes": [
+          "mechanical"
+        ]
+      }
+    ],
+    "intel": "Maximum convoy density. Every special type in one column."
+  },
+  {
+    "wave": 11,
+    "name": "Shield March Finale",
+    "reward": 135,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 14,
+        "interval": 0.72,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 14,
+        "interval": 0.56,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 16,
+        "interval": 0.28,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 24,
+        "interval": 0.72
+      },
+      {
+        "type": "hunter",
+        "count": 14,
+        "interval": 0.2,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 24,
+        "interval": 0.58,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "boss",
+        "count": 2,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "Two Bulwark convoys separated by time. Guardian clears the first — must recharge before the second arrives. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

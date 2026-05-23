@@ -1,156 +1,163 @@
 [
-	{
-		"wave": 1,
-		"name": "First Contact",
-		"reward": 22,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 30,
-				"interval": 0.18
-			}
-		],
-		"intel": "Corrupted Nodes fill the path. Place towers along the straight road — they will slow once they enter your kill zone."
-	},
-	{
-		"wave": 2,
-		"name": "Node Surge",
-		"reward": 28,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 40,
-				"interval": 0.14
-			},
-			{
-				"type": "fast",
-				"count": 10,
-				"interval": 0.22
-			}
-		],
-		"intel": "Signal Runners join the column. They are fragile but quick — a Rapid Tower handles them."
-	},
-	{
-		"wave": 3,
-		"name": "Heavy Shells",
-		"reward": 32,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 35,
-				"interval": 0.16
-			},
-			{
-				"type": "tank",
-				"count": 8,
-				"interval": 0.75
-			}
-		],
-		"intel": "Heavy Shell detected. High HP, slow movement. Sustained fire from any tower brings them down."
-	},
-	{
-		"wave": 4,
-		"name": "Speed Blitz",
-		"reward": 35,
-		"groups": [
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.18
-			},
-			{
-				"type": "basic",
-				"count": 20,
-				"interval": 0.2
-			}
-		],
-		"intel": "All-speed wave. The longer your maze, the more shots you land before they exit."
-	},
-	{
-		"wave": 5,
-		"name": "Tank Wall",
-		"reward": 38,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 14,
-				"interval": 0.65
-			},
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.16
-			}
-		],
-		"intel": "Tank column with basic escorts. Upgrade a tower before this arrives."
-	},
-	{
-		"wave": 6,
-		"name": "Mixed Advance",
-		"reward": 42,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 40,
-				"interval": 0.14
-			},
-			{
-				"type": "fast",
-				"count": 20,
-				"interval": 0.18
-			},
-			{
-				"type": "tank",
-				"count": 8,
-				"interval": 0.7
-			}
-		],
-		"intel": "All three types together. Your maze should be bending by now — use the corners."
-	},
-	{
-		"wave": 7,
-		"name": "Iron Tide",
-		"reward": 46,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.6
-			},
-			{
-				"type": "fast",
-				"count": 25,
-				"interval": 0.16
-			},
-			{
-				"type": "basic",
-				"count": 30,
-				"interval": 0.14
-			}
-		],
-		"intel": "Heavy pressure. Tanks absorb fire while fast units slip through gaps."
-	},
-	{
-		"wave": 8,
-		"name": "Final Contact",
-		"reward": 55,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 50,
-				"interval": 0.12
-			},
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.16
-			},
-			{
-				"type": "tank",
-				"count": 12,
-				"interval": 0.6
-			}
-		],
-		"intel": "Area 1 finale. All types, maximum count. Every cell of maze earns its keep here."
-	}
+  {
+    "wave": 1,
+    "name": "First Contact",
+    "reward": 22,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 30,
+        "interval": 0.18
+      }
+    ],
+    "intel": "Corrupted Nodes fill the path. Place towers along the straight road — they will slow once they enter your kill zone."
+  },
+  {
+    "wave": 2,
+    "name": "Node Surge",
+    "reward": 28,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 40,
+        "interval": 0.14
+      },
+      {
+        "type": "fast",
+        "count": 10,
+        "interval": 0.22
+      }
+    ],
+    "intel": "Signal Runners join the column. They are fragile but quick — a Rapid Tower handles them."
+  },
+  {
+    "wave": 3,
+    "name": "Heavy Shells",
+    "reward": 32,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 35,
+        "interval": 0.16
+      },
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.75
+      }
+    ],
+    "intel": "Heavy Shell detected. High HP, slow movement. Sustained fire from any tower brings them down."
+  },
+  {
+    "wave": 4,
+    "name": "Speed Blitz",
+    "reward": 35,
+    "groups": [
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.18
+      },
+      {
+        "type": "basic",
+        "count": 20,
+        "interval": 0.2
+      }
+    ],
+    "intel": "All-speed wave. The longer your maze, the more shots you land before they exit."
+  },
+  {
+    "wave": 5,
+    "name": "Tank Wall",
+    "reward": 38,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.65
+      },
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Tank column with basic escorts. Upgrade a tower before this arrives."
+  },
+  {
+    "wave": 6,
+    "name": "Mixed Advance",
+    "reward": 42,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 40,
+        "interval": 0.14
+      },
+      {
+        "type": "fast",
+        "count": 20,
+        "interval": 0.18
+      },
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.7
+      }
+    ],
+    "intel": "All three types together. Your maze should be bending by now — use the corners."
+  },
+  {
+    "wave": 7,
+    "name": "Iron Tide",
+    "reward": 46,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.6
+      },
+      {
+        "type": "fast",
+        "count": 25,
+        "interval": 0.16
+      },
+      {
+        "type": "basic",
+        "count": 30,
+        "interval": 0.14
+      }
+    ],
+    "intel": "Heavy pressure. Tanks absorb fire while fast units slip through gaps."
+  },
+  {
+    "wave": 8,
+    "name": "Final Contact",
+    "reward": 55,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 50,
+        "interval": 0.12
+      },
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.16
+      },
+      {
+        "type": "tank",
+        "count": 12,
+        "interval": 0.6
+      },
+      {
+        "type": "boss",
+        "count": 1,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "Area 1 finale. All types, maximum count. Every cell of maze earns its keep here. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

@@ -1,204 +1,211 @@
 [
-	{
-		"wave": 1,
-		"name": "Iron Vanguard",
-		"reward": 35,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.18
-			},
-			{
-				"type": "tank",
-				"count": 6,
-				"interval": 0.8
-			}
-		],
-		"intel": "Heavy Shells arrive early on the narrow road. Build Cannon near the first bend."
-	},
-	{
-		"wave": 2,
-		"name": "Speeding Threat",
-		"reward": 38,
-		"groups": [
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.16
-			},
-			{
-				"type": "basic",
-				"count": 22,
-				"interval": 0.18
-			}
-		],
-		"intel": "Runners mixed with normals. Narrow terrain limits build options — make them count."
-	},
-	{
-		"wave": 3,
-		"name": "Armored Column",
-		"reward": 42,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 14,
-				"interval": 0.68
-			},
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.16
-			}
-		],
-		"intel": "Tank column. Cannon splash clears both simultaneously. Upgrade if available."
-	},
-	{
-		"wave": 4,
-		"name": "Fast and Heavy",
-		"reward": 46,
-		"groups": [
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.15
-			},
-			{
-				"type": "tank",
-				"count": 10,
-				"interval": 0.72
-			},
-			{
-				"type": "basic",
-				"count": 22,
-				"interval": 0.18
-			}
-		],
-		"intel": "Mixed column. Tanks follow fast units — Slow + Cannon combination is optimal."
-	},
-	{
-		"wave": 5,
-		"name": "Swarm Tide",
-		"reward": 44,
-		"groups": [
-			{
-				"type": "swarm",
-				"count": 65,
-				"interval": 0.08
-			},
-			{
-				"type": "fast",
-				"count": 20,
-				"interval": 0.16
-			}
-		],
-		"intel": "First swarm wave on this map. AoE at the chokepoint corner is essential."
-	},
-	{
-		"wave": 6,
-		"name": "Runner Blitz",
-		"reward": 50,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 25,
-				"interval": 0.16
-			},
-			{
-				"type": "swarm",
-				"count": 50,
-				"interval": 0.09
-			},
-			{
-				"type": "basic",
-				"count": 20,
-				"interval": 0.18
-			}
-		],
-		"intel": "Runners + swarm together. Fast lane tower and AoE tower — both required."
-	},
-	{
-		"wave": 7,
-		"name": "Shield March",
-		"reward": 54,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.65
-			},
-			{
-				"type": "fast",
-				"count": 28,
-				"interval": 0.15
-			},
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.16
-			}
-		],
-		"intel": "Heavy push across the narrow path. No shortcuts."
-	},
-	{
-		"wave": 8,
-		"name": "Relentless",
-		"reward": 58,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.16
-			},
-			{
-				"type": "tank",
-				"count": 14,
-				"interval": 0.65
-			},
-			{
-				"type": "swarm",
-				"count": 55,
-				"interval": 0.08
-			},
-			{
-				"type": "basic",
-				"count": 20,
-				"interval": 0.16
-			}
-		],
-		"intel": "Full mix. Slow the runners, AoE the swarms, burst the tanks."
-	},
-	{
-		"wave": 9,
-		"name": "Iron Route Finale",
-		"reward": 68,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.6
-			},
-			{
-				"type": "fast",
-				"count": 35,
-				"interval": 0.14
-			},
-			{
-				"type": "runner",
-				"count": 20,
-				"interval": 0.16
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08
-			},
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.15
-			}
-		],
-		"intel": "Maximum pressure. Tanks absorb while fast units slip through gaps. No idle towers."
-	}
+  {
+    "wave": 1,
+    "name": "Iron Vanguard",
+    "reward": 35,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.18
+      },
+      {
+        "type": "tank",
+        "count": 6,
+        "interval": 0.8
+      }
+    ],
+    "intel": "Heavy Shells arrive early on the narrow road. Build Cannon near the first bend."
+  },
+  {
+    "wave": 2,
+    "name": "Speeding Threat",
+    "reward": 38,
+    "groups": [
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.16
+      },
+      {
+        "type": "basic",
+        "count": 22,
+        "interval": 0.18
+      }
+    ],
+    "intel": "Runners mixed with normals. Narrow terrain limits build options — make them count."
+  },
+  {
+    "wave": 3,
+    "name": "Armored Column",
+    "reward": 42,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.68
+      },
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Tank column. Cannon splash clears both simultaneously. Upgrade if available."
+  },
+  {
+    "wave": 4,
+    "name": "Fast and Heavy",
+    "reward": 46,
+    "groups": [
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.15
+      },
+      {
+        "type": "tank",
+        "count": 10,
+        "interval": 0.72
+      },
+      {
+        "type": "basic",
+        "count": 22,
+        "interval": 0.18
+      }
+    ],
+    "intel": "Mixed column. Tanks follow fast units — Slow + Cannon combination is optimal."
+  },
+  {
+    "wave": 5,
+    "name": "Swarm Tide",
+    "reward": 44,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 65,
+        "interval": 0.08
+      },
+      {
+        "type": "fast",
+        "count": 20,
+        "interval": 0.16
+      }
+    ],
+    "intel": "First swarm wave on this map. AoE at the chokepoint corner is essential."
+  },
+  {
+    "wave": 6,
+    "name": "Runner Blitz",
+    "reward": 50,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 25,
+        "interval": 0.16
+      },
+      {
+        "type": "swarm",
+        "count": 50,
+        "interval": 0.09
+      },
+      {
+        "type": "basic",
+        "count": 20,
+        "interval": 0.18
+      }
+    ],
+    "intel": "Runners + swarm together. Fast lane tower and AoE tower — both required."
+  },
+  {
+    "wave": 7,
+    "name": "Shield March",
+    "reward": 54,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.65
+      },
+      {
+        "type": "fast",
+        "count": 28,
+        "interval": 0.15
+      },
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Heavy push across the narrow path. No shortcuts."
+  },
+  {
+    "wave": 8,
+    "name": "Relentless",
+    "reward": 58,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.16
+      },
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.65
+      },
+      {
+        "type": "swarm",
+        "count": 55,
+        "interval": 0.08
+      },
+      {
+        "type": "basic",
+        "count": 20,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Full mix. Slow the runners, AoE the swarms, burst the tanks."
+  },
+  {
+    "wave": 9,
+    "name": "Iron Route Finale",
+    "reward": 68,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.6
+      },
+      {
+        "type": "fast",
+        "count": 35,
+        "interval": 0.14
+      },
+      {
+        "type": "runner",
+        "count": 20,
+        "interval": 0.16
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08
+      },
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.15
+      },
+      {
+        "type": "boss",
+        "count": 1,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "Maximum pressure. Tanks absorb while fast units slip through gaps. No idle towers. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

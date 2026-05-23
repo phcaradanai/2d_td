@@ -1,278 +1,315 @@
 [
-	{
-		"wave": 1,
-		"name": "Parallel Approach",
-		"reward": 45,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.18
-			},
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.18,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Two entry points. Both must be covered — split your tower budget between lanes."
-	},
-	{
-		"wave": 2,
-		"name": "Shield Vanguard",
-		"reward": 55,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 4,
-				"interval": 0.5
-			},
-			{
-				"type": "tank",
-				"count": 12,
-				"interval": 0.7
-			},
-			{
-				"type": "basic",
-				"count": 28,
-				"interval": 0.18,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Shieldbearer: projects an energy dome that reduces damage to nearby allies. Kill it first."
-	},
-	{
-		"wave": 3,
-		"name": "Dual Shield",
-		"reward": 62,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 4,
-				"interval": 0.5
-			},
-			{
-				"type": "basic",
-				"count": 30,
-				"interval": 0.16
-			},
-			{
-				"type": "shieldbearer",
-				"count": 4,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "tank",
-				"count": 12,
-				"interval": 0.7,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Both lanes have Shieldbearers. Focus fire on each shield source before hitting protected units."
-	},
-	{
-		"wave": 4,
-		"name": "Merge Push",
-		"reward": 68,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5
-			},
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.15
-			},
-			{
-				"type": "tank",
-				"count": 14,
-				"interval": 0.68,
-				"path": "lane_b"
-			},
-			{
-				"type": "swarm",
-				"count": 55,
-				"interval": 0.08,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Both lanes push simultaneously to the merge point. AoE at the funnel handles the swarm."
-	},
-	{
-		"wave": 5,
-		"name": "Speed Screen",
-		"reward": 64,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.16
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08
-			},
-			{
-				"type": "shieldbearer",
-				"count": 4,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast",
-				"count": 28,
-				"interval": 0.15,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Lane A: speed rush. Lane B: shielded column. Split your attention."
-	},
-	{
-		"wave": 6,
-		"name": "Heavy Convoy",
-		"reward": 70,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 6,
-				"interval": 0.5
-			},
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.65
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 20,
-				"interval": 0.16,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Shielded tank convoy on A, speed swarm on B. Lightning at the merge handles both."
-	},
-	{
-		"wave": 7,
-		"name": "Double Column",
-		"reward": 75,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5
-			},
-			{
-				"type": "tank",
-				"count": 14,
-				"interval": 0.68
-			},
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.14,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 18,
-				"interval": 0.16,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Both lanes fully armed. Every tower type used simultaneously."
-	},
-	{
-		"wave": 8,
-		"name": "Iron Screen",
-		"reward": 80,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 6,
-				"interval": 0.48
-			},
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.62
-			},
-			{
-				"type": "basic",
-				"count": 30,
-				"interval": 0.16
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.16,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast",
-				"count": 25,
-				"interval": 0.14,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Maximum dual-lane pressure. Shield source priority — always."
-	},
-	{
-		"wave": 9,
-		"name": "Iron Gate",
-		"reward": 95,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.72
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.62
-			},
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.72,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast",
-				"count": 35,
-				"interval": 0.14,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.16,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Two shielded heavy columns plus a speed rush on lane B. Lightning at the merge handles both."
-	}
+  {
+    "wave": 1,
+    "name": "Parallel Approach",
+    "reward": 45,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.18
+      },
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.18,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Two entry points. Both must be covered — split your tower budget between lanes."
+  },
+  {
+    "wave": 2,
+    "name": "Shield Vanguard",
+    "reward": 55,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 4,
+        "interval": 0.5
+      },
+      {
+        "type": "tank",
+        "count": 12,
+        "interval": 0.7
+      },
+      {
+        "type": "basic",
+        "count": 28,
+        "interval": 0.18,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Shieldbearer: projects an energy dome that reduces damage to nearby allies. Kill it first."
+  },
+  {
+    "wave": 3,
+    "name": "Dual Shield",
+    "reward": 62,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 4,
+        "interval": 0.5
+      },
+      {
+        "type": "basic",
+        "count": 30,
+        "interval": 0.16
+      },
+      {
+        "type": "shieldbearer",
+        "count": 4,
+        "interval": 0.5,
+        "path": "lane_b"
+      },
+      {
+        "type": "tank",
+        "count": 12,
+        "interval": 0.7,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Both lanes have Shieldbearers. Focus fire on each shield source before hitting protected units."
+  },
+  {
+    "wave": 4,
+    "name": "Merge Push",
+    "reward": 68,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5
+      },
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.68,
+        "path": "lane_b"
+      },
+      {
+        "type": "swarm",
+        "count": 55,
+        "interval": 0.08,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Both lanes push simultaneously to the merge point. AoE at the funnel handles the swarm."
+  },
+  {
+    "wave": 5,
+    "name": "Speed Screen",
+    "reward": 64,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.16,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08
+      },
+      {
+        "type": "shieldbearer",
+        "count": 4,
+        "interval": 0.5,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast",
+        "count": 28,
+        "interval": 0.15,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Lane A: speed rush. Lane B: shielded column. Split your attention."
+  },
+  {
+    "wave": 6,
+    "name": "Heavy Convoy",
+    "reward": 70,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 6,
+        "interval": 0.5
+      },
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.65
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 20,
+        "interval": 0.16,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Shielded tank convoy on A, speed swarm on B. Lightning at the merge handles both."
+  },
+  {
+    "wave": 7,
+    "name": "Double Column",
+    "reward": 75,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5
+      },
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.68
+      },
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.14,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "runner",
+        "count": 18,
+        "interval": 0.16,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Both lanes fully armed. Every tower type used simultaneously."
+  },
+  {
+    "wave": 8,
+    "name": "Iron Screen",
+    "reward": 80,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 6,
+        "interval": 0.48
+      },
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.62
+      },
+      {
+        "type": "basic",
+        "count": 30,
+        "interval": 0.16
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.16,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "fast",
+        "count": 25,
+        "interval": 0.14,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Maximum dual-lane pressure. Shield source priority — always."
+  },
+  {
+    "wave": 9,
+    "name": "Iron Gate",
+    "reward": 95,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.72
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.62
+      },
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.72,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast",
+        "count": 35,
+        "interval": 0.14,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.16,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "boss",
+        "count": 1,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "Two shielded heavy columns plus a speed rush on lane B. Lightning at the merge handles both. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

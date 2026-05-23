@@ -1,267 +1,301 @@
 [
-	{
-		"wave": 1,
-		"name": "Heavy Advance",
-		"reward": 50,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.7
-			},
-			{
-				"type": "basic",
-				"count": 30,
-				"interval": 0.16
-			}
-		],
-		"intel": "Heavy units on a narrow U-path. Both corners are chokepoints — Cannon at each bend."
-	},
-	{
-		"wave": 2,
-		"name": "Fragmenters",
-		"reward": 60,
-		"groups": [
-			{
-				"type": "splitter",
-				"count": 10,
-				"interval": 0.9
-			},
-			{
-				"type": "basic",
-				"count": 30,
-				"interval": 0.16
-			}
-		],
-		"intel": "Fragmenter: splits into 3 Corrupted Nodes on death. Cannon splash handles the fragments automatically."
-	},
-	{
-		"wave": 3,
-		"name": "Fragment Swarm",
-		"reward": 68,
-		"groups": [
-			{
-				"type": "splitter",
-				"count": 12,
-				"interval": 0.85
-			},
-			{
-				"type": "swarm",
-				"count": 65,
-				"interval": 0.08
-			},
-			{
-				"type": "tank",
-				"count": 10,
-				"interval": 0.7
-			}
-		],
-		"intel": "Fragmenters plus Swarm. When they die, nodes multiply — do not let fragments escape the bend."
-	},
-	{
-		"wave": 4,
-		"name": "Shielded Splitters",
-		"reward": 74,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5
-			},
-			{
-				"type": "splitter",
-				"count": 14,
-				"interval": 0.82
-			},
-			{
-				"type": "healer",
-				"count": 5,
-				"interval": 0.38
-			},
-			{
-				"type": "tank",
-				"count": 12,
-				"interval": 0.7
-			}
-		],
-		"intel": "Shieldbearer protects the Fragmenters. Kill the shield source first or fragments get through."
-	},
-	{
-		"wave": 5,
-		"name": "Runner Break",
-		"reward": 70,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 28,
-				"interval": 0.15
-			},
-			{
-				"type": "swarm",
-				"count": 65,
-				"interval": 0.08
-			},
-			{
-				"type": "splitter",
-				"count": 10,
-				"interval": 0.85
-			}
-		],
-		"intel": "Runners open a gap while splitters follow. Slow at both bends — essential."
-	},
-	{
-		"wave": 6,
-		"name": "Heavy Mend",
-		"reward": 76,
-		"groups": [
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.36
-			},
-			{
-				"type": "splitter",
-				"count": 12,
-				"interval": 0.82
-			},
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.16
-			}
-		],
-		"intel": "Healer-sustained tank and splitter column. Remove Healer first or the column never dies."
-	},
-	{
-		"wave": 7,
-		"name": "Split Surge",
-		"reward": 80,
-		"groups": [
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.8
-			},
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.07
-			},
-			{
-				"type": "fast",
-				"count": 28,
-				"interval": 0.15
-			}
-		],
-		"intel": "Heavy Fragmenter wave. AoE is mandatory — fragments pile up at the bends."
-	},
-	{
-		"wave": 8,
-		"name": "Full Convoy",
-		"reward": 85,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 6,
-				"interval": 0.48
-			},
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "splitter",
-				"count": 14,
-				"interval": 0.8
-			},
-			{
-				"type": "swarm",
-				"count": 55,
-				"interval": 0.08
-			}
-		],
-		"intel": "Full support stack. Prioritise: Healer → Shieldbearer → Splitter → Tank."
-	},
-	{
-		"wave": 9,
-		"name": "Fragment Storm",
-		"reward": 90,
-		"groups": [
-			{
-				"type": "splitter",
-				"count": 20,
-				"interval": 0.78
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.36
-			},
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.65
-			},
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.07
-			},
-			{
-				"type": "runner",
-				"count": 18,
-				"interval": 0.16
-			}
-		],
-		"intel": "Maximum fragment output. Slow at both corners, AoE for swarms and fragments, Sniper for supports."
-	},
-	{
-		"wave": 10,
-		"name": "Heavy Bend Finale",
-		"reward": 108,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.7
-			},
-			{
-				"type": "splitter",
-				"count": 20,
-				"interval": 0.78
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			},
-			{
-				"type": "swarm",
-				"count": 65,
-				"interval": 0.08
-			},
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.62
-			},
-			{
-				"type": "runner",
-				"count": 16,
-				"interval": 0.16
-			}
-		],
-		"intel": "Maximum pressure. Every tower type earns its place. No idle towers."
-	}
+  {
+    "wave": 1,
+    "name": "Heavy Advance",
+    "reward": 50,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.7
+      },
+      {
+        "type": "basic",
+        "count": 30,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Heavy units on a narrow U-path. Both corners are chokepoints — Cannon at each bend."
+  },
+  {
+    "wave": 2,
+    "name": "Fragmenters",
+    "reward": 60,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 10,
+        "interval": 0.9
+      },
+      {
+        "type": "basic",
+        "count": 30,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Fragmenter: splits into 3 Corrupted Nodes on death. Cannon splash handles the fragments automatically."
+  },
+  {
+    "wave": 3,
+    "name": "Fragment Swarm",
+    "reward": 68,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 12,
+        "interval": 0.85
+      },
+      {
+        "type": "swarm",
+        "count": 65,
+        "interval": 0.08
+      },
+      {
+        "type": "tank",
+        "count": 10,
+        "interval": 0.7
+      }
+    ],
+    "intel": "Fragmenters plus Swarm. When they die, nodes multiply — do not let fragments escape the bend."
+  },
+  {
+    "wave": 4,
+    "name": "Shielded Splitters",
+    "reward": 74,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5
+      },
+      {
+        "type": "splitter",
+        "count": 14,
+        "interval": 0.82
+      },
+      {
+        "type": "healer",
+        "count": 5,
+        "interval": 0.38,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 12,
+        "interval": 0.7
+      }
+    ],
+    "intel": "Shieldbearer protects the Fragmenters. Kill the shield source first or fragments get through."
+  },
+  {
+    "wave": 5,
+    "name": "Runner Break",
+    "reward": 70,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 28,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 65,
+        "interval": 0.08
+      },
+      {
+        "type": "splitter",
+        "count": 10,
+        "interval": 0.85
+      }
+    ],
+    "intel": "Runners open a gap while splitters follow. Slow at both bends — essential."
+  },
+  {
+    "wave": 6,
+    "name": "Heavy Mend",
+    "reward": 76,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 12,
+        "interval": 0.82
+      },
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.16
+      }
+    ],
+    "intel": "Healer-sustained tank and splitter column. Remove Healer first or the column never dies."
+  },
+  {
+    "wave": 7,
+    "name": "Split Surge",
+    "reward": 80,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.8
+      },
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.07
+      },
+      {
+        "type": "fast",
+        "count": 28,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Heavy Fragmenter wave. AoE is mandatory — fragments pile up at the bends."
+  },
+  {
+    "wave": 8,
+    "name": "Full Convoy",
+    "reward": 85,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 6,
+        "interval": 0.48
+      },
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.65
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 14,
+        "interval": 0.8
+      },
+      {
+        "type": "swarm",
+        "count": 55,
+        "interval": 0.08
+      }
+    ],
+    "intel": "Full support stack. Prioritise: Healer → Shieldbearer → Splitter → Tank."
+  },
+  {
+    "wave": 9,
+    "name": "Fragment Storm",
+    "reward": 90,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 20,
+        "interval": 0.78
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.65
+      },
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.07
+      },
+      {
+        "type": "runner",
+        "count": 18,
+        "interval": 0.16,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Maximum fragment output. Slow at both corners, AoE for swarms and fragments, Sniper for supports."
+  },
+  {
+    "wave": 10,
+    "name": "Heavy Bend Finale",
+    "reward": 108,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.7
+      },
+      {
+        "type": "splitter",
+        "count": 20,
+        "interval": 0.78
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 65,
+        "interval": 0.08
+      },
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.62
+      },
+      {
+        "type": "runner",
+        "count": 16,
+        "interval": 0.16,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "boss",
+        "count": 1,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "Maximum pressure. Every tower type earns its place. No idle towers. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]

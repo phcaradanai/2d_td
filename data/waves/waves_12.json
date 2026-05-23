@@ -1,330 +1,409 @@
 [
-	{
-		"wave": 1,
-		"name": "Divided Front",
-		"reward": 55,
-		"groups": [
-			{
-				"type": "basic",
-				"count": 25,
-				"interval": 0.18
-			},
-			{
-				"type": "fast",
-				"count": 25,
-				"interval": 0.16,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Two lanes, restricted build space. The centre spot covers both — position your strongest tower there."
-	},
-	{
-		"wave": 2,
-		"name": "Healer Column",
-		"reward": 65,
-		"groups": [
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "tank",
-				"count": 16,
-				"interval": 0.65
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.16,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Sniper from centre covers both lanes. Healers on the top path are high priority."
-	},
-	{
-		"wave": 3,
-		"name": "Shield Both Lanes",
-		"reward": 74,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5
-			},
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.65
-			},
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.14,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Both lanes shielded. Lightning at the merge junction hits both at once."
-	},
-	{
-		"wave": 4,
-		"name": "Hunter Crossfire",
-		"reward": 82,
-		"groups": [
-			{
-				"type": "hunter",
-				"count": 6,
-				"interval": 0.2
-			},
-			{
-				"type": "splitter",
-				"count": 14,
-				"interval": 0.8
-			},
-			{
-				"type": "swarm",
-				"count": 65,
-				"interval": 0.08,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.16,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Hunter on top lane targets Guardian if active. Do not deploy without Sniper protection."
-	},
-	{
-		"wave": 5,
-		"name": "Runner Surge",
-		"reward": 78,
-		"groups": [
-			{
-				"type": "runner",
-				"count": 28,
-				"interval": 0.15
-			},
-			{
-				"type": "swarm",
-				"count": 70,
-				"interval": 0.08
-			},
-			{
-				"type": "fast",
-				"count": 30,
-				"interval": 0.14,
-				"path": "lane_b"
-			},
-			{
-				"type": "shieldbearer",
-				"count": 5,
-				"interval": 0.5,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Pure speed on lane A, shielded fast on lane B. Slow at the merge choke."
-	},
-	{
-		"wave": 6,
-		"name": "Bulwark Cross",
-		"reward": 86,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 5,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 7,
-				"interval": 0.36
-			},
-			{
-				"type": "tank",
-				"count": 18,
-				"interval": 0.62,
-				"path": "lane_b"
-			},
-			{
-				"type": "shieldbearer",
-				"count": 6,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "fast",
-				"count": 28,
-				"interval": 0.14,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Bulwark convoy on A, shielded tank rush on B. Both need attention simultaneously."
-	},
-	{
-		"wave": 7,
-		"name": "Elite Split",
-		"reward": 90,
-		"groups": [
-			{
-				"type": "shieldbearer",
-				"count": 7,
-				"interval": 0.5
-			},
-			{
-				"type": "splitter",
-				"count": 16,
-				"interval": 0.8
-			},
-			{
-				"type": "hunter",
-				"count": 8,
-				"interval": 0.2,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 24,
-				"interval": 0.15,
-				"path": "lane_b"
-			},
-			{
-				"type": "swarm",
-				"count": 60,
-				"interval": 0.08,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Every special unit type across both lanes. Lightning at the merge covers both paths."
-	},
-	{
-		"wave": 8,
-		"name": "Heavy Junction",
-		"reward": 96,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 6,
-				"interval": 0.65
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.62
-			},
-			{
-				"type": "shieldbearer",
-				"count": 7,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "splitter",
-				"count": 16,
-				"interval": 0.78,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 22,
-				"interval": 0.15,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Maximum pressure on restricted space. Guardian handles the Bulwark column."
-	},
-	{
-		"wave": 9,
-		"name": "Junction Storm",
-		"reward": 102,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 7,
-				"interval": 0.65
-			},
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.5
-			},
-			{
-				"type": "healer",
-				"count": 8,
-				"interval": 0.34
-			},
-			{
-				"type": "hunter",
-				"count": 10,
-				"interval": 0.2,
-				"path": "lane_b"
-			},
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.78,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 25,
-				"interval": 0.15,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Full elite assault across both lanes. Every tower type earns its place."
-	},
-	{
-		"wave": 10,
-		"name": "Junction Siege",
-		"reward": 120,
-		"groups": [
-			{
-				"type": "bulwark",
-				"count": 8,
-				"interval": 0.72
-			},
-			{
-				"type": "healer",
-				"count": 10,
-				"interval": 0.32
-			},
-			{
-				"type": "tank",
-				"count": 20,
-				"interval": 0.6
-			},
-			{
-				"type": "shieldbearer",
-				"count": 8,
-				"interval": 0.5,
-				"path": "lane_b"
-			},
-			{
-				"type": "splitter",
-				"count": 18,
-				"interval": 0.76,
-				"path": "lane_b"
-			},
-			{
-				"type": "runner",
-				"count": 25,
-				"interval": 0.15,
-				"path": "lane_b"
-			}
-		],
-		"intel": "Maximum pressure on restricted space. Guardian handles the Bulwark column — every tower spot matters."
-	}
+  {
+    "wave": 1,
+    "name": "Divided Front",
+    "reward": 55,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 25,
+        "interval": 0.18
+      },
+      {
+        "type": "fast",
+        "count": 25,
+        "interval": 0.16,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Two lanes, restricted build space. The centre spot covers both — position your strongest tower there."
+  },
+  {
+    "wave": 2,
+    "name": "Healer Column",
+    "reward": 65,
+    "groups": [
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36
+      },
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.65
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.16,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Sniper from centre covers both lanes. Healers on the top path are high priority."
+  },
+  {
+    "wave": 3,
+    "name": "Shield Both Lanes",
+    "reward": 74,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5
+      },
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.14,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Both lanes shielded. Lightning at the merge junction hits both at once."
+  },
+  {
+    "wave": 4,
+    "name": "Hunter Crossfire",
+    "reward": 82,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 6,
+        "interval": 0.2,
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 14,
+        "interval": 0.8
+      },
+      {
+        "type": "swarm",
+        "count": 65,
+        "interval": 0.08,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.16,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Hunter on top lane targets Guardian if active. Do not deploy without Sniper protection."
+  },
+  {
+    "wave": 5,
+    "name": "Runner Surge",
+    "reward": 78,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 28,
+        "interval": 0.15,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 70,
+        "interval": 0.08
+      },
+      {
+        "type": "fast",
+        "count": 30,
+        "interval": 0.14,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 5,
+        "interval": 0.5,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Pure speed on lane A, shielded fast on lane B. Slow at the merge choke."
+  },
+  {
+    "wave": 6,
+    "name": "Bulwark Cross",
+    "reward": 86,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 5,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.36,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 18,
+        "interval": 0.62,
+        "path": "lane_b",
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 6,
+        "interval": 0.5,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast",
+        "count": 28,
+        "interval": 0.14,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Bulwark convoy on A, shielded tank rush on B. Both need attention simultaneously."
+  },
+  {
+    "wave": 7,
+    "name": "Elite Split",
+    "reward": 90,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 7,
+        "interval": 0.5
+      },
+      {
+        "type": "splitter",
+        "count": 16,
+        "interval": 0.8
+      },
+      {
+        "type": "hunter",
+        "count": 8,
+        "interval": 0.2,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "runner",
+        "count": 24,
+        "interval": 0.15,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.08,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Every special unit type across both lanes. Lightning at the merge covers both paths."
+  },
+  {
+    "wave": 8,
+    "name": "Heavy Junction",
+    "reward": 96,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 6,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.62,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 7,
+        "interval": 0.5,
+        "path": "lane_b"
+      },
+      {
+        "type": "splitter",
+        "count": 16,
+        "interval": 0.78,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.15,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Maximum pressure on restricted space. Guardian handles the Bulwark column."
+  },
+  {
+    "wave": 9,
+    "name": "Junction Storm",
+    "reward": 102,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 7,
+        "interval": 0.65,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.5
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.34,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 10,
+        "interval": 0.2,
+        "path": "lane_b",
+        "affixes": [
+          "image"
+        ]
+      },
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.78,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 25,
+        "interval": 0.15,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Full elite assault across both lanes. Every tower type earns its place."
+  },
+  {
+    "wave": 10,
+    "name": "Junction Siege",
+    "reward": 120,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.72,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.32,
+        "affixes": [
+          "healing"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 20,
+        "interval": 0.6,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.5,
+        "path": "lane_b"
+      },
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.76,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 25,
+        "interval": 0.15,
+        "path": "lane_b",
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "boss",
+        "count": 2,
+        "interval": 4.0,
+        "spawn_delay": 3.0,
+        "path": "default"
+      }
+    ],
+    "intel": "Maximum pressure on restricted space. Guardian handles the Bulwark column — every tower spot matters. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+  }
 ]
