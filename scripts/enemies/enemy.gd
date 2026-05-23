@@ -320,6 +320,7 @@ func _update_health_visual_state(force_redraw: bool = false) -> void:
 
 func _request_baked_enemy_texture() -> void:
 	EnemyBakedSpriteService._request_baked_enemy_texture(self)
+	return
 	if is_gallery_preview:
 		return
 	# Defer until we're in the scene tree so add_child / callbacks work safely.
@@ -337,6 +338,7 @@ func _request_baked_enemy_texture() -> void:
 
 func _apply_baked_enemy_texture(tex: ImageTexture) -> void:
 	EnemyBakedSpriteService._apply_baked_enemy_texture(self, tex)
+	return
 	if tex == null:
 		return
 	if _body_sprite == null or not is_instance_valid(_body_sprite):
@@ -414,6 +416,7 @@ func _get_type_spawn_spread(vtype: String) -> float:
 ## Called ~every 0.4 s per enemy (staggered), NOT every frame.
 func _update_separation() -> void:
 	EnemyVisualCrowdService._update_separation(self)
+	return
 	var push := 0.0
 	var pb := get_node_or_null("/root/PerformanceBudget")
 	var enemies: Array = (pb.get_enemies() if pb != null and pb.has_method("get_enemies")
@@ -454,6 +457,7 @@ func _uses_directional_visual(vtype: String) -> bool:
 
 func _record_visual_movement_delta(delta_pos: Vector2) -> void:
 	EnemyBakedSpriteService._record_visual_movement_delta(self, delta_pos)
+	return
 	if delta_pos.length_squared() <= 0.01:
 		return
 	_visual_heading_angle = delta_pos.angle()
@@ -477,6 +481,7 @@ func _get_type_bob_intensity(vtype: String) -> float:
 ## Walking squash/stretch — called every frame when baked. No queue_redraw.
 func _update_sprite_movement_anim() -> void:
 	EnemyBakedSpriteService._update_sprite_movement_anim(self)
+	return
 	if not _body_baked or _body_sprite == null or _hit_impact_active:
 		return
 	var speed_ratio := clampf(speed / maxf(base_speed, 1.0), 0.0, 2.2)
@@ -523,6 +528,7 @@ func _update_sprite_movement_anim() -> void:
 
 func _update_sprite_glide_motion(path_px: float, speed_ratio: float) -> void:
 	EnemyBakedSpriteService._update_sprite_glide_motion(self, path_px, speed_ratio)
+	return
 	var glide := sin(path_px * 0.135 + _anim_phase) * speed_ratio
 	var micro := sin(path_px * 0.265 + _anim_phase * 0.73) * speed_ratio
 	var compression := absf(glide)
@@ -758,6 +764,7 @@ func clear_slow() -> void:
 
 func _configure_formation_speed() -> void:
 	EnemyFormationService._configure_formation_speed(self)
+	return
 	if formation_speed_limit > 0.0 and formation_limit_duration > 0.0 and base_speed > 0.0:
 		formation_target_multiplier = clampf(formation_speed_limit / base_speed, 0.25, 1.0)
 		formation_speed_multiplier = formation_target_multiplier
@@ -772,6 +779,7 @@ func _configure_formation_speed() -> void:
 
 func _process_formation_speed(delta: float) -> void:
 	EnemyFormationService._process_formation_speed(self, delta)
+	return
 	if formation_limit_duration > 0.0:
 		formation_limit_duration -= delta
 		if formation_limit_duration <= 0.0:
@@ -836,6 +844,7 @@ func is_alive() -> bool:
 
 func _update_swarm_pack_density() -> void:
 	EnemyVisualCrowdService._update_swarm_pack_density(self)
+	return
 	var nearby := 0
 	for node in get_tree().get_nodes_in_group("enemies"):
 		if node == self:
