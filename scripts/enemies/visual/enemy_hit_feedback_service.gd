@@ -95,7 +95,7 @@ static func _play_sprite_hit_impact(enemy: Node2D, color: Color) -> void:
 ## Uses the enemy_impact pool for a tiny 3-ray burst + core dot.
 
 static func _spawn_hit_spark(enemy: Node2D, hit_pos: Vector2, color: Color) -> void:
-	if enemy.PerformanceFirebreak.disable_death_effects:
+	if PerformanceFirebreak.disable_death_effects:
 		return
 	var now_msec := Time.get_ticks_msec()
 	var crowded = enemy._get_nearby_enemy_count(enemy.CROWDED_ENEMY_RADIUS) >= enemy.CROWDED_ENEMY_THRESHOLD
@@ -163,7 +163,7 @@ static func flash_body(enemy: Node2D, damage_context: String = "") -> void:
 
 
 static func spawn_damage_number(enemy: Node2D, amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
-	if enemy.PerformanceFirebreak.disable_damage_numbers: return
+	if PerformanceFirebreak.disable_damage_numbers: return
 	if enemy._get_nearby_enemy_count(enemy.CROWDED_ENEMY_RADIUS) >= enemy.CROWDED_ENEMY_THRESHOLD and amount < int(enemy.max_hp * 0.18):
 		return
 	var perf_service := enemy.get_node_or_null("/root/PerformanceBudgetService")
@@ -173,7 +173,7 @@ static func spawn_damage_number(enemy: Node2D, amount: int, hit_global: Vector2,
 	elif not enemy.SHOW_FLOATING_DAMAGE_NUMBERS:
 		return
 	# Budget cap — skip new labels when too many are already alive.
-	if enemy.DamageNumber._active_count >= enemy.DamageNumber.MAX_ACTIVE:
+	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
 		return
 	if enemy.damage_number_scene:
 		var pool := enemy.get_node_or_null("/root/VisualEffectPoolService")
@@ -191,7 +191,7 @@ static func spawn_damage_number(enemy: Node2D, amount: int, hit_global: Vector2,
 
 
 static func _play_hit_pulse(enemy: Node2D) -> void:
-	if enemy.PerformanceFirebreak.disable_cosmetic_tweens:
+	if PerformanceFirebreak.disable_cosmetic_tweens:
 		return
 	if not enemy.is_visible_in_tree():
 		return
@@ -230,7 +230,7 @@ static func _trigger_swarm_hit_reaction(enemy: Node2D) -> void:
 static func _spawn_swarm_hit_effect(enemy: Node2D, hit_global: Vector2) -> void:
 	if enemy.death_pop_scene == null:
 		return
-	if enemy.PerformanceFirebreak.disable_death_effects: return
+	if PerformanceFirebreak.disable_death_effects: return
 	var container = enemy.get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
 	if not container: container = enemy.get_tree().current_scene
 	var pool := enemy.get_node_or_null("/root/VisualEffectPoolService")
@@ -242,5 +242,3 @@ static func _spawn_swarm_hit_effect(enemy: Node2D, hit_global: Vector2) -> void:
 	effect.enemy.global_position = hit_global
 	if effect.has_method("setup"):
 		effect.setup("swarm_hit", enemy.swarm_core_glow_color, 0.18, 6)
-
-
