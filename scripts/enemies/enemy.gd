@@ -75,6 +75,17 @@ var is_bulwark: bool = false
 var is_hunter: bool = false
 var is_runner: bool = false
 
+# Affix system
+var armor_element: String = "composite"
+var affixes: Array = []
+var affix_state: Dictionary = {}
+var affix_speed_multiplier: float = 1.0
+var is_invulnerable: bool = false
+var is_illusion: bool = false
+var gives_gold: bool = true
+var can_leak: bool = true
+var affix_service: Node = null
+
 # Runner role: no longer just “faster Fast”.
 # Runner moves at medium-high baseline speed, then creates danger windows with dash bursts
 # and a low-HP panic sprint. These values can be overridden from enemies.json skill_params.

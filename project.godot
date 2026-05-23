@@ -34,6 +34,7 @@ SpatialTargetCache="*res://scripts/services/spatial_target_cache.gd"
 FrameSpikeLogger="*res://scripts/services/frame_spike_logger.gd"
 TowerTextureBaker="*res://scripts/towers/tower_texture_baker.gd"
 EnemyTextureBaker="*res://scripts/enemies/enemy_texture_baker.gd"
+EnemyAffixService="*res://scripts/enemies/enemy_affix_service.gd"
 
 [display]
 

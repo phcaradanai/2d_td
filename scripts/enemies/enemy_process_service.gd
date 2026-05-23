@@ -127,7 +127,10 @@ static func process(enemy: Node2D, delta: float) -> void:
 		if enemy._shield_aura_timer <= 0.0:
 			enemy._shield_aura_timer = enemy.SHIELD_AURA_INTERVAL
 			enemy._process_shield_aura()
-		
+
+	if enemy.affix_service and enemy.affix_service.has_method("process_enemy_affixes"):
+		enemy.affix_service.process_enemy_affixes(enemy, delta)
+
 	if enemy.is_runner:
 		enemy._process_runner_role(delta)
 

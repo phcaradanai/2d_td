@@ -86,8 +86,21 @@ static func apply_setup(enemy: Node2D, config: Dictionary) -> void:
 	enemy._spawn_spread_lateral = enemy._get_type_spawn_spread(enemy.visual_type) * spread_dir * spread_mag
 	enemy._sep_check_timer = 0.04 + fmod(iid_f * 0.15700, 0.14)  # quick first scan, still staggered
 
+	enemy.affix_service = Engine.get_main_loop().root.get_node_or_null("EnemyAffixService")
+	if enemy.affix_service and enemy.affix_service.has_method("setup_enemy_affixes"):
+		enemy.affix_service.setup_enemy_affixes(enemy, config)
+	else:
+		enemy.armor_element = config.get("armor_element", "composite")
+		enemy.affixes = Array(config.get("affixes", []))
+		enemy.gives_gold = bool(config.get("gives_gold", true))
+		enemy.can_leak = bool(config.get("can_leak", true))
+		enemy.is_illusion = bool(config.get("is_illusion", false))
+		enemy.is_invulnerable = false
+		enemy.affix_speed_multiplier = 1.0
+		enemy.affix_state = {}
+
 	enemy.is_active = true
-	
+
 	if enemy.is_gallery_preview:
 		enemy.CatalogPreviewMode.mark_preview_tree(enemy, true, false)
 		enemy.set_process(false)

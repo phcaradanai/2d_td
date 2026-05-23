@@ -1,0 +1,24 @@
+{
+  "fast": {
+    "burst_cooldown": 3.0,
+    "burst_duration": 1.0,
+    "burst_speed_multiplier": 2.0
+  },
+  "healing": {
+    "heal_radius": 120.0,
+    "heal_pct": 0.15
+  },
+  "mechanical": {
+    "cycle_time": 12.0,
+    "telegraph_duration": 1.5,
+    "invuln_duration": 3.0
+  },
+  "undead": {
+    "revive_hp_pct": 0.40,
+    "revive_delay": 0.8
+  },
+  "image": {
+    "charge_time": 8.0,
+    "illusion_duration": 5.0
+  }
+}

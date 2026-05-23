@@ -60,8 +60,9 @@ static func reach_base(enemy: Node2D) -> void:
 	if enemy.reached_base_flag: return
 	enemy.reached_base_flag = true
 	enemy.is_active = false
-	
-	enemy.reached_base.emit(enemy, enemy.base_damage, enemy.global_position)
+
+	var leak_damage: int = enemy.base_damage if enemy.can_leak else 0
+	enemy.reached_base.emit(enemy, leak_damage, enemy.global_position)
 	enemy.queue_free()
 
 static func die(enemy: Node2D, death_global: Vector2 = Vector2.ZERO) -> void:
@@ -75,7 +76,7 @@ static func die(enemy: Node2D, death_global: Vector2 = Vector2.ZERO) -> void:
 		enemy.vfx_controller.fade_out()
 	
 	var gm = enemy.get_tree().current_scene.get_node_or_null("GameManager")
-	if gm and gm.battle_telemetry:
+	if gm and gm.battle_telemetry and not enemy.is_illusion:
 		gm.battle_telemetry.log_enemy_kill(enemy.last_damage_source, enemy.enemy_type)
 		
 	var capture_pos = death_global if death_global != Vector2.ZERO else enemy.global_position
@@ -83,6 +84,10 @@ static func die(enemy: Node2D, death_global: Vector2 = Vector2.ZERO) -> void:
 	
 	if enemy.skill_id == "split_on_death":
 		enemy._handle_split_on_death(capture_pos)
-		
-	enemy.died.emit(enemy, enemy.reward_gold)
+
+	if enemy.affix_service and enemy.affix_service.has_method("on_enemy_death"):
+		enemy.affix_service.on_enemy_death(enemy, capture_pos)
+
+	var gold_reward: int = enemy.reward_gold if enemy.gives_gold else 0
+	enemy.died.emit(enemy, gold_reward)
 	enemy.queue_free()

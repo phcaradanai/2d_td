@@ -5,7 +5,8 @@ static func take_damage(enemy: Node2D, amount: float, hit_global: Vector2 = Vect
 	if CatalogPreviewMode.is_preview_node(enemy ):
 		return
 	if enemy.is_dead_flag or enemy.reached_base_flag: return
-	
+	if enemy.is_invulnerable: return
+
 	if source_id != "":
 		enemy.last_damage_source = source_id
 	
@@ -66,7 +67,13 @@ static func take_damage(enemy: Node2D, amount: float, hit_global: Vector2 = Vect
 	if enemy.enemy_type == "swarm" or enemy.tags.has("swarm"):
 		EnemyHitFeedbackService._trigger_swarm_hit_reaction(enemy )
 		EnemyHitFeedbackService._spawn_swarm_hit_effect(enemy , capture_pos)
-	
+
+	if enemy.affix_service and enemy.affix_service.has_method("on_enemy_damaged"):
+		enemy.affix_service.on_enemy_damaged(enemy, capture_pos)
+
 	if enemy.hp <= 0:
+		if enemy.affix_service and enemy.affix_service.has_method("try_pre_death") \
+				and enemy.affix_service.try_pre_death(enemy):
+			return
 		enemy.die(capture_pos)
 

@@ -89,7 +89,7 @@ static func update_effective_speed(enemy: Node2D) -> void:
 			runner_multiplier *= enemy.runner_panic_speed_multiplier
 		if enemy.runner_dash_remaining > 0.0:
 			runner_multiplier *= enemy.runner_dash_speed_multiplier
-	enemy.speed = enemy.base_speed * enemy.formation_speed_multiplier * enemy.status_speed_multiplier * runner_multiplier
+	enemy.speed = enemy.base_speed * enemy.formation_speed_multiplier * enemy.status_speed_multiplier * runner_multiplier * enemy.affix_speed_multiplier
 
 static func _process_tower_status_effects(enemy: Node2D, delta: float) -> void:
 	if enemy.CatalogPreviewMode.is_preview_node(enemy):
