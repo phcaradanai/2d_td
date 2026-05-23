@@ -61,14 +61,13 @@ const _ELEMENT_META := {
 	},
 }
 
-const _ElementIconDraw = preload("res://scripts/ui/element_icon_draw.gd")
-
 var _element_levels: Dictionary = {}
 var _selected_element: String = ""
 
 var _left_col: VBoxContainer = null
 var _detail_col: VBoxContainer = null
-var _row_panels: Dictionary = {}   # element_id -> PanelContainer (left list rows)
+var _row_panels: Dictionary = {}  # element_id -> PanelContainer (left list rows)
+var _row_icons: Dictionary = {}   # element_id -> ElementIcon (for locked/unlocked refresh)
 
 func _ready() -> void:
 	_max_panel_width = 680.0
@@ -132,11 +131,11 @@ func _build_modal_content() -> void:
 # ── Element list rows ──────────────────────────────────────────────────────────
 
 func _make_element_row(eid: String) -> PanelContainer:
-	var color := _ElementIconDraw.get_color(eid)
+	var color := ElementIcon.color_for(eid)
 	var panel := PanelContainer.new()
 	panel.name = "ElementRow_%s" % eid
 	panel.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	panel.custom_minimum_size = Vector2(0.0, 36.0)
+	panel.custom_minimum_size = Vector2(0.0, 40.0)
 	panel.add_theme_stylebox_override("panel", _row_style(color, false))
 	panel.mouse_filter = Control.MOUSE_FILTER_STOP
 	panel.mouse_default_cursor_shape = Control.CURSOR_POINTING_HAND
@@ -155,14 +154,15 @@ func _make_element_row(eid: String) -> PanelContainer:
 	row.add_theme_constant_override("separation", 6)
 	margin.add_child(row)
 
-	var icon := _ElementIconDraw.new()
-	icon.element_id = eid
-	icon.custom_minimum_size = Vector2(22.0, 22.0)
+	var icon := ElementIcon.new()
+	icon.configure([eid], false)  # starts locked; updated by _refresh_level_badges
+	icon.custom_minimum_size = Vector2(30.0, 30.0)
 	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	row.add_child(icon)
+	_row_icons[eid] = icon
 
 	var name_lbl := Label.new()
-	name_lbl.text = _ElementIconDraw.get_display_name(eid)
+	name_lbl.text = ElementIconDraw.get_display_name(eid)
 	name_lbl.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	name_lbl.add_theme_font_size_override("font_size", 13)
 	name_lbl.add_theme_color_override("font_color", _C_INK1)
@@ -212,7 +212,7 @@ func _refresh_row_highlights() -> void:
 		var panel: PanelContainer = _row_panels[eid]
 		if not is_instance_valid(panel):
 			continue
-		var color := _ElementIconDraw.get_color(eid)
+		var color := ElementIcon.color_for(eid)
 		panel.add_theme_stylebox_override("panel", _row_style(color, eid == _selected_element))
 
 func _refresh_level_badges() -> void:
@@ -220,6 +220,15 @@ func _refresh_level_badges() -> void:
 		var panel: PanelContainer = _row_panels[eid]
 		if not is_instance_valid(panel):
 			continue
+		var level: int = int(_element_levels.get(eid, 0))
+		var unlocked: bool = level > 0
+
+		# Update the ElementIcon locked/unlocked state
+		var icon: ElementIcon = _row_icons.get(eid)
+		if icon != null and is_instance_valid(icon):
+			icon.configure([eid], unlocked)
+
+		# Update the level text badge
 		var margin := panel.get_child(0) as MarginContainer
 		if margin == null:
 			continue
@@ -228,8 +237,7 @@ func _refresh_level_badges() -> void:
 			continue
 		for child in hbox.get_children():
 			if child.name == "LevelBadge":
-				var level: int = int(_element_levels.get(eid, 0))
-				child.text = "Lv%d" % level if level > 0 else ""
+				child.text = "Lv%d" % level if unlocked else ""
 				break
 
 func _add_detail_placeholder() -> void:
@@ -247,17 +255,18 @@ func _rebuild_detail(eid: String) -> void:
 		_add_detail_placeholder()
 		return
 
-	var color := _ElementIconDraw.get_color(eid)
+	var color := ElementIcon.color_for(eid)
 	var level: int = int(_element_levels.get(eid, 0))
+	var unlocked: bool = level > 0
 
 	# Header: large icon + name + level
 	var header := HBoxContainer.new()
 	header.add_theme_constant_override("separation", 10)
 	_detail_col.add_child(header)
 
-	var big_icon := _ElementIconDraw.new()
-	big_icon.element_id = eid
-	big_icon.custom_minimum_size = Vector2(44.0, 44.0)
+	var big_icon := ElementIcon.new()
+	big_icon.configure([eid], unlocked)
+	big_icon.custom_minimum_size = Vector2(48.0, 48.0)
 	big_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	header.add_child(big_icon)
 
@@ -267,11 +276,11 @@ func _rebuild_detail(eid: String) -> void:
 	name_col.add_theme_constant_override("separation", 2)
 	header.add_child(name_col)
 
-	var name_lbl := _make_label(_ElementIconDraw.get_display_name(eid).to_upper(), 20, color)
+	var name_lbl := _make_label(ElementIconDraw.get_display_name(eid).to_upper(), 20, color)
 	name_col.add_child(name_lbl)
 
-	var sub_text := "Lv. %d / 3" % level if level > 0 else "Not yet chosen"
-	var sub_lbl := _make_label(sub_text, 11, _C_INK3 if level == 0 else color)
+	var sub_text := "Lv. %d / 3" % level if unlocked else "Not yet chosen"
+	var sub_lbl := _make_label(sub_text, 11, _C_INK3 if not unlocked else color)
 	name_col.add_child(sub_lbl)
 
 	# Description
