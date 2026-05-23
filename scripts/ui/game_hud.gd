@@ -351,6 +351,7 @@ var _em_card_nodes: Dictionary = {}
 var _em_card_container: VBoxContainer = null
 var _em_center_col: VBoxContainer = null
 var _em_right_col: VBoxContainer = null
+var _em_confirm_wrap: VBoxContainer = null
 var _em_confirm_btn: Button = null
 var _em_picks_label: Label = null
 var _em_close_btn: Button = null
@@ -2498,11 +2499,21 @@ func _ensure_element_modal() -> void:
 	cols.add_child(vs2)
 
 	# ── Right column (summary) ──
+	var right_outer := VBoxContainer.new()
+	right_outer.custom_minimum_size.x = 292
+	right_outer.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_outer.add_theme_constant_override("separation", 8)
+	cols.add_child(right_outer)
+
+	_em_confirm_wrap = VBoxContainer.new()
+	_em_confirm_wrap.name = "EmConfirmWrap"
+	_em_confirm_wrap.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	right_outer.add_child(_em_confirm_wrap)
+
 	var right_scroll := ScrollContainer.new()
-	right_scroll.custom_minimum_size.x = 292
 	right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
-	cols.add_child(right_scroll)
+	right_outer.add_child(right_scroll)
 
 	_em_right_col = VBoxContainer.new()
 	_em_right_col.name = "EmRightCol"
@@ -2961,6 +2972,9 @@ func _em_rebuild_right(element_id: String) -> void:
 		return
 	for c in _em_right_col.get_children():
 		c.queue_free()
+	if is_instance_valid(_em_confirm_wrap):
+		for c in _em_confirm_wrap.get_children():
+			c.queue_free()
 	_em_confirm_btn = null
 
 	var levels : Dictionary = _em_data.get("levels", {})
@@ -2999,6 +3013,38 @@ func _em_rebuild_right(element_id: String) -> void:
 		el_name_col.add_child(_em_lbl("Lv.3  MAX", 11, NeonStyle.INK_3))
 	else:
 		el_name_col.add_child(_em_lbl("Lv.%d → Lv.%d" % [cur_lv, cur_lv + 1], 11, NeonStyle.CYAN_2))
+
+	# ── CONFIRM BUTTON (top of right panel, always visible) ──────────────────
+	var btn_text_top: String
+	if element_id == "__interest__":
+		btn_text_top = "CHOOSE INTEREST BONUS"
+	else:
+		btn_text_top = "UNLOCK %s" % _element_label(element_id).to_upper()
+	_em_confirm_btn = Button.new()
+	_em_confirm_btn.text = btn_text_top
+	_em_confirm_btn.disabled = is_max or is_lock
+	_em_confirm_btn.custom_minimum_size = Vector2(0, 54)
+	_em_confirm_btn.size_flags_horizontal = Control.SIZE_FILL
+	_em_confirm_btn.add_theme_font_size_override("font_size", 15)
+	if not (is_max or is_lock):
+		var bf_top := Color(el_col.r*0.22, el_col.g*0.22, el_col.b*0.22, 1.0)
+		var bh_top := Color(el_col.r*0.36, el_col.g*0.36, el_col.b*0.36, 1.0)
+		_em_confirm_btn.add_theme_color_override("font_color", Color(1,1,1))
+		_em_confirm_btn.add_theme_stylebox_override("normal",  _em_sb(bf_top, el_col, 2.0, 8.0))
+		_em_confirm_btn.add_theme_stylebox_override("hover",   _em_sb(bh_top, el_col.lightened(0.25), 2.5, 8.0))
+		_em_confirm_btn.add_theme_stylebox_override("pressed", _em_sb(el_col.darkened(0.4), el_col, 2.0, 8.0))
+		var option_top := _em_make_pick_option(element_id)
+		_em_confirm_btn.pressed.connect(func():
+			if _em_confirm_btn:
+				_em_confirm_btn.disabled = true
+			element_choice_requested.emit(option_top))
+	else:
+		_em_confirm_btn.add_theme_stylebox_override("disabled", _em_sb(Color(0.08,0.1,0.14), Color(0.2,0.25,0.36,0.4), 1.0, 8.0))
+		_em_confirm_btn.add_theme_color_override("font_disabled_color", Color(0.35,0.4,0.5))
+	if is_instance_valid(_em_confirm_wrap):
+		_em_confirm_wrap.add_child(_em_confirm_btn)
+	else:
+		_em_right_col.add_child(_em_confirm_btn)
 
 	if element_id == "__interest__":
 		# ── ECONOMY EFFECT ────────────────────────────────────────────────────
@@ -3055,35 +3101,6 @@ func _em_rebuild_right(element_id: String) -> void:
 				combo_v.add_child(_em_make_future_combo_card(combo_towers[i], el_col))
 			if combo_towers.size() > max_cards:
 				combo_v.add_child(_em_lbl("+%d more" % (combo_towers.size() - max_cards), 11, Color(0.55, 0.70, 0.82)))
-
-	# Confirm button
-	var btn_text: String
-	if element_id == "__interest__":
-		btn_text = "CHOOSE INTEREST BONUS"
-	else:
-		btn_text = "UNLOCK %s" % _element_label(element_id).to_upper()
-	_em_confirm_btn = Button.new()
-	_em_confirm_btn.text = btn_text
-	_em_confirm_btn.disabled = is_max or is_lock
-	_em_confirm_btn.custom_minimum_size = Vector2(0, 54)
-	_em_confirm_btn.size_flags_horizontal = Control.SIZE_FILL
-	_em_confirm_btn.add_theme_font_size_override("font_size", 15)
-	if not (is_max or is_lock):
-		var bf := Color(el_col.r*0.22, el_col.g*0.22, el_col.b*0.22, 1.0)
-		var bh := Color(el_col.r*0.36, el_col.g*0.36, el_col.b*0.36, 1.0)
-		_em_confirm_btn.add_theme_color_override("font_color", Color(1,1,1))
-		_em_confirm_btn.add_theme_stylebox_override("normal",  _em_sb(bf, el_col, 2.0, 8.0))
-		_em_confirm_btn.add_theme_stylebox_override("hover",   _em_sb(bh, el_col.lightened(0.25), 2.5, 8.0))
-		_em_confirm_btn.add_theme_stylebox_override("pressed", _em_sb(el_col.darkened(0.4), el_col, 2.0, 8.0))
-		var option := _em_make_pick_option(element_id)
-		_em_confirm_btn.pressed.connect(func():
-			if _em_confirm_btn:
-				_em_confirm_btn.disabled = true
-			element_choice_requested.emit(option))
-	else:
-		_em_confirm_btn.add_theme_stylebox_override("disabled", _em_sb(Color(0.08,0.1,0.14), Color(0.2,0.25,0.36,0.4), 1.0, 8.0))
-		_em_confirm_btn.add_theme_color_override("font_disabled_color", Color(0.35,0.4,0.5))
-	_em_right_col.add_child(_em_confirm_btn)
 
 func _em_get_unlock_summary_names(element_id: String) -> Array[String]:
 	var preview := _em_get_unlock_preview_for_element(element_id)
