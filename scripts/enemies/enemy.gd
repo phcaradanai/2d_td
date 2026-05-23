@@ -957,6 +957,7 @@ func clear_slow() -> void:
 	EnemyStatusService.clear_slow(self )
 
 func _configure_formation_speed() -> void:
+	EnemyFormationService._configure_formation_speed(self)
 	if formation_speed_limit > 0.0 and formation_limit_duration > 0.0 and base_speed > 0.0:
 		formation_target_multiplier = clampf(formation_speed_limit / base_speed, 0.25, 1.0)
 		formation_speed_multiplier = formation_target_multiplier
@@ -970,6 +971,7 @@ func _configure_formation_speed() -> void:
 		enemy_modifier_changed.emit(self , "formation_speed_multiplier", formation_speed_multiplier)
 
 func _process_formation_speed(delta: float) -> void:
+	EnemyFormationService._process_formation_speed(self, delta)
 	if formation_limit_duration > 0.0:
 		formation_limit_duration -= delta
 		if formation_limit_duration <= 0.0:
