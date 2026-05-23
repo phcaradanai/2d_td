@@ -882,73 +882,7 @@ func get_last_damage_source() -> String:
 	return last_damage_source
 
 func take_damage(amount: float, hit_global: Vector2 = Vector2.ZERO, source_id: String = "", p_attack_type: String = "single") -> void:
-	if CatalogPreviewMode.is_preview_node(self ):
-		return
-	if is_dead_flag or reached_base_flag: return
-	
-	if source_id != "":
-		last_damage_source = source_id
-	
-	var final_damage = amount
-	if is_runner and runner_dash_remaining > 0.0:
-		final_damage *= (1.0 - runner_dash_damage_reduction)
-		_spawn_impact_particle(Color(1.0, 0.48, 0.08, 0.35))
-	if shield_remaining > 0 and not is_bulwark:
-		var shielded_damage: float = final_damage * (1.0 - active_shield_reduction)
-		shield_applied.emit(self , final_damage, shielded_damage, active_shield_source)
-		final_damage = shielded_damage
-		if OS.is_debug_build() and _verbose_combat:
-			print("[EnemyFeature][Shield] target=%s source=%s original=%.1f final=%.1f reduction=%.2f" % [
-				enemy_type,
-				active_shield_source.get_enemy_type() if active_shield_source and active_shield_source.has_method("get_enemy_type") else "unknown",
-				amount,
-				final_damage,
-				active_shield_reduction
-			])
-			
-	var capture_pos = hit_global if hit_global != Vector2.ZERO else global_position
-	
-	# Apply vulnerability
-	if vulnerability_remaining > 0:
-		final_damage *= vulnerability_multiplier
-	if armor_reduction_remaining > 0:
-		final_damage *= 1.0 + armor_reduction_bonus_percent
-		
-	hp -= final_damage
-	_update_health_visual_state()
-	
-	var gm = get_tree().current_scene.get_node_or_null("GameManager")
-	if gm and gm.battle_telemetry:
-		gm.battle_telemetry.log_damage(source_id, final_damage, p_attack_type, enemy_type)
-	var damage_stats := get_tree().current_scene.get_node_or_null("DamageStatsTracker")
-	if damage_stats and damage_stats.has_method("record_damage"):
-		damage_stats.record_damage(source_id, final_damage)
-		
-	flash_body(source_id if source_id != "" else p_attack_type)
-	var dn_color = Color.WHITE
-	if shield_remaining > 0 and not is_bulwark:
-		dn_color = Color(0.4, 0.8, 1.0)
-	elif source_id.begins_with("disease_"):
-		dn_color = Color(0.58, 1.0, 0.28)
-
-	spawn_damage_number(int(final_damage), capture_pos, dn_color, source_id)
-	EnemyHitFeedbackService._play_hit_pulse(self )
-	if _body_baked:
-		# One heavy impact path only. flash_body() resolves comfort colour/LOD;
-		# this call owns the baked-sprite tween so rapid hits cannot double-trigger it.
-		var impact_color: Color = hit_flash_color if hit_flash_color.a > 0.0 else dn_color
-		if dn_color != Color.WHITE:
-			impact_color = dn_color
-		EnemyHitFeedbackService._play_sprite_hit_impact(self , impact_color)
-		# Hit spark: tiny burst at impact point — replaces screen shake as impact cue.
-		EnemyHitFeedbackService._spawn_hit_spark(self , capture_pos, dn_color)
-	_try_runner_hit_dash()
-	if enemy_type == "swarm" or tags.has("swarm"):
-		EnemyHitFeedbackService._trigger_swarm_hit_reaction(self )
-		EnemyHitFeedbackService._spawn_swarm_hit_effect(self , capture_pos)
-	
-	if hp <= 0:
-		die(capture_pos)
+	EnemyDamagePipeline.take_damage(self, amount, hit_global, source_id, p_attack_type)
 
 func apply_slow(percent: float, duration: float) -> void:
 	EnemyStatusService.apply_slow(self , percent, duration)
