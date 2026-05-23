@@ -2445,12 +2445,17 @@ func _ensure_element_modal() -> void:
 	cols.add_child(vs2)
 
 	# ── Right column (summary) ──
+	var right_scroll := ScrollContainer.new()
+	right_scroll.custom_minimum_size.x = 292
+	right_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	right_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
+	cols.add_child(right_scroll)
+
 	_em_right_col = VBoxContainer.new()
 	_em_right_col.name = "EmRightCol"
-	_em_right_col.custom_minimum_size.x = 292
-	_em_right_col.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	_em_right_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	_em_right_col.add_theme_constant_override("separation", 12)
-	cols.add_child(_em_right_col)
+	right_scroll.add_child(_em_right_col)
 
 # Rebuild left-column element cards from current _em_data.
 func _em_rebuild_cards() -> void:
@@ -2759,6 +2764,37 @@ func _em_attack_label(at: String) -> String:
 		"clone_support": return "Clone Support"
 		_: return at.capitalize() if not at.is_empty() else "N/A"
 
+func _em_make_future_combo_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
+	var card := PanelContainer.new()
+	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	card.add_theme_stylebox_override("panel", _em_sb(Color(0.06, 0.08, 0.12), Color(el_col.r, el_col.g, el_col.b, 0.30), 1.0, 5.0))
+	var mg := MarginContainer.new()
+	for sd in ["left", "right", "top", "bottom"]:
+		mg.add_theme_constant_override("margin_" + sd, 8)
+	card.add_child(mg)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 8)
+	mg.add_child(row)
+	var elems: Array = cfg.get("elements", [])
+	var el_icon := _create_element_icon(elems, false)
+	el_icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	row.add_child(el_icon)
+	var info := VBoxContainer.new()
+	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	info.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+	info.add_theme_constant_override("separation", 2)
+	row.add_child(info)
+	var tower_name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name", "Tower"))))
+	info.add_child(_em_lbl(tower_name, 12, Color(0.75, 0.82, 0.92)))
+	if not elems.is_empty():
+		info.add_child(_em_lbl(_format_element_combo_label(elems), 11, Color(0.55, 0.72, 0.88)))
+	var missing: Array = cfg.get("_missing", [])
+	if not missing.is_empty():
+		var needs_l := _em_lbl("Needs: " + ", ".join(missing), 11, Color(0.95, 0.72, 0.32))
+		needs_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		info.add_child(needs_l)
+	return card
+
 func _em_bonus_row(parent: VBoxContainer, lbl_text: String, cur: String, nxt: String, vc: Color) -> void:
 	var row := HBoxContainer.new()
 	parent.add_child(row)
@@ -2782,7 +2818,6 @@ func _em_get_unlock_preview_for_element(element_id: String) -> Dictionary:
 		"single_element": [],
 		"dual_element": [],
 		"triple_element": [],
-		"enables_later": _em_get_future_combo_labels(element_id, preview_levels),
 	}
 
 	for tower_id in preview_unlocked.keys():
@@ -2826,8 +2861,9 @@ func _em_can_build_tower_for_levels(cfg: Dictionary, levels: Dictionary) -> bool
 			return false
 	return true
 
-func _em_get_future_combo_labels(element_id: String, preview_levels: Dictionary) -> Array:
-	var labels: Array[String] = []
+func _em_get_future_combo_towers(element_id: String, preview_levels: Dictionary) -> Array:
+	var results := []
+	var seen_names: Array[String] = []
 	for tower_id in tower_catalog.keys():
 		var cfg: Dictionary = tower_catalog[tower_id]
 		if not bool(cfg.get("build_entry", false)):
@@ -2840,11 +2876,23 @@ func _em_get_future_combo_labels(element_id: String, preview_levels: Dictionary)
 			continue
 		if _em_can_build_tower_for_levels(cfg, preview_levels):
 			continue
-		var label := _format_element_combo_label(elements)
-		if not labels.has(label):
-			labels.append(label)
-	labels.sort()
-	return labels
+		var display_name := str(cfg.get("display_name", cfg.get("name", "Tower")))
+		if seen_names.has(display_name):
+			continue
+		seen_names.append(display_name)
+		var required_level := int(cfg.get("required_element_level", 1))
+		var missing: Array[String] = []
+		for raw_element in elements:
+			var eid := str(raw_element)
+			if int(preview_levels.get(eid, 0)) < required_level:
+				missing.append(_element_label(eid) + " Lv.%d" % required_level)
+		var entry := cfg.duplicate()
+		entry["_missing"] = missing
+		results.append(entry)
+	results.sort_custom(func(a: Dictionary, b: Dictionary) -> bool:
+		return int(a.get("shop_order", 9999)) < int(b.get("shop_order", 9999))
+	)
+	return results
 
 func _format_element_combo_label(elements: Array) -> String:
 	if elements.is_empty():
@@ -2940,24 +2988,20 @@ func _em_rebuild_right(element_id: String) -> void:
 				if t_elems.size() >= 2:
 					nc.add_child(_em_lbl(_format_element_combo_label(t_elems), 11, NeonStyle.INK_2))
 
-		# ── COMBO PATHS OPENED (moved from center panel) ─────────────────────
-		var future: Array = preview.get("enables_later", [])
-		if not future.is_empty():
-			_em_right_col.add_child(_em_sec_hdr("COMBO PATHS OPENED"))
-			var flow := HFlowContainer.new()
-			flow.add_theme_constant_override("h_separation", 5)
-			flow.add_theme_constant_override("v_separation", 5)
-			_em_right_col.add_child(flow)
-			var max_chips: int = mini(future.size(), 8)
-			for i in range(max_chips):
-				flow.add_child(_em_chip(str(future[i]), Color(el_col.r, el_col.g, el_col.b, 0.88)))
-			if future.size() > max_chips:
-				flow.add_child(_em_chip("+%d more" % (future.size() - max_chips), Color(0.55,0.70,0.82)))
-
-	# Push confirm to bottom
-	var push := Control.new()
-	push.size_flags_vertical = Control.SIZE_EXPAND_FILL
-	_em_right_col.add_child(push)
+		# ── COMBO PREVIEW ────────────────────────────────────────────────────
+		var combo_prev_levels : Dictionary = _em_data.get("levels", {}).duplicate(true)
+		combo_prev_levels[element_id] = min(int(combo_prev_levels.get(element_id, 0)) + 1, 3)
+		var combo_towers := _em_get_future_combo_towers(element_id, combo_prev_levels)
+		if not combo_towers.is_empty():
+			_em_right_col.add_child(_em_sec_hdr("COMBO PREVIEW"))
+			var combo_v := VBoxContainer.new()
+			combo_v.add_theme_constant_override("separation", 5)
+			_em_right_col.add_child(combo_v)
+			var max_cards := mini(combo_towers.size(), 5)
+			for i in range(max_cards):
+				combo_v.add_child(_em_make_future_combo_card(combo_towers[i], el_col))
+			if combo_towers.size() > max_cards:
+				combo_v.add_child(_em_lbl("+%d more" % (combo_towers.size() - max_cards), 11, Color(0.55, 0.70, 0.82)))
 
 	# Confirm button
 	var btn_text: String

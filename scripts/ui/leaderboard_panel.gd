@@ -15,7 +15,7 @@ func _ready() -> void:
 	close_button.pressed.connect(_on_close_button_pressed)
 	level_option.item_selected.connect(_on_level_selected)
 	level_option.clear()
-	for i in range(1, 16):
+	for i in range(1, 21):
 		level_option.add_item("Level %02d" % i)
 
 # Called by main.gd. Pass online_client if the LeaderboardClient node is available.
