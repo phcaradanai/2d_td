@@ -14,10 +14,10 @@ static func _update_separation(enemy: Node2D) -> void:
 		var dx := op.x - my_pos.x
 		var dy := op.y - my_pos.y
 		if dx * dx + dy * dy > enemy.SEP_SCAN_RADIUS_SQ: continue # world-distance guard
-		if not other.has_method("enemy.get_path_progress"): continue
+		if not other.has_method("get_path_progress"): continue
 		if absf(my_prog - other.get_path_progress()) > 32.0: continue # far on path
 		# Determine push direction — must differ between the two enemies in a pair
-		var other_lat: float = float(other.get("enemy._sep_lateral"))
+		var other_lat: float = float(other.get("_sep_lateral"))
 		var gap = enemy._sep_lateral - other_lat
 		var push_dir: float
 		if absf(gap) > 2.0:
@@ -60,8 +60,8 @@ static func _update_swarm_pack_density(enemy: Node2D) -> void:
 			continue
 		if node.has_method("is_alive") and not node.is_alive():
 			continue
-		var node_tags: Array = node.get("enemy.tags")
-		if str(node.get("enemy.enemy_type")) != "swarm" and not node_tags.has("swarm"):
+		var node_tags: Array = node.get("tags")
+		if str(node.get("enemy_type")) != "swarm" and not node_tags.has("swarm"):
 			continue
 		var other := node as Node2D
 		if enemy.global_position.distance_to(other.global_position) <= 42.0:

@@ -89,7 +89,7 @@ static func _apply_baked_enemy_texture(enemy: Node2D, tex: ImageTexture) -> void
 		# First time baked: pop-in spawn animation
 		enemy._body_sprite.scale = Vector2.ZERO
 		var spawn_tw = enemy.create_tween()
-		spawn_tw.tween_property(enemy._body_sprite, "enemy.scale", enemy._bake_scale, 0.18) \
+		spawn_tw.tween_property(enemy._body_sprite, "scale", enemy._bake_scale, 0.18) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	enemy._body_baked = true
 	enemy.queue_redraw()

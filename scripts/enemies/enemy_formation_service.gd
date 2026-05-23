@@ -12,7 +12,7 @@ static func _configure_formation_speed(enemy: Node2D) -> void:
 		enemy.formation_target_multiplier = 1.0
 		enemy.formation_speed_multiplier = 1.0
 	if enemy.formation_speed_multiplier < 1.0:
-		enemy.enemy_modifier_changed.emit(enemy , "enemy.formation_speed_multiplier", enemy.formation_speed_multiplier)
+		enemy.enemy_modifier_changed.emit(enemy , "formation_speed_multiplier", enemy.formation_speed_multiplier)
 
 
 static func _process_formation_speed(enemy: Node2D, delta: float) -> void:
@@ -21,7 +21,7 @@ static func _process_formation_speed(enemy: Node2D, delta: float) -> void:
 		if enemy.formation_limit_duration <= 0.0:
 			enemy.formation_limit_duration = 0.0
 			enemy.formation_target_multiplier = 1.0
-			enemy.enemy_modifier_changed.emit(enemy , "enemy.formation_speed_multiplier", enemy.formation_target_multiplier)
+			enemy.enemy_modifier_changed.emit(enemy , "formation_speed_multiplier", enemy.formation_target_multiplier)
 			if enemy.vfx_controller and (enemy.tags.has("fast") or enemy.tags.has("runner") or enemy.enemy_type in ["fast", "runner", "hunter", "fast_flyer"]):
 				enemy.vfx_controller.play_runner_burst()
 			if OS.is_debug_build() and enemy._verbose_combat:

@@ -155,7 +155,7 @@ static func flash_body(enemy: Node2D, damage_context: String = "") -> void:
 	if comfort != null and comfort.has_method("get_hit_flash_duration"):
 		duration = float(comfort.get_hit_flash_duration())
 	enemy._hit_flash_tween = enemy.create_tween()
-	enemy._hit_flash_tween.tween_property(enemy, "enemy.hit_flash_alpha", 0.0, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
+	enemy._hit_flash_tween.tween_property(enemy, "hit_flash_alpha", 0.0, duration).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_OUT)
 	enemy._hit_flash_tween.tween_callback(func():
 		enemy.is_flashing = false
 		enemy.queue_redraw()
