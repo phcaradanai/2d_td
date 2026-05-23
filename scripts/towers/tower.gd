@@ -266,7 +266,7 @@ func setup(p_config: Dictionary, cell: Vector2i) -> void:
 	# Register with TargetingService so support/trickery/disruptor scans use the cached list.
 	var _ts := get_node_or_null("/root/TargetingService")
 	if _ts:
-		_ts.register_tower(self)
+		_ts.register_tower(self )
 
 ## Minimal setup for catalog/debug preview. Configures visual identity and
 ## stats without registering into gameplay systems.
@@ -377,7 +377,7 @@ func apply_level_visuals() -> void:
 	
 	# Hide legacy ColorRect nodes
 	if body: body.visible = false
-	if head: 
+	if head:
 		# We still want head (pivot) to be visible if we draw procedural turret on it
 		# but hide the children if we use sprites
 		for child in head.get_children():
@@ -467,7 +467,7 @@ func _ensure_construction_component() -> void:
 	_construction_component = TowerConstructionComponentScript.new()
 	_construction_component.name = "ConstructionComponent"
 	add_child(_construction_component)
-	var callback := Callable(self, "_on_construction_component_finished")
+	var callback := Callable(self , "_on_construction_component_finished")
 	if not _construction_component.is_connected("finished", callback):
 		_construction_component.connect("finished", callback)
 
@@ -478,7 +478,7 @@ func _on_construction_component_finished(mode: String, _payload: Dictionary) -> 
 		_finish_pending_upgrade()
 		return
 	play_build_complete_effect()
-	construction_completed.emit(self, mode)
+	construction_completed.emit(self , mode)
 	_mark_tower_visual_dirty()
 	_request_tower_visual_redraw_if_dirty()
 
@@ -493,8 +493,8 @@ func _finish_pending_upgrade() -> void:
 		return
 	if not _apply_upgrade_to(target_id, target_config, cost_value):
 		return
-	construction_completed.emit(self, "upgrade")
-	upgrade_completed.emit(self, old_id, old_tier, tower_id, tree_tier, cost_value)
+	construction_completed.emit(self , "upgrade")
+	upgrade_completed.emit(self , old_id, old_tier, tower_id, tree_tier, cost_value)
 
 func play_build_complete_effect() -> void:
 	var base_scale = Vector2.ONE
@@ -504,11 +504,11 @@ func play_build_complete_effect() -> void:
 	tween.set_pause_mode(Tween.TWEEN_PAUSE_STOP)
 	scale = base_scale * 0.92
 	modulate = Color(1.25, 1.25, 1.25, 0.92)
-	tween.parallel().tween_property(self, "scale", base_scale * 1.08, 0.08)\
+	tween.parallel().tween_property(self , "scale", base_scale * 1.08, 0.08) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.parallel().tween_property(self, "modulate", Color.WHITE, 0.12)\
+	tween.parallel().tween_property(self , "modulate", Color.WHITE, 0.12) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", base_scale, 0.14)\
+	tween.tween_property(self , "scale", base_scale, 0.14) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func _clear_pending_upgrade() -> void:
@@ -521,7 +521,7 @@ func _clear_pending_upgrade() -> void:
 ## Creates the permanent owned VFX node for this tower (baker-style).
 ## Guards against recreation on every apply_level_visuals() / selection call.
 func _setup_owned_vfx() -> void:
-	if tower_id == "" or preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+	if tower_id == "" or preview_mode or CatalogPreviewModeScript.is_preview_node(self ):
 		return
 	var script: GDScript = TowerAttackVFXRegistry.get_vfx_script(tower_id)
 	if script == null:
@@ -596,13 +596,13 @@ func _apply_baked_textures(result: Dictionary) -> void:
 	var bake_scale := Vector2.ONE / float(TowerTextureBaker.BAKE_ZOOM)
 	if result.has("base") and base_sprite != null:
 		base_sprite.texture = result["base"]
-		base_sprite.scale   = bake_scale
-		base_sprite.offset  = Vector2.ZERO
+		base_sprite.scale = bake_scale
+		base_sprite.offset = Vector2.ZERO
 		base_sprite.visible = true
 	if result.has("turret") and turret_sprite != null:
 		turret_sprite.texture = result["turret"]
-		turret_sprite.scale   = bake_scale
-		turret_sprite.offset  = Vector2.ZERO
+		turret_sprite.scale = bake_scale
+		turret_sprite.offset = Vector2.ZERO
 		turret_sprite.visible = true
 	if result.has("base") or result.has("turret"):
 		use_sprite = true
@@ -610,7 +610,7 @@ func _apply_baked_textures(result: Dictionary) -> void:
 		# Materialize: fade in from transparent so no wrong-model flash.
 		if modulate.a < 0.05:
 			var tw := create_tween()
-			tw.tween_property(self, "modulate:a", 1.0, 0.18)\
+			tw.tween_property(self , "modulate:a", 1.0, 0.18) \
 				.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 func _load_external_sprites() -> void:
@@ -648,8 +648,8 @@ func _fit_sprite_to_size(p_sprite: Sprite2D, target_size: float) -> void:
 	if tex_size.x <= 0 or tex_size.y <= 0:
 		return
 
-	var max_side : float = max(tex_size.x, tex_size.y)
-	var scale_factor : float = target_size / max_side
+	var max_side: float = max(tex_size.x, tex_size.y)
+	var scale_factor: float = target_size / max_side
 	p_sprite.scale = Vector2.ONE * scale_factor
 	p_sprite.centered = true
 	p_sprite.position = Vector2.ZERO
@@ -710,7 +710,7 @@ func _ensure_muzzle_debug_overlay() -> void:
 		muzzle_debug_overlay = TowerMuzzleDebugOverlayScript.new()
 		muzzle_debug_overlay.name = "MuzzleDebugOverlay"
 		add_child(muzzle_debug_overlay)
-		muzzle_debug_overlay.setup(self)
+		muzzle_debug_overlay.setup(self )
 
 func _update_muzzle_debug_overlay_visibility() -> void:
 	if muzzle_debug_overlay == null or not muzzle_debug_overlay.has_method("set_active"):
@@ -719,12 +719,12 @@ func _update_muzzle_debug_overlay_visibility() -> void:
 
 func _get_element_color(element_id: String) -> Color:
 	match element_id:
-		"light": return Color(1.0, 0.88, 0.1)      # Bright yellow — แสง
-		"darkness": return Color(0.55, 0.12, 0.85)  # Deep purple — มืด
-		"water": return Color(0.15, 0.55, 1.0)      # Clear blue — น้ำ
-		"fire": return Color(1.0, 0.18, 0.08)       # Strong red — ไฟ
-		"nature": return Color(0.1, 0.78, 0.25)     # Vivid green — ธรรมชาติ
-		"earth": return Color(0.68, 0.42, 0.16)     # Warm brown — ดิน
+		"light": return Color(1.0, 0.88, 0.1) # Bright yellow — แสง
+		"darkness": return Color(0.55, 0.12, 0.85) # Deep purple — มืด
+		"water": return Color(0.15, 0.55, 1.0) # Clear blue — น้ำ
+		"fire": return Color(1.0, 0.18, 0.08) # Strong red — ไฟ
+		"nature": return Color(0.1, 0.78, 0.25) # Vivid green — ธรรมชาติ
+		"earth": return Color(0.68, 0.42, 0.16) # Warm brown — ดิน
 		_: return Color.WHITE
 
 func _get_all_element_colors() -> Array[Color]:
@@ -810,7 +810,7 @@ func _draw() -> void:
 		
 		# Tick marks for a technical feel
 		for i in range(8):
-			var a = i * PI/4 + (Time.get_ticks_msec() * 0.0002)
+			var a = i * PI / 4 + (Time.get_ticks_msec() * 0.0002)
 			var p1 = local_origin + Vector2.RIGHT.rotated(a) * (visual_range - 8)
 			var p2 = local_origin + Vector2.RIGHT.rotated(a) * (visual_range + 4)
 			draw_line(p1, p2, Color(0.2, 0.9, 1.0, 0.7), 2.0)
@@ -840,7 +840,7 @@ func _draw() -> void:
 	_draw_tower_rank_badge(Vector2(0, 30), tree_tier, _get_rank_accent_color())
 
 func _draw_base_plate() -> void:
-	TowerVisualRendererScript.draw_base_plate(self)
+	TowerVisualRendererScript.draw_base_plate(self )
 
 func _get_visual_muzzle_local_position() -> Vector2:
 	return TowerMuzzleAnchorConfigScript.get_muzzle_local_position(
@@ -879,13 +879,13 @@ func _get_tower_visual_family() -> String:
 	return visual_type
 
 func _draw_turret_contour() -> void:
-	TowerVisualRendererScript.draw_turret_contour(self)
+	TowerVisualRendererScript.draw_turret_contour(self )
 
 func _draw_element_core() -> void:
-	TowerVisualRendererScript.draw_element_core(self)
+	TowerVisualRendererScript.draw_element_core(self )
 
 func _draw_turret_top() -> void:
-	TowerVisualRendererScript.draw_turret_top(self)
+	TowerVisualRendererScript.draw_turret_top(self )
 
 func _update_range_collision() -> void:
 	if collision_shape and collision_shape.shape is CircleShape2D:
@@ -1106,7 +1106,7 @@ func _is_upgrade_config_unlocked(next_config: Dictionary) -> bool:
 
 	combo_type = str(next_config.get("combo_type", "neutral"))
 	var raw_elements = next_config.get("elements", [])
-	var requires_elements : bool = combo_type != "neutral" and raw_elements is Array and not raw_elements.is_empty()
+	var requires_elements: bool = combo_type != "neutral" and raw_elements is Array and not raw_elements.is_empty()
 
 	var element_manager := _get_element_progression_manager()
 	if element_manager == null or not element_manager.has_method("can_build_tower"):
@@ -1140,9 +1140,9 @@ func play_upgrade_effect() -> void:
 	if visual_type == "rapid": base_scale = Vector2(0.8, 0.8)
 	elif visual_type == "cannon": base_scale = Vector2(1.2, 1.2)
 	
-	tween.tween_property(self, "scale", base_scale * 1.3, 0.1)\
+	tween.tween_property(self , "scale", base_scale * 1.3, 0.1) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
-	tween.tween_property(self, "scale", base_scale, 0.15)\
+	tween.tween_property(self , "scale", base_scale, 0.15) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
 	
 	# Spawn impact effect as a "flash"
@@ -1161,7 +1161,7 @@ func set_selected(value: bool) -> void:
 		_cancel_trickery_drag_targeting()
 	is_selected = value
 	if value:
-		_procedural_draw_timer = 0.0  # Force immediate redraw when selected
+		_procedural_draw_timer = 0.0 # Force immediate redraw when selected
 	_update_support_overlay_z_lift()
 	_update_muzzle_debug_overlay_visibility()
 	apply_level_visuals()
@@ -1301,8 +1301,8 @@ func _mark_tower_visual_dirty() -> void:
 	_tower_visual_dirty = true
 
 func _build_tower_visual_signature() -> String:
-	var preview_static := CatalogPreviewModeScript.is_static_preview(self)
-	var preview_demo := CatalogPreviewModeScript.is_selected_demo(self)
+	var preview_static := CatalogPreviewModeScript.is_static_preview(self )
+	var preview_demo := CatalogPreviewModeScript.is_selected_demo(self )
 	return "%s|%s|%d|%s|%s|%s|%s|%.3f" % [
 		tower_id,
 		visual_type,
@@ -1322,7 +1322,7 @@ func _request_tower_visual_redraw_if_dirty() -> void:
 		queue_redraw()
 
 func _ready() -> void:
-	_disable_control_mouse_filter(self)
+	_disable_control_mouse_filter(self )
 
 	if preview_mode:
 		apply_level_visuals()
@@ -1357,7 +1357,7 @@ func _on_click_area_input_event(_viewport: Node, event: InputEvent, _shape_idx: 
 			_begin_trickery_drag_targeting(get_global_mouse_position())
 			get_viewport().set_input_as_handled()
 			return
-		clicked.emit(self)
+		clicked.emit(self )
 		get_viewport().set_input_as_handled()
 
 func _input(event: InputEvent) -> void:
@@ -1383,8 +1383,8 @@ func _process(delta: float) -> void:
 	FrameSpikeLogger.end("tower_tick")
 
 func _process_inner_tower(delta: float) -> void:
-	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
-		if CatalogPreviewModeScript.is_static_preview(self) or not CatalogPreviewModeScript.is_selected_demo(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self ):
+		if CatalogPreviewModeScript.is_static_preview(self ) or not CatalogPreviewModeScript.is_selected_demo(self ):
 			set_process(false)
 			_request_tower_visual_redraw_if_dirty()
 			return
@@ -1508,7 +1508,7 @@ func _update_aim_indicator(delta: float, target_active: bool) -> void:
 			aim_line.add_point(local_muzzle)
 			# Add a midpoint for a more 'energy' feel
 			var mid = (local_muzzle + local_target) * 0.5
-			var perp = (local_target - local_muzzle).rotated(PI/2).normalized()
+			var perp = (local_target - local_muzzle).rotated(PI / 2).normalized()
 			var wobble = perp * sin(Time.get_ticks_msec() * 0.02) * 2.0
 			aim_line.add_point(mid + wobble)
 			aim_line.add_point(local_target)
@@ -1525,7 +1525,7 @@ func _update_aim_indicator(delta: float, target_active: bool) -> void:
 			target_marker.visible = false
 
 func shoot() -> void:
-	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self ):
 		return
 	if _is_support_aura() or _is_trickery_clone_support():
 		return
@@ -1553,38 +1553,38 @@ func shoot() -> void:
 		# visual_type only drives scale/SFX category.
 		var proj_scale := 1.0
 		var sfx_name := "tower_shoot_basic"
-		var tower_col := _get_tower_color()           # element-aware color
+		var tower_col := _get_tower_color() # element-aware color
 		var proj_color := Color(tower_col.r, tower_col.g, tower_col.b, 1.0)
 
 		match visual_type:
 			# ── Heavy / Cannon class ──────────────────────────────────────
 			"cannon", "heavy_mortar", "hydro_cannon", "golem_body", "stone_bastion", "dual_nozzle", "forge_anvil":
 				proj_scale = 1.6
-				sfx_name   = "tower_shoot_cannon"
+				sfx_name = "tower_shoot_cannon"
 			# ── Rapid / Bolt class ───────────────────────────────────────
 			"rapid", "bio_vine", "ember_bloom", "strike_blades", "storm_turbine", "tri_reactor":
 				proj_scale = 0.7
-				sfx_name   = "tower_shoot_rapid"
+				sfx_name = "tower_shoot_rapid"
 			# ── Slow / Control class ─────────────────────────────────────
 			"slow", "crystal_emitter", "hail_crystal", "void_vortex", "acid_vat", "tar_pool", "steam_boiler":
 				proj_scale = 1.05
-				sfx_name   = "tower_shoot_slow"
+				sfx_name = "tower_shoot_slow"
 			# ── Precision / Sniper class ─────────────────────────────────
 			"sniper", "prism_lens", "rail_laser", "particle_accel", "gold_refinery", "solar_bloom":
 				proj_scale = 0.8
-				sfx_name   = "tower_shoot_sniper"
+				sfx_name = "tower_shoot_sniper"
 			# ── Chain / Lightning class ──────────────────────────────────
 			"lightning":
 				proj_scale = 1.0
-				sfx_name   = "tower_shoot_slow"
+				sfx_name = "tower_shoot_slow"
 			# ── Toxic / Spore / DoT class (small, dark pulse) ────────────
 			"spore_cap", "toxin_vial", "voodoo_totem", "root_cage", "void_flower", "void_orb", "chaos_orb":
 				proj_scale = 0.7
-				sfx_name   = "tower_shoot_rapid"
+				sfx_name = "tower_shoot_rapid"
 			# ── Seismic / Earth impact class ─────────────────────────────
 			"seismic_drill":
 				proj_scale = 1.4
-				sfx_name   = "tower_shoot_cannon"
+				sfx_name = "tower_shoot_cannon"
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
 		var effective_dmg := get_effective_damage()
@@ -1618,15 +1618,15 @@ func shoot() -> void:
 		
 		# VISUAL POLISH: Recoil + directional contextual VFX
 		play_fire_recoil()
-		TowerAttackVFX.spawn_attack_vfx(self, current_target)
+		TowerAttackVFX.spawn_attack_vfx(self , current_target)
 		
 		if combat_audio_service:
 			combat_audio_service.play_tower_sfx(sfx_name)
 
 	var clone_source := _get_active_clone_source()
 	if is_instance_valid(clone_source) and clone_source.has_method("notify_clone_target_fired"):
-		clone_source.notify_clone_target_fired(self, current_target)
-	shot_fired.emit(self, current_target, Time.get_ticks_msec() / 1000.0)
+		clone_source.notify_clone_target_fired(self , current_target)
+	shot_fired.emit(self , current_target, Time.get_ticks_msec() / 1000.0)
 
 func _perform_aura_attack() -> void:
 	var enemies = get_enemies_in_range()
@@ -1729,7 +1729,7 @@ func _perform_aura_attack() -> void:
 					_spawn_disease_attack_vfx(enemy_pos, container, tower_color, secondary_color, accent_color, quality_name)
 					if aura_hit_vfx_spawned < aura_hit_vfx_limit:
 						TowerHitVFXDispatcherScript.spawn(
-							self,
+							self ,
 							enemy_pos,
 							"toxic",
 							0.0,
@@ -1744,7 +1744,7 @@ func _perform_aura_attack() -> void:
 
 			if allow_minor_impacts and aura_hit_vfx_spawned < aura_hit_vfx_limit:
 				TowerHitVFXDispatcherScript.spawn(
-					self,
+					self ,
 					enemy_pos,
 					_get_lightweight_aura_hit_vfx_mode(aura_vfx_type),
 					0.0,
@@ -2055,14 +2055,14 @@ func play_fire_recoil() -> void:
 	var recoil_vec = Vector2(-recoil_dist, 0)
 	if visual_type == "sniper": recoil_vec = Vector2(-15.0, 0) # Stronger kick for sniper
 	
-	tween.tween_property(target_node, "position", original_pos + recoil_vec, 0.05)\
+	tween.tween_property(target_node, "position", original_pos + recoil_vec, 0.05) \
 		.set_trans(Tween.TRANS_QUART).set_ease(Tween.EASE_OUT)
 	# Snap back
 	var snap_time = 0.15
 	if visual_type == "cannon": snap_time = 0.25
 	elif visual_type == "sniper": snap_time = 0.3
 	
-	tween.tween_property(target_node, "position", original_pos, snap_time)\
+	tween.tween_property(target_node, "position", original_pos, snap_time) \
 		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 func spawn_muzzle_flash(color: Color) -> void:
@@ -2099,7 +2099,7 @@ func spawn_muzzle_flash(color: Color) -> void:
 				"slow", "crystal_emitter", "hail_crystal":
 					flash_scale = 0.85
 				# Toxic / DoT / void: small muted pulse only
-				"spore_cap", "toxin_vial", "voodoo_totem", "root_cage","void_flower", "void_orb", "chaos_orb", "void_vortex", "acid_vat", "tar_pool":
+				"spore_cap", "toxin_vial", "voodoo_totem", "root_cage", "void_flower", "void_orb", "chaos_orb", "void_vortex", "acid_vat", "tar_pool":
 					flash_scale = 0.45
 				"stone_bastion", "golem_body":
 					flash_scale = 1.2
@@ -2149,7 +2149,7 @@ func update_target() -> void:
 	if next_target != current_target:
 		current_target = next_target
 		if current_target:
-			target_selected.emit(self, current_target, "selected_%s" % target_mode)
+			target_selected.emit(self , current_target, "selected_%s" % target_mode)
 	_reset_retarget_timer(true)
 
 func _is_valid_cached_target(enemy: Variant) -> bool:
@@ -2177,7 +2177,7 @@ func is_valid_target(enemy: Variant) -> bool:
 	if enemy == null or not is_instance_valid(enemy): return false
 	if not enemy.has_method("is_alive") or not enemy.is_alive(): return false
 	if not can_target_enemy(enemy):
-		target_rejected.emit(self, enemy, "category_not_targetable")
+		target_rejected.emit(self , enemy, "category_not_targetable")
 		return false
 	
 	# STANDARD: Use canonical range origin and global distance check
@@ -2216,7 +2216,7 @@ func _normalize_target_categories(raw_categories) -> Array[String]:
 	return normalized
 
 func find_target() -> Node2D:
-	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self ):
 		return null
 	var enemies = get_enemies_in_range()
 	if enemies.is_empty(): return null
@@ -2245,7 +2245,7 @@ func find_target() -> Node2D:
 		if OS.is_debug_build() and _verbose_targeting and _cloaked_targets.size() > 0:
 			print("[Targeting] Tower ", visual_type, " found visible targets and ", _cloaked_targets.size(), " cloaked target. Targeting visible first.")
 		for cloaked in _cloaked_targets:
-			target_rejected.emit(self, cloaked, "cloaked_deferred_visible_target_exists")
+			target_rejected.emit(self , cloaked, "cloaked_deferred_visible_target_exists")
 			if cloaked.has_method("notify_stealth_deferred"):
 				cloaked.notify_stealth_deferred(best_visible)
 		return best_visible
@@ -2322,7 +2322,7 @@ func _enemy_type_matches(enemy: Node2D, priority_types: Array[String]) -> bool:
 
 func get_enemies_in_range() -> Array:
 	_enemies_in_range_cache.clear()
-	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self ):
 		return _enemies_in_range_cache
 	var candidate_enemies: Array = []
 	var spatial_cache := get_node_or_null("/root/SpatialTargetCache")
@@ -2336,7 +2336,7 @@ func get_enemies_in_range() -> Array:
 			candidate_enemies = get_tree().get_nodes_in_group("enemies")
 	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("register_target_scan"):
-		perf_service.call("register_target_scan", self, candidate_enemies.size())
+		perf_service.call("register_target_scan", self , candidate_enemies.size())
 	elif has_node("/root/PerformanceBudget"):
 		var pb := get_node("/root/PerformanceBudget")
 		if pb.has_method("register_target_check"):
@@ -2476,7 +2476,7 @@ func _get_trickery_overlay_candidates() -> Array:
 		if global_position.distance_to(candidate.global_position) > attack_range:
 			continue
 		candidates.append(candidate)
-	candidates.sort_custom(Callable(self, "_sort_clone_candidates"))
+	candidates.sort_custom(Callable(self , "_sort_clone_candidates"))
 	return candidates
 
 func _draw_trickery_cooldown_indicator(local_pos: Vector2, tower: Variant) -> void:
@@ -2595,7 +2595,7 @@ func _draw_buff_badge(local_center: Vector2, label: String, color: Color) -> voi
 	draw_string(font, Vector2(rect.position.x, y), label, HORIZONTAL_ALIGNMENT_CENTER, rect_size.x, BUFF_BADGE_FONT_SIZE, Color(color.r, color.g, color.b, 1.0))
 
 func _process_support_aura(delta: float) -> void:
-	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self ):
 		return
 	if support_value <= 0.0:
 		_clear_support_targets()
@@ -2613,10 +2613,10 @@ func _refresh_support_targets() -> void:
 	for candidate in _tower_list:
 		if _is_valid_support_target(candidate):
 			candidates.append(candidate)
-	candidates.sort_custom(Callable(self, "_sort_support_candidates"))
+	candidates.sort_custom(Callable(self , "_sort_support_candidates"))
 
 	var desired: Array = []
-	var limit : int = max(0, support_limit)
+	var limit: int = max(0, support_limit)
 	for candidate in candidates:
 		if desired.size() >= limit:
 			break
@@ -2660,17 +2660,17 @@ func _apply_support_to_tower(tower: Variant) -> void:
 	if not _is_valid_support_target(tower):
 		return
 	if support_type == "attack_speed" and tower.has_method("apply_fire_rate_modifier"):
-		tower.apply_fire_rate_modifier(self, 1.0 + support_value, "well")
+		tower.apply_fire_rate_modifier(self , 1.0 + support_value, "well")
 	elif support_type == "damage" and tower.has_method("apply_damage_modifier"):
-		tower.apply_damage_modifier(self, 1.0 + support_value, "blacksmith")
+		tower.apply_damage_modifier(self , 1.0 + support_value, "blacksmith")
 
 func _remove_support_from_tower(tower: Variant) -> void:
 	if tower == null or not is_instance_valid(tower):
 		return
 	if support_type == "attack_speed" and tower.has_method("remove_fire_rate_modifier"):
-		tower.remove_fire_rate_modifier(self)
+		tower.remove_fire_rate_modifier(self )
 	elif support_type == "damage" and tower.has_method("remove_damage_modifier"):
-		tower.remove_damage_modifier(self)
+		tower.remove_damage_modifier(self )
 
 func _clear_support_targets() -> void:
 	for target in support_targets.duplicate():
@@ -2724,7 +2724,7 @@ func _is_wave_active_for_trickery() -> bool:
 	return false
 
 func _process_trickery_clone_support(delta: float) -> void:
-	if preview_mode or CatalogPreviewModeScript.is_preview_node(self):
+	if preview_mode or CatalogPreviewModeScript.is_preview_node(self ):
 		return
 	if clone_damage_multiplier <= 0.0:
 		return
@@ -2793,7 +2793,7 @@ func _assign_best_clone_target() -> void:
 			candidates.append(candidate)
 	if candidates.is_empty():
 		return
-	candidates.sort_custom(Callable(self, "_sort_clone_candidates"))
+	candidates.sort_custom(Callable(self , "_sort_clone_candidates"))
 	var best: Node2D = candidates[0]
 	# Prefer target variety when multiple valid non-support towers are available.
 	# This avoids a Trickery tower repeatedly linking the same equally-close tower
@@ -2822,7 +2822,7 @@ func _assign_clone_target(target: Node2D) -> bool:
 	_clone_active_time_left = max(0.1, clone_duration)
 	_clone_timer_started = false
 	_clone_last_target_instance_id = target.get_instance_id()
-	target.apply_damage_modifier(self, 1.0 + clone_damage_multiplier, "clone")
+	target.apply_damage_modifier(self , 1.0 + clone_damage_multiplier, "clone")
 	queue_redraw()
 	if target.has_method("queue_redraw"):
 		target.queue_redraw()
@@ -2902,7 +2902,7 @@ func _register_recent_clone_target(tower: Variant) -> void:
 func _get_clone_recent_cooldown_left(tower: Variant) -> float:
 	if tower == null or not is_instance_valid(tower):
 		return 0.0
-	var key : Variant = tower.get_instance_id()
+	var key: Variant = tower.get_instance_id()
 	if not _clone_recent_target_cooldowns.has(key):
 		return 0.0
 	return max(0.0, float(_clone_recent_target_cooldowns[key]))
@@ -2945,7 +2945,7 @@ func notify_clone_target_fired(source_tower: Node2D, enemy_target: Node2D) -> vo
 
 func _remove_clone_from_current_target() -> void:
 	if is_instance_valid(clone_current_target) and clone_current_target.has_method("remove_damage_modifier"):
-		clone_current_target.remove_damage_modifier(self)
+		clone_current_target.remove_damage_modifier(self )
 	clone_current_target = null
 	_clone_active_time_left = 0.0
 	_clone_timer_started = false
@@ -3057,7 +3057,7 @@ func get_attack_type() -> String:
 func _exit_tree() -> void:
 	var _ts := get_node_or_null("/root/TargetingService")
 	if _ts:
-		_ts.unregister_tower(self)
+		_ts.unregister_tower(self )
 	_clear_support_targets()
 	clone_manual_target = null
 	_remove_clone_from_current_target()
@@ -3066,7 +3066,7 @@ func _exit_tree() -> void:
 	var _tower_list: Array = _ts_ref.get_towers() if _ts_ref else get_tree().get_nodes_in_group("placed_towers")
 	for candidate in _tower_list:
 		if is_instance_valid(candidate) and candidate != self and candidate.has_method("remove_damage_modifier"):
-			candidate.remove_damage_modifier(self)
+			candidate.remove_damage_modifier(self )
 
 func apply_fire_rate_modifier(source: Node, multiplier: float, tag: String = "") -> void:
 	if source == null or not is_instance_valid(source):
@@ -3075,10 +3075,8 @@ func apply_fire_rate_modifier(source: Node, multiplier: float, tag: String = "")
 	var value := clampf(multiplier, 0.05, 10.0)
 	if not fire_rate_modifiers.has(key) or abs(float(fire_rate_modifiers[key].get("value", 1.0)) - value) > 0.001 or str(fire_rate_modifiers[key].get("tag", "")) != tag:
 		fire_rate_modifiers[key] = {"source": source, "value": value, "tag": tag}
-		fire_rate_modifier_changed.emit(self, source, value)
+		fire_rate_modifier_changed.emit(self , source, value)
 		queue_redraw()
-		if OS.is_debug_build():
-			print("[TowerFireRateModifier] tower=%s source=%s multiplier=%.2f effective_interval=%.2f" % [tower_id, str(source.name), value, get_effective_fire_rate()])
 
 func remove_fire_rate_modifier(source: Node) -> void:
 	if source == null:
@@ -3086,10 +3084,9 @@ func remove_fire_rate_modifier(source: Node) -> void:
 	var key := source.get_instance_id()
 	if fire_rate_modifiers.has(key):
 		fire_rate_modifiers.erase(key)
-		fire_rate_modifier_changed.emit(self, source, 1.0)
+		fire_rate_modifier_changed.emit(self , source, 1.0)
 		queue_redraw()
-		if OS.is_debug_build():
-			print("[EnemyFeature][TowerDisruptionRemoved] tower=%s source=%s effective_interval=%.2f" % [tower_id, str(source.name), get_effective_fire_rate()])
+		
 
 func get_effective_fire_rate() -> float:
 	var strongest_speed_buff := 1.0
@@ -3108,7 +3105,7 @@ func get_effective_fire_rate() -> float:
 			strongest_slow_debuff = min(strongest_slow_debuff, value)
 	for key in _stale_fire_rate_keys:
 		fire_rate_modifiers.erase(key)
-	var final_multiplier : float = max(0.05, strongest_speed_buff * strongest_slow_debuff)
+	var final_multiplier: float = max(0.05, strongest_speed_buff * strongest_slow_debuff)
 	return fire_rate / final_multiplier
 
 func select_first_target(enemies: Array) -> Node2D:
@@ -3226,7 +3223,7 @@ func _get_rank_accent_color() -> Color:
 	return Color(0.55, 0.75, 0.85, 1.0)
 
 func _draw_tower_rank_badge(center: Vector2, tier: int, accent: Color, scale_factor: float = 1.0) -> void:
-	if CatalogRenderGuardScript.catalog_safe_mode and CatalogPreviewModeScript.is_preview_node(self):
+	if CatalogRenderGuardScript.catalog_safe_mode and CatalogPreviewModeScript.is_preview_node(self ):
 		return
 	var safe_tier: int = clampi(tier, 1, 4)
 	var plate_w := 24.0 * scale_factor
