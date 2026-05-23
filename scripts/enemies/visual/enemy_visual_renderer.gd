@@ -13,6 +13,9 @@ static func draw_enemy(enemy: Node2D) -> void:
 			enemy.draw_circle(Vector2.ZERO, SIZE * 1.35,
 				Color(enemy.hit_flash_color.r, enemy.hit_flash_color.g, enemy.hit_flash_color.b, enemy.hit_flash_alpha))
 		return
+	if enemy.visual_type == "hunter":
+		EnemyHunterVisual.draw(enemy)
+		return
 	enemy.ENEMY_VISUAL_ROUTER.draw_enemy(enemy)
 
 # --- Performance Silhouette Mode ---
