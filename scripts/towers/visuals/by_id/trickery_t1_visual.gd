@@ -34,6 +34,16 @@ static func _draw_stroked_line(t: Node2D, from: Vector2, to: Vector2, color: Col
 	t.draw_line(from, to, DETAIL_OUTLINE, width + 2.1, true)
 	t.draw_line(from, to, color, width, true)
 
+static func _mirror_y(points: PackedVector2Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p: Vector2 in points:
+		out.append(Vector2(p.x, -p.y))
+	return out
+
+static func _draw_mirrored_circuit(t: Node2D, points: PackedVector2Array, color: Color, width: float) -> void:
+	_draw_stroked_polyline(t, points, color, width, false)
+	_draw_stroked_polyline(t, _mirror_y(points), color, width, false)
+
 static func _draw_stroked_circle(t: Node2D, center: Vector2, radius: float, fill: Color, stroke_width := 1.6) -> void:
 	t.draw_circle(center, radius + stroke_width, DETAIL_OUTLINE)
 	t.draw_circle(center, radius, fill)
@@ -179,6 +189,22 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	# Main body trim and split axis.
 	_draw_stroked_polyline(t, body, Color(light_col.r, light_col.g, light_col.b, 0.72), 1.2)
 	_draw_stroked_line(t, Vector2(0, -20), Vector2(0, 19), Color(0.92, 0.96, 1.0, 0.42), 0.9)
+	_draw_mirrored_circuit(t, PackedVector2Array([
+		Vector2(-12, -5),
+		Vector2(-5, -10),
+		Vector2(5, -10),
+		Vector2(12, -5),
+	]), Color(0.78, 1.0, 1.0, 0.30), 0.75)
+	_draw_mirrored_circuit(t, PackedVector2Array([
+		Vector2(-15, -12),
+		Vector2(-8, -15),
+		Vector2(-2, -13),
+	]), Color(dark_col.r, dark_col.g, dark_col.b, 0.38), 0.7)
+	_draw_mirrored_circuit(t, PackedVector2Array([
+		Vector2(15, -12),
+		Vector2(8, -15),
+		Vector2(2, -13),
+	]), Color(light_col.r, light_col.g, light_col.b, 0.38), 0.7)
 
 	# Hologram projection rings. These are static arcs, not runtime VFX.
 	t.draw_arc(Vector2.ZERO, 14.0, 0.0, TAU, 32, DETAIL_OUTLINE_SOFT, 1.45, true)
@@ -212,6 +238,10 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	# Thin clone-link beams from side echoes to core.
 	_draw_stroked_line(t, Vector2(-16, 0), Vector2(-7, 0), Color(dark_col.r, dark_col.g, dark_col.b, 0.38), 0.75)
 	_draw_stroked_line(t, Vector2(16, 0), Vector2(7, 0), Color(light_col.r, light_col.g, light_col.b, 0.40), 0.75)
+	_draw_stroked_line(t, Vector2(-16, -6), Vector2(-8, -3), Color(dark_col.r, dark_col.g, dark_col.b, 0.28), 0.65)
+	_draw_stroked_line(t, Vector2(-16, 6), Vector2(-8, 3), Color(dark_col.r, dark_col.g, dark_col.b, 0.28), 0.65)
+	_draw_stroked_line(t, Vector2(16, -6), Vector2(8, -3), Color(light_col.r, light_col.g, light_col.b, 0.30), 0.65)
+	_draw_stroked_line(t, Vector2(16, 6), Vector2(8, 3), Color(light_col.r, light_col.g, light_col.b, 0.30), 0.65)
 
 	# Mini dual-element token tucked behind the core; small enough not to obscure the projector.
 	_draw_dual_element_token(t, Vector2(0, 25), 5.6, light_col, dark_col)

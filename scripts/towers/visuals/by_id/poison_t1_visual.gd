@@ -59,6 +59,15 @@ static func _draw_stroked_line(t: Node2D, from: Vector2, to: Vector2, color: Col
 	t.draw_line(from, to, DETAIL_OUTLINE, width + 2.2, antialiased)
 	t.draw_line(from, to, color, width, antialiased)
 
+static func _mirror_y(points: PackedVector2Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p: Vector2 in points:
+		out.append(Vector2(p.x, -p.y))
+	return out
+
+static func _draw_mirrored_trace(t: Node2D, points: PackedVector2Array, color: Color, width: float) -> void:
+	_draw_stroked_polyline(t, points, color, width, false)
+	_draw_stroked_polyline(t, _mirror_y(points), color, width, false)
 
 static func _draw_stroked_rect(t: Node2D, rect: Rect2, fill: Color, stroke_width := 1.7) -> void:
 	t.draw_rect(rect.grow(stroke_width), DETAIL_OUTLINE)
@@ -171,24 +180,34 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 
 	# Poison liquid inside the vial.
 	var liquid := PackedVector2Array([
+		Vector2(-17, -2),
+		Vector2(-11, -7),
+		Vector2(-4, -5),
+		Vector2(4, -2),
+		Vector2(4, 2),
+		Vector2(-4, 5),
+		Vector2(-11, 7),
 		Vector2(-17, 2),
-		Vector2(-11, -4),
-		Vector2(-5, 1),
-		Vector2(1, -3),
-		Vector2(5, 4),
-		Vector2(2, 9),
-		Vector2(-7, 12),
-		Vector2(-15, 9),
 	])
 	t.draw_colored_polygon(liquid, DETAIL_OUTLINE_SOFT)
 	t.draw_colored_polygon(_expand(liquid, -1.1), Color(venom.r, venom.g, venom.b, 0.54))
 	_draw_stroked_polyline(t, liquid, Color(venom.r, venom.g, venom.b, 0.70), 0.9)
 
-	# Glass highlight and toxic bubbles.
-	_draw_stroked_line(t, Vector2(-14, -8), Vector2(-7, -12), Color(water.r, water.g, water.b, 0.36), 0.9, true)
+	# Glass highlight, mirrored circuit ribs, and toxic bubbles.
+	_draw_mirrored_trace(t, PackedVector2Array([
+		Vector2(-14, -8),
+		Vector2(-7, -12),
+		Vector2(0, -10),
+	]), Color(water.r, water.g, water.b, 0.30), 0.8)
+	_draw_mirrored_trace(t, PackedVector2Array([
+		Vector2(-12, -3),
+		Vector2(-5, -6),
+		Vector2(2, -4),
+	]), Color(venom.r, venom.g, venom.b, 0.38), 0.75)
 	_draw_stroked_circle(t, Vector2(-12, 4), 1.6, Color(venom.r, venom.g, venom.b, 0.62), 0.45)
+	_draw_stroked_circle(t, Vector2(-12, -4), 1.6, Color(venom.r, venom.g, venom.b, 0.56), 0.45)
 	_draw_stroked_circle(t, Vector2(-4, 7), 1.2, Color(venom.r, venom.g, venom.b, 0.46), 0.45)
-	_draw_stroked_circle(t, Vector2(-4, -5), 1.0, Color(venom.r, venom.g, venom.b, 0.42), 0.4)
+	_draw_stroked_circle(t, Vector2(-4, -7), 1.2, Color(venom.r, venom.g, venom.b, 0.42), 0.45)
 
 	# Injector channel / toxic needle: clearly not a cannon.
 	var injector := PackedVector2Array([
@@ -215,6 +234,11 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_draw_stroked_line(t, Vector2(-10, 12), Vector2(9, 9), Color(water.r, water.g, water.b, 0.30), 1.2, true)
 	_draw_stroked_line(t, Vector2(-7, -10), Vector2(8, -6), Color(venom.r, venom.g, venom.b, 0.46), 0.8, true)
 	_draw_stroked_line(t, Vector2(-7, 10), Vector2(8, 6), Color(venom.r, venom.g, venom.b, 0.40), 0.8, true)
+	_draw_mirrored_trace(t, PackedVector2Array([
+		Vector2(4, -3),
+		Vector2(14, -4),
+		Vector2(23, -2),
+	]), Color(0.68, 1.0, 1.0, 0.24), 0.65)
 
 	# Toxic pods around the body: control/slow identity.
 	var pod_positions := [
@@ -236,8 +260,8 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_draw_skull_mark(t, Vector2(-7, -0.5), 1.0, venom)
 
 	# Droplet markers near the tip suggest venom spray/slow without adding runtime VFX.
-	_draw_drop(t, Vector2(nozzle_len + 10.5, -7.2), 0.50, Color(venom.r, venom.g, venom.b, 0.32))
-	_draw_drop(t, Vector2(nozzle_len + 10.5, 7.2), 0.50, Color(venom.r, venom.g, venom.b, 0.24))
+	_draw_drop(t, Vector2(nozzle_len + 10.5, -7.2), 0.50, Color(venom.r, venom.g, venom.b, 0.30))
+	_draw_drop(t, Vector2(nozzle_len + 10.5, 7.2), 0.50, Color(venom.r, venom.g, venom.b, 0.30))
 
 	# Darkness + Water token, placed below so it does not hide the vial.
-	_draw_dual_element_token(t, Vector2(-2, 21.0), 6.6, dark, water)
+	_draw_dual_element_token(t, Vector2(0, 21.0), 6.6, dark, water)

@@ -224,7 +224,7 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core
 		t.draw_circle(p, 1.3, Color(water_bright.r, water_bright.g, water_bright.b, 0.52))
 
 	# Dual element token below: Water + Earth.
-	_draw_wave_icon(t, Vector2(-3, 22), 7.6, water_bright, earth)
+	_draw_wave_icon(t, Vector2(0, 22), 7.6, water_bright, earth)
 
 	# Premium micro highlights, mirrored.
 	_draw_stroked_line(t, Vector2(-4, -11), Vector2(9, -10), Color(water_bright.r, water_bright.g, water_bright.b, 0.36), 0.9, true)

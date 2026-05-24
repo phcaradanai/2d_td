@@ -4,7 +4,7 @@ extends RefCounted
 # Role: Frozen chain shards — chain between enemies, slow and damage groups.
 # Elements: light, darkness, water
 # Visual source: custom by_id visual
-# Visual intent: premium hail-crystal chain conductor; clearly reads as chain + frost slow, not a generic projectile cannon.
+# Visual intent: premium symmetrical hail rail-conductor; neutral-arrow style body + forward shard emitter.
 # Performance note: CanvasItem draw calls only; no particles, no nodes, no gameplay logic.
 
 const DETAIL_OUTLINE := Color(0.0, 0.0, 0.0, 0.92)
@@ -98,6 +98,16 @@ static func _draw_hail_chain(t: Node2D, nodes: Array, color: Color, width: float
 		])
 		_draw_stroked_polyline(t, jag, color, width, false)
 
+static func _mirrored_y(points: PackedVector2Array) -> PackedVector2Array:
+	var mirrored := PackedVector2Array()
+	for p: Vector2 in points:
+		mirrored.append(Vector2(p.x, -p.y))
+	return mirrored
+
+static func _draw_mirrored_circuit_trace(t: Node2D, points: PackedVector2Array, color: Color, width: float) -> void:
+	_draw_stroked_polyline(t, points, color, width, false)
+	_draw_stroked_polyline(t, _mirrored_y(points), color, width, false)
+
 static func draw_contour(t: Node2D) -> void:
 	var lvl: int = t.tree_tier
 	var s := 1.0 + float(max(lvl - 1, 0)) * 0.05
@@ -105,41 +115,32 @@ static func draw_contour(t: Node2D) -> void:
 	var base := _regular_poly(Vector2(0, 3) * s, 25.5 * s, 8, PI / 8.0)
 	_outline_poly(t, base)
 
-	var rear_crystal := PackedVector2Array([
-		Vector2(-18, -10) * s,
-		Vector2(-9, -25) * s,
-		Vector2(10, -26) * s,
-		Vector2(21, -9) * s,
-		Vector2(15, 15) * s,
-		Vector2(0, 25) * s,
-		Vector2(-16, 15) * s,
+	var chassis := PackedVector2Array([
+		Vector2(-22, -14) * s,
+		Vector2(-10, -22) * s,
+		Vector2(12, -20) * s,
+		Vector2(22, -9) * s,
+		Vector2(22, 9) * s,
+		Vector2(12, 20) * s,
+		Vector2(-10, 22) * s,
+		Vector2(-22, 14) * s,
 	])
-	_outline_poly(t, rear_crystal)
-
-	var center_shard := PackedVector2Array([
-		Vector2(-8, -15) * s,
-		Vector2(2, -31) * s,
-		Vector2(12, -14) * s,
-		Vector2(10, 11) * s,
-		Vector2(0, 25) * s,
-		Vector2(-11, 11) * s,
-	])
-	_outline_poly(t, center_shard)
+	_outline_poly(t, chassis)
 
 	var emitter := PackedVector2Array([
 		Vector2(-9, -6) * s,
-		Vector2(3, -11) * s,
-		Vector2(28, -5) * s,
+		Vector2(3, -10) * s,
+		Vector2(28, -6) * s,
 		Vector2(34, 0) * s,
-		Vector2(27, 6) * s,
+		Vector2(28, 6) * s,
 		Vector2(3, 10) * s,
 		Vector2(-9, 6) * s,
 	])
 	_outline_poly(t, emitter)
 
-	for p in [Vector2(-22, -2) * s, Vector2(-13, -19) * s, Vector2(16, -17) * s, Vector2(23, 4) * s]:
+	for p in [Vector2(-18, -13) * s, Vector2(-18, 13) * s, Vector2(14, -15) * s, Vector2(14, 15) * s]:
 		_outline_circle(t, p, 4.5 * s)
-	_outline_circle(t, Vector2(0, 1) * s, 9.5 * s)
+	_outline_circle(t, Vector2(0, 0) * s, 9.5 * s)
 
 static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
 	var s := 1.0 + float(max(lvl - 1, 0)) * 0.05
@@ -171,82 +172,82 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(base, -2.0 * s), shadow)
 	_draw_stroked_polyline(t, _regular_poly(Vector2(0, 3) * s, 21.0 * s, 8, PI / 8.0), Color(water_color.r, water_color.g, water_color.b, 0.38), 1.0, true)
 
-	# Rear hail crystal body.
-	var rear_crystal := PackedVector2Array([
-		Vector2(-18, -10) * s,
-		Vector2(-9, -25) * s,
-		Vector2(10, -26) * s,
-		Vector2(21, -9) * s,
-		Vector2(15, 15) * s,
-		Vector2(0, 25) * s,
-		Vector2(-16, 15) * s,
+	# Neutral-arrow style chassis: hard-surface, y-mirrored, with the emitter on the X axis.
+	var chassis := PackedVector2Array([
+		Vector2(-22, -14) * s,
+		Vector2(-10, -22) * s,
+		Vector2(12, -20) * s,
+		Vector2(22, -9) * s,
+		Vector2(22, 9) * s,
+		Vector2(12, 20) * s,
+		Vector2(-10, 22) * s,
+		Vector2(-22, 14) * s,
 	])
-	t.draw_colored_polygon(rear_crystal, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(rear_crystal, -1.8 * s), dark_ice)
+	t.draw_colored_polygon(chassis, DETAIL_OUTLINE)
+	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(chassis, -1.8 * s), dark_ice)
+	_draw_stroked_polyline(t, chassis, Color(water_color.r, water_color.g, water_color.b, 0.38), 0.95, true)
 
-	var left_facet := PackedVector2Array([
-		Vector2(-15, -8) * s,
-		Vector2(-7, -21) * s,
-		Vector2(0, 0) * s,
-		Vector2(-11, 13) * s,
+	var top_plate := PackedVector2Array([
+		Vector2(-14, -13) * s,
+		Vector2(8, -14) * s,
+		Vector2(17, -7) * s,
+		Vector2(4, -5) * s,
+		Vector2(-15, -7) * s,
 	])
-	var right_facet := PackedVector2Array([
-		Vector2(9, -22) * s,
-		Vector2(17, -8) * s,
-		Vector2(12, 12) * s,
-		Vector2(0, 0) * s,
+	var bottom_plate := PackedVector2Array([
+		Vector2(-14, 13) * s,
+		Vector2(8, 14) * s,
+		Vector2(17, 7) * s,
+		Vector2(4, 5) * s,
+		Vector2(-15, 7) * s,
 	])
-	t.draw_colored_polygon(left_facet, Color(dark_color.r, dark_color.g, dark_color.b, 0.36))
-	t.draw_colored_polygon(right_facet, Color(water_color.r, water_color.g, water_color.b, 0.34))
+	t.draw_colored_polygon(top_plate, Color(dark_color.r, dark_color.g, dark_color.b, 0.34))
+	t.draw_colored_polygon(bottom_plate, Color(water_color.r, water_color.g, water_color.b, 0.32))
+	_draw_stroked_polyline(t, top_plate, Color(ice.r, ice.g, ice.b, 0.35), 0.7, true)
+	_draw_stroked_polyline(t, bottom_plate, Color(ice.r, ice.g, ice.b, 0.30), 0.7, true)
 
-	# Main shard spear points forward, but thin/crystal-like so it does not read as a cannon.
-	var center_shard := PackedVector2Array([
-		Vector2(-8, -15) * s,
-		Vector2(2, -31) * s,
-		Vector2(12, -14) * s,
-		Vector2(10, 11) * s,
-		Vector2(0, 25) * s,
-		Vector2(-11, 11) * s,
+	# Mirrored circuit chain traces: draw the top trace once, mirror it over the center axis.
+	var top_trace := PackedVector2Array([
+		Vector2(-18, -13) * s,
+		Vector2(-8, -16) * s,
+		Vector2(2, -13) * s,
+		Vector2(14, -15) * s,
 	])
-	t.draw_colored_polygon(center_shard, DETAIL_OUTLINE)
-	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(center_shard, -1.4 * s), Color(0.42, 0.88, 1.0, 0.93))
-	_draw_stroked_line(t, Vector2(2, -27) * s, Vector2(0, 21) * s, Color(0.95, 1.0, 1.0, 0.55), 0.8, true)
-	_draw_stroked_line(t, Vector2(-6, -12) * s, Vector2(9, -12) * s, Color(light_color.r, light_color.g, light_color.b, 0.35), 0.75, true)
+	_draw_mirrored_circuit_trace(t, top_trace, Color(ice.r, ice.g, ice.b, 0.62), 1.15)
+	_draw_mirrored_circuit_trace(t, PackedVector2Array([
+		Vector2(-11, -6) * s,
+		Vector2(-2, -9) * s,
+		Vector2(8, -6) * s,
+	]), Color(water_color.r, water_color.g, water_color.b, 0.40), 0.85)
 
-	# Chain relay nodes — communicates chain_jumps without moving effects.
-	var relay_nodes := [Vector2(-22, -2) * s, Vector2(-13, -19) * s, Vector2(16, -17) * s, Vector2(23, 4) * s]
-	_draw_hail_chain(t, relay_nodes, Color(ice.r, ice.g, ice.b, 0.62), 1.15)
+	var relay_nodes := [Vector2(-18, -13) * s, Vector2(14, -15) * s, Vector2(14, 15) * s, Vector2(-18, 13) * s]
 	for i in range(relay_nodes.size()):
 		var p: Vector2 = relay_nodes[i]
-		var col := water_color
-		if i == 1:
-			col = light_color
-		elif i == 2:
-			col = dark_color
+		var col := dark_color if i == 0 or i == 3 else light_color
 		_draw_stroked_circle(t, p, 4.5 * s, Color(col.r, col.g, col.b, 0.72), 1.4)
 		t.draw_circle(p, 1.6 * s, Color(0.95, 1.0, 1.0, 0.92))
 
 	# Forward hail emitter: shard launcher, not a round muzzle.
 	var emitter := PackedVector2Array([
 		Vector2(-9, -6) * s,
-		Vector2(3, -11) * s,
-		Vector2(28, -5) * s,
+		Vector2(3, -10) * s,
+		Vector2(28, -6) * s,
 		Vector2(34, 0) * s,
-		Vector2(27, 6) * s,
+		Vector2(28, 6) * s,
 		Vector2(3, 10) * s,
 		Vector2(-9, 6) * s,
 	])
 	t.draw_colored_polygon(emitter, DETAIL_OUTLINE)
 	t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(emitter, -1.3 * s), Color(0.22, 0.68, 0.90, 0.94))
 	_draw_stroked_line(t, Vector2(3, -7) * s, Vector2(28, -3) * s, Color(0.94, 1.0, 1.0, 0.68), 0.9, true)
-	_draw_stroked_line(t, Vector2(3, 7) * s, Vector2(27, 3) * s, Color(dark_color.r, dark_color.g, dark_color.b, 0.46), 0.9, true)
+	_draw_stroked_line(t, Vector2(3, 7) * s, Vector2(28, 3) * s, Color(dark_color.r, dark_color.g, dark_color.b, 0.46), 0.9, true)
 
 	# Central frost glyph.
-	_draw_stroked_circle(t, Vector2(0, 1) * s, 9.5 * s, Color(0.05, 0.12, 0.20, 0.96), 1.8)
-	_draw_snowflake(t, Vector2(0, 1) * s, 8.0 * s, ice)
+	_draw_stroked_circle(t, Vector2(0, 0) * s, 9.5 * s, Color(0.05, 0.12, 0.20, 0.96), 1.8)
+	_draw_snowflake(t, Vector2(0, 0) * s, 8.0 * s, ice)
 
 	# Static hail shards near exit: chain projectile preview only.
-	for p in [Vector2(37, -9) * s, Vector2(42, 1) * s, Vector2(35, 10) * s]:
+	for p in [Vector2(37, -9) * s, Vector2(42, 0) * s, Vector2(37, 9) * s]:
 		var shard := PackedVector2Array([
 			p + Vector2(-2.1, 0.0) * s,
 			p + Vector2(0.0, -3.3) * s,
@@ -256,4 +257,4 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 		t.draw_colored_polygon(shard, DETAIL_OUTLINE)
 		t.draw_colored_polygon(TowerVisualDrawUtils._expand_poly_from_center(shard, -0.7 * s), Color(ice.r, ice.g, ice.b, 0.78))
 
-	_draw_tri_element_token(t, Vector2(0, 28.5) * s, 7.0 * s, light_color, dark_color, water_color)
+	_draw_tri_element_token(t, Vector2(0, 28.0) * s, 6.5 * s, light_color, dark_color, water_color)

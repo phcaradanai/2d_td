@@ -39,6 +39,20 @@ static func _stroked_line(t: Node2D, from: Vector2, to: Vector2, color: Color, w
 	t.draw_line(from, to, DETAIL_OUTLINE, width + 2.2, antialiased)
 	t.draw_line(from, to, color, width, antialiased)
 
+static func _mirror_y(points: PackedVector2Array) -> PackedVector2Array:
+	var out := PackedVector2Array()
+	for p: Vector2 in points:
+		out.append(Vector2(p.x, -p.y))
+	return out
+
+static func _mirrored_trace(t: Node2D, points: PackedVector2Array, color: Color, width: float) -> void:
+	_stroked_trace(t, points, color, width)
+	_stroked_trace(t, _mirror_y(points), color, width)
+
+static func _stroked_trace(t: Node2D, points: PackedVector2Array, color: Color, width: float) -> void:
+	t.draw_polyline(points, DETAIL_OUTLINE, width + 2.2, true)
+	t.draw_polyline(points, color, width, true)
+
 static func _stroked_circle(t: Node2D, center: Vector2, radius: float, fill: Color, stroke_width := 1.6) -> void:
 	t.draw_circle(center, radius + stroke_width, DETAIL_OUTLINE)
 	t.draw_circle(center, radius, fill)
@@ -70,8 +84,8 @@ static func draw_contour(t: Node2D) -> void:
 	var drill_len := 25.0 + float(lvl) * 2.0
 
 	var base := _poly([
-		Vector2(-20, 12), Vector2(-14, -13), Vector2(5, -18), Vector2(21, -8),
-		Vector2(24, 9), Vector2(9, 18), Vector2(-13, 18)
+		Vector2(-21, 0), Vector2(-15, -14), Vector2(5, -19), Vector2(22, -10),
+		Vector2(25, 0), Vector2(22, 10), Vector2(5, 19), Vector2(-15, 14)
 	])
 	_outline_poly(t, base)
 
@@ -119,16 +133,22 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 
 	# Heavy bastion base.
 	var base := _poly([
-		Vector2(-20, 12), Vector2(-14, -13), Vector2(5, -18), Vector2(21, -8),
-		Vector2(24, 9), Vector2(9, 18), Vector2(-13, 18)
+		Vector2(-21, 0), Vector2(-15, -14), Vector2(5, -19), Vector2(22, -10),
+		Vector2(25, 0), Vector2(22, 10), Vector2(5, 19), Vector2(-15, 14)
 	])
 	_stroked_poly(t, base, stone, quake, 1.35)
 
 	# Dark inset plates / cracked stone facets.
-	var upper_plate := _poly([Vector2(-11, -10), Vector2(3, -13), Vector2(14, -7), Vector2(5, -3), Vector2(-8, -4)])
-	var lower_plate := _poly([Vector2(-11, 11), Vector2(4, 13), Vector2(15, 7), Vector2(5, 3), Vector2(-8, 5)])
+	var upper_plate := _poly([Vector2(-12, -8), Vector2(2, -13), Vector2(15, -7), Vector2(5, -3), Vector2(-8, -3)])
+	var lower_plate := _mirror_y(upper_plate)
 	_stroked_poly(t, upper_plate, dark_stone, Color(quake.r, quake.g, quake.b, 0.40), 0.8)
 	_stroked_poly(t, lower_plate, dark_stone, Color(quake.r, quake.g, quake.b, 0.34), 0.8)
+	_mirrored_trace(t, PackedVector2Array([
+		Vector2(-12, -2),
+		Vector2(-3, -6),
+		Vector2(8, -5),
+		Vector2(18, -2),
+	]), Color(0.66, 1.0, 1.0, 0.22), 0.75)
 
 	# Central seismic engine / molten quake core.
 	_stroked_circle(t, Vector2(-8, 0), 8.0, Color(0.06, 0.045, 0.025, 0.94), 2.0)
@@ -151,6 +171,12 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_stroked_line(t, Vector2(3, -5.4), Vector2(drill_len + 4, -2.0), Color(1.0, 0.61, 0.18, 0.64), 1.1)
 	_stroked_line(t, Vector2(3, 5.4), Vector2(drill_len + 4, 2.0), Color(1.0, 0.61, 0.18, 0.50), 1.1)
 	_stroked_line(t, Vector2(9, 0), Vector2(drill_len + 11, 0), Color(0.11, 0.08, 0.04, 0.70), 1.0)
+	_mirrored_trace(t, PackedVector2Array([
+		Vector2(8, -8),
+		Vector2(17, -9),
+		Vector2(26, -5),
+		Vector2(drill_len + 2, -3),
+	]), Color(nature_c.r, nature_c.g, nature_c.b, 0.32), 0.8)
 
 	# Nature-earth stabilizer vines: this is Fire + Nature + Earth, so it should not look like pure Earth only.
 	var vine_top := _poly([Vector2(-18, -6), Vector2(-5, -17), Vector2(4, -15), Vector2(-6, -8)])

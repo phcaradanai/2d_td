@@ -72,6 +72,16 @@ static func _stroked_polyline(t: Node2D, points: Array[Vector2], color: Color, w
 	t.draw_polyline(path, OUTLINE, _r(width + 2.3), true)
 	t.draw_polyline(path, color, _r(width), true)
 
+static func _mirror_y(points: Array[Vector2]) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for p: Vector2 in points:
+		out.append(Vector2(p.x, -p.y))
+	return out
+
+static func _mirrored_trace(t: Node2D, points: Array[Vector2], color: Color, width: float = 1.1) -> void:
+	_stroked_polyline(t, points, color, width)
+	_stroked_polyline(t, _mirror_y(points), color, width)
+
 static func _arc_points(center: Vector2, radius: float, start_angle: float, end_angle: float, segments: int = 18) -> Array[Vector2]:
 	var pts: Array[Vector2] = []
 	for i in range(segments + 1):
@@ -149,6 +159,23 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_outline_poly(t, _regular_poly(Vector2.ZERO, 26.0, 6, PI / 6.0), EARTH_DARK)
 	_outline_poly(t, _regular_poly(Vector2.ZERO, 21.5, 6, PI / 6.0), EARTH)
 	_outline_poly(t, _regular_poly(Vector2.ZERO, 16.0, 6, PI / 6.0), Color(0.16, 0.29, 0.18, 0.98))
+	_mirrored_trace(t, [
+		Vector2(-18, -7),
+		Vector2(-9, -12),
+		Vector2(0, -9),
+		Vector2(9, -12),
+		Vector2(18, -7),
+	], Color(0.70, 1.0, 1.0, 0.32), 1.0)
+	_mirrored_trace(t, [
+		Vector2(-22, -1),
+		Vector2(-27, -5),
+		Vector2(-31, -3),
+	], WARD, 0.9)
+	_mirrored_trace(t, [
+		Vector2(22, -1),
+		Vector2(27, -5),
+		Vector2(31, -3),
+	], CURSE, 0.9)
 
 	# Four ward stones / pylons.
 	for i in range(4):
@@ -172,6 +199,12 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_outline_circle(t, Vector2.ZERO, 10.5, Color(0.24, 0.14, 0.30, 0.98), 2.2)
 	_outline_circle(t, Vector2.ZERO, 6.5, CORE, 1.7)
 	_draw_ward_glyph(t, Vector2.ZERO, 8.2)
+	_mirrored_trace(t, [
+		Vector2(-6, -2),
+		Vector2(-2, -5),
+		Vector2(2, -5),
+		Vector2(6, -2),
+	], Color(0.84, 1.0, 0.88, 0.45), 0.75)
 
 	# Vulnerability spikes facing outward.
 	for i in range(6):

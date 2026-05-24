@@ -155,8 +155,8 @@ static func draw_top(t: Node2D, main_color: Color, secondary_color: Color, _core
 
 	# Scalding vapor tip: soft cloud circles instead of a muzzle orb.
 	var tip := Vector2(21 + nozzle_len, 0)
-	t.draw_circle(tip + Vector2(1.5, -3.0), 4.2, Color(steam.r, steam.g, steam.b, 0.16))
-	t.draw_circle(tip + Vector2(2.5, 3.0), 3.6, Color(steam.r, steam.g, steam.b, 0.13))
+	t.draw_circle(tip + Vector2(2.0, -3.0), 4.0, Color(steam.r, steam.g, steam.b, 0.16))
+	t.draw_circle(tip + Vector2(2.0, 3.0), 4.0, Color(steam.r, steam.g, steam.b, 0.13))
 	t.draw_circle(tip, 2.0, Color(1.0, 0.78, 0.30, 0.58))
 	_draw_stroked_line(t, Vector2(tip.x - 6.0, 0), tip, hot, 1.6, true)
 

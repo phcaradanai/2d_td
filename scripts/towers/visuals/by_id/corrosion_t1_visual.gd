@@ -4,7 +4,7 @@ extends RefCounted
 # Role: Acid mist — corrosive cloud that melts enemy armor and slows movement.
 # Elements: Darkness + Water + Fire
 # Visual source: custom by_id visual
-# Visual intent: premium acid-vat / corrosion reactor, slow-control tower, land-only acid mist.
+# Visual intent: symmetrical acid injector tower; neutral-arrow style body + centered mist diffuser.
 # Performance note: CanvasItem draw calls only; no nodes, particles, timers, or gameplay changes.
 
 const VISUAL_SCALE := 0.70
@@ -114,11 +114,11 @@ static func _draw_vat_ribs(t: Node2D) -> void:
 static func _draw_acid_cloud(t: Node2D) -> void:
 	# Static mist puffs around tower radius: communicates slow/control without particles.
 	var puffs: Array[Vector2] = [
-		Vector2(-33, -17), Vector2(-39, 1), Vector2(-29, 22),
-		Vector2(31, -20), Vector2(40, 2), Vector2(30, 21),
-		Vector2(-11, -33), Vector2(12, -34)
+		Vector2(-33, -17), Vector2(-39, 0), Vector2(-33, 17),
+		Vector2(31, -17), Vector2(40, 0), Vector2(31, 17),
+		Vector2(-10, -31), Vector2(10, -31)
 	]
-	var sizes: Array[float] = [4.5, 5.8, 4.0, 4.2, 5.6, 4.4, 3.8, 3.8]
+	var sizes: Array[float] = [4.5, 5.8, 4.5, 4.5, 5.8, 4.5, 3.8, 3.8]
 	for i in range(puffs.size()):
 		_soft_circle(t, puffs[i], sizes[i], ACID_GLOW)
 		t.draw_arc(_sv(puffs[i]), _sf(sizes[i] + 1.2), 0.2, PI * 1.6, 14, Color(0.0, 0.0, 0.0, 0.42), _sf(0.9), true)
@@ -133,40 +133,43 @@ static func draw_contour(t: Node2D) -> void:
 	t.draw_circle(Vector2.ZERO, _sf(42.0), OUTLINE_SOFT)
 	t.draw_circle(Vector2.ZERO, _sf(33.0), OUTLINE)
 	TowerVisualDrawUtils._draw_contour_poly(t, _sp([
-		Vector2(-22, -28), Vector2(22, -28), Vector2(26, 5), Vector2(18, 25),
-		Vector2(0, 31), Vector2(-18, 25), Vector2(-26, 5)
+		Vector2(-24, -17), Vector2(-10, -25), Vector2(18, -21), Vector2(29, -10),
+		Vector2(29, 10), Vector2(18, 21), Vector2(-10, 25), Vector2(-24, 17)
+	]))
+	TowerVisualDrawUtils._draw_contour_poly(t, _sp([
+		Vector2(10, -8), Vector2(38, -10), Vector2(46, 0), Vector2(38, 10), Vector2(10, 8)
 	]))
 
 static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	# Slow/control field
 	_draw_acid_cloud(t)
 
-	# Dark corrosive base
+	# Dark corrosive base: neutral-arrow style hard-surface silhouette.
 	_poly(t, [
-		Vector2(-24, -24), Vector2(24, -24), Vector2(30, -4), Vector2(25, 22),
-		Vector2(0, 32), Vector2(-25, 22), Vector2(-30, -4)
+		Vector2(-25, -17), Vector2(-11, -26), Vector2(18, -22), Vector2(30, -10),
+		Vector2(30, 10), Vector2(18, 22), Vector2(-11, 26), Vector2(-25, 17)
 	], DARKNESS_DARK)
 	_poly(t, [
-		Vector2(-20, -20), Vector2(20, -20), Vector2(24, -4), Vector2(19, 18),
-		Vector2(0, 26), Vector2(-19, 18), Vector2(-24, -4)
+		Vector2(-20, -13), Vector2(-8, -20), Vector2(14, -17), Vector2(23, -8),
+		Vector2(23, 8), Vector2(14, 17), Vector2(-8, 20), Vector2(-20, 13)
 	], Color(0.18, 0.18, 0.20, 1.0))
 
-	# Acid glass vat
+	# Acid glass chamber, centered so the forward diffuser has a clear origin.
 	_poly(t, [
-		Vector2(-17, -21), Vector2(17, -21), Vector2(20, 10), Vector2(14, 24),
-		Vector2(-14, 24), Vector2(-20, 10)
+		Vector2(-15, -15), Vector2(13, -15), Vector2(19, -7), Vector2(19, 7),
+		Vector2(13, 15), Vector2(-15, 15), Vector2(-21, 7), Vector2(-21, -7)
 	], Color(0.11, 0.30, 0.28, 1.0))
 	_poly(t, [
-		Vector2(-14, -14), Vector2(14, -14), Vector2(16, 9), Vector2(10, 18),
-		Vector2(-10, 18), Vector2(-16, 9)
+		Vector2(-12, -10), Vector2(11, -10), Vector2(15, -4), Vector2(15, 4),
+		Vector2(11, 10), Vector2(-12, 10), Vector2(-16, 4), Vector2(-16, -4)
 	], Color(0.35, 0.78, 0.20, 0.82))
 	_poly(t, [
-		Vector2(-14, 3), Vector2(14, -1), Vector2(16, 9), Vector2(10, 18),
-		Vector2(-10, 18), Vector2(-16, 9)
+		Vector2(-12, 0), Vector2(11, 0), Vector2(15, 4), Vector2(11, 10),
+		Vector2(-12, 10), Vector2(-16, 4)
 	], Color(0.68, 1.00, 0.18, 0.94))
 
 	# Inner bubbles
-	var bubbles: Array[Vector2] = [Vector2(-8, -6), Vector2(5, -2), Vector2(0, 9), Vector2(9, 11), Vector2(-7, 14)]
+	var bubbles: Array[Vector2] = [Vector2(-8, -6), Vector2(6, -6), Vector2(-8, 6), Vector2(6, 6), Vector2(0, 0)]
 	for b: Vector2 in bubbles:
 		_circle(t, b, 2.1, Color(0.90, 1.00, 0.42, 0.80), 0.8)
 
@@ -174,33 +177,35 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 
 	# Fire heating coil under vat
 	_polyline(t, [
-		Vector2(-16, 22), Vector2(-10, 17), Vector2(-4, 23), Vector2(2, 17), Vector2(8, 23), Vector2(15, 18)
-	], FIRE, 2.0, false)
-	_line(t, Vector2(-22, 27), Vector2(22, 27), FIRE_DARK, 3.0)
+		Vector2(-16, 20), Vector2(-10, 17), Vector2(-4, 20), Vector2(2, 17), Vector2(8, 20), Vector2(14, 17)
+	], FIRE, 1.6, false)
+	_polyline(t, [
+		Vector2(-16, -20), Vector2(-10, -17), Vector2(-4, -20), Vector2(2, -17), Vector2(8, -20), Vector2(14, -17)
+	], FIRE, 1.6, false)
 
-	# Mist injector / acid diffuser, not a cannon barrel.
+	# Centered mist injector / acid diffuser, not a cannon barrel.
 	_poly(t, [
-		Vector2(18, -8), Vector2(35, -15), Vector2(42, -10), Vector2(27, -1)
+		Vector2(17, -8), Vector2(35, -13), Vector2(44, 0), Vector2(35, 13), Vector2(17, 8)
 	], METAL_DARK)
 	_poly(t, [
-		Vector2(23, -7), Vector2(37, -12), Vector2(39, -9), Vector2(26, -3)
+		Vector2(23, -4.8), Vector2(37, -8.0), Vector2(41, 0), Vector2(37, 8.0), Vector2(23, 4.8)
 	], ACID_DARK)
-	_circle(t, Vector2(42, -10), 4.4, ACID, 1.2)
-	var mist_drops: Array[Vector2] = [Vector2(49, -14), Vector2(52, -7), Vector2(47, -4)]
+	_circle(t, Vector2(43, 0), 4.4, ACID, 1.2)
+	var mist_drops: Array[Vector2] = [Vector2(51, -7), Vector2(54, 0), Vector2(51, 7)]
 	for d: Vector2 in mist_drops:
 		_circle(t, d, 1.8, ACID_GLOW, 0.6)
 
-	# Side pressure canisters: water coolant and darkness acid catalyst
-	_circle(t, Vector2(-25, -9), 6.8, WATER_DARK, 1.6)
-	_circle(t, Vector2(-25, -9), 3.6, WATER, 1.0)
-	_circle(t, Vector2(25, 11), 6.4, DARKNESS_DARK, 1.6)
-	_circle(t, Vector2(25, 11), 3.2, DARKNESS, 1.0)
+	# Mirrored pressure canisters keep the silhouette balanced around the firing axis.
+	_circle(t, Vector2(-23, -12), 5.8, WATER_DARK, 1.6)
+	_circle(t, Vector2(-23, -12), 3.0, WATER, 1.0)
+	_circle(t, Vector2(-23, 12), 5.8, DARKNESS_DARK, 1.6)
+	_circle(t, Vector2(-23, 12), 3.0, DARKNESS, 1.0)
 
 	# Corrosion glyph makes role readable at small size.
 	_draw_corrosion_glyph(t, Vector2(0, -2), 0.76)
 
 	# Field anchors / acid drip pods
-	var pods: Array[Vector2] = [Vector2(-28, -29), Vector2(28, -29), Vector2(-31, 25), Vector2(31, 25)]
+	var pods: Array[Vector2] = [Vector2(-28, -23), Vector2(28, -23), Vector2(-28, 23), Vector2(28, 23)]
 	for pod: Vector2 in pods:
 		_circle(t, pod, 4.0, ACID_DARK, 1.2)
 		_circle(t, pod, 2.1, ACID, 0.7)

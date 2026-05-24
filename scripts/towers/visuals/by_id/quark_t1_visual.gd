@@ -186,7 +186,7 @@ static func draw_top(t: Node2D, _main_color: Color, secondary_color: Color, _cor
 	t.draw_circle(_v(Vector2(-6, 0)), _r(27.0), Color(light_col.r, light_col.g, light_col.b, 0.050))
 	t.draw_circle(_v(Vector2(-6, 0)), _r(20.0), Color(earth_col.r, earth_col.g, earth_col.b, 0.050))
 
-	# Collider body: asymmetric but compact, so the firing direction is obvious.
+	# Collider body: tapered but y-mirrored, so the firing direction is obvious.
 	var body := _poly([
 		Vector2(-23, 0),
 		Vector2(-15, -17),

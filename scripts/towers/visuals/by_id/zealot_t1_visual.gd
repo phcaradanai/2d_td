@@ -62,6 +62,20 @@ static func _line(t: Node2D, a: Vector2, b: Vector2, color: Color, width: float)
 	t.draw_line(_s(a), _s(b), OUTLINE, _r(width + 2.0), true)
 	t.draw_line(_s(a), _s(b), color, _r(width), true)
 
+static func _mirror_y(points: Array[Vector2]) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for p: Vector2 in points:
+		out.append(Vector2(p.x, -p.y))
+	return out
+
+static func _circuit(t: Node2D, points: Array[Vector2], color: Color, width: float) -> void:
+	for i in range(points.size() - 1):
+		_line(t, points[i], points[i + 1], color, width)
+
+static func _mirrored_circuit(t: Node2D, points: Array[Vector2], color: Color, width: float) -> void:
+	_circuit(t, points, color, width)
+	_circuit(t, _mirror_y(points), color, width)
+
 
 static func _circle(t: Node2D, pos: Vector2, radius: float, color: Color) -> void:
 	t.draw_circle(_s(pos), _r(radius + 1.8), OUTLINE)
@@ -216,6 +230,23 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_line(t, Vector2(-14, -5), Vector2(-4, 0), WATER, 1.2)
 	_line(t, Vector2(14, -5), Vector2(4, 0), FIRE, 1.2)
 	_line(t, Vector2(0, 16), Vector2(0, 8), EARTH.lightened(0.20), 1.2)
+	_mirrored_circuit(t, [
+		Vector2(-15, -13),
+		Vector2(-7, -16),
+		Vector2(0, -12),
+		Vector2(7, -16),
+		Vector2(15, -13),
+	], Color(0.72, 1.0, 1.0, 0.38), 1.0)
+	_mirrored_circuit(t, [
+		Vector2(-21, -1),
+		Vector2(-25, -5),
+		Vector2(-29, -4),
+	], HOLY_GOLD, 0.9)
+	_mirrored_circuit(t, [
+		Vector2(21, -1),
+		Vector2(25, -5),
+		Vector2(29, -4),
+	], HOLY_GOLD, 0.9)
 
 	# Tri-element identity token.
 	_draw_tri_element_token(t, Vector2(0, 31), 5.4)

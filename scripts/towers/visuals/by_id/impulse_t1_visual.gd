@@ -65,6 +65,16 @@ static func _draw_polyline(t: Node2D, points: Array[Vector2], color: Color, widt
 	t.draw_polyline(path, OUTLINE, (width + 2.2) * VISUAL_SCALE, true)
 	t.draw_polyline(path, color, width * VISUAL_SCALE, true)
 
+static func _mirror_y(points: Array[Vector2]) -> Array[Vector2]:
+	var out: Array[Vector2] = []
+	for p: Vector2 in points:
+		out.append(Vector2(p.x, -p.y))
+	return out
+
+static func _draw_mirrored_circuit(t: Node2D, points: Array[Vector2], color: Color, width: float = 1.2) -> void:
+	_draw_polyline(t, points, color, width, false)
+	_draw_polyline(t, _mirror_y(points), color, width, false)
+
 static func _draw_arc(t: Node2D, center: Vector2, radius: float, start_angle: float, end_angle: float, color: Color, width: float = 2.0) -> void:
 	t.draw_arc(center * VISUAL_SCALE, radius * VISUAL_SCALE, start_angle, end_angle, 24, OUTLINE, (width + 2.4) * VISUAL_SCALE, true)
 	t.draw_arc(center * VISUAL_SCALE, radius * VISUAL_SCALE, start_angle, end_angle, 24, color, width * VISUAL_SCALE, true)
@@ -134,11 +144,12 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_draw_circle(t, Vector2.ZERO, 9.0, Color(0.18, 0.25, 0.23, 1.0), 0.8)
 	_draw_impulse_glyph(t)
 
-	_draw_line(t, Vector2(-18, -22), Vector2(-7, -27), GOLD_TRIM, 1.4)
-	_draw_line(t, Vector2(19, 18), Vector2(8, 25), GOLD_TRIM, 1.4)
-	_draw_line(t, Vector2(-24, 7), Vector2(-27, -6), Color(NATURE.r, NATURE.g, NATURE.b, 0.78), 1.3)
+	# Mirrored neon circuit trim. Keep the tri-element identity, but make the detail language cyber/symmetric.
+	_draw_mirrored_circuit(t, [Vector2(-18, -22), Vector2(-7, -27), Vector2(6, -24)], GOLD_TRIM, 1.25)
+	_draw_mirrored_circuit(t, [Vector2(-24, -7), Vector2(-27, -2), Vector2(-24, 7)], Color(NATURE.r, NATURE.g, NATURE.b, 0.72), 1.1)
 	_draw_circle(t, Vector2(-25, -4), 3.5, WATER, 0.8)
+	_draw_circle(t, Vector2(-25, 4), 3.5, FIRE, 0.8)
+	_draw_circle(t, Vector2(24, -11), 3.5, WATER, 0.8)
 	_draw_circle(t, Vector2(24, 11), 3.5, FIRE, 0.8)
-	_draw_circle(t, Vector2(-11, 24), 3.5, NATURE, 0.8)
 
 	_draw_tri_token(t, Vector2(0, 31), 4.8)

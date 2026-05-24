@@ -40,7 +40,7 @@ static func draw_contour(t: Node2D) -> void:
 	_outline_poly(t, trunk)
 
 	# Forward spore nozzle and seed pods.
-	_outline_poly(t, _scaled_poly(PackedVector2Array([Vector2(19, -4), Vector2(38, -10), Vector2(41, 3), Vector2(23, 8)]), s))
+	_outline_poly(t, _scaled_poly(PackedVector2Array([Vector2(19, -5), Vector2(38, -10), Vector2(43, 0), Vector2(38, 10), Vector2(19, 5)]), s))
 	for p in [Vector2(-24, -13), Vector2(-7, -23), Vector2(12, -24), Vector2(27, -13)]:
 		_outline_circle(t, p * s, 4.4 * s)
 
@@ -88,11 +88,11 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 	_draw_stroked_line(t, Vector2(7, -6) * s, Vector2(8, 25) * s, Color(0.24, 0.60, 0.30, 0.85), 1.7 * s)
 
 	# Forward fungal spore launcher: organic tube, not a cannon.
-	var nozzle := _scaled_poly(PackedVector2Array([Vector2(15, -4), Vector2(38, -12), Vector2(43, 1), Vector2(22, 9)]), s)
+	var nozzle := _scaled_poly(PackedVector2Array([Vector2(15, -5), Vector2(38, -12), Vector2(45, 0), Vector2(38, 12), Vector2(15, 5)]), s)
 	_outline_poly(t, nozzle)
 	t.draw_colored_polygon(nozzle, Color(0.42, 0.68, 0.33, 1.0))
-	_draw_stroked_circle(t, Vector2(39, -5) * s, 6.0 * s, Color(0.68, 1.0, 0.46, 0.92), 2.0 * s, false)
-	_draw_stroked_circle(t, Vector2(39, -5) * s, 2.3 * s, Color(0.16, 0.28, 0.14, 1.0), 1.2 * s, true)
+	_draw_stroked_circle(t, Vector2(41, 0) * s, 6.0 * s, Color(0.68, 1.0, 0.46, 0.92), 2.0 * s, false)
+	_draw_stroked_circle(t, Vector2(41, 0) * s, 2.3 * s, Color(0.16, 0.28, 0.14, 1.0), 1.2 * s, true)
 
 	# Mushroom cap.
 	var cap := _scaled_poly(PackedVector2Array([
@@ -125,7 +125,7 @@ static func draw_top(t: Node2D, _main_color: Color, _secondary_color: Color, _co
 		_draw_stroked_circle(t, spot[0] * s, float(spot[1]) * s, cap_light, 1.1 * s, true)
 
 	# Burst/spore cloud markers near muzzle and around base.
-	for p in [Vector2(48, -8), Vector2(53, 0), Vector2(48, 7), Vector2(31, 15), Vector2(-30, 15)]:
+	for p in [Vector2(49, -8), Vector2(54, 0), Vector2(49, 8), Vector2(31, 15), Vector2(-31, 15)]:
 		_draw_stroked_circle(t, p * s, 2.4 * s, spore, 1.0 * s, true)
 
 	# Nature + Earth dual token.
