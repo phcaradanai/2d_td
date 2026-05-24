@@ -9,7 +9,9 @@ static func _process_pathing(enemy: Node2D, delta: float) -> void:
 		EnemyMovementService._process_dynamic_pathing(enemy, delta)
 		return
 	var before_pos := enemy.global_position
+	var before_progress: float = enemy.progress
 	enemy.progress += enemy.speed * delta
+	EnemyMovementService._apply_path_portals(enemy, before_progress)
 	enemy._record_visual_movement_delta(enemy.global_position - before_pos)
 	enemy._lock_visual_orientation()
 	EnemyMovementService._sync_spatial_target_cache(enemy, true)
@@ -17,6 +19,29 @@ static func _process_pathing(enemy: Node2D, delta: float) -> void:
 	if enemy.progress_ratio >= 1.0:
 		if enemy.has_method("reach_base"):
 			enemy.reach_base()
+
+static func _apply_path_portals(enemy: Node2D, before_progress: float) -> void:
+	var portals = enemy.get("path_portals")
+	if not (portals is Array) or portals.is_empty():
+		return
+	var used = enemy.get("_path_portals_used")
+	if not (used is Dictionary):
+		used = {}
+	for portal in portals:
+		if not (portal is Dictionary):
+			continue
+		var id := str(portal.get("id", ""))
+		if used.has(id):
+			continue
+		var entry_progress := float(portal.get("entry_progress", -1.0))
+		var exit_progress := float(portal.get("exit_progress", -1.0))
+		if entry_progress < 0.0 or exit_progress <= entry_progress:
+			continue
+		if before_progress < entry_progress and enemy.progress >= entry_progress:
+			enemy.progress = exit_progress
+			used[id] = true
+			enemy.set("_path_portals_used", used)
+			return
 
 static func set_dynamic_pathing(enemy: Node2D, manager: Node, spawn_cell: Vector2i) -> void:
 	enemy.pathfinding_manager = manager

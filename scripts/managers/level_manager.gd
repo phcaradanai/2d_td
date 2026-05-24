@@ -24,7 +24,7 @@ var buildable_cells: Array[Vector2i] = []
 
 var starting_gold: int = 100
 var starting_lives: int = 20
-var waves_path: String = "res://data/waves.json"
+var waves_path: String = "res://data/waves/waves_01.json"
 var buildable_mode: String = "full_non_path"
 var hero_config: Dictionary = {
 	"enabled": false,
@@ -104,7 +104,7 @@ func load_level(path: String) -> bool:
 	
 	starting_gold = data.get("starting_gold", 100)
 	starting_lives = data.get("starting_lives", 20)
-	waves_path = data.get("waves_path", "res://data/waves.json")
+	waves_path = data.get("waves_path", "res://data/waves/waves_01.json")
 	buildable_mode = data.get("buildable_mode", "full_non_path")
 	
 	hero_config = {

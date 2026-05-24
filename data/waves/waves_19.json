@@ -1,739 +1,1910 @@
 [
   {
     "wave": 1,
-    "name": "Three-Lane Probe",
-    "reward": 75,
+    "name": "L19 Neutral Calibration",
+    "reward": 41,
     "groups": [
       {
-        "type": "fast",
-        "count": 22,
-        "interval": 0.16
+        "type": "basic",
+        "count": 8,
+        "interval": 0.603,
+        "max_hp": 69,
+        "reward_gold": 8,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
       },
       {
         "type": "basic",
-        "count": 28,
-        "interval": 0.16,
-        "path": "lane_b"
-      },
-      {
-        "type": "runner",
-        "count": 20,
-        "interval": 0.16,
+        "count": 4,
+        "interval": 0.557,
+        "max_hp": 58,
+        "reward_gold": 8,
+        "affixes": [
+          "fast"
+        ],
         "path": "lane_c"
       }
     ],
-    "intel": "Three lanes active simultaneously. The funnel handles all \u2014 position Lightning or Cannon there."
+    "intel": "Build 3-5 Neutral Arrow/Cannon towers near long path coverage. Yellow-tinted packets move in short bursts.",
+    "formation": "multi_lane_pincer"
   },
   {
     "wave": 2,
-    "name": "EMP Wasp",
-    "reward": 85,
+    "name": "L19 First Mixed Stream",
+    "reward": 49,
     "groups": [
       {
-        "type": "disruptor",
-        "count": 4,
-        "interval": 0.4
+        "type": "basic",
+        "count": 10,
+        "interval": 0.557,
+        "max_hp": 87,
+        "reward_gold": 10,
+        "affixes": [
+          "mechanical"
+        ],
+        "path": "lane_c"
       },
       {
-        "type": "flyer",
-        "count": 22,
-        "interval": 0.38
+        "type": "swarm",
+        "count": 10,
+        "interval": 0.334,
+        "max_hp": 35,
+        "reward_gold": 5,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      }
+    ],
+    "intel": "A small swarm screen joins reinforced nodes. Mix arrow coverage with at least one splash option.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 3,
+    "name": "L19 Small Packets and Ghost Images",
+    "reward": 57,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 16,
+        "interval": 0.353,
+        "max_hp": 35,
+        "reward_gold": 5,
+        "affixes": [
+          "image"
+        ],
+        "path": "default"
       },
       {
-        "type": "bulwark",
-        "count": 4,
-        "interval": 0.72,
+        "type": "basic",
+        "count": 10,
+        "interval": 0.483,
+        "max_hp": 81,
+        "reward_gold": 10,
+        "affixes": [
+          "healing"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Illusion-tinted swarm packets are backed by repair-marked nodes. Splash helps keep the pack clean.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 4,
+    "name": "L19 Mixed Signal",
+    "reward": 65,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 12,
+        "interval": 0.51,
+        "max_hp": 110,
+        "reward_gold": 11,
+        "affixes": [
+          "undead"
+        ],
         "path": "lane_b"
       },
       {
-        "type": "tank",
-        "count": 16,
-        "interval": 0.65,
+        "type": "fast",
+        "count": 9,
+        "interval": 0.696,
+        "max_hp": 64,
+        "reward_gold": 13,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "swarm",
+        "count": 10,
+        "interval": 0.297,
+        "max_hp": 43,
+        "reward_gold": 7,
+        "path": "default"
+      }
+    ],
+    "intel": "Undead nodes can come back once. Fast pressure and swarm bodies punish thin coverage.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 5,
+    "name": "L19 Elemental Guardian I - Apex Node",
+    "reward": 98,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 14,
+        "interval": 0.51,
+        "max_hp": 121,
+        "reward_gold": 13,
+        "affixes": [
+          "mechanical"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "swarm",
+        "count": 12,
+        "interval": 0.26,
+        "max_hp": 52,
+        "reward_gold": 7,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "boss_basic",
+        "count": 1,
+        "interval": 1.299,
+        "max_hp": 1207,
+        "reward_gold": 73,
+        "base_damage": 1,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "First boss guard: clear the fast screen before focusing the Apex Node. Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 6,
+    "name": "L19 First Element Test Wing",
+    "reward": 73,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 14,
+        "interval": 0.445,
+        "max_hp": 139,
+        "reward_gold": 13,
+        "affixes": [
+          "mechanical"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "flyer",
+        "count": 8,
+        "interval": 0.39,
+        "max_hp": 98,
+        "reward_gold": 16,
+        "affixes": [
+          "image"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "After choosing an element, build your first Single Element tower. Light air pressure checks targeting coverage.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 7,
+    "name": "L19 Runner Probe",
+    "reward": 82,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 12,
+        "interval": 0.464,
+        "max_hp": 150,
+        "reward_gold": 13,
+        "affixes": [
+          "undead"
+        ],
         "path": "lane_b"
       },
       {
         "type": "runner",
-        "count": 22,
-        "interval": 0.16,
-        "path": "lane_c"
-      }
-    ],
-    "intel": "EMP Wasp: emits a field that slows tower fire rates by 50%. Kill it immediately \u2014 every second it lives multiplies enemy damage output."
-  },
-  {
-    "wave": 3,
-    "name": "EMP Escort",
-    "reward": 95,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 6,
-        "interval": 0.8
-      },
-      {
-        "type": "armored_flyer",
-        "count": 14,
-        "interval": 0.68,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "fast_flyer",
-        "count": 22,
-        "interval": 0.26,
-        "path": "lane_b"
-      },
-      {
-        "type": "hunter",
         "count": 8,
-        "interval": 0.2,
-        "path": "lane_b",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "bulwark",
-        "count": 4,
-        "interval": 0.72,
-        "path": "lane_c",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 8,
-        "interval": 0.32,
-        "path": "lane_c",
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "tank",
-        "count": 16,
-        "interval": 0.65,
-        "path": "lane_c",
-        "affixes": [
-          "mechanical"
-        ]
-      }
-    ],
-    "intel": "Two Disruptors with air escorts. Sniper priority on Disruptors \u2014 their EMP cascades your AA."
-  },
-  {
-    "wave": 4,
-    "name": "Air Suppression",
-    "reward": 108,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 7,
-        "interval": 0.8
-      },
-      {
-        "type": "armored_flyer",
-        "count": 20,
-        "interval": 0.64,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "fast_flyer",
-        "count": 28,
-        "interval": 0.26,
-        "path": "lane_b"
-      },
-      {
-        "type": "cloaked",
-        "count": 22,
-        "interval": 0.4,
-        "path": "lane_b",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "bulwark",
-        "count": 5,
-        "interval": 0.72,
-        "path": "lane_c",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 20,
-        "interval": 0.74,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "hunter",
-        "count": 8,
-        "interval": 0.2,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      }
-    ],
-    "intel": "Disruptors + air surge on A+B, heavy ground with Hunters on C. Guardian needed on C \u2014 but Hunters will target it."
-  },
-  {
-    "wave": 5,
-    "name": "Triple Push",
-    "reward": 102,
-    "groups": [
-      {
-        "type": "fast",
-        "count": 28,
-        "interval": 0.15,
+        "interval": 0.538,
+        "max_hp": 104,
+        "reward_gold": 18,
         "affixes": [
           "fast"
-        ]
+        ],
+        "path": "lane_c"
       },
       {
         "type": "swarm",
-        "count": 65,
-        "interval": 0.08
-      },
-      {
-        "type": "armored_flyer",
-        "count": 16,
-        "interval": 0.66,
-        "path": "lane_b",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "disruptor",
-        "count": 5,
-        "interval": 0.8,
-        "path": "lane_b"
-      },
-      {
-        "type": "bulwark",
-        "count": 6,
-        "interval": 0.7,
-        "path": "lane_c",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 10,
-        "interval": 0.3,
-        "path": "lane_c",
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "tank",
-        "count": 22,
-        "interval": 0.6,
-        "path": "lane_c",
-        "affixes": [
-          "mechanical"
-        ]
-      }
-    ],
-    "intel": "All three lanes under different threats. Split coverage or one lane breaks."
-  },
-  {
-    "wave": 6,
-    "name": "Hunter Swarm",
-    "reward": 108,
-    "groups": [
-      {
-        "type": "hunter",
         "count": 14,
-        "interval": 0.2,
+        "interval": 0.223,
+        "max_hp": 52,
+        "reward_gold": 7,
         "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "cloaked",
-        "count": 28,
-        "interval": 0.38,
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "disruptor",
-        "count": 5,
-        "interval": 0.8,
-        "path": "lane_b"
-      },
-      {
-        "type": "fast_flyer",
-        "count": 28,
-        "interval": 0.26,
-        "path": "lane_b"
-      },
-      {
-        "type": "armored_flyer",
-        "count": 16,
-        "interval": 0.66,
-        "path": "lane_c",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 20,
-        "interval": 0.74,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      }
-    ],
-    "intel": "Hunters + stealth on A, Disruptors on B, heavy air on C. Sniper most valuable tower here."
-  },
-  {
-    "wave": 7,
-    "name": "Chaos Split",
-    "reward": 114,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 7,
-        "interval": 0.78
-      },
-      {
-        "type": "armored_flyer",
-        "count": 20,
-        "interval": 0.64,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "bulwark",
-        "count": 7,
-        "interval": 0.7,
-        "path": "lane_b",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "shieldbearer",
-        "count": 12,
-        "interval": 0.52,
-        "path": "lane_b",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 12,
-        "interval": 0.28,
-        "path": "lane_b",
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "hunter",
-        "count": 12,
-        "interval": 0.2,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "cloaked",
-        "count": 28,
-        "interval": 0.38,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 20,
-        "interval": 0.74,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      }
-    ],
-    "intel": "Three lanes, three distinct threats. No tower is idle."
-  },
-  {
-    "wave": 8,
-    "name": "EMP Convoy",
-    "reward": 120,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 8,
-        "interval": 0.78
-      },
-      {
-        "type": "bulwark",
-        "count": 8,
-        "interval": 0.7,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "armored_flyer",
-        "count": 20,
-        "interval": 0.64,
-        "path": "lane_b",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "fast_flyer",
-        "count": 30,
-        "interval": 0.24,
-        "path": "lane_b"
-      },
-      {
-        "type": "hunter",
-        "count": 14,
-        "interval": 0.2,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 22,
-        "interval": 0.72,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 12,
-        "interval": 0.28,
-        "path": "lane_c",
-        "affixes": [
-          "healing"
-        ]
-      }
-    ],
-    "intel": "EMP + Bulwark on A, full air on B, stealth on C. Kill Disruptors to restore fire rate."
-  },
-  {
-    "wave": 9,
-    "name": "Pressure Surge",
-    "reward": 126,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 8,
-        "interval": 0.76
-      },
-      {
-        "type": "armored_flyer",
-        "count": 22,
-        "interval": 0.62,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "bulwark",
-        "count": 8,
-        "interval": 0.7,
-        "path": "lane_b",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "shieldbearer",
-        "count": 14,
-        "interval": 0.5,
-        "path": "lane_b",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 14,
-        "interval": 0.26,
-        "path": "lane_b",
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "fast_flyer",
-        "count": 30,
-        "interval": 0.24,
-        "path": "lane_c"
-      },
-      {
-        "type": "hunter",
-        "count": 14,
-        "interval": 0.2,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "cloaked",
-        "count": 28,
-        "interval": 0.38,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      }
-    ],
-    "intel": "Near-maximum 3-lane pressure. Every tower must fire. No downtime."
-  },
-  {
-    "wave": 10,
-    "name": "Storm Front",
-    "reward": 132,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 8,
-        "interval": 0.76
-      },
-      {
-        "type": "armored_flyer",
-        "count": 24,
-        "interval": 0.62,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "bulwark",
-        "count": 10,
-        "interval": 0.7,
-        "path": "lane_b",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "shieldbearer",
-        "count": 14,
-        "interval": 0.5,
-        "path": "lane_b",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 14,
-        "interval": 0.26,
-        "path": "lane_b",
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "fast_flyer",
-        "count": 32,
-        "interval": 0.24,
-        "path": "lane_c"
-      },
-      {
-        "type": "hunter",
-        "count": 16,
-        "interval": 0.2,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 22,
-        "interval": 0.72,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      }
-    ],
-    "intel": "Maximum sustained output across three lanes."
-  },
-  {
-    "wave": 11,
-    "name": "Pre-Finale Chaos",
-    "reward": 140,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 10,
-        "interval": 0.74
-      },
-      {
-        "type": "armored_flyer",
-        "count": 24,
-        "interval": 0.62,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "bulwark",
-        "count": 10,
-        "interval": 0.7,
-        "path": "lane_b",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 16,
-        "interval": 0.26,
-        "path": "lane_b",
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "fast_flyer",
-        "count": 32,
-        "interval": 0.24,
-        "path": "lane_b"
-      },
-      {
-        "type": "hunter",
-        "count": 16,
-        "interval": 0.2,
-        "path": "lane_c",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "shieldbearer",
-        "count": 12,
-        "interval": 0.5,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 20,
-        "interval": 0.72,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      }
-    ],
-    "intel": "One wave before the finale. Upgrade everything you can."
-  },
-  {
-    "wave": 12,
-    "name": "Hunter Net Finale",
-    "reward": 165,
-    "groups": [
-      {
-        "type": "disruptor",
-        "count": 10,
-        "interval": 0.8
-      },
-      {
-        "type": "armored_flyer",
-        "count": 16,
-        "interval": 0.64,
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "fast_flyer",
-        "count": 22,
-        "interval": 0.26,
-        "path": "lane_b"
-      },
-      {
-        "type": "hunter",
-        "count": 10,
-        "interval": 0.2,
-        "path": "lane_b",
-        "affixes": [
-          "image"
-        ]
-      },
-      {
-        "type": "bulwark",
-        "count": 5,
-        "interval": 0.9,
-        "path": "lane_c",
-        "affixes": [
-          "mechanical"
-        ]
-      },
-      {
-        "type": "shieldbearer",
-        "count": 5,
-        "interval": 0.6,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "healer",
-        "count": 8,
-        "interval": 0.28,
-        "path": "lane_c",
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 10,
-        "interval": 0.74,
-        "path": "lane_c",
-        "affixes": [
-          "undead"
-        ]
-      },
-      {
-        "type": "boss_fast_flyer",
-        "count": 3,
-        "interval": 4.0,
-        "spawn_delay": 3.0,
+          "fast"
+        ],
         "path": "default"
       }
     ],
-    "intel": "Maximum 3-lane pressure. Three Disruptors slow all towers \u2014 kill them first or nothing fires at full rate. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
+    "intel": "Runners arrive behind visible bodies. Slow, rapid fire, or long-path coverage should catch the burst.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 8,
+    "name": "L19 Swarm Probe with Armor Anchor",
+    "reward": 90,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 30,
+        "interval": 0.26,
+        "max_hp": 52,
+        "reward_gold": 7,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "tank",
+        "count": 3,
+        "interval": 0.789,
+        "max_hp": 361,
+        "reward_gold": 29,
+        "affixes": [
+          "mechanical"
+        ],
+        "path": "default"
+      }
+    ],
+    "intel": "Mechanical tanks anchor a fast swarm screen. Splash clears bodies; focus damage finishes the anchors.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 9,
+    "name": "L19 Armor Pressure Probe",
+    "reward": 98,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 7,
+        "interval": 0.882,
+        "max_hp": 433,
+        "reward_gold": 29,
+        "affixes": [
+          "mechanical"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "fast",
+        "count": 14,
+        "interval": 0.223,
+        "max_hp": 121,
+        "reward_gold": 16,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Armored bodies are paired with speed pressure. Do not tunnel only on tanks.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 10,
+    "name": "L19 Elemental Guardian II - Fortress Escort",
+    "reward": 122,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 18,
+        "interval": 0.418,
+        "max_hp": 179,
+        "reward_gold": 15,
+        "affixes": [
+          "undead"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 10,
+        "interval": 0.278,
+        "max_hp": 144,
+        "reward_gold": 20,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "healer",
+        "count": 2,
+        "interval": 0.742,
+        "max_hp": 433,
+        "reward_gold": 36,
+        "affixes": [
+          "healing"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "boss_tank",
+        "count": 1,
+        "interval": 1.299,
+        "max_hp": 2280,
+        "reward_gold": 114,
+        "base_damage": 1,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Boss escort with healers, runners, and undead nodes. Kill support before the Fortress Titan. Second element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 11,
+    "name": "L19 Swarm Raid",
+    "reward": 104,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 36,
+        "interval": 0.093,
+        "max_hp": 101,
+        "reward_gold": 10,
+        "path": "lane_c"
+      },
+      {
+        "type": "runner",
+        "count": 11,
+        "interval": 0.223,
+        "max_hp": 197,
+        "reward_gold": 20,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 12,
+    "name": "L19 Armor Column",
+    "reward": 111,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.51,
+        "max_hp": 873,
+        "reward_gold": 36,
+        "path": "default"
+      },
+      {
+        "type": "fast",
+        "count": 16,
+        "interval": 0.204,
+        "max_hp": 173,
+        "reward_gold": 18,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 13,
+    "name": "L19 Fast Air",
+    "reward": 117,
+    "groups": [
+      {
+        "type": "flyer",
+        "count": 18,
+        "interval": 0.26,
+        "max_hp": 379,
+        "reward_gold": 23,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 11,
+        "interval": 0.204,
+        "max_hp": 234,
+        "reward_gold": 24,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 14,
+    "name": "L19 Stealth Mask",
+    "reward": 124,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 12,
+        "interval": 0.297,
+        "max_hp": 647,
+        "reward_gold": 31,
+        "path": "lane_c"
+      },
+      {
+        "type": "basic",
+        "count": 19,
+        "interval": 0.148,
+        "max_hp": 344,
+        "reward_gold": 16,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 15,
+    "name": "L19 Elemental Trial III",
+    "reward": 163,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 9,
+        "interval": 0.464,
+        "max_hp": 1179,
+        "reward_gold": 39,
+        "path": "default"
+      },
+      {
+        "type": "runner",
+        "count": 15,
+        "interval": 0.204,
+        "max_hp": 295,
+        "reward_gold": 21,
+        "path": "lane_b"
+      },
+      {
+        "type": "flyer",
+        "count": 14,
+        "interval": 0.26,
+        "max_hp": 465,
+        "reward_gold": 23,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 16,
+    "name": "L19 Shield Wall",
+    "reward": 137,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.501,
+        "max_hp": 1676,
+        "reward_gold": 47,
+        "path": "lane_b"
+      },
+      {
+        "type": "basic",
+        "count": 14,
+        "interval": 0.139,
+        "max_hp": 419,
+        "reward_gold": 18,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "runner",
+        "count": 9,
+        "interval": 0.26,
+        "max_hp": 324,
+        "reward_gold": 21,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 17,
+    "name": "L19 Repair Train",
+    "reward": 143,
+    "groups": [
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.445,
+        "max_hp": 1335,
+        "reward_gold": 39,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.501,
+        "max_hp": 1439,
+        "reward_gold": 39,
+        "path": "default"
+      },
+      {
+        "type": "swarm",
+        "count": 32,
+        "interval": 0.093,
+        "max_hp": 185,
+        "reward_gold": 11,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 18,
+    "name": "L19 Armored Air",
+    "reward": 150,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 19,
+        "interval": 0.167,
+        "max_hp": 387,
+        "reward_gold": 26,
+        "path": "default"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 7,
+        "interval": 0.538,
+        "max_hp": 1818,
+        "reward_gold": 44,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 19,
+    "name": "L19 Splitter Payload",
+    "reward": 156,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 8,
+        "interval": 0.575,
+        "max_hp": 2760,
+        "reward_gold": 59,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 16,
+        "interval": 0.186,
+        "max_hp": 439,
+        "reward_gold": 23,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 20,
+    "name": "L19 Elemental Trial IV",
+    "reward": 196,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 4,
+        "interval": 0.724,
+        "max_hp": 3607,
+        "reward_gold": 65,
+        "path": "lane_c"
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.39,
+        "max_hp": 1803,
+        "reward_gold": 42,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "swarm",
+        "count": 26,
+        "interval": 0.13,
+        "max_hp": 266,
+        "reward_gold": 11,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 21,
+    "name": "L19 Cloak Rush",
+    "reward": 170,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 16,
+        "interval": 0.241,
+        "max_hp": 1483,
+        "reward_gold": 36,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "fast",
+        "count": 19,
+        "interval": 0.167,
+        "max_hp": 488,
+        "reward_gold": 21,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 22,
+    "name": "L19 Swarm Anchor",
+    "reward": 176,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 45,
+        "interval": 0.074,
+        "max_hp": 350,
+        "reward_gold": 11,
+        "path": "lane_b"
+      },
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.445,
+        "max_hp": 2702,
+        "reward_gold": 42,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 23,
+    "name": "L19 Hunter Raid",
+    "reward": 183,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 14,
+        "interval": 0.278,
+        "max_hp": 2344,
+        "reward_gold": 44,
+        "path": "lane_c"
+      },
+      {
+        "type": "runner",
+        "count": 15,
+        "interval": 0.167,
+        "max_hp": 746,
+        "reward_gold": 24,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 24,
+    "name": "L19 Disruptor Wing",
+    "reward": 189,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 9,
+        "interval": 0.39,
+        "max_hp": 3416,
+        "reward_gold": 54,
+        "path": "default"
+      },
+      {
+        "type": "flyer",
+        "count": 19,
+        "interval": 0.204,
+        "max_hp": 1298,
+        "reward_gold": 28,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 25,
+    "name": "L19 Elemental Trial V",
+    "reward": 228,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 9,
+        "interval": 0.464,
+        "max_hp": 4685,
+        "reward_gold": 55,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "healer",
+        "count": 9,
+        "interval": 0.334,
+        "max_hp": 3384,
+        "reward_gold": 46,
+        "path": "lane_c"
+      },
+      {
+        "type": "tank",
+        "count": 9,
+        "interval": 0.408,
+        "max_hp": 3644,
+        "reward_gold": 46,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 26,
+    "name": "L19 Air Pressure",
+    "reward": 202,
+    "groups": [
+      {
+        "type": "armored_flyer",
+        "count": 11,
+        "interval": 0.445,
+        "max_hp": 5292,
+        "reward_gold": 51,
+        "path": "lane_c"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 21,
+        "interval": 0.148,
+        "max_hp": 1124,
+        "reward_gold": 31,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 27,
+    "name": "L19 Splitter Swarm",
+    "reward": 209,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 11,
+        "interval": 0.483,
+        "max_hp": 8040,
+        "reward_gold": 67,
+        "path": "default"
+      },
+      {
+        "type": "swarm",
+        "count": 43,
+        "interval": 0.074,
+        "max_hp": 659,
+        "reward_gold": 13,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 28,
+    "name": "L19 Bulwark Mask",
+    "reward": 215,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.631,
+        "max_hp": 10499,
+        "reward_gold": 73,
+        "path": "lane_b"
+      },
+      {
+        "type": "cloaked",
+        "count": 18,
+        "interval": 0.204,
+        "max_hp": 3430,
+        "reward_gold": 39,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 29,
+    "name": "L19 Hunter Skies",
+    "reward": 222,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 18,
+        "interval": 0.223,
+        "max_hp": 4907,
+        "reward_gold": 47,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 19,
+        "interval": 0.148,
+        "max_hp": 1517,
+        "reward_gold": 31,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 30,
+    "name": "L19 Elemental Trial VI",
+    "reward": 261,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 9,
+        "interval": 0.575,
+        "max_hp": 12820,
+        "reward_gold": 75,
+        "path": "default"
+      },
+      {
+        "type": "healer",
+        "count": 11,
+        "interval": 0.297,
+        "max_hp": 6410,
+        "reward_gold": 47,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 21,
+        "interval": 0.148,
+        "max_hp": 1725,
+        "reward_gold": 26,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 31,
+    "name": "L19 Mass Swarm",
+    "reward": 235,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 33,
+        "interval": 0.093,
+        "max_hp": 2454,
+        "reward_gold": 21,
+        "path": "lane_b"
+      },
+      {
+        "type": "swarm",
+        "count": 54,
+        "interval": 0.056,
+        "max_hp": 980,
+        "reward_gold": 13,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 32,
+    "name": "L19 Shielded Armor",
+    "reward": 241,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 15,
+        "interval": 0.316,
+        "max_hp": 8430,
+        "reward_gold": 49,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "shieldbearer",
+        "count": 11,
+        "interval": 0.353,
+        "max_hp": 10837,
+        "reward_gold": 60,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 33,
+    "name": "L19 Disruptor Armor",
+    "reward": 248,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 12,
+        "interval": 0.297,
+        "max_hp": 9647,
+        "reward_gold": 60,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 11,
+        "interval": 0.39,
+        "max_hp": 10644,
+        "reward_gold": 55,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 34,
+    "name": "L19 Silent Rush",
+    "reward": 254,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 28,
+        "interval": 0.167,
+        "max_hp": 6248,
+        "reward_gold": 42,
+        "path": "lane_b"
+      },
+      {
+        "type": "runner",
+        "count": 26,
+        "interval": 0.13,
+        "max_hp": 2575,
+        "reward_gold": 28,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 35,
+    "name": "L19 Elemental Trial VII",
+    "reward": 293,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 14,
+        "interval": 0.39,
+        "max_hp": 17872,
+        "reward_gold": 73,
+        "path": "lane_c"
+      },
+      {
+        "type": "healer",
+        "count": 11,
+        "interval": 0.278,
+        "max_hp": 10560,
+        "reward_gold": 51,
+        "path": "default"
+      },
+      {
+        "type": "fast",
+        "count": 32,
+        "interval": 0.111,
+        "max_hp": 2274,
+        "reward_gold": 26,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 36,
+    "name": "L19 Fast Air Flood",
+    "reward": 267,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 35,
+        "interval": 0.111,
+        "max_hp": 3052,
+        "reward_gold": 34,
+        "path": "default"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 14,
+        "interval": 0.316,
+        "max_hp": 14360,
+        "reward_gold": 57,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 37,
+    "name": "L19 Hunter Guard",
+    "reward": 274,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 21,
+        "interval": 0.186,
+        "max_hp": 10910,
+        "reward_gold": 52,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "shieldbearer",
+        "count": 12,
+        "interval": 0.316,
+        "max_hp": 17854,
+        "reward_gold": 64,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 38,
+    "name": "L19 Bulwark Swarm",
+    "reward": 280,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 11,
+        "interval": 0.51,
+        "max_hp": 28495,
+        "reward_gold": 83,
+        "path": "lane_c"
+      },
+      {
+        "type": "swarm",
+        "count": 64,
+        "interval": 0.046,
+        "max_hp": 1971,
+        "reward_gold": 15,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 39,
+    "name": "L19 Stealth Air",
+    "reward": 287,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 15,
+        "interval": 0.241,
+        "max_hp": 17560,
+        "reward_gold": 65,
+        "path": "default"
+      },
+      {
+        "type": "cloaked",
+        "count": 26,
+        "interval": 0.148,
+        "max_hp": 10294,
+        "reward_gold": 46,
+        "path": "lane_b"
+      },
+      {
+        "type": "flyer",
+        "count": 26,
+        "interval": 0.148,
+        "max_hp": 6661,
+        "reward_gold": 33,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 40,
+    "name": "L19 Elemental Trial VIII",
+    "reward": 326,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 12,
+        "interval": 0.464,
+        "max_hp": 34796,
+        "reward_gold": 85,
+        "path": "lane_b"
+      },
+      {
+        "type": "healer",
+        "count": 14,
+        "interval": 0.241,
+        "max_hp": 17398,
+        "reward_gold": 54,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 14,
+        "interval": 0.278,
+        "max_hp": 21412,
+        "reward_gold": 60,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 41,
+    "name": "L19 Runner Siege",
+    "reward": 300,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 38,
+        "interval": 0.093,
+        "max_hp": 7086,
+        "reward_gold": 31,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "tank",
+        "count": 16,
+        "interval": 0.26,
+        "max_hp": 28336,
+        "reward_gold": 55,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 42,
+    "name": "L19 Shield Splitters",
+    "reward": 306,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 16,
+        "interval": 0.316,
+        "max_hp": 49205,
+        "reward_gold": 80,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "shieldbearer",
+        "count": 14,
+        "interval": 0.278,
+        "max_hp": 40261,
+        "reward_gold": 68,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 43,
+    "name": "L19 Disruptor Flight",
+    "reward": 313,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 42,
+        "interval": 0.074,
+        "max_hp": 8401,
+        "reward_gold": 37,
+        "path": "lane_b"
+      },
+      {
+        "type": "disruptor",
+        "count": 15,
+        "interval": 0.204,
+        "max_hp": 35836,
+        "reward_gold": 68,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 44,
+    "name": "L19 Hunter Cloak",
+    "reward": 319,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 32,
+        "interval": 0.13,
+        "max_hp": 23215,
+        "reward_gold": 47,
+        "path": "lane_c"
+      },
+      {
+        "type": "hunter",
+        "count": 26,
+        "interval": 0.148,
+        "max_hp": 30042,
+        "reward_gold": 57,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 45,
+    "name": "L19 Elemental Trial IX",
+    "reward": 359,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 14,
+        "interval": 0.408,
+        "max_hp": 78461,
+        "reward_gold": 90,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "healer",
+        "count": 15,
+        "interval": 0.204,
+        "max_hp": 39232,
+        "reward_gold": 57,
+        "path": "lane_b"
+      },
+      {
+        "type": "swarm",
+        "count": 71,
+        "interval": 0.042,
+        "max_hp": 5433,
+        "reward_gold": 16,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 46,
+    "name": "L19 Armored Skyfall",
+    "reward": 333,
+    "groups": [
+      {
+        "type": "armored_flyer",
+        "count": 19,
+        "interval": 0.223,
+        "max_hp": 53355,
+        "reward_gold": 65,
+        "path": "lane_b"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 38,
+        "interval": 0.074,
+        "max_hp": 11337,
+        "reward_gold": 39,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 47,
+    "name": "L19 Splitter Raid",
+    "reward": 339,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 19,
+        "interval": 0.26,
+        "max_hp": 81064,
+        "reward_gold": 85,
+        "path": "lane_c"
+      },
+      {
+        "type": "runner",
+        "count": 38,
+        "interval": 0.074,
+        "max_hp": 12898,
+        "reward_gold": 33,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 48,
+    "name": "L19 Bulwark Cloak",
+    "reward": 346,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 18,
+        "interval": 0.204,
+        "max_hp": 73290,
+        "reward_gold": 73,
+        "path": "default"
+      },
+      {
+        "type": "bulwark",
+        "count": 15,
+        "interval": 0.334,
+        "max_hp": 105864,
+        "reward_gold": 93,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "cloaked",
+        "count": 32,
+        "interval": 0.111,
+        "max_hp": 34611,
+        "reward_gold": 51,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 49,
+    "name": "L19 Disruptor Hunt",
+    "reward": 352,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 19,
+        "interval": 0.167,
+        "max_hp": 65239,
+        "reward_gold": 73,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "hunter",
+        "count": 30,
+        "interval": 0.111,
+        "max_hp": 49491,
+        "reward_gold": 60,
+        "path": "lane_c"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 35,
+        "interval": 0.074,
+        "max_hp": 15297,
+        "reward_gold": 41,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 50,
+    "name": "L19 Elemental Trial X",
+    "reward": 391,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 18,
+        "interval": 0.278,
+        "max_hp": 129261,
+        "reward_gold": 95,
+        "path": "lane_c"
+      },
+      {
+        "type": "healer",
+        "count": 19,
+        "interval": 0.148,
+        "max_hp": 64629,
+        "reward_gold": 60,
+        "path": "default"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 18,
+        "interval": 0.186,
+        "max_hp": 79547,
+        "reward_gold": 68,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 51,
+    "name": "L19 Overrun Swarm",
+    "reward": 365,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 92,
+        "interval": 0.032,
+        "max_hp": 9887,
+        "reward_gold": 16,
+        "path": "default"
+      },
+      {
+        "type": "runner",
+        "count": 43,
+        "interval": 0.056,
+        "max_hp": 19227,
+        "reward_gold": 34,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 52,
+    "name": "L19 Shield Payload",
+    "reward": 372,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 28,
+        "interval": 0.204,
+        "max_hp": 133550,
+        "reward_gold": 90,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "shieldbearer",
+        "count": 19,
+        "interval": 0.167,
+        "max_hp": 109268,
+        "reward_gold": 77,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 53,
+    "name": "L19 Air Disruption",
+    "reward": 378,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 26,
+        "interval": 0.13,
+        "max_hp": 97263,
+        "reward_gold": 77,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_c"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 26,
+        "interval": 0.148,
+        "max_hp": 107326,
+        "reward_gold": 70,
+        "path": "default"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 43,
+        "interval": 0.056,
+        "max_hp": 22808,
+        "reward_gold": 42,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 54,
+    "name": "L19 Assassin Wave",
+    "reward": 385,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 43,
+        "interval": 0.074,
+        "max_hp": 63002,
+        "reward_gold": 52,
+        "path": "default"
+      },
+      {
+        "type": "hunter",
+        "count": 36,
+        "interval": 0.084,
+        "max_hp": 81536,
+        "reward_gold": 64,
+        "path": "lane_b"
+      },
+      {
+        "type": "bulwark",
+        "count": 15,
+        "interval": 0.241,
+        "max_hp": 192714,
+        "reward_gold": 99,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 55,
+    "name": "L19 Final Elemental Trial",
+    "reward": 424,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 21,
+        "interval": 0.223,
+        "max_hp": 212953,
+        "reward_gold": 99,
+        "path": "lane_b"
+      },
+      {
+        "type": "healer",
+        "count": 26,
+        "interval": 0.111,
+        "max_hp": 106473,
+        "reward_gold": 64,
+        "path": "lane_c"
+      },
+      {
+        "type": "splitter",
+        "count": 26,
+        "interval": 0.167,
+        "max_hp": 180189,
+        "reward_gold": 93,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      }
+    ],
+    "intel": "Element pick is earned after this wave.",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 56,
+    "name": "L19 Late Air Flood",
+    "reward": 398,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 56,
+        "interval": 0.042,
+        "max_hp": 30770,
+        "reward_gold": 44,
+        "path": "lane_c"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 32,
+        "interval": 0.093,
+        "max_hp": 144806,
+        "reward_gold": 72,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "disruptor",
+        "count": 21,
+        "interval": 0.093,
+        "max_hp": 131229,
+        "reward_gold": 80,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 57,
+    "name": "L19 Ground Overrun",
+    "reward": 404,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 56,
+        "interval": 0.042,
+        "max_hp": 35004,
+        "reward_gold": 36,
+        "affixes": [
+          "fast"
+        ],
+        "path": "default"
+      },
+      {
+        "type": "swarm",
+        "count": 107,
+        "interval": 0.025,
+        "max_hp": 17999,
+        "reward_gold": 18,
+        "path": "lane_b"
+      },
+      {
+        "type": "shieldbearer",
+        "count": 26,
+        "interval": 0.111,
+        "max_hp": 180015,
+        "reward_gold": 80,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 58,
+    "name": "L19 Shadow Payload",
+    "reward": 411,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 56,
+        "interval": 0.051,
+        "max_hp": 93934,
+        "reward_gold": 55,
+        "path": "lane_b"
+      },
+      {
+        "type": "hunter",
+        "count": 42,
+        "interval": 0.065,
+        "max_hp": 121556,
+        "reward_gold": 67,
+        "path": "lane_c"
+      },
+      {
+        "type": "splitter",
+        "count": 30,
+        "interval": 0.111,
+        "max_hp": 243118,
+        "reward_gold": 96,
+        "path": "default"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 59,
+    "name": "L19 Command Siege",
+    "reward": 417,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 30,
+        "interval": 0.148,
+        "max_hp": 317490,
+        "reward_gold": 104,
+        "path": "lane_c"
+      },
+      {
+        "type": "healer",
+        "count": 29,
+        "interval": 0.074,
+        "max_hp": 158745,
+        "reward_gold": 67,
+        "path": "default"
+      },
+      {
+        "type": "disruptor",
+        "count": 29,
+        "interval": 0.074,
+        "max_hp": 177059,
+        "reward_gold": 82,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "armored_flyer",
+        "count": 30,
+        "interval": 0.093,
+        "max_hp": 195376,
+        "reward_gold": 75,
+        "path": "lane_c"
+      }
+    ],
+    "intel": "",
+    "formation": "multi_lane_pincer"
+  },
+  {
+    "wave": 60,
+    "name": "L19 Final Normal Wave",
+    "reward": 554,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 35,
+        "interval": 0.111,
+        "max_hp": 473616,
+        "reward_gold": 104,
+        "path": "default"
+      },
+      {
+        "type": "splitter",
+        "count": 35,
+        "interval": 0.093,
+        "max_hp": 400751,
+        "reward_gold": 98,
+        "affixes": [
+          "fast"
+        ],
+        "path": "lane_b"
+      },
+      {
+        "type": "healer",
+        "count": 32,
+        "interval": 0.065,
+        "max_hp": 236807,
+        "reward_gold": 67,
+        "path": "lane_c"
+      },
+      {
+        "type": "disruptor",
+        "count": 32,
+        "interval": 0.06,
+        "max_hp": 264132,
+        "reward_gold": 83,
+        "path": "default"
+      },
+      {
+        "type": "fast_flyer",
+        "count": 64,
+        "interval": 0.032,
+        "max_hp": 61933,
+        "reward_gold": 46,
+        "path": "lane_b"
+      }
+    ],
+    "intel": "Final normal wave. No element pick after this wave.",
+    "formation": "multi_lane_pincer"
   }
 ]

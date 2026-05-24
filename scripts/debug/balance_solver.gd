@@ -19,6 +19,9 @@ const FORMATION_PLANNER_SCRIPT = preload("res://scripts/managers/spawn_formation
 const ENEMY_CATEGORY_AIR := "air"
 var last_candidate_count: int = 0
 var auto_clear_verbose_solver_logs: bool = false
+const AUTO_CLEAR_MAX_SOLVE_MSEC := 8000
+const AUTO_CLEAR_MAX_CANDIDATES := 5000
+var _auto_clear_deadline_msec: int = 0
 
 class GameState:
 	var gold: int = 0
@@ -69,6 +72,7 @@ func _load_json(path: String) -> Variant:
 
 func solve_level_with_gold_testing(level_id: String, minimum_gold: int = -1) -> Dictionary:
 	current_level_id = level_id
+	_auto_clear_deadline_msec = Time.get_ticks_msec() + AUTO_CLEAR_MAX_SOLVE_MSEC
 	var level_path = "res://data/levels/%s.json" % level_id
 	current_level_data = _load_json(level_path)
 	if current_level_data.is_empty():
@@ -106,6 +110,11 @@ func solve_level_with_gold_testing(level_id: String, minimum_gold: int = -1) -> 
 		var result = _solve_with_gold(gold)
 		result["tested_gold"] = gold
 		result["gold_candidates"] = gold_candidates
+		if _is_solve_budget_result(result):
+			result["starting_gold"] = base_gold
+			result["original_gold"] = base_gold
+			result["result_state"] = "SEARCH_BUDGET_EXHAUSTED"
+			return result
 		if result.get("status", "") == "PASS":
 			result["starting_gold"] = gold
 			result["original_gold"] = base_gold
@@ -229,6 +238,8 @@ func _solve_from_state_with_beam(initial_beam: Array) -> Dictionary:
 			var candidates = _generate_candidates_for_wave(state, w + 1)
 			for candidate in candidates:
 				total_candidates_tested += 1
+				if _is_solve_budget_exhausted(total_candidates_tested):
+					return _make_solve_budget_result(w + 1, total_candidates_tested)
 				var result = simulate_wave(candidate, wave_data)
 				if result.perfect:
 					next_beam.append(result.state)
@@ -269,6 +280,23 @@ func _solve_from_state_with_beam(initial_beam: Array) -> Dictionary:
 	plan_dict["level_id"] = l_id
 	plan_dict["name"] = current_level_data.get("name", "Verified Plan")
 	return {"status": "PASS", "plan": plan_dict, "wave": max_waves, "total_candidates_tested": total_candidates_tested}
+
+func _is_solve_budget_exhausted(total_candidates_tested: int) -> bool:
+	if total_candidates_tested >= AUTO_CLEAR_MAX_CANDIDATES:
+		return true
+	return _auto_clear_deadline_msec > 0 and Time.get_ticks_msec() >= _auto_clear_deadline_msec
+
+func _make_solve_budget_result(wave_number: int, total_candidates_tested: int) -> Dictionary:
+	return {
+		"status": "FAIL",
+		"wave": wave_number,
+		"reason": "Auto-clear search budget exhausted. Use a narrower plan/replay path instead of blocking gameplay.",
+		"total_candidates_tested": total_candidates_tested,
+		"budget_exhausted": true
+	}
+
+func _is_solve_budget_result(result: Dictionary) -> bool:
+	return bool(result.get("budget_exhausted", false))
 
 func _generate_candidates_for_wave(state, wave_num: int) -> Array:
 	var candidates = []

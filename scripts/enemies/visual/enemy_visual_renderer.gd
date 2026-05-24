@@ -2,6 +2,7 @@ class_name EnemyVisualRenderer
 extends RefCounted
 
 const _ROUTER = preload("res://scripts/enemies/enemy_visual_router.gd")
+const EnemyBossMarker = preload("res://scripts/enemies/visual/enemy_boss_marker.gd")
 
 static func draw_enemy(enemy: Node2D) -> void:
 	if enemy._body_baked:
@@ -9,12 +10,6 @@ static func draw_enemy(enemy: Node2D) -> void:
 		const SIZE := 16.0
 		var bs: float = _ROUTER._boss_scale(enemy)
 		var s: float = SIZE * maxf(bs, 1.0)
-		# Affix / boss colour overlay — drawn under status rings so it doesn't wash them out
-		var affix_tint = enemy.get("affix_tint")
-		if affix_tint is Color and affix_tint != Color.WHITE:
-			var is_boss: bool = (enemy.get("tags") is Array) and (enemy.get("tags") as Array).has("boss")
-			var alpha := 0.55 if is_boss else 0.35
-			enemy.draw_circle(Vector2.ZERO, s * 1.10, Color(affix_tint.r, affix_tint.g, affix_tint.b, alpha))
 		if enemy.shield_remaining > 0:
 			enemy.draw_arc(Vector2.ZERO, s * 1.4, 0, TAU, 12, Color(0.4, 0.8, 1.0, 0.22), 1.5)
 		if enemy.active_slow_percent > 0:
@@ -22,6 +17,9 @@ static func draw_enemy(enemy: Node2D) -> void:
 		if enemy.is_flashing and enemy.hit_flash_alpha > 0.01:
 			enemy.draw_circle(Vector2.ZERO, s * 1.35,
 				Color(enemy.hit_flash_color.r, enemy.hit_flash_color.g, enemy.hit_flash_color.b, enemy.hit_flash_alpha))
+		if enemy.is_boss_unit:
+			var crown_anchor: Vector2 = enemy._body_sprite.position if enemy._body_sprite != null and is_instance_valid(enemy._body_sprite) else Vector2.ZERO
+			EnemyBossMarker.draw_crown(enemy, s, crown_anchor)
 		return
 	# Pre-bake: skip the 50+ draw-call procedural renderer for gameplay enemies.
 	# The baked-sprite pop-in animation handles the visual transition seamlessly.
@@ -843,5 +841,3 @@ static func _draw_basic_segmented_leg(enemy: Node2D,
 static func _draw_basic_motion_streak(enemy: Node2D, start_pos: Vector2, end_pos: Vector2, color: Color, alpha: float, width: float = 1.0) -> void:
 	enemy.draw_line(start_pos, end_pos, Color(color.r, color.g, color.b, alpha), width, true)
 	enemy.draw_circle(end_pos, width * 0.70, Color(color.r, color.g, color.b, alpha * 0.82))
-
-

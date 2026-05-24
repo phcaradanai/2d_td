@@ -83,7 +83,7 @@ func _init():
 		var config = l_json.data
 		var waves = w_json.data
 		
-		var is_valid = validator.validate_level(level_id, config, waves)
+		var is_valid = validator.validate_level(config, waves)
 		if is_valid:
 			report_lines.append("OK: " + level_id + " validated.")
 		else:

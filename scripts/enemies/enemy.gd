@@ -41,6 +41,7 @@ var enemy_type: String = "basic"
 var enemy_category: String = ENEMY_CATEGORY_LAND
 var visual_type: String = "basic"
 var display_name: String = "Enemy"
+var is_boss_unit: bool = false
 
 var is_active: bool = false
 var reached_base_flag: bool = false
@@ -52,6 +53,12 @@ var dynamic_path_index: int = 0
 var last_path_grid_version: int = -1
 var dynamic_target_reached_distance: float = 8.0
 var dynamic_travel_distance: float = 0.0
+var path_portals: Array = []
+var _path_portals_used: Dictionary = {}
+
+func set_path_portals(portals: Array) -> void:
+	path_portals = portals
+	_path_portals_used.clear()
 
 # Effects status
 var active_slow_percent: float = 0.0

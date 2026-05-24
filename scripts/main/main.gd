@@ -549,6 +549,7 @@ func _setup_game_from_level() -> void:
 		if child is Line2D and child.name.begins_with("PathVisual_"):
 			child.queue_free()
 
+	var active_path_portals := _build_active_path_portals()
 	for p_id in level_manager.multi_paths:
 		var points = level_manager.get_path_points_for_id(p_id)
 		
@@ -579,7 +580,7 @@ func _setup_game_from_level() -> void:
 			wave_manager.set_pathfinding_manager(pathfinding_manager)
 		if wave_manager.has_method("configure_from_level"):
 			wave_manager.configure_from_level(level_manager)
-		wave_manager.setup(active_path_nodes)
+		wave_manager.setup(active_path_nodes, active_path_portals)
 		if level_manager.level_data.has("waves") and level_manager.level_data["waves"] is Array and not level_manager.level_data["waves"].is_empty():
 			wave_manager.load_waves_from_data(level_manager.level_data["waves"])
 		else:
@@ -663,6 +664,48 @@ func _create_curve_from_points(points: PackedVector2Array) -> Curve2D:
 	for point in points:
 		curve.add_point(point)
 	return curve
+
+func _build_active_path_portals() -> Dictionary:
+	var portals_by_path: Dictionary = {}
+	if level_manager == null:
+		return portals_by_path
+	var raw_portals = level_manager.level_data.get("path_portals", [])
+	if not (raw_portals is Array):
+		return portals_by_path
+	for portal in raw_portals:
+		if not (portal is Dictionary):
+			continue
+		var path_id := str(portal.get("path", "default"))
+		if not level_manager.multi_paths.has(path_id):
+			continue
+		var cells: Array = level_manager.multi_paths[path_id]
+		var entry_index := int(portal.get("entry_index", -1))
+		var exit_index := int(portal.get("exit_index", -1))
+		if entry_index < 0 or exit_index <= entry_index or exit_index >= cells.size():
+			continue
+		var entry_progress := _path_progress_at_cell_index(cells, entry_index)
+		var exit_progress := _path_progress_at_cell_index(cells, exit_index)
+		if exit_progress <= entry_progress:
+			continue
+		var data: Dictionary = portal.duplicate()
+		data["entry_progress"] = entry_progress
+		data["exit_progress"] = exit_progress
+		if not data.has("id"):
+			data["id"] = "%s_%d_%d" % [path_id, entry_index, exit_index]
+		if not portals_by_path.has(path_id):
+			portals_by_path[path_id] = []
+		portals_by_path[path_id].append(data)
+	return portals_by_path
+
+func _path_progress_at_cell_index(cells: Array, index: int) -> float:
+	if cells.is_empty() or index <= 0:
+		return 0.0
+	var total := 0.0
+	for i in range(1, min(index, cells.size() - 1) + 1):
+		var prev: Vector2i = cells[i - 1]
+		var cur: Vector2i = cells[i]
+		total += Vector2(prev - cur).length() * float(level_manager.grid_size)
+	return total
 
 func update_hud() -> void:
 	_refresh_hud_stats()

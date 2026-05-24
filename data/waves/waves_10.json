@@ -1,421 +1,1698 @@
 [
   {
     "wave": 1,
-    "name": "Iron Front",
-    "reward": 55,
+    "name": "L10 Neutral Calibration",
+    "reward": 33,
     "groups": [
       {
-        "type": "shieldbearer",
+        "type": "basic",
         "count": 7,
-        "interval": 0.68
-      },
-      {
-        "type": "healer",
-        "count": 7,
-        "interval": 0.36
-      },
-      {
-        "type": "tank",
-        "count": 16,
-        "interval": 0.65
+        "interval": 0.627,
+        "max_hp": 47,
+        "reward_gold": 7
       },
       {
         "type": "basic",
-        "count": 30,
-        "interval": 0.16
+        "count": 4,
+        "interval": 0.578,
+        "max_hp": 39,
+        "reward_gold": 7,
+        "affixes": [
+          "fast"
+        ]
       }
     ],
-    "intel": "Area 2 elite. Supports are doubled. Establish kill priority immediately."
+    "intel": "Build 3-5 Neutral Arrow/Cannon towers near long path coverage. Yellow-tinted packets move in short bursts."
   },
   {
     "wave": 2,
-    "name": "Splinter Tide",
-    "reward": 65,
+    "name": "L10 First Mixed Stream",
+    "reward": 39,
     "groups": [
       {
-        "type": "splitter",
-        "count": 18,
-        "interval": 0.82
-      },
-      {
-        "type": "healer",
-        "count": 7,
-        "interval": 0.36
+        "type": "basic",
+        "count": 9,
+        "interval": 0.578,
+        "max_hp": 58,
+        "reward_gold": 8,
+        "affixes": [
+          "mechanical"
+        ]
       },
       {
         "type": "swarm",
-        "count": 70,
-        "interval": 0.07
-      },
-      {
-        "type": "runner",
-        "count": 20,
-        "interval": 0.16
+        "count": 9,
+        "interval": 0.347,
+        "max_hp": 23,
+        "reward_gold": 4,
+        "affixes": [
+          "fast"
+        ]
       }
     ],
-    "intel": "Nine Fragmenters. If Healers keep them alive, each spawns three nodes. AoE is mandatory."
+    "intel": "A small swarm screen joins reinforced nodes. Mix arrow coverage with at least one splash option."
   },
   {
     "wave": 3,
-    "name": "Shield Wall",
-    "reward": 78,
+    "name": "L10 Small Packets and Ghost Images",
+    "reward": 46,
     "groups": [
-      {
-        "type": "shieldbearer",
-        "count": 10,
-        "interval": 0.65
-      },
-      {
-        "type": "tank",
-        "count": 20,
-        "interval": 0.65
-      },
-      {
-        "type": "healer",
-        "count": 7,
-        "interval": 0.36,
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "fast",
-        "count": 30,
-        "interval": 0.14,
-        "affixes": [
-          "fast"
-        ]
-      }
-    ],
-    "intel": "Triple Shieldbearer screen. Focus fire on one at a time \u2014 overlapping domes stack protection."
-  },
-  {
-    "wave": 4,
-    "name": "The Long March",
-    "reward": 105,
-    "groups": [
-      {
-        "type": "shieldbearer",
-        "count": 8,
-        "interval": 0.65
-      },
-      {
-        "type": "healer",
-        "count": 8,
-        "interval": 0.34,
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 16,
-        "interval": 0.8
-      },
-      {
-        "type": "tank",
-        "count": 20,
-        "interval": 0.62
-      },
-      {
-        "type": "runner",
-        "count": 22,
-        "interval": 0.15,
-        "affixes": [
-          "fast"
-        ]
-      },
       {
         "type": "swarm",
-        "count": 60,
-        "interval": 0.08
-      }
-    ],
-    "intel": "Maximum Area 2 pressure. Every support type at once. Final exam before the Forest River."
-  },
-  {
-    "wave": 5,
-    "name": "Runner Flood",
-    "reward": 90,
-    "groups": [
-      {
-        "type": "runner",
-        "count": 35,
-        "interval": 0.14,
+        "count": 15,
+        "interval": 0.366,
+        "max_hp": 23,
+        "reward_gold": 4,
         "affixes": [
-          "fast"
-        ]
-      },
-      {
-        "type": "fast",
-        "count": 35,
-        "interval": 0.14,
-        "affixes": [
-          "fast"
-        ]
-      },
-      {
-        "type": "swarm",
-        "count": 75,
-        "interval": 0.07
-      },
-      {
-        "type": "healer",
-        "count": 8,
-        "interval": 0.34,
-        "affixes": [
-          "healing"
-        ]
-      }
-    ],
-    "intel": "All speed types flood through. Both Slow towers must be active."
-  },
-  {
-    "wave": 6,
-    "name": "Armored Wave",
-    "reward": 96,
-    "groups": [
-      {
-        "type": "tank",
-        "count": 24,
-        "interval": 0.6
-      },
-      {
-        "type": "shieldbearer",
-        "count": 10,
-        "interval": 0.62
-      },
-      {
-        "type": "healer",
-        "count": 8,
-        "interval": 0.34,
-        "affixes": [
-          "healing"
+          "image"
         ]
       },
       {
         "type": "basic",
-        "count": 35,
-        "interval": 0.15
+        "count": 9,
+        "interval": 0.501,
+        "max_hp": 54,
+        "reward_gold": 8,
+        "affixes": [
+          "healing"
+        ]
       }
     ],
-    "intel": "Maximum tank density behind a full support screen. Focus fire \u2014 never spray."
+    "intel": "Illusion-tinted swarm packets are backed by repair-marked nodes. Splash helps keep the pack clean."
+  },
+  {
+    "wave": 4,
+    "name": "L10 Mixed Signal",
+    "reward": 53,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 11,
+        "interval": 0.53,
+        "max_hp": 74,
+        "reward_gold": 9,
+        "affixes": [
+          "undead"
+        ]
+      },
+      {
+        "type": "fast",
+        "count": 8,
+        "interval": 0.723,
+        "max_hp": 43,
+        "reward_gold": 11,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 9,
+        "interval": 0.308,
+        "max_hp": 29,
+        "reward_gold": 5,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Undead nodes can come back once. Fast pressure and swarm bodies punish thin coverage."
+  },
+  {
+    "wave": 5,
+    "name": "L10 Elemental Guardian I - Apex Node",
+    "reward": 79,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 13,
+        "interval": 0.53,
+        "max_hp": 82,
+        "reward_gold": 11,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 11,
+        "interval": 0.27,
+        "max_hp": 35,
+        "reward_gold": 5,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "boss_basic",
+        "count": 1,
+        "interval": 1.35,
+        "max_hp": 812,
+        "reward_gold": 59,
+        "base_damage": 1
+      }
+    ],
+    "intel": "First boss guard: clear the fast screen before focusing the Apex Node. Element pick is earned after this wave."
+  },
+  {
+    "wave": 6,
+    "name": "L10 First Element Test Wing",
+    "reward": 59,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 13,
+        "interval": 0.463,
+        "max_hp": 93,
+        "reward_gold": 11,
+        "affixes": [
+          "mechanical"
+        ]
+      },
+      {
+        "type": "flyer",
+        "count": 7,
+        "interval": 0.405,
+        "max_hp": 66,
+        "reward_gold": 13,
+        "affixes": [
+          "image"
+        ]
+      }
+    ],
+    "intel": "After choosing an element, build your first Single Element tower. Light air pressure checks targeting coverage."
   },
   {
     "wave": 7,
-    "name": "Fragment Flood",
-    "reward": 100,
+    "name": "L10 Runner Probe",
+    "reward": 66,
     "groups": [
       {
-        "type": "splitter",
-        "count": 22,
-        "interval": 0.78
+        "type": "basic",
+        "count": 11,
+        "interval": 0.482,
+        "max_hp": 101,
+        "reward_gold": 11,
+        "affixes": [
+          "undead"
+        ]
       },
       {
-        "type": "healer",
-        "count": 10,
-        "interval": 0.32,
+        "type": "runner",
+        "count": 7,
+        "interval": 0.559,
+        "max_hp": 70,
+        "reward_gold": 14,
         "affixes": [
-          "healing"
+          "fast"
         ]
       },
       {
         "type": "swarm",
-        "count": 75,
-        "interval": 0.07
-      },
-      {
-        "type": "runner",
-        "count": 20,
-        "interval": 0.15,
-        "affixes": [
-          "fast"
-        ]
+        "count": 13,
+        "interval": 0.231,
+        "max_hp": 35,
+        "reward_gold": 5
       }
     ],
-    "intel": "Massive Fragmenter wave. AoE is mandatory \u2014 Healer priority to prevent regeneration."
+    "intel": "Runners arrive behind visible bodies. Slow, rapid fire, or long-path coverage should catch the burst."
   },
   {
     "wave": 8,
-    "name": "Elite Surge",
-    "reward": 108,
+    "name": "L10 Swarm Probe with Armor Anchor",
+    "reward": 72,
     "groups": [
       {
-        "type": "shieldbearer",
-        "count": 10,
-        "interval": 0.62
-      },
-      {
-        "type": "healer",
-        "count": 10,
-        "interval": 0.32,
-        "affixes": [
-          "healing"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 18,
-        "interval": 0.78
-      },
-      {
-        "type": "tank",
-        "count": 20,
-        "interval": 0.62
-      },
-      {
-        "type": "runner",
-        "count": 22,
-        "interval": 0.15,
+        "type": "swarm",
+        "count": 26,
+        "interval": 0.27,
+        "max_hp": 35,
+        "reward_gold": 5,
         "affixes": [
           "fast"
         ]
       },
       {
-        "type": "swarm",
-        "count": 60,
-        "interval": 0.08
+        "type": "tank",
+        "count": 3,
+        "interval": 0.819,
+        "max_hp": 243,
+        "reward_gold": 24,
+        "affixes": [
+          "mechanical"
+        ]
       }
     ],
-    "intel": "All elite types. Priority order: Healer \u2192 Shieldbearer \u2192 Splitter \u2192 Tank."
+    "intel": "Mechanical tanks anchor a fast swarm screen. Splash clears bodies; focus damage finishes the anchors."
   },
   {
     "wave": 9,
-    "name": "Storm Column",
-    "reward": 115,
+    "name": "L10 Armor Pressure Probe",
+    "reward": 79,
     "groups": [
       {
-        "type": "shieldbearer",
-        "count": 12,
-        "interval": 0.6
-      },
-      {
-        "type": "healer",
-        "count": 10,
-        "interval": 0.32,
+        "type": "tank",
+        "count": 6,
+        "interval": 0.916,
+        "max_hp": 292,
+        "reward_gold": 24,
         "affixes": [
-          "healing"
+          "mechanical"
         ]
       },
       {
-        "type": "splitter",
-        "count": 20,
-        "interval": 0.76
-      },
-      {
-        "type": "tank",
-        "count": 22,
-        "interval": 0.6
-      },
-      {
-        "type": "swarm",
-        "count": 70,
-        "interval": 0.07
-      },
-      {
-        "type": "runner",
-        "count": 22,
-        "interval": 0.15,
+        "type": "fast",
+        "count": 13,
+        "interval": 0.231,
+        "max_hp": 82,
+        "reward_gold": 13,
         "affixes": [
           "fast"
         ]
       }
     ],
-    "intel": "Near-maximum output. Upgrade everything possible before this arrives."
+    "intel": "Armored bodies are paired with speed pressure. Do not tunnel only on tanks."
   },
   {
     "wave": 10,
-    "name": "Corruption Overflow",
-    "reward": 125,
+    "name": "L10 Elemental Guardian II - Fortress Escort",
+    "reward": 99,
     "groups": [
       {
-        "type": "shieldbearer",
-        "count": 12,
-        "interval": 0.6
-      },
-      {
-        "type": "healer",
-        "count": 12,
-        "interval": 0.3,
+        "type": "basic",
+        "count": 17,
+        "interval": 0.434,
+        "max_hp": 121,
+        "reward_gold": 12,
         "affixes": [
-          "healing"
+          "undead"
         ]
-      },
-      {
-        "type": "splitter",
-        "count": 22,
-        "interval": 0.76
-      },
-      {
-        "type": "tank",
-        "count": 22,
-        "interval": 0.6
-      },
-      {
-        "type": "swarm",
-        "count": 70,
-        "interval": 0.07
       },
       {
         "type": "runner",
-        "count": 25,
-        "interval": 0.14,
+        "count": 9,
+        "interval": 0.289,
+        "max_hp": 97,
+        "reward_gold": 16,
         "affixes": [
           "fast"
         ]
-      }
-    ],
-    "intel": "Area 2 penultimate. Healer \u2192 Shieldbearer \u2192 Splitter kill order. No shortcuts."
-  },
-  {
-    "wave": 11,
-    "name": "Area 2 Boss Finale",
-    "reward": 145,
-    "groups": [
-      {
-        "type": "shieldbearer",
-        "count": 14,
-        "interval": 0.58
       },
       {
         "type": "healer",
-        "count": 14,
-        "interval": 0.3,
+        "count": 2,
+        "interval": 0.771,
+        "max_hp": 292,
+        "reward_gold": 29,
         "affixes": [
           "healing"
-        ]
-      },
-      {
-        "type": "splitter",
-        "count": 24,
-        "interval": 0.74
-      },
-      {
-        "type": "tank",
-        "count": 24,
-        "interval": 0.58
-      },
-      {
-        "type": "swarm",
-        "count": 80,
-        "interval": 0.07
-      },
-      {
-        "type": "runner",
-        "count": 28,
-        "interval": 0.14,
-        "affixes": [
-          "fast"
         ]
       },
       {
         "type": "boss_tank",
-        "count": 2,
-        "interval": 4.0,
-        "spawn_delay": 3.0,
-        "path": "default"
+        "count": 1,
+        "interval": 1.35,
+        "max_hp": 1534,
+        "reward_gold": 92,
+        "base_damage": 1
       }
     ],
-    "intel": "Area 2 finale. Maximum support, maximum count. This is the standard everything else is measured against. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
+    "intel": "Boss escort with healers, runners, and undead nodes. Kill support before the Fortress Titan. Second element pick is earned after this wave."
+  },
+  {
+    "wave": 11,
+    "name": "L10 Swarm Raid",
+    "reward": 84,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 32,
+        "interval": 0.096,
+        "max_hp": 68,
+        "reward_gold": 8
+      },
+      {
+        "type": "runner",
+        "count": 10,
+        "interval": 0.231,
+        "max_hp": 132,
+        "reward_gold": 16
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 12,
+    "name": "L10 Armor Column",
+    "reward": 89,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 7,
+        "interval": 0.53,
+        "max_hp": 587,
+        "reward_gold": 29
+      },
+      {
+        "type": "fast",
+        "count": 15,
+        "interval": 0.212,
+        "max_hp": 117,
+        "reward_gold": 14
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 13,
+    "name": "L10 Fast Air",
+    "reward": 95,
+    "groups": [
+      {
+        "type": "flyer",
+        "count": 17,
+        "interval": 0.27,
+        "max_hp": 255,
+        "reward_gold": 18
+      },
+      {
+        "type": "fast_flyer",
+        "count": 10,
+        "interval": 0.212,
+        "max_hp": 158,
+        "reward_gold": 20,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 14,
+    "name": "L10 Stealth Mask",
+    "reward": 100,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 11,
+        "interval": 0.308,
+        "max_hp": 436,
+        "reward_gold": 25,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "basic",
+        "count": 18,
+        "interval": 0.154,
+        "max_hp": 231,
+        "reward_gold": 13
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 15,
+    "name": "L10 Elemental Trial III",
+    "reward": 132,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.482,
+        "max_hp": 794,
+        "reward_gold": 32
+      },
+      {
+        "type": "runner",
+        "count": 14,
+        "interval": 0.212,
+        "max_hp": 198,
+        "reward_gold": 17
+      },
+      {
+        "type": "flyer",
+        "count": 13,
+        "interval": 0.27,
+        "max_hp": 313,
+        "reward_gold": 18
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 16,
+    "name": "L10 Shield Wall",
+    "reward": 110,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 7,
+        "interval": 0.521,
+        "max_hp": 1128,
+        "reward_gold": 38
+      },
+      {
+        "type": "basic",
+        "count": 13,
+        "interval": 0.145,
+        "max_hp": 282,
+        "reward_gold": 14
+      },
+      {
+        "type": "runner",
+        "count": 8,
+        "interval": 0.27,
+        "max_hp": 218,
+        "reward_gold": 17,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 17,
+    "name": "L10 Repair Train",
+    "reward": 116,
+    "groups": [
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.463,
+        "max_hp": 899,
+        "reward_gold": 32
+      },
+      {
+        "type": "tank",
+        "count": 7,
+        "interval": 0.521,
+        "max_hp": 969,
+        "reward_gold": 32,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 28,
+        "interval": 0.096,
+        "max_hp": 124,
+        "reward_gold": 9
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 18,
+    "name": "L10 Armored Air",
+    "reward": 121,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 18,
+        "interval": 0.174,
+        "max_hp": 261,
+        "reward_gold": 21,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "armored_flyer",
+        "count": 6,
+        "interval": 0.559,
+        "max_hp": 1223,
+        "reward_gold": 36
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 19,
+    "name": "L10 Splitter Payload",
+    "reward": 126,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 7,
+        "interval": 0.598,
+        "max_hp": 1857,
+        "reward_gold": 47
+      },
+      {
+        "type": "runner",
+        "count": 15,
+        "interval": 0.193,
+        "max_hp": 296,
+        "reward_gold": 18
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 20,
+    "name": "L10 Elemental Trial IV",
+    "reward": 158,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 4,
+        "interval": 0.752,
+        "max_hp": 2427,
+        "reward_gold": 53
+      },
+      {
+        "type": "healer",
+        "count": 7,
+        "interval": 0.405,
+        "max_hp": 1214,
+        "reward_gold": 34
+      },
+      {
+        "type": "swarm",
+        "count": 22,
+        "interval": 0.135,
+        "max_hp": 179,
+        "reward_gold": 9,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 21,
+    "name": "L10 Cloak Rush",
+    "reward": 137,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 15,
+        "interval": 0.251,
+        "max_hp": 998,
+        "reward_gold": 29
+      },
+      {
+        "type": "fast",
+        "count": 18,
+        "interval": 0.174,
+        "max_hp": 329,
+        "reward_gold": 17,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 22,
+    "name": "L10 Swarm Anchor",
+    "reward": 142,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 41,
+        "interval": 0.077,
+        "max_hp": 235,
+        "reward_gold": 9,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 7,
+        "interval": 0.463,
+        "max_hp": 1819,
+        "reward_gold": 34
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 23,
+    "name": "L10 Hunter Raid",
+    "reward": 147,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 13,
+        "interval": 0.289,
+        "max_hp": 1577,
+        "reward_gold": 36
+      },
+      {
+        "type": "runner",
+        "count": 14,
+        "interval": 0.174,
+        "max_hp": 502,
+        "reward_gold": 20
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 24,
+    "name": "L10 Disruptor Wing",
+    "reward": 153,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 8,
+        "interval": 0.405,
+        "max_hp": 2299,
+        "reward_gold": 43
+      },
+      {
+        "type": "flyer",
+        "count": 18,
+        "interval": 0.212,
+        "max_hp": 873,
+        "reward_gold": 22
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 25,
+    "name": "L10 Elemental Trial V",
+    "reward": 184,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 8,
+        "interval": 0.482,
+        "max_hp": 3153,
+        "reward_gold": 45
+      },
+      {
+        "type": "healer",
+        "count": 8,
+        "interval": 0.347,
+        "max_hp": 2278,
+        "reward_gold": 37,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "tank",
+        "count": 8,
+        "interval": 0.424,
+        "max_hp": 2453,
+        "reward_gold": 37,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 26,
+    "name": "L10 Air Pressure",
+    "reward": 163,
+    "groups": [
+      {
+        "type": "armored_flyer",
+        "count": 10,
+        "interval": 0.463,
+        "max_hp": 3561,
+        "reward_gold": 41,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 20,
+        "interval": 0.154,
+        "max_hp": 757,
+        "reward_gold": 25
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 27,
+    "name": "L10 Splitter Swarm",
+    "reward": 168,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 10,
+        "interval": 0.501,
+        "max_hp": 5411,
+        "reward_gold": 54
+      },
+      {
+        "type": "swarm",
+        "count": 39,
+        "interval": 0.077,
+        "max_hp": 443,
+        "reward_gold": 11
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 28,
+    "name": "L10 Bulwark Mask",
+    "reward": 174,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 7,
+        "interval": 0.656,
+        "max_hp": 7066,
+        "reward_gold": 59
+      },
+      {
+        "type": "cloaked",
+        "count": 17,
+        "interval": 0.212,
+        "max_hp": 2309,
+        "reward_gold": 32
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 29,
+    "name": "L10 Hunter Skies",
+    "reward": 179,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 17,
+        "interval": 0.231,
+        "max_hp": 3303,
+        "reward_gold": 38
+      },
+      {
+        "type": "fast_flyer",
+        "count": 18,
+        "interval": 0.154,
+        "max_hp": 1021,
+        "reward_gold": 25,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 30,
+    "name": "L10 Elemental Trial VI",
+    "reward": 210,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 8,
+        "interval": 0.598,
+        "max_hp": 8628,
+        "reward_gold": 60,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.308,
+        "max_hp": 4314,
+        "reward_gold": 38
+      },
+      {
+        "type": "runner",
+        "count": 20,
+        "interval": 0.154,
+        "max_hp": 1161,
+        "reward_gold": 21
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 31,
+    "name": "L10 Mass Swarm",
+    "reward": 189,
+    "groups": [
+      {
+        "type": "basic",
+        "count": 29,
+        "interval": 0.096,
+        "max_hp": 1651,
+        "reward_gold": 17
+      },
+      {
+        "type": "swarm",
+        "count": 50,
+        "interval": 0.058,
+        "max_hp": 659,
+        "reward_gold": 11
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 32,
+    "name": "L10 Shielded Armor",
+    "reward": 195,
+    "groups": [
+      {
+        "type": "tank",
+        "count": 14,
+        "interval": 0.328,
+        "max_hp": 5674,
+        "reward_gold": 39,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 10,
+        "interval": 0.366,
+        "max_hp": 7294,
+        "reward_gold": 49
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 33,
+    "name": "L10 Disruptor Armor",
+    "reward": 200,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 11,
+        "interval": 0.308,
+        "max_hp": 6492,
+        "reward_gold": 49
+      },
+      {
+        "type": "armored_flyer",
+        "count": 10,
+        "interval": 0.405,
+        "max_hp": 7163,
+        "reward_gold": 45,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 34,
+    "name": "L10 Silent Rush",
+    "reward": 205,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 24,
+        "interval": 0.174,
+        "max_hp": 4205,
+        "reward_gold": 34,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "runner",
+        "count": 22,
+        "interval": 0.135,
+        "max_hp": 1733,
+        "reward_gold": 22
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 35,
+    "name": "L10 Elemental Trial VII",
+    "reward": 237,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 13,
+        "interval": 0.405,
+        "max_hp": 12028,
+        "reward_gold": 59
+      },
+      {
+        "type": "healer",
+        "count": 10,
+        "interval": 0.289,
+        "max_hp": 7107,
+        "reward_gold": 41
+      },
+      {
+        "type": "fast",
+        "count": 28,
+        "interval": 0.116,
+        "max_hp": 1531,
+        "reward_gold": 21
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 36,
+    "name": "L10 Fast Air Flood",
+    "reward": 216,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 31,
+        "interval": 0.116,
+        "max_hp": 2054,
+        "reward_gold": 28
+      },
+      {
+        "type": "armored_flyer",
+        "count": 13,
+        "interval": 0.328,
+        "max_hp": 9665,
+        "reward_gold": 46
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 37,
+    "name": "L10 Hunter Guard",
+    "reward": 221,
+    "groups": [
+      {
+        "type": "hunter",
+        "count": 20,
+        "interval": 0.193,
+        "max_hp": 7342,
+        "reward_gold": 42
+      },
+      {
+        "type": "shieldbearer",
+        "count": 11,
+        "interval": 0.328,
+        "max_hp": 12016,
+        "reward_gold": 51,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 38,
+    "name": "L10 Bulwark Swarm",
+    "reward": 226,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 10,
+        "interval": 0.53,
+        "max_hp": 19178,
+        "reward_gold": 67,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 60,
+        "interval": 0.048,
+        "max_hp": 1326,
+        "reward_gold": 12
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 39,
+    "name": "L10 Stealth Air",
+    "reward": 231,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 14,
+        "interval": 0.251,
+        "max_hp": 11818,
+        "reward_gold": 53
+      },
+      {
+        "type": "cloaked",
+        "count": 22,
+        "interval": 0.154,
+        "max_hp": 6928,
+        "reward_gold": 37
+      },
+      {
+        "type": "flyer",
+        "count": 22,
+        "interval": 0.154,
+        "max_hp": 4483,
+        "reward_gold": 26
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 40,
+    "name": "L10 Elemental Trial VIII",
+    "reward": 263,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 11,
+        "interval": 0.482,
+        "max_hp": 23418,
+        "reward_gold": 68
+      },
+      {
+        "type": "healer",
+        "count": 13,
+        "interval": 0.251,
+        "max_hp": 11709,
+        "reward_gold": 43
+      },
+      {
+        "type": "armored_flyer",
+        "count": 13,
+        "interval": 0.289,
+        "max_hp": 14411,
+        "reward_gold": 49,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 41,
+    "name": "L10 Runner Siege",
+    "reward": 242,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 34,
+        "interval": 0.096,
+        "max_hp": 4769,
+        "reward_gold": 25
+      },
+      {
+        "type": "tank",
+        "count": 15,
+        "interval": 0.27,
+        "max_hp": 19071,
+        "reward_gold": 45,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 42,
+    "name": "L10 Shield Splitters",
+    "reward": 247,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 15,
+        "interval": 0.328,
+        "max_hp": 33116,
+        "reward_gold": 64,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 13,
+        "interval": 0.289,
+        "max_hp": 27096,
+        "reward_gold": 55
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 43,
+    "name": "L10 Disruptor Flight",
+    "reward": 252,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 38,
+        "interval": 0.077,
+        "max_hp": 5654,
+        "reward_gold": 30
+      },
+      {
+        "type": "disruptor",
+        "count": 14,
+        "interval": 0.212,
+        "max_hp": 24118,
+        "reward_gold": 55
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 44,
+    "name": "L10 Hunter Cloak",
+    "reward": 258,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 28,
+        "interval": 0.135,
+        "max_hp": 15624,
+        "reward_gold": 38
+      },
+      {
+        "type": "hunter",
+        "count": 22,
+        "interval": 0.154,
+        "max_hp": 20218,
+        "reward_gold": 46
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 45,
+    "name": "L10 Elemental Trial IX",
+    "reward": 289,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 13,
+        "interval": 0.424,
+        "max_hp": 52805,
+        "reward_gold": 72
+      },
+      {
+        "type": "healer",
+        "count": 14,
+        "interval": 0.212,
+        "max_hp": 26403,
+        "reward_gold": 46,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "swarm",
+        "count": 67,
+        "interval": 0.043,
+        "max_hp": 3657,
+        "reward_gold": 13
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 46,
+    "name": "L10 Armored Skyfall",
+    "reward": 268,
+    "groups": [
+      {
+        "type": "armored_flyer",
+        "count": 18,
+        "interval": 0.231,
+        "max_hp": 35909,
+        "reward_gold": 53,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 34,
+        "interval": 0.077,
+        "max_hp": 7630,
+        "reward_gold": 32
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 47,
+    "name": "L10 Splitter Raid",
+    "reward": 274,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 18,
+        "interval": 0.27,
+        "max_hp": 54557,
+        "reward_gold": 68
+      },
+      {
+        "type": "runner",
+        "count": 34,
+        "interval": 0.077,
+        "max_hp": 8681,
+        "reward_gold": 26
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 48,
+    "name": "L10 Bulwark Cloak",
+    "reward": 279,
+    "groups": [
+      {
+        "type": "shieldbearer",
+        "count": 17,
+        "interval": 0.212,
+        "max_hp": 49325,
+        "reward_gold": 59
+      },
+      {
+        "type": "bulwark",
+        "count": 14,
+        "interval": 0.347,
+        "max_hp": 71247,
+        "reward_gold": 75
+      },
+      {
+        "type": "cloaked",
+        "count": 28,
+        "interval": 0.116,
+        "max_hp": 23293,
+        "reward_gold": 41,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 49,
+    "name": "L10 Disruptor Hunt",
+    "reward": 284,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 18,
+        "interval": 0.174,
+        "max_hp": 43906,
+        "reward_gold": 59
+      },
+      {
+        "type": "hunter",
+        "count": 26,
+        "interval": 0.116,
+        "max_hp": 33308,
+        "reward_gold": 49,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 31,
+        "interval": 0.077,
+        "max_hp": 10295,
+        "reward_gold": 33
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 50,
+    "name": "L10 Elemental Trial X",
+    "reward": 316,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 17,
+        "interval": 0.289,
+        "max_hp": 86994,
+        "reward_gold": 76,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "healer",
+        "count": 18,
+        "interval": 0.154,
+        "max_hp": 43496,
+        "reward_gold": 49
+      },
+      {
+        "type": "armored_flyer",
+        "count": 17,
+        "interval": 0.193,
+        "max_hp": 53536,
+        "reward_gold": 55,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 51,
+    "name": "L10 Overrun Swarm",
+    "reward": 295,
+    "groups": [
+      {
+        "type": "swarm",
+        "count": 88,
+        "interval": 0.034,
+        "max_hp": 6654,
+        "reward_gold": 13
+      },
+      {
+        "type": "runner",
+        "count": 39,
+        "interval": 0.058,
+        "max_hp": 12940,
+        "reward_gold": 28
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 52,
+    "name": "L10 Shield Payload",
+    "reward": 300,
+    "groups": [
+      {
+        "type": "splitter",
+        "count": 24,
+        "interval": 0.212,
+        "max_hp": 89880,
+        "reward_gold": 72,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 18,
+        "interval": 0.174,
+        "max_hp": 73539,
+        "reward_gold": 62
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 53,
+    "name": "L10 Air Disruption",
+    "reward": 305,
+    "groups": [
+      {
+        "type": "disruptor",
+        "count": 22,
+        "interval": 0.135,
+        "max_hp": 65459,
+        "reward_gold": 62
+      },
+      {
+        "type": "armored_flyer",
+        "count": 22,
+        "interval": 0.154,
+        "max_hp": 72231,
+        "reward_gold": 57,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "fast_flyer",
+        "count": 39,
+        "interval": 0.058,
+        "max_hp": 15350,
+        "reward_gold": 34
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 54,
+    "name": "L10 Assassin Wave",
+    "reward": 310,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 39,
+        "interval": 0.077,
+        "max_hp": 42401,
+        "reward_gold": 42,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 32,
+        "interval": 0.087,
+        "max_hp": 54874,
+        "reward_gold": 51
+      },
+      {
+        "type": "bulwark",
+        "count": 14,
+        "interval": 0.251,
+        "max_hp": 129698,
+        "reward_gold": 80
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 55,
+    "name": "L10 Final Elemental Trial",
+    "reward": 342,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 20,
+        "interval": 0.231,
+        "max_hp": 143319,
+        "reward_gold": 80
+      },
+      {
+        "type": "healer",
+        "count": 22,
+        "interval": 0.116,
+        "max_hp": 71658,
+        "reward_gold": 51
+      },
+      {
+        "type": "splitter",
+        "count": 22,
+        "interval": 0.174,
+        "max_hp": 121269,
+        "reward_gold": 75,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": "Element pick is earned after this wave."
+  },
+  {
+    "wave": 56,
+    "name": "L10 Late Air Flood",
+    "reward": 321,
+    "groups": [
+      {
+        "type": "fast_flyer",
+        "count": 52,
+        "interval": 0.043,
+        "max_hp": 20708,
+        "reward_gold": 36
+      },
+      {
+        "type": "armored_flyer",
+        "count": 28,
+        "interval": 0.096,
+        "max_hp": 97456,
+        "reward_gold": 58
+      },
+      {
+        "type": "disruptor",
+        "count": 20,
+        "interval": 0.096,
+        "max_hp": 88319,
+        "reward_gold": 64,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 57,
+    "name": "L10 Ground Overrun",
+    "reward": 326,
+    "groups": [
+      {
+        "type": "runner",
+        "count": 52,
+        "interval": 0.043,
+        "max_hp": 23558,
+        "reward_gold": 29
+      },
+      {
+        "type": "swarm",
+        "count": 103,
+        "interval": 0.025,
+        "max_hp": 12113,
+        "reward_gold": 14,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "shieldbearer",
+        "count": 22,
+        "interval": 0.116,
+        "max_hp": 121152,
+        "reward_gold": 64
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 58,
+    "name": "L10 Shadow Payload",
+    "reward": 331,
+    "groups": [
+      {
+        "type": "cloaked",
+        "count": 52,
+        "interval": 0.053,
+        "max_hp": 63218,
+        "reward_gold": 45,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "hunter",
+        "count": 38,
+        "interval": 0.067,
+        "max_hp": 81809,
+        "reward_gold": 54
+      },
+      {
+        "type": "splitter",
+        "count": 26,
+        "interval": 0.116,
+        "max_hp": 163621,
+        "reward_gold": 78
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 59,
+    "name": "L10 Command Siege",
+    "reward": 337,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 26,
+        "interval": 0.154,
+        "max_hp": 213674,
+        "reward_gold": 84
+      },
+      {
+        "type": "healer",
+        "count": 25,
+        "interval": 0.077,
+        "max_hp": 106837,
+        "reward_gold": 54
+      },
+      {
+        "type": "disruptor",
+        "count": 25,
+        "interval": 0.077,
+        "max_hp": 119162,
+        "reward_gold": 66
+      },
+      {
+        "type": "armored_flyer",
+        "count": 26,
+        "interval": 0.096,
+        "max_hp": 131490,
+        "reward_gold": 60,
+        "affixes": [
+          "fast"
+        ]
+      }
+    ],
+    "intel": ""
+  },
+  {
+    "wave": 60,
+    "name": "L10 Final Normal Wave",
+    "reward": 447,
+    "groups": [
+      {
+        "type": "bulwark",
+        "count": 31,
+        "interval": 0.116,
+        "max_hp": 318749,
+        "reward_gold": 84
+      },
+      {
+        "type": "splitter",
+        "count": 31,
+        "interval": 0.096,
+        "max_hp": 269709,
+        "reward_gold": 79
+      },
+      {
+        "type": "healer",
+        "count": 28,
+        "interval": 0.067,
+        "max_hp": 159373,
+        "reward_gold": 54,
+        "affixes": [
+          "fast"
+        ]
+      },
+      {
+        "type": "disruptor",
+        "count": 28,
+        "interval": 0.063,
+        "max_hp": 177763,
+        "reward_gold": 67
+      },
+      {
+        "type": "fast_flyer",
+        "count": 60,
+        "interval": 0.034,
+        "max_hp": 41681,
+        "reward_gold": 37
+      }
+    ],
+    "intel": "Final normal wave. No element pick after this wave."
   }
 ]

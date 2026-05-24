@@ -11,7 +11,7 @@
 	},
 	"starting_gold": 260.0,
 	"starting_lives": 20.0,
-	"waves_path": "res://data/waves.json",
+	"waves_path": "res://data/waves/waves_01.json",
 	"buildable_mode": "full_non_path",
 	"spawn_cell": [
 		0.0,

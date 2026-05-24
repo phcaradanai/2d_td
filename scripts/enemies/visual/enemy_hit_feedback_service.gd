@@ -1,6 +1,8 @@
 class_name EnemyHitFeedbackService
 extends RefCounted
 
+const EnemyAffixVisuals = preload("res://scripts/config/enemy_affix_visuals.gd")
+
 static func _play_sprite_hit_impact(enemy: Node2D, color: Color) -> void:
 	if not enemy._body_baked or enemy._body_sprite == null or not is_instance_valid(enemy._body_sprite):
 		return
@@ -58,12 +60,12 @@ static func _play_sprite_hit_impact(enemy: Node2D, color: Color) -> void:
 			enemy._death_glow_tween.play()
 	)
 	# Colour fade [WAVE 3: +110ms, parallel with callback]
-	t.tween_property(enemy._body_sprite, "modulate", Color.WHITE, 0.11)\
+	t.tween_property(enemy._body_sprite, "modulate", EnemyAffixVisuals.get_sprite_modulate(enemy.affix_tint), 0.11)\
 		.set_trans(Tween.TRANS_EXPO)
 	t.chain().tween_callback(func() -> void:
 		if enemy._body_sprite != null and is_instance_valid(enemy._body_sprite):
 			if enemy.health_visual_state < enemy.HealthVisualState.HEALTH_CRITICAL:
-				enemy._body_sprite.modulate = Color.WHITE
+				enemy._body_sprite.modulate = EnemyAffixVisuals.get_sprite_modulate(enemy.affix_tint)
 	)
 
 	# Separate quick shake anchored at the current visual offset. Do not reset

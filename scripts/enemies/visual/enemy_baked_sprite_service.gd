@@ -1,6 +1,9 @@
 class_name EnemyBakedSpriteService
 extends RefCounted
 
+const EnemyAffixVisuals = preload("res://scripts/config/enemy_affix_visuals.gd")
+const EnemyVisualRouter = preload("res://scripts/enemies/enemy_visual_router.gd")
+
 static func _resolve_visual_root(enemy: Node2D) -> Node2D:
 	var n = enemy.get_node_or_null("Body")
 	if n is Node2D:
@@ -80,11 +83,11 @@ static func _apply_baked_enemy_texture(enemy: Node2D, tex: ImageTexture) -> void
 		enemy.move_child(enemy._shadow_node, 0)
 		enemy._shadow_node.queue_redraw()
 
-	const _ROUTER = preload("res://scripts/enemies/enemy_visual_router.gd")
-	var bs: float = _ROUTER._boss_scale(enemy)
+	var bs: float = EnemyVisualRouter._boss_scale(enemy)
 	enemy._bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM) * maxf(bs, 1.0)
 	enemy._body_sprite.texture = tex
 	enemy._body_sprite.scale = enemy._bake_scale
+	enemy._body_sprite.modulate = EnemyAffixVisuals.get_sprite_modulate(enemy.affix_tint)
 	enemy._body_sprite.visible = true
 	enemy._baked_health_state = enemy.health_visual_state
 	if not enemy._body_baked:

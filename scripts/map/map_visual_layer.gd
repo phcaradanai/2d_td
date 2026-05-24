@@ -1109,14 +1109,13 @@ func _draw_markers(gs: int) -> void:
 		if points.is_empty(): continue
 		
 		var spawn_pos = points[0]
-		var label = "A" if str(p_id) == "default" else ""
+		var label = _lane_marker_label(str(p_id))
 		var active_spawn = active_preview_paths.has(str(p_id)) and preview_alpha > 0.01
 		var portal_radius := gs * (0.55 if str(p_id) == "default" else 0.40)
 		_draw_spawn_portal(spawn_pos, portal_radius, current_theme.color_spawn, active_spawn)
-		if label != "":
-			var label_color = current_theme.color_spawn
-			label_color.a = 1.0 if active_spawn else 0.55
-			draw_string(font, spawn_pos + Vector2(-8, -gs * 0.7), label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, label_color)
+		var label_color = current_theme.color_spawn
+		label_color.a = 1.0 if active_spawn else 0.62
+		draw_string(font, spawn_pos + Vector2(-8, -gs * 0.7), label, HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, label_color)
 		
 		var base_pos = points[points.size() - 1]
 		var is_duplicate = false
@@ -1129,6 +1128,48 @@ func _draw_markers(gs: int) -> void:
 			_draw_energy_core(base_pos, gs * 0.6, current_theme.color_base, _preview_has_base_at(base_pos))
 			draw_string(font, base_pos + Vector2(-15, gs * 0.85), "CORE", HORIZONTAL_ALIGNMENT_CENTER, -1, font_size, current_theme.color_base)
 			drawn_base_positions.append(base_pos)
+
+	_draw_path_portal_markers(font, font_size, gs)
+
+func _lane_marker_label(path_id: String) -> String:
+	if path_id == "default":
+		return "A"
+	if path_id == "lane_b":
+		return "B"
+	if path_id == "lane_c":
+		return "C"
+	if path_id == "air_lane":
+		return "AIR"
+	return path_id.substr(0, min(3, path_id.length())).to_upper()
+
+func _draw_path_portal_markers(font: Font, font_size: int, gs: int) -> void:
+	var portals = level_manager.level_data.get("path_portals", [])
+	if not (portals is Array):
+		return
+	for portal in portals:
+		if not (portal is Dictionary):
+			continue
+		var path_id := str(portal.get("path", "default"))
+		if not level_manager.multi_paths.has(path_id):
+			continue
+		var cells: Array = level_manager.multi_paths[path_id]
+		var entry_index := int(portal.get("entry_index", -1))
+		var exit_index := int(portal.get("exit_index", -1))
+		if entry_index < 0 or exit_index < 0 or entry_index >= cells.size() or exit_index >= cells.size():
+			continue
+		var entry_pos: Vector2 = level_manager.cell_to_world_center(cells[entry_index])
+		var exit_pos: Vector2 = level_manager.cell_to_world_center(cells[exit_index])
+		var color := Color(0.62, 0.86, 1.0, 0.92)
+		draw_line(entry_pos, exit_pos, Color(color.r, color.g, color.b, 0.18), 3.0)
+		_draw_phase_gate_marker(entry_pos, gs * 0.30, color)
+		_draw_phase_gate_marker(exit_pos, gs * 0.30, Color(1.0, 0.70, 0.30, 0.92))
+		draw_string(font, entry_pos + Vector2(-16, -gs * 0.48), "GATE", HORIZONTAL_ALIGNMENT_CENTER, -1, font_size - 2, color)
+
+func _draw_phase_gate_marker(pos: Vector2, radius: float, color: Color) -> void:
+	draw_circle(pos, radius * 1.55, Color(color.r, color.g, color.b, 0.08))
+	draw_arc(pos, radius, 0.0, TAU, 24, color, 2.0)
+	draw_arc(pos, radius * 0.62, PI * 0.15, PI * 1.45, 18, Color(1.0, 1.0, 1.0, 0.55), 1.2)
+	draw_circle(pos, radius * 0.22, Color(color.r, color.g, color.b, 0.82))
 
 func _draw_spawn_portal(pos: Vector2, radius: float, color: Color, active: bool = false) -> void:
 	var time = preview_timer * 2.0

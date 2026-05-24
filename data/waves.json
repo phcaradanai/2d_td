@@ -6,32 +6,55 @@
 	"groups": [
 	  {
 		"type": "basic",
-		"count": 8,
+		"count": 6,
 		"interval": 0.65,
 		"max_hp": 24,
 		"reward_gold": 5
+	  },
+	  {
+		"type": "basic",
+		"count": 4,
+		"interval": 0.6,
+		"max_hp": 20,
+		"reward_gold": 5,
+		"affixes": [
+		  "fast"
+		]
 	  }
 	],
-	"intel": "Build 3-5 Neutral Arrow/Cannon towers near long path coverage."
+	"intel": "Build 3-5 Neutral Arrow/Cannon towers near long path coverage. Yellow-tinted packets move in short bursts."
   },
   {
 	"wave": 2,
-	"name": "First Stream",
+	"name": "First Mixed Stream",
 	"reward": 30,
 	"groups": [
 	  {
 		"type": "basic",
-		"count": 10,
+		"count": 8,
 		"interval": 0.6,
 		"max_hp": 30,
-		"reward_gold": 6
+		"reward_gold": 6,
+		"affixes": [
+		  "mechanical"
+		]
+	  },
+	  {
+		"type": "swarm",
+		"count": 8,
+		"interval": 0.36,
+		"max_hp": 12,
+		"reward_gold": 3,
+		"affixes": [
+		  "fast"
+		]
 	  }
 	],
-	"intel": "Early clone test wave. No element yet."
+	"intel": "A small swarm screen joins reinforced nodes. Mix arrow coverage with at least one splash option."
   },
   {
 	"wave": 3,
-	"name": "Small Packets",
+	"name": "Small Packets and Ghost Images",
 	"reward": 35,
 	"groups": [
 	  {
@@ -39,10 +62,23 @@
 		"count": 14,
 		"interval": 0.38,
 		"max_hp": 12,
-		"reward_gold": 3
+		"reward_gold": 3,
+		"affixes": [
+		  "image"
+		]
+	  },
+	  {
+		"type": "basic",
+		"count": 8,
+		"interval": 0.52,
+		"max_hp": 28,
+		"reward_gold": 6,
+		"affixes": [
+		  "healing"
+		]
 	  }
 	],
-	"intel": "Use at least one Neutral Cannon for groups if needed."
+	"intel": "Illusion-tinted swarm packets are backed by repair-marked nodes. Splash helps keep the pack clean."
   },
   {
 	"wave": 4,
@@ -54,44 +90,70 @@
 		"count": 10,
 		"interval": 0.55,
 		"max_hp": 38,
-		"reward_gold": 7
+		"reward_gold": 7,
+		"affixes": [
+		  "undead"
+		]
 	  },
 	  {
 		"type": "fast",
-		"count": 4,
+		"count": 7,
 		"interval": 0.75,
 		"max_hp": 22,
-		"reward_gold": 8
+		"reward_gold": 8,
+		"affixes": [
+		  "fast"
+		]
+	  },
+	  {
+		"type": "swarm",
+		"count": 8,
+		"interval": 0.32,
+		"max_hp": 15,
+		"reward_gold": 4
 	  }
 	],
-	"intel": "This is the final neutral-only setup wave before the first Guardian trial."
+	"intel": "Undead nodes can come back once. Fast pressure and swarm bodies punish thin coverage."
   },
   {
 	"wave": 5,
-	"name": "Elemental Guardian I",
+	"name": "Elemental Guardian I - Apex Node",
 	"reward": 60,
 	"groups": [
 	  {
 		"type": "basic",
-		"count": 8,
+		"count": 12,
 		"interval": 0.55,
 		"max_hp": 42,
-		"reward_gold": 8
+		"reward_gold": 8,
+		"affixes": [
+		  "mechanical"
+		]
 	  },
 	  {
-		"type": "tank",
+		"type": "swarm",
+		"count": 10,
+		"interval": 0.28,
+		"max_hp": 18,
+		"reward_gold": 4,
+		"affixes": [
+		  "fast"
+		]
+	  },
+	  {
+		"type": "boss_basic",
 		"count": 1,
-		"interval": 1.2,
-		"max_hp": 120,
-		"reward_gold": 35,
+		"interval": 1.4,
+		"max_hp": 360,
+		"reward_gold": 45,
 		"base_damage": 1
 	  }
 	],
-	"intel": "Element pick is earned after this wave."
+	"intel": "First boss guard: clear the fast screen before focusing the Apex Node. Element pick is earned after this wave."
   },
   {
 	"wave": 6,
-	"name": "First Element Test",
+	"name": "First Element Test Wing",
 	"reward": 45,
 	"groups": [
 	  {
@@ -99,10 +161,23 @@
 		"count": 12,
 		"interval": 0.48,
 		"max_hp": 48,
-		"reward_gold": 8
+		"reward_gold": 8,
+		"affixes": [
+		  "mechanical"
+		]
+	  },
+	  {
+		"type": "flyer",
+		"count": 6,
+		"interval": 0.42,
+		"max_hp": 34,
+		"reward_gold": 10,
+		"affixes": [
+		  "image"
+		]
 	  }
 	],
-	"intel": "After choosing an element, build your first Single Element tower."
+	"intel": "After choosing an element, build your first Single Element tower. Light air pressure checks targeting coverage."
   },
   {
 	"wave": 7,
@@ -114,70 +189,132 @@
 		"count": 10,
 		"interval": 0.5,
 		"max_hp": 52,
-		"reward_gold": 8
+		"reward_gold": 8,
+		"affixes": [
+		  "undead"
+		]
 	  },
 	  {
-		"type": "fast",
+		"type": "runner",
 		"count": 6,
 		"interval": 0.58,
-		"max_hp": 30,
-		"reward_gold": 9
-	  }
-	],
-	"intel": "Fast creeps test whether your first element covers speed."
-  },
-  {
-	"wave": 8,
-	"name": "Swarm Probe",
-	"reward": 55,
-	"groups": [
+		"max_hp": 36,
+		"reward_gold": 11,
+		"affixes": [
+		  "fast"
+		]
+	  },
 	  {
 		"type": "swarm",
-		"count": 20,
-		"interval": 0.28,
+		"count": 12,
+		"interval": 0.24,
 		"max_hp": 18,
 		"reward_gold": 4
 	  }
 	],
-	"intel": "Splash/chain/fast fire starts to matter."
+	"intel": "Runners arrive behind visible bodies. Slow, rapid fire, or long-path coverage should catch the burst."
+  },
+  {
+	"wave": 8,
+	"name": "Swarm Probe with Armor Anchor",
+	"reward": 55,
+	"groups": [
+	  {
+		"type": "swarm",
+		"count": 24,
+		"interval": 0.28,
+		"max_hp": 18,
+		"reward_gold": 4,
+		"affixes": [
+		  "fast"
+		]
+	  },
+	  {
+		"type": "tank",
+		"count": 3,
+		"interval": 0.85,
+		"max_hp": 125,
+		"reward_gold": 18,
+		"affixes": [
+		  "mechanical"
+		]
+	  }
+	],
+	"intel": "Mechanical tanks anchor a fast swarm screen. Splash clears bodies; focus damage finishes the anchors."
   },
   {
 	"wave": 9,
-	"name": "Armor Probe",
+	"name": "Armor Pressure Probe",
 	"reward": 60,
 	"groups": [
 	  {
 		"type": "tank",
-		"count": 4,
+		"count": 5,
 		"interval": 0.95,
 		"max_hp": 150,
-		"reward_gold": 18
+		"reward_gold": 18,
+		"affixes": [
+		  "mechanical"
+		]
+	  },
+	  {
+		"type": "fast",
+		"count": 12,
+		"interval": 0.24,
+		"max_hp": 42,
+		"reward_gold": 10,
+		"affixes": [
+		  "fast"
+		]
 	  }
 	],
-	"intel": "Single-target damage or focused placement helps."
+	"intel": "Armored bodies are paired with speed pressure. Do not tunnel only on tanks."
   },
   {
 	"wave": 10,
-	"name": "Elemental Guardian II",
+	"name": "Elemental Guardian II - Fortress Escort",
 	"reward": 75,
 	"groups": [
 	  {
 		"type": "basic",
-		"count": 12,
+		"count": 16,
 		"interval": 0.45,
 		"max_hp": 62,
-		"reward_gold": 9
+		"reward_gold": 9,
+		"affixes": [
+		  "undead"
+		]
 	  },
 	  {
-		"type": "tank",
+		"type": "runner",
+		"count": 8,
+		"interval": 0.3,
+		"max_hp": 50,
+		"reward_gold": 12,
+		"affixes": [
+		  "fast"
+		]
+	  },
+	  {
+		"type": "healer",
 		"count": 2,
-		"interval": 1.05,
-		"max_hp": 190,
-		"reward_gold": 30,
+		"interval": 0.8,
+		"max_hp": 150,
+		"reward_gold": 22,
+		"affixes": [
+		  "healing"
+		]
+	  },
+	  {
+		"type": "boss_tank",
+		"count": 1,
+		"interval": 1.4,
+		"max_hp": 680,
+		"reward_gold": 70,
 		"base_damage": 1
 	  }
 	],
-	"intel": "Second element pick is earned after this wave. Dual towers should unlock."
+	"intel": "Boss escort with healers, runners, and undead nodes. Kill support before the Fortress Titan. Second element pick is earned after this wave."
   },
   {
 	"wave": 11,
@@ -310,10 +447,17 @@
 	  },
 	  {
 		"type": "basic",
-		"count": 19,
+		"count": 12,
 		"interval": 0.15,
 		"max_hp": 145,
 		"reward_gold": 11
+	  },
+	  {
+		"type": "runner",
+		"count": 7,
+		"interval": 0.28,
+		"max_hp": 112,
+		"reward_gold": 13
 	  }
 	],
 	"intel": ""
@@ -411,11 +555,11 @@
 		"reward_gold": 26
 	  },
 	  {
-		"type": "basic",
+		"type": "swarm",
 		"count": 20,
 		"interval": 0.14,
-		"max_hp": 216,
-		"reward_gold": 11
+		"max_hp": 92,
+		"reward_gold": 7
 	  }
 	],
 	"intel": "Element pick is earned after this wave."
@@ -532,7 +676,10 @@
 		"count": 7,
 		"interval": 0.44,
 		"max_hp": 1261,
-		"reward_gold": 28
+		"reward_gold": 28,
+		"affixes": [
+		  "fast"
+		]
 	  }
 	],
 	"intel": "Element pick is earned after this wave."
@@ -686,7 +833,10 @@
 		"count": 13,
 		"interval": 0.34,
 		"max_hp": 2917,
-		"reward_gold": 30
+		"reward_gold": 30,
+		"affixes": [
+		  "fast"
+		]
 	  },
 	  {
 		"type": "shieldbearer",
@@ -890,7 +1040,10 @@
 		"count": 12,
 		"interval": 0.3,
 		"max_hp": 7409,
-		"reward_gold": 37
+		"reward_gold": 37,
+		"affixes": [
+		  "fast"
+		]
 	  }
 	],
 	"intel": "Element pick is earned after this wave."
@@ -927,7 +1080,10 @@
 		"count": 14,
 		"interval": 0.34,
 		"max_hp": 17026,
-		"reward_gold": 49
+		"reward_gold": 49,
+		"affixes": [
+		  "fast"
+		]
 	  },
 	  {
 		"type": "shieldbearer",
@@ -1138,7 +1294,10 @@
 		"count": 16,
 		"interval": 0.2,
 		"max_hp": 27525,
-		"reward_gold": 42
+		"reward_gold": 42,
+		"affixes": [
+		  "fast"
+		]
 	  }
 	],
 	"intel": "Element pick is earned after this wave."
@@ -1175,7 +1334,10 @@
 		"count": 22,
 		"interval": 0.22,
 		"max_hp": 46211,
-		"reward_gold": 55
+		"reward_gold": 55,
+		"affixes": [
+		  "fast"
+		]
 	  },
 	  {
 		"type": "shieldbearer",
@@ -1269,7 +1431,10 @@
 		"count": 20,
 		"interval": 0.18,
 		"max_hp": 62349,
-		"reward_gold": 57
+		"reward_gold": 57,
+		"affixes": [
+		  "fast"
+		]
 	  }
 	],
 	"intel": "Element pick is earned after this wave."

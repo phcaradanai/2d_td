@@ -10,7 +10,7 @@ signal enemy_killed(reward_gold: int)
 signal base_damaged(base_damage: int, global_pos: Vector2)
 
 @export var enemy_scene: PackedScene = preload("res://scenes/enemies/Enemy.tscn")
-@export var waves_data_path: String = "res://data/waves.json"
+@export var waves_data_path: String = "res://data/waves/waves_01.json"
 @export var enemies_data_path: String = "res://data/enemies.json"
 @export var formation_planner_script: GDScript = preload("res://scripts/managers/spawn_formation_planner.gd")
 const SPAWN_EFFECT_SCRIPT: GDScript = preload("res://scripts/effects/spawn_effect.gd")
@@ -56,6 +56,7 @@ var formation_planner = null
 
 var is_spawning: bool = false
 var path_nodes: Dictionary = {} # id -> Path2D
+var path_portals: Dictionary = {} # id -> Array[Dictionary]
 var spawn_generation: int = 0
 var spawn_lane_cursor: int = 0
 var enemy_pathing_mode: String = ELEMENT_TD_PATHING_MODE
@@ -139,8 +140,9 @@ func load_waves_from_data(data: Array) -> void:
 	waves = data
 	if OS.is_debug_build(): print("[WaveManager] Loaded ", waves.size(), " waves from data.")
 
-func setup(paths: Dictionary) -> void:
+func setup(paths: Dictionary, portals: Dictionary = {}) -> void:
 	path_nodes = paths
+	path_portals = portals
 
 func configure_from_level(level_manager: Node) -> void:
 	if level_manager == null:
@@ -195,7 +197,7 @@ func start_next_wave() -> void:
 		game_manager.battle_telemetry.start_wave(active_wave_number, active_wave_name)
 
 	var groups: Array = wave_data.get("groups", [])
-	var has_boss := groups.any(func(g): return g.get("type", "") == "boss")
+	var has_boss := groups.any(func(g): return _is_boss_group(g))
 	if has_boss:
 		boss_wave_started.emit(active_wave_number)
 	
@@ -262,6 +264,14 @@ func spawn_enemy_from_event(event: Dictionary) -> void:
 	
 	spawn_enemy(group_data)
 
+func _is_boss_group(group: Dictionary) -> bool:
+	var enemy_type := str(group.get("type", group.get("enemy_type", "")))
+	if enemy_type == "boss" or enemy_type.begins_with("boss_"):
+		return true
+	var cfg: Dictionary = enemies_config.get(enemy_type, {})
+	var tags: Array = cfg.get("tags", [])
+	return tags.has("boss")
+
 func spawn_wave_groups(_groups: Array, _gen: int) -> void:
 	# Deprecated in favor of spawn_wave_events but kept for reference/safety
 	DebugLog.warn_once("spawn_wave_groups_deprecated", "[WaveManager] spawn_wave_groups() is deprecated — use spawn_wave_events()")
@@ -303,6 +313,8 @@ func _spawn_enemy_impl(group_data: Dictionary) -> Node:  # extracted for FSL tim
 	var enemy = enemy_scene.instantiate()
 	if enemy.has_method("setup"):
 		enemy.setup(base_config)
+	if enemy.has_method("set_path_portals"):
+		enemy.set_path_portals(path_portals.get(path_id, []))
 
 	var is_debug_probe := bool(group_data.get("debug_probe", false))
 	if is_debug_probe:
@@ -385,6 +397,11 @@ func spawn_enemy_at_progress(enemy_type: String, prog: float, path_node: Node2D)
 	
 	path_node.add_child(enemy)
 	enemy.progress = prog
+	for p_id in path_nodes:
+		if path_nodes[p_id] == path_node:
+			if enemy.has_method("set_path_portals"):
+				enemy.set_path_portals(path_portals.get(str(p_id), []))
+			break
 	_track_enemy(enemy)
 	
 	if game_manager and game_manager.battle_telemetry:
