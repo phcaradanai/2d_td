@@ -46,6 +46,12 @@ func _ready() -> void:
 
 
 func setup(p_level_manager: Node) -> void:
+	# Clean up baked sprite from any previous level before re-baking
+	if _baked_sprite != null and is_instance_valid(_baked_sprite):
+		_baked_sprite.queue_free()
+		_baked_sprite = null
+	visible = true
+
 	# --- read grid parameters from the level manager -------------------
 	_grid_origin = _read_vec2_attr(p_level_manager, "grid_origin", Vector2.ZERO)
 	_grid_size   = _read_float_attr(p_level_manager, "grid_size", 64.0)
