@@ -5,6 +5,7 @@ const LEVEL_MANAGER_SCRIPT_PATH = "res://scripts/managers/level_manager.gd"
 const MAP_VISUAL_LAYER_SCRIPT_PATH = "res://scripts/map/map_visual_layer.gd"
 const MAZE_MAP_RENDERER_SCRIPT = preload("res://scripts/map/maze_map_renderer.gd")
 const ENEMY_ROUTE_OVERLAY_SCRIPT = preload("res://scripts/map/enemy_route_overlay.gd")
+const MAP_ROUTE_HINT_SCRIPT = preload("res://scripts/map/map_route_hint.gd")
 const GRID_PATHFINDING_MANAGER_SCRIPT = preload("res://scripts/navigation/grid_pathfinding_manager.gd")
 const UI_THEME_MANAGER_SCRIPT = preload("res://scripts/ui/ui_theme_manager.gd")
 const BALANCE_SOLVER_SCRIPT = "res://scripts/debug/balance_solver.gd"
@@ -94,6 +95,7 @@ var debug_starting_gold_override: int = -1
 var map_visual_layer: Node2D = null
 var maze_map_renderer: Node2D = null
 var enemy_route_overlay: Node2D = null
+var map_route_hint: Node2D = null
 var selected_tower: Node2D = null
 var current_state: GameState = GameState.MENU
 var _show_wave_complete_status_feedback: bool = false
@@ -537,6 +539,14 @@ func _setup_game_from_level() -> void:
 		if level_manager:
 			var show_dynamic_overlay := bool(level_manager.level_data.get("show_dynamic_route_overlay", false))
 			enemy_route_overlay.visible = show_dynamic_overlay and not _level_uses_fixed_pathing()
+
+	# Fixed-path route hint — lane lines + portal markers + crossover indicators
+	if map_route_hint == null:
+		map_route_hint = MAP_ROUTE_HINT_SCRIPT.new()
+		map_route_hint.name = "MapRouteHint"
+		map_root.add_child(map_route_hint)
+	if level_manager:
+		map_route_hint.setup(level_manager)
 
 	# Clear and setup paths
 	for p in active_path_nodes.values():
@@ -2137,6 +2147,8 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		element_td_interest_service.disabled_for_wave = false
 	_stop_auto_next_wave_countdown()
 	_clear_route_preview()
+	if map_route_hint:
+		map_route_hint.set_wave_active(true)
 	set_game_phase(GameState.WAVE)
 	if game_manager:
 		game_manager.set_current_wave(wave_number)
@@ -2160,6 +2172,8 @@ func _on_wave_completed(wave_number: int, _wave_name: String, reward: int) -> vo
 	if game_manager:
 		game_manager.award_wave_completion(reward)
 	_show_wave_complete_status_feedback = true
+	if map_route_hint:
+		map_route_hint.set_wave_active(false)
 	set_game_phase(GameState.BUILD)
 	shake_camera(5.5, 0.6)
 	if game_hud:
