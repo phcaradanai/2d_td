@@ -46,7 +46,7 @@
         "path": "lane_b"
       }
     ],
-    "intel": "Air and ground simultaneously. AA towers must be pre-placed — flyers do not slow for tower construction."
+    "intel": "Air and ground simultaneously. AA towers must be pre-placed \u2014 flyers do not slow for tower construction."
   },
   {
     "wave": 3,
@@ -196,7 +196,7 @@
         ]
       }
     ],
-    "intel": "Armored Drone introduced. Higher HP than standard flyer — Sniper at full upgrade recommended."
+    "intel": "Armored Drone introduced. Higher HP than standard flyer \u2014 Sniper at full upgrade recommended."
   },
   {
     "wave": 7,
@@ -244,7 +244,7 @@
         ]
       }
     ],
-    "intel": "Bulwark + Hunter on A, full air on B. Guardian takes A — AA towers take B."
+    "intel": "Bulwark + Hunter on A, full air on B. Guardian takes A \u2014 AA towers take B."
   },
   {
     "wave": 8,
@@ -482,13 +482,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_flyer",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Area 4 air intro finale. Air surge on top lane, Bulwark convoy + speed rush on bottom. Every tower type earns its place. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Area 4 air intro finale. Air surge on top lane, Bulwark convoy + speed rush on bottom. Every tower type earns its place. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

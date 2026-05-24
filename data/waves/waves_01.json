@@ -10,7 +10,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Corrupted Nodes fill the path. Place towers along the straight road — they will slow once they enter your kill zone."
+    "intel": "Corrupted Nodes fill the path. Place towers along the straight road \u2014 they will slow once they enter your kill zone."
   },
   {
     "wave": 2,
@@ -28,7 +28,7 @@
         "interval": 0.22
       }
     ],
-    "intel": "Signal Runners join the column. They are fragile but quick — a Rapid Tower handles them."
+    "intel": "Signal Runners join the column. They are fragile but quick \u2014 a Rapid Tower handles them."
   },
   {
     "wave": 3,
@@ -105,7 +105,7 @@
         "interval": 0.7
       }
     ],
-    "intel": "All three types together. Your maze should be bending by now — use the corners."
+    "intel": "All three types together. Your maze should be bending by now \u2014 use the corners."
   },
   {
     "wave": 7,
@@ -151,13 +151,13 @@
         "interval": 0.6
       },
       {
-        "type": "boss",
+        "type": "boss_basic",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Area 1 finale. All types, maximum count. Every cell of maze earns its keep here. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Area 1 finale. All types, maximum count. Every cell of maze earns its keep here. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

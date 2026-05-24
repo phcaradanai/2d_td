@@ -16,7 +16,7 @@
         "path": "lane_b"
       }
     ],
-    "intel": "Two lanes, restricted build space. The centre spot covers both — position your strongest tower there."
+    "intel": "Two lanes, restricted build space. The centre spot covers both \u2014 position your strongest tower there."
   },
   {
     "wave": 2,
@@ -397,13 +397,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_runner",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Maximum pressure on restricted space. Guardian handles the Bulwark column — every tower spot matters. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Maximum pressure on restricted space. Guardian handles the Bulwark column \u2014 every tower spot matters. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

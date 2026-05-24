@@ -121,6 +121,20 @@ static func process(enemy: Node2D, delta: float) -> void:
 					enemy._disrupt_aura_timer = enemy.DISRUPT_AURA_INTERVAL
 					enemy._process_disrupt_aura()
 
+	# Secondary skill (boss exclusives: regenerate, spawn_minions)
+	if enemy.secondary_skill_id != "":
+		match enemy.secondary_skill_id:
+			"regenerate":
+				enemy._regen_timer -= delta
+				if enemy._regen_timer <= 0.0:
+					enemy._regen_timer = float(enemy.secondary_skill_params.get("interval", 2.0))
+					EnemySkillService._process_regenerate(enemy)
+			"spawn_minions":
+				enemy._minion_timer -= delta
+				if enemy._minion_timer <= 0.0:
+					enemy._minion_timer = float(enemy.secondary_skill_params.get("interval", 6.0))
+					EnemySkillService._process_spawn_minions(enemy)
+
 	# Archetype Logic (Legacy)
 	if enemy.is_bulwark and enemy.skill_id == "":
 		enemy._shield_aura_timer -= delta

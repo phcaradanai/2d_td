@@ -87,7 +87,7 @@
         ]
       }
     ],
-    "intel": "Triple Shieldbearer screen. Focus fire on one at a time — overlapping domes stack protection."
+    "intel": "Triple Shieldbearer screen. Focus fire on one at a time \u2014 overlapping domes stack protection."
   },
   {
     "wave": 4,
@@ -199,7 +199,7 @@
         "interval": 0.15
       }
     ],
-    "intel": "Maximum tank density behind a full support screen. Focus fire — never spray."
+    "intel": "Maximum tank density behind a full support screen. Focus fire \u2014 never spray."
   },
   {
     "wave": 7,
@@ -233,7 +233,7 @@
         ]
       }
     ],
-    "intel": "Massive Fragmenter wave. AoE is mandatory — Healer priority to prevent regeneration."
+    "intel": "Massive Fragmenter wave. AoE is mandatory \u2014 Healer priority to prevent regeneration."
   },
   {
     "wave": 8,
@@ -277,7 +277,7 @@
         "interval": 0.08
       }
     ],
-    "intel": "All elite types. Priority order: Healer → Shieldbearer → Splitter → Tank."
+    "intel": "All elite types. Priority order: Healer \u2192 Shieldbearer \u2192 Splitter \u2192 Tank."
   },
   {
     "wave": 9,
@@ -365,7 +365,7 @@
         ]
       }
     ],
-    "intel": "Area 2 penultimate. Healer → Shieldbearer → Splitter kill order. No shortcuts."
+    "intel": "Area 2 penultimate. Healer \u2192 Shieldbearer \u2192 Splitter kill order. No shortcuts."
   },
   {
     "wave": 11,
@@ -409,13 +409,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_tank",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Area 2 finale. Maximum support, maximum count. This is the standard everything else is measured against. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Area 2 finale. Maximum support, maximum count. This is the standard everything else is measured against. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

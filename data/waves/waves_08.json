@@ -15,7 +15,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Heavy units on a narrow U-path. Both corners are chokepoints — Cannon at each bend."
+    "intel": "Heavy units on a narrow U-path. Both corners are chokepoints \u2014 Cannon at each bend."
   },
   {
     "wave": 2,
@@ -56,7 +56,7 @@
         "interval": 0.7
       }
     ],
-    "intel": "Fragmenters plus Swarm. When they die, nodes multiply — do not let fragments escape the bend."
+    "intel": "Fragmenters plus Swarm. When they die, nodes multiply \u2014 do not let fragments escape the bend."
   },
   {
     "wave": 4,
@@ -113,7 +113,7 @@
         "interval": 0.85
       }
     ],
-    "intel": "Runners open a gap while splitters follow. Slow at both bends — essential."
+    "intel": "Runners open a gap while splitters follow. Slow at both bends \u2014 essential."
   },
   {
     "wave": 6,
@@ -170,7 +170,7 @@
         ]
       }
     ],
-    "intel": "Heavy Fragmenter wave. AoE is mandatory — fragments pile up at the bends."
+    "intel": "Heavy Fragmenter wave. AoE is mandatory \u2014 fragments pile up at the bends."
   },
   {
     "wave": 8,
@@ -206,7 +206,7 @@
         "interval": 0.08
       }
     ],
-    "intel": "Full support stack. Prioritise: Healer → Shieldbearer → Splitter → Tank."
+    "intel": "Full support stack. Prioritise: Healer \u2192 Shieldbearer \u2192 Splitter \u2192 Tank."
   },
   {
     "wave": 9,
@@ -289,13 +289,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_splitter",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Maximum pressure. Every tower type earns its place. No idle towers. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Maximum pressure. Every tower type earns its place. No idle towers. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

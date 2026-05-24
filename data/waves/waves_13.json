@@ -70,7 +70,7 @@
         ]
       }
     ],
-    "intel": "Hunters plus cloaked units. Guardian cannot detect Ghost Code — deploy only with Sniper cover."
+    "intel": "Hunters plus cloaked units. Guardian cannot detect Ghost Code \u2014 deploy only with Sniper cover."
   },
   {
     "wave": 4,
@@ -297,7 +297,7 @@
         ]
       }
     ],
-    "intel": "Maximum cloaked density. Lightning is mandatory — it ignores stealth priority."
+    "intel": "Maximum cloaked density. Lightning is mandatory \u2014 it ignores stealth priority."
   },
   {
     "wave": 10,
@@ -347,7 +347,7 @@
         ]
       }
     ],
-    "intel": "All special ground types at once. Systematic kill priority — no exceptions."
+    "intel": "All special ground types at once. Systematic kill priority \u2014 no exceptions."
   },
   {
     "wave": 11,
@@ -397,13 +397,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_cloaked",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Every special ground type at once. Rapid detects cloaked, Lightning chains, Sniper eliminates Hunters. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Every special ground type at once. Rapid detects cloaked, Lightning chains, Sniper eliminates Hunters. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

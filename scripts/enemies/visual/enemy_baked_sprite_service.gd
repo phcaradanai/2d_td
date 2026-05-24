@@ -80,7 +80,9 @@ static func _apply_baked_enemy_texture(enemy: Node2D, tex: ImageTexture) -> void
 		enemy.move_child(enemy._shadow_node, 0)
 		enemy._shadow_node.queue_redraw()
 
-	enemy._bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM)
+	const _ROUTER = preload("res://scripts/enemies/enemy_visual_router.gd")
+	var bs: float = _ROUTER._boss_scale(enemy)
+	enemy._bake_scale = Vector2.ONE / float(EnemyTextureBaker.BAKE_ZOOM) * maxf(bs, 1.0)
 	enemy._body_sprite.texture = tex
 	enemy._body_sprite.scale = enemy._bake_scale
 	enemy._body_sprite.visible = true

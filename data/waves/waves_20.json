@@ -308,7 +308,7 @@
         ]
       }
     ],
-    "intel": "Hunter + stealth on A, Bulwark convoy on B. Guardian needed on B — Sniper protects on A."
+    "intel": "Hunter + stealth on A, Bulwark convoy on B. Guardian needed on B \u2014 Sniper protects on A."
   },
   {
     "wave": 8,
@@ -803,13 +803,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_disruptor",
         "count": 3,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "The final stand. Massive split pressure. Mixed defence is mandatory. Use Hero to stabilize the most pressured lane. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "The final stand. Massive split pressure. Mixed defence is mandatory. Use Hero to stabilize the most pressured lane. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

@@ -1057,6 +1057,7 @@ func _connect_signals() -> void:
 		wave_manager.wave_started.connect(_on_wave_started)
 		wave_manager.wave_completed.connect(_on_wave_completed)
 		wave_manager.all_waves_completed.connect(_on_all_waves_completed)
+		wave_manager.boss_wave_started.connect(_on_boss_wave_started)
 		wave_manager.enemy_killed.connect(_on_enemy_killed)
 		wave_manager.base_damaged.connect(_on_base_damaged)
 
@@ -2101,6 +2102,13 @@ func _on_wave_started(wave_number: int, wave_name: String) -> void:
 		show_wave_feedback("Wave %d: %s" % [wave_number, wave_name], Color(1, 0.8, 0.2))
 		_refresh_gameplay_hud_state()
 
+func _on_boss_wave_started(_wave_number: int) -> void:
+	if audio_manager:
+		audio_manager.play_sfx("boss_alert")
+		audio_manager.set_music_pitch(1.18)
+	shake_camera(8.0, 0.5)
+	show_wave_feedback("BOSS WAVE!", Color(1.0, 0.2, 0.2))
+
 func _on_wave_completed(wave_number: int, _wave_name: String, reward: int) -> void:
 	_wave_intel_dirty = true
 	if element_td_interest_service:
@@ -2116,7 +2124,8 @@ func _on_wave_completed(wave_number: int, _wave_name: String, reward: int) -> vo
 		show_wave_feedback("Wave Cleared! +%d Gold" % reward, Color(0.2, 1.0, 0.4))
 		_refresh_gameplay_hud_state()
 	if audio_manager:
-		audio_manager.play_sfx("gold_gain")
+		audio_manager.play_sfx("wave_clear")
+		audio_manager.set_music_pitch(1.0)
 	if element_progression_manager and wave_number > 0 and wave_number % ELEMENT_PICK_INTERVAL == 0:
 		element_progression_manager.grant_pick(1)
 		_show_pending_element_choice()

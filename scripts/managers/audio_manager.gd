@@ -18,8 +18,41 @@ var sfx_paths: Dictionary = {
 	"tower_shoot_rapid": "res://assets/audio/sfx/tower_shoot_rapid",
 	"tower_shoot_cannon": "res://assets/audio/sfx/tower_shoot_cannon",
 	"tower_shoot_slow": "res://assets/audio/sfx/tower_shoot_slow",
-	"tower_shoot_sniper": "res://assets/audio/sfx/tower_shoot_basic", # TODO: Re-check asset if dedicated exists
-	"tower_shoot_sawblade": "res://assets/audio/sfx/tower_shoot_rapid", # TODO: Re-check asset if dedicated exists
+	"tower_shoot_sniper": "res://assets/audio/sfx/tower_shoot_basic",
+	"tower_shoot_sawblade": "res://assets/audio/sfx/tower_shoot_rapid",
+	# Element-specific shoot sounds
+	"tower_shoot_fire": "res://assets/audio/sfx/tower_shoot_fire",
+	"tower_shoot_ice": "res://assets/audio/sfx/tower_shoot_ice",
+	"tower_shoot_electricity": "res://assets/audio/sfx/tower_shoot_electricity",
+	"tower_shoot_water": "res://assets/audio/sfx/tower_shoot_water",
+	"tower_shoot_earth": "res://assets/audio/sfx/tower_shoot_earth",
+	"tower_shoot_darkness": "res://assets/audio/sfx/tower_shoot_darkness",
+	"tower_shoot_light": "res://assets/audio/sfx/tower_shoot_light",
+	"tower_shoot_nature": "res://assets/audio/sfx/tower_shoot_nature",
+	"tower_shoot_life": "res://assets/audio/sfx/tower_shoot_life",
+	"tower_shoot_quark": "res://assets/audio/sfx/tower_shoot_quark",
+	"tower_shoot_trickery": "res://assets/audio/sfx/tower_shoot_trickery",
+	# Enemy lifecycle
+	"enemy_spawn": "res://assets/audio/sfx/enemy_spawn",
+	"enemy_step_boss": "res://assets/audio/sfx/enemy_step_boss",
+	"enemy_step_heavy": "res://assets/audio/sfx/enemy_step_heavy",
+	"enemy_step_light": "res://assets/audio/sfx/enemy_step_light",
+	"enemy_dash": "res://assets/audio/sfx/enemy_dash",
+	"enemy_wing": "res://assets/audio/sfx/enemy_wing",
+	"enemy_bounce": "res://assets/audio/sfx/enemy_bounce",
+	"enemy_die_light": "res://assets/audio/sfx/enemy_die_light",
+	"enemy_die_medium": "res://assets/audio/sfx/enemy_die_medium",
+	"enemy_die_heavy": "res://assets/audio/sfx/enemy_die_heavy",
+	"enemy_die_flyer": "res://assets/audio/sfx/enemy_die_flyer",
+	"enemy_die_boss": "res://assets/audio/sfx/enemy_die_boss",
+	"enemy_heal": "res://assets/audio/sfx/enemy_heal",
+	"enemy_shield": "res://assets/audio/sfx/enemy_shield",
+	"enemy_split": "res://assets/audio/sfx/enemy_split",
+	"enemy_cloak": "res://assets/audio/sfx/enemy_cloak",
+	"enemy_disrupt": "res://assets/audio/sfx/enemy_disrupt",
+	# Events
+	"wave_clear": "res://assets/audio/sfx/wave_clear",
+	"boss_alert": "res://assets/audio/sfx/boss_alert",
 	"projectile_hit": "res://assets/audio/sfx/projectile_hit",
 	"splash_hit": "res://assets/audio/sfx/splash_hit",
 	"enemy_die": "res://assets/audio/sfx/enemy_die",
@@ -29,6 +62,34 @@ var sfx_paths: Dictionary = {
 	"victory": "res://assets/audio/sfx/victory",
 	"pause": "res://assets/audio/sfx/pause",
 	"resume": "res://assets/audio/sfx/resume"
+}
+
+# Per-sfx volume offset in dB (0.0 = no change). Negative = quieter.
+# Used to normalise kenney assets which have inconsistent recording levels.
+var sfx_volume_db: Dictionary = {
+	# Boss / events
+	"boss_alert":       -4.0,
+	"wave_clear":       -6.0,  # was -3, raw -11.3 dB → target -17 effective
+	# Enemy lifecycle — should sit behind combat
+	"enemy_spawn":      -10.0,
+	"enemy_die_light":  -4.0,
+	"enemy_die_medium": -3.0,
+	"enemy_die_heavy":  -2.0,
+	"enemy_die_flyer":  -3.0,
+	"enemy_die_boss":   -5.0,  # was -2, raw -13.8 dB → target -19 effective
+	# Enemy skills — subtle support sounds
+	"enemy_heal":       -8.0,
+	"enemy_shield":     -11.0, # was -6, raw -11.6 dB → target -23 effective
+	"enemy_split":      -4.0,
+	"enemy_cloak":      -7.0,  # was -5, raw -18.5 dB → target -25 effective
+	"enemy_disrupt":    -12.0, # was -6, raw -12.2 dB → target -24 effective
+	# Movement — clearly in background
+	"enemy_step_boss":  -6.0,
+	"enemy_step_heavy": -8.0,
+	"enemy_step_light": -10.0,
+	"enemy_wing":       -12.0,
+	"enemy_bounce":     -6.0,  # was -12, was too quiet at -33 effective → target -27
+	"enemy_dash":       -9.0,  # was -5, raw -17.8 dB → target -27 effective; throttled 300ms
 }
 
 var music_paths: Dictionary = {
@@ -304,12 +365,14 @@ func play_sfx(sfx_name: String, force: bool = false) -> void:
 		
 	if OS.has_feature("web"):
 		var path = resolved_sfx.get(sfx_name, "")
-		_play_web_one_shot(stream, BUS_SFX, 6.0 if force else 0.0, sfx_name, path, force)
+		var vol_db : float = sfx_volume_db.get(sfx_name, 0.0) + (6.0 if force else 0.0)
+		_play_web_one_shot(stream, BUS_SFX, vol_db, sfx_name, path, force)
 		return
 
 	var sfx_player = AudioStreamPlayer.new()
 	sfx_player.stream = stream
 	sfx_player.bus = BUS_SFX
+	sfx_player.volume_db = sfx_volume_db.get(sfx_name, 0.0)
 	add_child(sfx_player)
 	sfx_player.play()
 	sfx_player.finished.connect(sfx_player.queue_free)
@@ -447,6 +510,9 @@ func _get_music_stream(music_name: String) -> AudioStream:
 
 func stop_music() -> void:
 	music_player.stop()
+
+func set_music_pitch(scale: float) -> void:
+	music_player.pitch_scale = clampf(scale, 0.5, 2.0)
 
 # --- Audio Settings ---
 

@@ -35,22 +35,24 @@ static func draw_enemy(enemy: Node2D) -> void:
 # ── Simple-mode dispatch ─────────────────────────────────────────────────────────
 
 static func _dispatch_simple(enemy: Node2D, vt: String, size: float) -> void:
+	var bs := _boss_scale(enemy)
+	var s := size * (bs if bs > 1.0 else 1.0)
 	match vt:
-		"basic":      _Basic.draw_simple(enemy, size)
-		"fast":       _Fast.draw_simple(enemy, size)
-		"tank":       _Tank.draw_simple(enemy, size)
-		"bulwark":    _Bulwark.draw_simple(enemy, size)
-		"hunter":     _Hunter.draw_simple(enemy, size)
-		"swarm":      _Swarm.draw_simple(enemy, size)
-		"runner":     _Runner.draw_simple(enemy, size)
-		"shieldbearer": _Shieldbearer.draw_simple(enemy, size)
-		"healer":     _Healer.draw_simple(enemy, size)
-		"splitter":   _Splitter.draw_simple(enemy, size)
-		"cloaked":    _Cloaked.draw_simple(enemy, size)
-		"flyer":      _Flyer.draw_simple(enemy, size)
-		"fast_flyer": _FastFlyer.draw_simple(enemy, size)
-		"armored_flyer": _ArmoredFlyer.draw_simple(enemy, size)
-		"disruptor":  _Disruptor.draw_simple(enemy, size)
+		"basic":      _Basic.draw_simple(enemy, s)
+		"fast":       _Fast.draw_simple(enemy, s)
+		"tank":       _Tank.draw_simple(enemy, s)
+		"bulwark":    _Bulwark.draw_simple(enemy, s)
+		"hunter":     _Hunter.draw_simple(enemy, s)
+		"swarm":      _Swarm.draw_simple(enemy, s)
+		"runner":     _Runner.draw_simple(enemy, s)
+		"shieldbearer": _Shieldbearer.draw_simple(enemy, s)
+		"healer":     _Healer.draw_simple(enemy, s)
+		"splitter":   _Splitter.draw_simple(enemy, s)
+		"cloaked":    _Cloaked.draw_simple(enemy, s)
+		"flyer":      _Flyer.draw_simple(enemy, s)
+		"fast_flyer": _FastFlyer.draw_simple(enemy, s)
+		"armored_flyer": _ArmoredFlyer.draw_simple(enemy, s)
+		"disruptor":  _Disruptor.draw_simple(enemy, s)
 		_:
 			var fallback_pts := PackedVector2Array([Vector2(0,-size), Vector2(size*0.7,size*0.5), Vector2(-size*0.7,size*0.5)])
 			enemy.draw_colored_polygon(fallback_pts, Color(0.8,0.8,0.8,0.85))
@@ -58,23 +60,50 @@ static func _dispatch_simple(enemy: Node2D, vt: String, size: float) -> void:
 
 # ── Full-fidelity dispatch ───────────────────────────────────────────────────────
 
+static func _boss_scale(enemy: Node2D) -> float:
+	match str(enemy.get("enemy_type")):
+		# Original bosses (bulwark visual)
+		"boss":              return 1.60
+		"boss_tyrant":       return 1.65
+		"boss_phantom":      return 1.55
+		"boss_herald":       return 1.75
+		"boss_colossus":     return 2.00
+		# Creep bosses
+		"boss_basic":        return 1.80
+		"boss_fast":         return 1.60
+		"boss_swarm":        return 1.80
+		"boss_runner":       return 1.65
+		"boss_tank":         return 1.55
+		"boss_hunter":       return 1.65
+		"boss_shieldbearer": return 1.70
+		"boss_healer":       return 1.70
+		"boss_splitter":     return 1.75
+		"boss_cloaked":      return 1.60
+		"boss_flyer":        return 1.65
+		"boss_fast_flyer":   return 1.55
+		"boss_armored_flyer":return 1.70
+		"boss_disruptor":    return 1.75
+	return 1.0
+
 static func _dispatch_full(enemy: Node2D, vt: String, size: float) -> void:
+	var bs := _boss_scale(enemy)
+	var s := size * (bs if bs > 1.0 else 1.0)
 	match vt:
-		"basic":      _Basic.draw(enemy, size)
-		"fast":       _Fast.draw(enemy, size)
-		"tank":       _Tank.draw(enemy, size * 1.4)
-		"bulwark":    _Bulwark.draw(enemy, size * 1.6)
-		"hunter":     _Hunter.draw(enemy, size * 1.3)
-		"swarm":      _Swarm.draw(enemy, size * 0.86)
-		"runner":     _Runner.draw(enemy, size)
-		"shieldbearer": _Shieldbearer.draw(enemy, size * 1.3)
-		"healer":     _Healer.draw(enemy, size * 1.1)
-		"splitter":   _Splitter.draw(enemy, size * 1.3)
-		"cloaked":    _Cloaked.draw(enemy, size)
-		"flyer":      _Flyer.draw(enemy, size)
-		"fast_flyer": _FastFlyer.draw(enemy, size * 0.8)
-		"armored_flyer": _ArmoredFlyer.draw(enemy, size * 1.5)
-		"disruptor":  _Disruptor.draw(enemy, size * 1.2)
+		"basic":      _Basic.draw(enemy, s)
+		"fast":       _Fast.draw(enemy, s)
+		"tank":       _Tank.draw(enemy, s * 1.4)
+		"bulwark":    _Bulwark.draw(enemy, s)
+		"hunter":     _Hunter.draw(enemy, s * 1.3)
+		"swarm":      _Swarm.draw(enemy, s * 0.86)
+		"runner":     _Runner.draw(enemy, s)
+		"shieldbearer": _Shieldbearer.draw(enemy, s * 1.3)
+		"healer":     _Healer.draw(enemy, s * 1.1)
+		"splitter":   _Splitter.draw(enemy, s * 1.3)
+		"cloaked":    _Cloaked.draw(enemy, s)
+		"flyer":      _Flyer.draw(enemy, s)
+		"fast_flyer": _FastFlyer.draw(enemy, s * 0.8)
+		"armored_flyer": _ArmoredFlyer.draw(enemy, s * 1.5)
+		"disruptor":  _Disruptor.draw(enemy, s * 1.2)
 
 # ── Air-unit shadow/hover ring (non-swarm only) ──────────────────────────────────
 
@@ -90,6 +119,7 @@ static func _draw_air_shadow(enemy: Node2D, vt: String, size: float) -> void:
 # ── Status overlays ───────────────────────────────────────────────────────────────
 
 static func _draw_status_overlays_simple(enemy: Node2D, size: float) -> void:
+	_draw_affix_overlay(enemy, size)
 	var shield: float = float(enemy.get("shield_remaining"))
 	var slow: float   = float(enemy.get("active_slow_percent"))
 	var flash: bool   = bool(enemy.get("is_flashing"))
@@ -102,7 +132,17 @@ static func _draw_status_overlays_simple(enemy: Node2D, size: float) -> void:
 	if flash and hit_alpha > 0.01:
 		enemy.draw_circle(Vector2.ZERO, size*1.35, Color(hit_color.r, hit_color.g, hit_color.b, hit_alpha))
 
+static func _draw_affix_overlay(enemy: Node2D, size: float) -> void:
+	var tint = enemy.get("affix_tint")
+	if not tint is Color or tint == Color.WHITE:
+		return
+	var is_boss: bool = (enemy.get("tags") is Array) and (enemy.get("tags") as Array).has("boss")
+	var alpha := 0.50 if is_boss else 0.32
+	var radius := size * (1.15 if is_boss else 1.05)
+	enemy.draw_circle(Vector2.ZERO, radius, Color(tint.r, tint.g, tint.b, alpha))
+
 static func _draw_status_overlays_full(enemy: Node2D, size: float) -> void:
+	_draw_affix_overlay(enemy, size)
 	var shield: float    = float(enemy.get("shield_remaining"))
 	var slow: float      = float(enemy.get("active_slow_percent"))
 	var flash: bool      = bool(enemy.get("is_flashing"))

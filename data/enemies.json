@@ -383,5 +383,638 @@
       "lightning",
       "poison"
     ]
+  },
+  "boss_tyrant": {
+    "id": "boss_tyrant",
+    "name": "Iron Tyrant",
+    "max_hp": 2600,
+    "speed": 34,
+    "reward_gold": 120,
+    "base_damage": 6,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "bulwark",
+    "tags": [
+      "heavy",
+      "boss",
+      "runner"
+    ],
+    "affixes": [
+      "mechanical"
+    ],
+    "skill": "disrupt_aura",
+    "skill_params": {
+      "radius": 160,
+      "fire_rate_penalty": 0.45
+    },
+    "runner_dash_cooldown": 5.0,
+    "runner_dash_duration": 1.8,
+    "runner_dash_speed_multiplier": 2.2,
+    "runner_dash_damage_reduction": 0.5,
+    "runner_panic_threshold": 0.4,
+    "runner_panic_speed_multiplier": 1.5,
+    "description": "A relentless war machine that charges through tower fire while jamming their systems. Disrupts tower fire rates as it rushes the base.",
+    "counter_towers": [
+      "sniper",
+      "slow",
+      "cannon"
+    ]
+  },
+  "boss_phantom": {
+    "id": "boss_phantom",
+    "name": "Shadow Wraith",
+    "max_hp": 3200,
+    "speed": 28,
+    "reward_gold": 150,
+    "base_damage": 5,
+    "category": "land",
+    "armor_element": "darkness",
+    "movement_type": "ground",
+    "visual_type": "bulwark",
+    "tags": [
+      "boss",
+      "stealth"
+    ],
+    "affixes": [
+      "undead"
+    ],
+    "skill": "healer",
+    "skill_params": {
+      "radius": 180,
+      "heal_amount": 40,
+      "interval": 2.5
+    },
+    "description": "An invisible wraith that evades tower targeting while regenerating its allies. Towers cannot lock onto it while visible targets exist.",
+    "counter_towers": [
+      "rapid",
+      "sawblade",
+      "basic"
+    ]
+  },
+  "boss_herald": {
+    "id": "boss_herald",
+    "name": "Disruption Herald",
+    "max_hp": 4000,
+    "speed": 26,
+    "reward_gold": 180,
+    "base_damage": 6,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "bulwark",
+    "tags": [
+      "heavy",
+      "boss",
+      "frontline"
+    ],
+    "affixes": [
+      "mechanical",
+      "undead"
+    ],
+    "skill": "disrupt_aura",
+    "skill_params": {
+      "radius": 180,
+      "fire_rate_penalty": 0.55
+    },
+    "secondary_skill": "regenerate",
+    "secondary_skill_params": {
+      "amount": 80,
+      "interval": 3.0,
+      "initial_delay": 4.0
+    },
+    "description": "An ancient herald that jams nearby towers and steadily regenerates its own wounds. Disabling towers is critical before focusing fire.",
+    "counter_towers": [
+      "cannon",
+      "sniper",
+      "rapid"
+    ]
+  },
+  "boss_colossus": {
+    "id": "boss_colossus",
+    "name": "Ancient Colossus",
+    "max_hp": 5500,
+    "speed": 20,
+    "reward_gold": 220,
+    "base_damage": 8,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "bulwark",
+    "tags": [
+      "heavy",
+      "boss",
+      "frontline",
+      "shield"
+    ],
+    "affixes": [
+      "mechanical",
+      "undead"
+    ],
+    "skill": "shield_aura",
+    "skill_params": {
+      "radius": 160,
+      "reduction": 0.35
+    },
+    "secondary_skill": "spawn_minions",
+    "secondary_skill_params": {
+      "type": "swarm",
+      "count": 3,
+      "interval": 6.0,
+      "initial_delay": 5.0
+    },
+    "description": "The ultimate boss. A mountain of armor that shields its allies and endlessly spawns minions to overwhelm defenses.",
+    "counter_towers": [
+      "cannon",
+      "lightning",
+      "poison"
+    ]
+  },
+  "boss_basic": {
+    "id": "boss_basic",
+    "name": "Apex Node",
+    "max_hp": 500,
+    "speed": 50,
+    "reward_gold": 50,
+    "base_damage": 4,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "basic",
+    "tags": [
+      "boss",
+      "heavy"
+    ],
+    "affixes": [
+      "mechanical"
+    ],
+    "skill": "shield_aura",
+    "skill_params": {
+      "radius": 130,
+      "reduction": 0.2
+    },
+    "secondary_skill": "spawn_minions",
+    "secondary_skill_params": {
+      "type": "basic",
+      "count": 2,
+      "interval": 5.0,
+      "initial_delay": 4.0
+    },
+    "description": "An oversized corrupted node that raises a shield aura while spawning basic units.",
+    "counter_towers": [
+      "cannon",
+      "rapid",
+      "poison"
+    ]
+  },
+  "boss_fast": {
+    "id": "boss_fast",
+    "name": "Blitz Alpha",
+    "max_hp": 300,
+    "speed": 85,
+    "reward_gold": 45,
+    "base_damage": 3,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "fast",
+    "tags": [
+      "boss",
+      "fast",
+      "runner"
+    ],
+    "affixes": [],
+    "runner_dash_cooldown": 3.0,
+    "runner_dash_duration": 1.5,
+    "runner_dash_speed_multiplier": 2.8,
+    "runner_dash_damage_reduction": 0.45,
+    "runner_panic_threshold": 0.3,
+    "runner_panic_speed_multiplier": 2.0,
+    "description": "A lightning-fast boss that dashes relentlessly and panics at low health.",
+    "counter_towers": [
+      "slow",
+      "sniper",
+      "basic"
+    ]
+  },
+  "boss_swarm": {
+    "id": "boss_swarm",
+    "name": "Hive Queen",
+    "max_hp": 250,
+    "speed": 58,
+    "reward_gold": 35,
+    "base_damage": 3,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "swarm",
+    "tags": [
+      "boss",
+      "swarm"
+    ],
+    "affixes": [],
+    "skill": "healer",
+    "skill_params": {
+      "radius": 160,
+      "heal_amount": 8,
+      "interval": 1.5
+    },
+    "secondary_skill": "spawn_minions",
+    "secondary_skill_params": {
+      "type": "swarm",
+      "count": 5,
+      "interval": 4.0,
+      "initial_delay": 3.0
+    },
+    "description": "The queen of the swarm: heals nearby swarm units and endlessly produces more.",
+    "counter_towers": [
+      "rapid",
+      "sawblade",
+      "slow"
+    ]
+  },
+  "boss_runner": {
+    "id": "boss_runner",
+    "name": "Hyperdash Prime",
+    "max_hp": 400,
+    "speed": 95,
+    "reward_gold": 55,
+    "base_damage": 4,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "runner",
+    "tags": [
+      "boss",
+      "fast",
+      "runner"
+    ],
+    "affixes": [],
+    "runner_dash_cooldown": 2.5,
+    "runner_dash_duration": 2.0,
+    "runner_dash_speed_multiplier": 3.0,
+    "runner_dash_damage_reduction": 0.55,
+    "runner_panic_threshold": 0.25,
+    "runner_panic_speed_multiplier": 2.2,
+    "description": "The ultimate runner: hyper-frequent dashes with huge speed spikes on low health.",
+    "counter_towers": [
+      "slow",
+      "cannon",
+      "basic"
+    ]
+  },
+  "boss_tank": {
+    "id": "boss_tank",
+    "name": "Fortress Titan",
+    "max_hp": 1400,
+    "speed": 30,
+    "reward_gold": 80,
+    "base_damage": 6,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "tank",
+    "tags": [
+      "boss",
+      "heavy",
+      "armored"
+    ],
+    "affixes": [
+      "mechanical"
+    ],
+    "secondary_skill": "regenerate",
+    "secondary_skill_params": {
+      "amount": 100,
+      "interval": 2.5,
+      "initial_delay": 3.0
+    },
+    "description": "An immovable fortress that slowly regenerates its massive HP pool.",
+    "counter_towers": [
+      "cannon",
+      "lightning",
+      "sniper"
+    ]
+  },
+  "boss_hunter": {
+    "id": "boss_hunter",
+    "name": "Apex Predator",
+    "max_hp": 1200,
+    "speed": 75,
+    "reward_gold": 70,
+    "base_damage": 8,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "hunter",
+    "tags": [
+      "boss",
+      "anti_hero",
+      "fast"
+    ],
+    "affixes": [],
+    "skill": "disrupt_aura",
+    "skill_params": {
+      "radius": 150,
+      "fire_rate_penalty": 0.5
+    },
+    "aggro_range": 110,
+    "hunter_attack_range": 55,
+    "hunter_attack_damage": 4.0,
+    "hunter_attack_cooldown": 1.2,
+    "description": "An elite predator that hunts heroes while jamming nearby tower fire rates.",
+    "counter_towers": [
+      "rapid",
+      "slow",
+      "cannon"
+    ]
+  },
+  "boss_shieldbearer": {
+    "id": "boss_shieldbearer",
+    "name": "Aegis Lord",
+    "max_hp": 2000,
+    "speed": 30,
+    "reward_gold": 90,
+    "base_damage": 5,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "shieldbearer",
+    "tags": [
+      "boss",
+      "support",
+      "shield",
+      "heavy",
+      "frontline"
+    ],
+    "affixes": [
+      "undead"
+    ],
+    "skill": "shield_aura",
+    "skill_params": {
+      "radius": 180,
+      "reduction": 0.35
+    },
+    "secondary_skill": "regenerate",
+    "secondary_skill_params": {
+      "amount": 70,
+      "interval": 3.0,
+      "initial_delay": 4.0
+    },
+    "description": "A towering aegis lord that protects all allies with a powerful shield aura and heals itself.",
+    "counter_towers": [
+      "cannon",
+      "lightning",
+      "poison"
+    ]
+  },
+  "boss_healer": {
+    "id": "boss_healer",
+    "name": "Overmind Medic",
+    "max_hp": 1600,
+    "speed": 36,
+    "reward_gold": 85,
+    "base_damage": 4,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "healer",
+    "tags": [
+      "boss",
+      "support",
+      "healing"
+    ],
+    "affixes": [
+      "healing"
+    ],
+    "skill": "healer",
+    "skill_params": {
+      "radius": 220,
+      "heal_amount": 60,
+      "interval": 2.0
+    },
+    "secondary_skill": "spawn_minions",
+    "secondary_skill_params": {
+      "type": "basic",
+      "count": 2,
+      "interval": 6.0,
+      "initial_delay": 5.0
+    },
+    "description": "A massive medic that floods the field with heals and continuously spawns fresh troops.",
+    "counter_towers": [
+      "rapid",
+      "sawblade",
+      "sniper"
+    ]
+  },
+  "boss_splitter": {
+    "id": "boss_splitter",
+    "name": "Fracture Prime",
+    "max_hp": 1800,
+    "speed": 28,
+    "reward_gold": 90,
+    "base_damage": 5,
+    "category": "land",
+    "armor_element": "composite",
+    "movement_type": "ground",
+    "visual_type": "splitter",
+    "tags": [
+      "boss",
+      "heavy",
+      "splitter"
+    ],
+    "affixes": [
+      "undead"
+    ],
+    "skill": "split_on_death",
+    "skill_params": {
+      "type": "splitter",
+      "count": 2
+    },
+    "secondary_skill": "regenerate",
+    "secondary_skill_params": {
+      "amount": 50,
+      "interval": 2.0,
+      "initial_delay": 2.5
+    },
+    "description": "A colossal splitter that regenerates in combat and splits into full splitters on death.",
+    "counter_towers": [
+      "rapid",
+      "cannon",
+      "poison"
+    ]
+  },
+  "boss_cloaked": {
+    "id": "boss_cloaked",
+    "name": "Shadow Sovereign",
+    "max_hp": 800,
+    "speed": 60,
+    "reward_gold": 70,
+    "base_damage": 5,
+    "category": "land",
+    "armor_element": "darkness",
+    "movement_type": "ground",
+    "visual_type": "cloaked",
+    "tags": [
+      "boss",
+      "stealth",
+      "medium"
+    ],
+    "affixes": [
+      "image"
+    ],
+    "skill": "stealth",
+    "secondary_skill": "spawn_minions",
+    "secondary_skill_params": {
+      "type": "cloaked",
+      "count": 1,
+      "interval": 7.0,
+      "initial_delay": 5.0
+    },
+    "description": "A sovereign of shadows: invisible to towers and spawns cloaked assassins periodically.",
+    "counter_towers": [
+      "basic",
+      "rapid",
+      "sawblade"
+    ]
+  },
+  "boss_flyer": {
+    "id": "boss_flyer",
+    "name": "Sky Leviathan",
+    "max_hp": 600,
+    "speed": 60,
+    "reward_gold": 65,
+    "base_damage": 4,
+    "category": "air",
+    "armor_element": "composite",
+    "movement_type": "air",
+    "visual_type": "flyer",
+    "tags": [
+      "boss",
+      "air",
+      "scout"
+    ],
+    "affixes": [],
+    "skill": "shield_aura",
+    "skill_params": {
+      "radius": 150,
+      "reduction": 0.25
+    },
+    "secondary_skill": "spawn_minions",
+    "secondary_skill_params": {
+      "type": "flyer",
+      "count": 2,
+      "interval": 5.0,
+      "initial_delay": 4.0
+    },
+    "description": "A massive aerial leviathan that shields its flock and spawns new flyers mid-flight.",
+    "counter_towers": [
+      "sniper",
+      "rapid",
+      "cannon"
+    ]
+  },
+  "boss_fast_flyer": {
+    "id": "boss_fast_flyer",
+    "name": "Warp Interceptor",
+    "max_hp": 380,
+    "speed": 90,
+    "reward_gold": 60,
+    "base_damage": 3,
+    "category": "air",
+    "armor_element": "composite",
+    "movement_type": "air",
+    "visual_type": "fast_flyer",
+    "tags": [
+      "boss",
+      "air",
+      "fast",
+      "runner"
+    ],
+    "affixes": [],
+    "runner_dash_cooldown": 3.0,
+    "runner_dash_duration": 1.8,
+    "runner_dash_speed_multiplier": 2.5,
+    "runner_dash_damage_reduction": 0.4,
+    "description": "An aerial interceptor that dashes across the battlefield at extreme speed.",
+    "counter_towers": [
+      "sniper",
+      "slow",
+      "basic"
+    ]
+  },
+  "boss_armored_flyer": {
+    "id": "boss_armored_flyer",
+    "name": "Siege Dreadnought",
+    "max_hp": 1800,
+    "speed": 34,
+    "reward_gold": 95,
+    "base_damage": 6,
+    "category": "air",
+    "armor_element": "composite",
+    "movement_type": "air",
+    "visual_type": "armored_flyer",
+    "tags": [
+      "boss",
+      "air",
+      "heavy",
+      "armored"
+    ],
+    "affixes": [
+      "mechanical"
+    ],
+    "skill": "shield_aura",
+    "skill_params": {
+      "radius": 160,
+      "reduction": 0.3
+    },
+    "secondary_skill": "regenerate",
+    "secondary_skill_params": {
+      "amount": 90,
+      "interval": 2.5,
+      "initial_delay": 3.0
+    },
+    "description": "A flying fortress that shields nearby air units and regenerates under fire.",
+    "counter_towers": [
+      "sniper",
+      "lightning",
+      "cannon"
+    ]
+  },
+  "boss_disruptor": {
+    "id": "boss_disruptor",
+    "name": "Omega Jammer",
+    "max_hp": 1200,
+    "speed": 50,
+    "reward_gold": 100,
+    "base_damage": 5,
+    "category": "air",
+    "armor_element": "composite",
+    "movement_type": "air",
+    "visual_type": "disruptor",
+    "tags": [
+      "boss",
+      "air",
+      "support",
+      "disruptor"
+    ],
+    "affixes": [],
+    "skill": "disrupt_aura",
+    "skill_params": {
+      "radius": 200,
+      "fire_rate_penalty": 0.6
+    },
+    "secondary_skill": "spawn_minions",
+    "secondary_skill_params": {
+      "type": "disruptor",
+      "count": 1,
+      "interval": 8.0,
+      "initial_delay": 6.0
+    },
+    "description": "The apex jammer: disables an enormous range of towers while breeding more disruptors.",
+    "counter_towers": [
+      "sniper",
+      "cannon",
+      "rapid"
+    ]
   }
 }

@@ -221,6 +221,11 @@ var skill_id: String = ""
 var skill_params: Dictionary = {}
 var skill_timer: float = 0.0
 var is_stealth: bool = false
+var secondary_skill_id: String = ""
+var secondary_skill_params: Dictionary = {}
+var _regen_timer: float = 0.0
+var _minion_timer: float = 0.0
+var affix_tint: Color = Color.WHITE
 var formation_speed_limit: float = -1.0
 var formation_limit_duration: float = 0.0
 var disrupted_towers: Dictionary = {}
@@ -396,6 +401,7 @@ func _ready() -> void:
 
 	add_to_group("enemies")
 	_sync_spatial_target_cache(true)
+	EnemyAudioService.play_spawn(self)
 
 	_ensure_vfx_controller()
 

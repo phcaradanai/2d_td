@@ -117,7 +117,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Bulwark + Shieldbearer + Healer convoy. Guardian neutralises Bulwark — towers handle the rest."
+    "intel": "Bulwark + Shieldbearer + Healer convoy. Guardian neutralises Bulwark \u2014 towers handle the rest."
   },
   {
     "wave": 5,
@@ -151,7 +151,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Hunters flank while swarms screen. Keep Guardian safe — hunters target it on sight."
+    "intel": "Hunters flank while swarms screen. Keep Guardian safe \u2014 hunters target it on sight."
   },
   {
     "wave": 6,
@@ -185,7 +185,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Double Bulwark convoy. Guardian handles first — must recharge before second arrives."
+    "intel": "Double Bulwark convoy. Guardian handles first \u2014 must recharge before second arrives."
   },
   {
     "wave": 7,
@@ -339,13 +339,13 @@
         "interval": 0.15
       },
       {
-        "type": "boss",
+        "type": "boss_shieldbearer",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Hunters flank the convoy to target Guardian. Deploy late or with Sniper cover. Guardian + Slow = clear path. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Hunters flank the convoy to target Guardian. Deploy late or with Sniper cover. Guardian + Slow = clear path. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

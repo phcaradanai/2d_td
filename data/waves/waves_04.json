@@ -28,7 +28,7 @@
         "interval": 0.2
       }
     ],
-    "intel": "Cyber Runner: fastest ground unit. Slow Tower halts it — then finish with damage."
+    "intel": "Cyber Runner: fastest ground unit. Slow Tower halts it \u2014 then finish with damage."
   },
   {
     "wave": 3,
@@ -72,7 +72,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Fast units plus swarms. All cluster at the sharp corner — Cannon placement pays off."
+    "intel": "Fast units plus swarms. All cluster at the sharp corner \u2014 Cannon placement pays off."
   },
   {
     "wave": 5,
@@ -175,7 +175,7 @@
         "interval": 0.68
       }
     ],
-    "intel": "High-speed wave with tank follow-up. Every corner is a kill zone — use them."
+    "intel": "High-speed wave with tank follow-up. Every corner is a kill zone \u2014 use them."
   },
   {
     "wave": 9,
@@ -211,13 +211,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_runner",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Area 1 corner finale. No single tower handles all. Slow the runners, AoE the swarms, burst the tanks. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Area 1 corner finale. No single tower handles all. Slow the runners, AoE the swarms, burst the tanks. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

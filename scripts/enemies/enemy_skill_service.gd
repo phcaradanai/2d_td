@@ -14,6 +14,7 @@ static func _process_shield_aura(enemy: Node2D) -> void:
 				continue
 			if enemy.global_position.distance_to(other.global_position) <= radius:
 				other.apply_shield(0.25, reduction, enemy) # Short duration, refreshed by aura
+				EnemyAudioService.play(enemy, "enemy_shield")
 
 static func _get_skill_reduction(enemy: Node2D) -> float:
 	var raw = enemy.skill_params.get("reduction", enemy.skill_params.get("shield_reduction", enemy.shield_reduction))
@@ -49,6 +50,7 @@ static func _process_healer_aura(enemy: Node2D) -> void:
 							float(other.max_hp) if "max_hp" in other else 0.0
 						])
 	if not healed_targets.is_empty():
+		EnemyAudioService.play(enemy, "enemy_heal")
 		enemy.healer_heal_tick.emit(enemy, healed_targets, amount)
 
 static func _process_disrupt_aura(enemy: Node2D) -> void:
@@ -63,9 +65,12 @@ static func _process_disrupt_aura(enemy: Node2D) -> void:
 		if not is_instance_valid(tower) or not tower.has_method("apply_fire_rate_modifier"):
 			continue
 		if enemy.global_position.distance_to(tower.global_position) <= radius:
+			var is_new : bool = not enemy.disrupted_towers.has(tower.get_instance_id())
 			tower.apply_fire_rate_modifier(enemy, penalty)
 			currently_affected.append(tower)
 			enemy.disrupted_towers[tower.get_instance_id()] = tower
+			if is_new:
+				EnemyAudioService.play(enemy, "enemy_disrupt")
 			enemy.disrupted_tower.emit(tower, penalty, enemy)
 			if OS.is_debug_build() and enemy._verbose_combat:
 				var effective = tower.get_effective_fire_rate() if tower.has_method("get_effective_fire_rate") else 0.0
@@ -84,6 +89,7 @@ static func _handle_split_on_death(enemy: Node2D, _death_pos: Vector2) -> void:
 	if enemy.split_triggered_once:
 		return
 	enemy.split_triggered_once = true
+	EnemyAudioService.play(enemy, "enemy_split")
 	var count = enemy.skill_params.get("count", 2)
 	var type = enemy.skill_params.get("type", "basic")
 	enemy.split_triggered.emit(enemy, type, count)
@@ -101,6 +107,7 @@ static func _handle_split_on_death(enemy: Node2D, _death_pos: Vector2) -> void:
 				wave_manager.spawn_enemy_at_progress(type, enemy.progress + offset_prog, enemy.get_parent())
 
 static func notify_stealth_deferred(enemy: Node2D, preferred_target: Node) -> void:
+	EnemyAudioService.play(enemy, "enemy_cloak")
 	enemy.stealth_targeting_deferred.emit(enemy, preferred_target)
 	if enemy.vfx_controller:
 		enemy.vfx_controller.mark_cloaked_deferred(preferred_target)
@@ -110,6 +117,33 @@ static func notify_stealth_deferred(enemy: Node2D, preferred_target: Node) -> vo
 static func notify_stealth_targetable(enemy: Node2D) -> void:
 	if enemy.vfx_controller:
 		enemy.vfx_controller.mark_cloaked_targetable()
+
+static func _process_regenerate(enemy: Node2D) -> void:
+	if enemy.hp >= enemy.max_hp:
+		return
+	var amount := float(enemy.secondary_skill_params.get("amount", 60.0))
+	enemy.heal(amount, enemy)
+	enemy._spawn_impact_particle(Color(0.2, 1.0, 0.45, 0.55))
+
+static func _process_spawn_minions(enemy: Node2D) -> void:
+	if enemy.CatalogPreviewMode.is_preview_node(enemy):
+		return
+	var count := int(enemy.secondary_skill_params.get("count", 2))
+	var type := str(enemy.secondary_skill_params.get("type", "basic"))
+	var wave_manager := enemy.get_tree().current_scene.get_node_or_null("WaveManager")
+	if not wave_manager:
+		return
+	EnemyAudioService.play(enemy, "enemy_split")
+	enemy._spawn_impact_particle(Color(0.85, 0.3, 1.0, 0.7))
+	if enemy.vfx_controller:
+		enemy.vfx_controller.play_split_burst(type, count)
+	for i in range(count):
+		if enemy.use_dynamic_pathing and wave_manager.has_method("spawn_enemy_at_world_position"):
+			var offset := Vector2((i - (count - 1) / 2.0) * 24.0, 0.0)
+			wave_manager.spawn_enemy_at_world_position(type, enemy.global_position + offset)
+		elif wave_manager.has_method("spawn_enemy_at_progress"):
+			var offset_prog := (i - (count - 1) / 2.0) * 15.0
+			wave_manager.spawn_enemy_at_progress(type, enemy.progress + offset_prog, enemy.get_parent())
 
 static func _clear_disrupted_towers(enemy: Node2D) -> void:
 	for key in enemy.disrupted_towers.keys():

@@ -13,6 +13,7 @@ static func _process_pathing(enemy: Node2D, delta: float) -> void:
 	enemy._record_visual_movement_delta(enemy.global_position - before_pos)
 	enemy._lock_visual_orientation()
 	EnemyMovementService._sync_spatial_target_cache(enemy, true)
+	EnemyAudioService.play_movement(enemy)
 	if enemy.progress_ratio >= 1.0:
 		if enemy.has_method("reach_base"):
 			enemy.reach_base()
@@ -84,6 +85,7 @@ static func _process_dynamic_pathing(enemy: Node2D, delta: float) -> void:
 	enemy._lock_visual_orientation()
 	enemy.dynamic_travel_distance += step
 	EnemyMovementService._sync_spatial_target_cache(enemy, true)
+	EnemyAudioService.play_movement(enemy)
 
 static func _recalculate_dynamic_path(enemy: Node2D) -> void:
 	if enemy.pathfinding_manager == null or not is_instance_valid(enemy.pathfinding_manager):

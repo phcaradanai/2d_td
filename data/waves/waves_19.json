@@ -22,7 +22,7 @@
         "path": "lane_c"
       }
     ],
-    "intel": "Three lanes active simultaneously. The funnel handles all — position Lightning or Cannon there."
+    "intel": "Three lanes active simultaneously. The funnel handles all \u2014 position Lightning or Cannon there."
   },
   {
     "wave": 2,
@@ -58,7 +58,7 @@
         "path": "lane_c"
       }
     ],
-    "intel": "EMP Wasp: emits a field that slows tower fire rates by 50%. Kill it immediately — every second it lives multiplies enemy damage output."
+    "intel": "EMP Wasp: emits a field that slows tower fire rates by 50%. Kill it immediately \u2014 every second it lives multiplies enemy damage output."
   },
   {
     "wave": 3,
@@ -121,7 +121,7 @@
         ]
       }
     ],
-    "intel": "Two Disruptors with air escorts. Sniper priority on Disruptors — their EMP cascades your AA."
+    "intel": "Two Disruptors with air escorts. Sniper priority on Disruptors \u2014 their EMP cascades your AA."
   },
   {
     "wave": 4,
@@ -184,7 +184,7 @@
         ]
       }
     ],
-    "intel": "Disruptors + air surge on A+B, heavy ground with Hunters on C. Guardian needed on C — but Hunters will target it."
+    "intel": "Disruptors + air surge on A+B, heavy ground with Hunters on C. Guardian needed on C \u2014 but Hunters will target it."
   },
   {
     "wave": 5,
@@ -727,13 +727,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_fast_flyer",
         "count": 3,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Maximum 3-lane pressure. Three Disruptors slow all towers — kill them first or nothing fires at full rate. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Maximum 3-lane pressure. Three Disruptors slow all towers \u2014 kill them first or nothing fires at full rate. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

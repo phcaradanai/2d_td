@@ -16,7 +16,7 @@
         "path": "lane_b"
       }
     ],
-    "intel": "Interceptor: a fast-moving airborne unit. Rapid Tower barely tracks it — Sniper is far more reliable."
+    "intel": "Interceptor: a fast-moving airborne unit. Rapid Tower barely tracks it \u2014 Sniper is far more reliable."
   },
   {
     "wave": 2,
@@ -46,7 +46,7 @@
         "path": "lane_b"
       }
     ],
-    "intel": "Fast and standard flyers together. Sniper handles both — Lightning chains if they group at the funnel."
+    "intel": "Fast and standard flyers together. Sniper handles both \u2014 Lightning chains if they group at the funnel."
   },
   {
     "wave": 3,
@@ -161,7 +161,7 @@
         ]
       }
     ],
-    "intel": "All three air types. Sniper handles all — Lightning chains if they stack."
+    "intel": "All three air types. Sniper handles all \u2014 Lightning chains if they stack."
   },
   {
     "wave": 6,
@@ -421,7 +421,7 @@
         ]
       }
     ],
-    "intel": "Penultimate. Upgrade AA to maximum — the finale is heavier."
+    "intel": "Penultimate. Upgrade AA to maximum \u2014 the finale is heavier."
   },
   {
     "wave": 11,
@@ -484,13 +484,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_fast_flyer",
         "count": 3,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Massive air surge plus a Bulwark + Hunter ground column. Guardian on ground, AA on air, Sniper covers both. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Massive air surge plus a Bulwark + Hunter ground column. Guardian on ground, AA on air, Sniper covers both. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

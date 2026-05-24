@@ -15,7 +15,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Standard approach. The mid-zone has restricted build space — plan your coverage first."
+    "intel": "Standard approach. The mid-zone has restricted build space \u2014 plan your coverage first."
   },
   {
     "wave": 2,
@@ -101,7 +101,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Runners open the wave. Healers follow protected by speed — Sniper priority on healers."
+    "intel": "Runners open the wave. Healers follow protected by speed \u2014 Sniper priority on healers."
   },
   {
     "wave": 5,
@@ -158,7 +158,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Healer + Shieldbearer combination. Remove Healer first — Shieldbearer second."
+    "intel": "Healer + Shieldbearer combination. Remove Healer first \u2014 Shieldbearer second."
   },
   {
     "wave": 7,
@@ -279,13 +279,13 @@
         "interval": 0.48
       },
       {
-        "type": "boss",
+        "type": "boss_fast",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Healers, tanks, Shieldbearer, runners all at once. Kill supports first, then burst tanks. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Healers, tanks, Shieldbearer, runners all at once. Kill supports first, then burst tanks. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

@@ -88,7 +88,7 @@
         ]
       }
     ],
-    "intel": "Bulwark + Shieldbearer combine domes. Guardian breaks the Bulwark — towers handle Shieldbearers."
+    "intel": "Bulwark + Shieldbearer combine domes. Guardian breaks the Bulwark \u2014 towers handle Shieldbearers."
   },
   {
     "wave": 4,
@@ -173,7 +173,7 @@
         ]
       }
     ],
-    "intel": "Speed wave escorts the Bulwark. Slow towers stop the escorts — Guardian takes the Bulwark."
+    "intel": "Speed wave escorts the Bulwark. Slow towers stop the escorts \u2014 Guardian takes the Bulwark."
   },
   {
     "wave": 6,
@@ -311,7 +311,7 @@
         ]
       }
     ],
-    "intel": "Two Bulwark convoys staggered. Guardian clears first — must recharge before second arrives."
+    "intel": "Two Bulwark convoys staggered. Guardian clears first \u2014 must recharge before second arrives."
   },
   {
     "wave": 9,
@@ -470,13 +470,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_healer",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Two Bulwark convoys separated by time. Guardian clears the first — must recharge before the second arrives. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Two Bulwark convoys separated by time. Guardian clears the first \u2014 must recharge before the second arrives. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

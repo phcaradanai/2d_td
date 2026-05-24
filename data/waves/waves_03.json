@@ -33,7 +33,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Runners mixed with normals. Narrow terrain limits build options — make them count."
+    "intel": "Runners mixed with normals. Narrow terrain limits build options \u2014 make them count."
   },
   {
     "wave": 3,
@@ -74,7 +74,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Mixed column. Tanks follow fast units — Slow + Cannon combination is optimal."
+    "intel": "Mixed column. Tanks follow fast units \u2014 Slow + Cannon combination is optimal."
   },
   {
     "wave": 5,
@@ -115,7 +115,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Runners + swarm together. Fast lane tower and AoE tower — both required."
+    "intel": "Runners + swarm together. Fast lane tower and AoE tower \u2014 both required."
   },
   {
     "wave": 7,
@@ -199,13 +199,13 @@
         "interval": 0.15
       },
       {
-        "type": "boss",
+        "type": "boss_swarm",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Maximum pressure. Tanks absorb while fast units slip through gaps. No idle towers. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Maximum pressure. Tanks absorb while fast units slip through gaps. No idle towers. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

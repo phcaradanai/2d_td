@@ -92,6 +92,7 @@ static func die(enemy: Node2D, death_global: Vector2 = Vector2.ZERO) -> void:
 	if enemy.affix_service and enemy.affix_service.has_method("on_enemy_death"):
 		enemy.affix_service.on_enemy_death(enemy, capture_pos)
 
+	EnemyAudioService.play_death(enemy)
 	var gold_reward: int = enemy.reward_gold if enemy.gives_gold else 0
 	enemy.died.emit(enemy, gold_reward)
 	enemy.queue_free()

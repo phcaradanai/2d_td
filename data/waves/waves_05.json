@@ -43,7 +43,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Tanks backed by swarms. AoE clears the swarms — then focus fire on tanks."
+    "intel": "Tanks backed by swarms. AoE clears the swarms \u2014 then focus fire on tanks."
   },
   {
     "wave": 3,
@@ -278,13 +278,13 @@
         "interval": 0.15
       },
       {
-        "type": "boss",
+        "type": "boss_swarm",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Area 1 finale. Slow both chokepoints. AoE then single-target mop-up. Maximum pressure. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Area 1 finale. Slow both chokepoints. AoE then single-target mop-up. Maximum pressure. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

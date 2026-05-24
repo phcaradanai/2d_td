@@ -1549,8 +1549,8 @@ func shoot() -> void:
 		
 		pass # shoot debug removed for performance
 		
-		# Configure projectile — color always derived from element identity,
-		# visual_type only drives scale/SFX category.
+		# Configure projectile — color always derived from element identity.
+		# visual_type drives scale; element drives SFX (visual_type is the fallback).
 		var proj_scale := 1.0
 		var sfx_name := "tower_shoot_basic"
 		var tower_col := _get_tower_color() # element-aware color
@@ -1585,6 +1585,12 @@ func shoot() -> void:
 			"seismic_drill":
 				proj_scale = 1.4
 				sfx_name = "tower_shoot_cannon"
+
+		# Element SFX overrides visual_type fallback when an asset exists
+		if not elements.is_empty() and audio_manager:
+			var elem_sfx := "tower_shoot_" + elements[0]
+			if audio_manager.sfx_paths.has(elem_sfx):
+				sfx_name = elem_sfx
 		
 		var radius = splash_radius if attack_type == "splash" else slow_radius
 		var effective_dmg := get_effective_damage()

@@ -15,7 +15,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Heavy Drone: an armoured airborne unit. It takes many hits — Sniper at full upgrade is most cost-effective."
+    "intel": "Heavy Drone: an armoured airborne unit. It takes many hits \u2014 Sniper at full upgrade is most cost-effective."
   },
   {
     "wave": 2,
@@ -91,7 +91,7 @@
         ]
       }
     ],
-    "intel": "EMP Wasp detected for the first time. Its aura slows tower fire rates by 50% — kill it the moment it appears."
+    "intel": "EMP Wasp detected for the first time. Its aura slows tower fire rates by 50% \u2014 kill it the moment it appears."
   },
   {
     "wave": 4,
@@ -117,7 +117,7 @@
         "interval": 0.34
       }
     ],
-    "intel": "Pure air wave. Guardian is useless here — every AA tower must fire. Upgrade Sniper if possible."
+    "intel": "Pure air wave. Guardian is useless here \u2014 every AA tower must fire. Upgrade Sniper if possible."
   },
   {
     "wave": 5,
@@ -204,7 +204,7 @@
         "interval": 0.15
       }
     ],
-    "intel": "Two Disruptors with air escort. Sniper priority on Disruptors — their EMP slows your AA."
+    "intel": "Two Disruptors with air escort. Sniper priority on Disruptors \u2014 their EMP slows your AA."
   },
   {
     "wave": 7,
@@ -540,13 +540,13 @@
         "interval": 0.24
       },
       {
-        "type": "boss",
+        "type": "boss_armored_flyer",
         "count": 3,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Two Bulwark convoys staggered plus simultaneous air assault. Guardian: Bulwark 1 → recharge → Bulwark 2. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Two Bulwark convoys staggered plus simultaneous air assault. Guardian: Bulwark 1 \u2192 recharge \u2192 Bulwark 2. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

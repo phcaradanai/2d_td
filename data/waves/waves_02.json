@@ -10,7 +10,7 @@
         "interval": 0.2
       }
     ],
-    "intel": "Normal patrol. Enemies slow at corners — place towers at the bend for maximum exposure."
+    "intel": "Normal patrol. Enemies slow at corners \u2014 place towers at the bend for maximum exposure."
   },
   {
     "wave": 2,
@@ -69,7 +69,7 @@
         "interval": 0.18
       }
     ],
-    "intel": "Mixed column. Runners sprint ahead — do not let either type slip through."
+    "intel": "Mixed column. Runners sprint ahead \u2014 do not let either type slip through."
   },
   {
     "wave": 5,
@@ -110,7 +110,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Data Swarm introduced. Single-target towers cannot keep up — AoE is mandatory now."
+    "intel": "Data Swarm introduced. Single-target towers cannot keep up \u2014 AoE is mandatory now."
   },
   {
     "wave": 7,
@@ -161,13 +161,13 @@
         "interval": 0.16
       },
       {
-        "type": "boss",
+        "type": "boss_fast",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "All types. Swarm screen, runners sprint, tanks absorb. Every tower earns its place. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "All types. Swarm screen, runners sprint, tanks absorb. Every tower earns its place. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

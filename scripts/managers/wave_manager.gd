@@ -4,6 +4,7 @@ extends Node
 signal wave_started(wave_number: int, wave_name: String)
 signal wave_completed(wave_number: int, wave_name: String, reward: int)
 signal all_waves_completed()
+signal boss_wave_started(wave_number: int)
 ## Signals for gameplay events
 signal enemy_killed(reward_gold: int)
 signal base_damaged(base_damage: int, global_pos: Vector2)
@@ -192,6 +193,11 @@ func start_next_wave() -> void:
 	wave_started.emit(active_wave_number, active_wave_name)
 	if game_manager and game_manager.battle_telemetry:
 		game_manager.battle_telemetry.start_wave(active_wave_number, active_wave_name)
+
+	var groups: Array = wave_data.get("groups", [])
+	var has_boss := groups.any(func(g): return g.get("type", "") == "boss")
+	if has_boss:
+		boss_wave_started.emit(active_wave_number)
 	
 	if OS.is_debug_build(): print("Starting Wave ", active_wave_number, ": ", active_wave_name, ". Next index=", current_wave_index)
 	

@@ -9,11 +9,18 @@ static func apply_setup(enemy: Node2D, config: Dictionary) -> void:
 	enemy.tags = Array(config.get("tags", []))
 	enemy.skill_id = config.get("skill", "")
 	enemy.skill_params = config.get("skill_params", {})
-	
+	enemy.secondary_skill_id = config.get("secondary_skill", "")
+	enemy.secondary_skill_params = config.get("secondary_skill_params", {})
+
 	if enemy.skill_id == "healer":
 		enemy.skill_timer = float(enemy.skill_params.get("initial_delay", enemy.skill_params.get("interval", 1.0)))
 	else:
 		enemy.skill_timer = float(enemy.skill_params.get("initial_delay", 0.0))
+
+	if enemy.secondary_skill_id == "regenerate":
+		enemy._regen_timer = float(enemy.secondary_skill_params.get("initial_delay", enemy.secondary_skill_params.get("interval", 2.0)))
+	elif enemy.secondary_skill_id == "spawn_minions":
+		enemy._minion_timer = float(enemy.secondary_skill_params.get("initial_delay", enemy.secondary_skill_params.get("interval", 5.0)))
 	
 	enemy.is_stealth = (enemy.skill_id == "stealth" or enemy.tags.has("stealth"))
 	if enemy.is_stealth:
@@ -99,6 +106,9 @@ static func apply_setup(enemy: Node2D, config: Dictionary) -> void:
 		enemy.affix_speed_multiplier = 1.0
 		enemy.affix_state = {}
 
+	# Apply affix/boss tint AFTER affixes are set
+	enemy.affix_tint = _compute_affix_tint(enemy)
+
 	enemy.is_active = true
 
 	if enemy.is_gallery_preview:
@@ -106,3 +116,55 @@ static func apply_setup(enemy: Node2D, config: Dictionary) -> void:
 		enemy.set_process(false)
 		enemy.set_physics_process(false)
 		enemy.queue_redraw()
+
+static func _compute_affix_tint(enemy: Node2D) -> Color:
+	# Boss type gets a strong identity color
+	var etype: String = str(enemy.get("enemy_type"))
+	match etype:
+		# Original boss set
+		"boss_tyrant":       return Color(1.00, 0.50, 0.30)
+		"boss_phantom":      return Color(0.65, 0.35, 1.00)
+		"boss_herald":       return Color(1.00, 0.80, 0.20)
+		"boss_colossus":     return Color(1.00, 0.28, 0.28)
+		# Creep boss set — each echoes its creep identity but intensified
+		"boss_basic":        return Color(0.20, 1.00, 1.00)  # vivid cyan
+		"boss_fast":         return Color(0.10, 1.00, 0.50)  # electric green
+		"boss_swarm":        return Color(0.75, 1.00, 0.10)  # acid yellow-green
+		"boss_runner":       return Color(0.20, 0.65, 1.00)  # electric blue
+		"boss_tank":         return Color(1.00, 0.45, 0.10)  # molten orange
+		"boss_hunter":       return Color(1.00, 0.10, 0.40)  # crimson red
+		"boss_shieldbearer": return Color(0.25, 0.50, 1.00)  # royal blue
+		"boss_healer":       return Color(1.00, 0.35, 0.85)  # hot pink
+		"boss_splitter":     return Color(0.75, 0.15, 1.00)  # toxic purple
+		"boss_cloaked":      return Color(0.35, 0.15, 1.00)  # shadow indigo
+		"boss_flyer":        return Color(0.40, 0.90, 1.00)  # sky blue
+		"boss_fast_flyer":   return Color(0.90, 1.00, 0.60)  # neon lime
+		"boss_armored_flyer":return Color(1.00, 0.65, 0.20)  # bronze
+		"boss_disruptor":    return Color(0.65, 0.25, 1.00)  # deep violet
+
+	# Regular enemies: tint by dominant affix
+	var affixes: Array = enemy.get("affixes") if enemy.get("affixes") is Array else []
+	if affixes.is_empty():
+		return Color.WHITE
+
+	# Average the hue of all active affixes
+	var tint := Color.WHITE
+	var count := 0
+	for a in affixes:
+		var c := _affix_color(a)
+		if c != Color.WHITE:
+			tint = Color(tint.r * c.r, tint.g * c.g, tint.b * c.b)
+			count += 1
+
+	if count > 0:
+		return tint
+	return Color.WHITE
+
+static func _affix_color(affix: String) -> Color:
+	match affix:
+		"mechanical": return Color(0.55, 0.80, 1.00)  # steel blue
+		"undead":     return Color(0.75, 0.55, 1.00)  # sickly violet
+		"fast":       return Color(1.00, 0.95, 0.30)  # electric yellow
+		"healing":    return Color(0.40, 1.00, 0.60)  # warm green
+		"image":      return Color(0.70, 0.80, 1.00)  # ghost white-blue
+	return Color.WHITE

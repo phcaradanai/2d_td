@@ -299,7 +299,7 @@ func _play_mechanical_invuln_vfx(enemy: Node2D) -> void:
 func _clear_mechanical_vfx(enemy: Node2D) -> void:
 	if not is_instance_valid(enemy):
 		return
-	enemy.modulate = Color(1.0, 1.0, 1.0, 1.0)
+	enemy.modulate = Color(1.0, 1.0, 1.0, enemy.modulate.a)
 
 func _play_undead_fake_death_vfx(enemy: Node2D) -> void:
 	if not is_instance_valid(enemy):

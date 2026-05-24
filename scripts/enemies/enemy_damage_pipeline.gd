@@ -51,6 +51,8 @@ static func take_damage(enemy: Node2D, amount: float, hit_global: Vector2 = Vect
 		dn_color = Color(0.4, 0.8, 1.0)
 	elif source_id.begins_with("disease_"):
 		dn_color = Color(0.58, 1.0, 0.28)
+	else:
+		dn_color = _element_color_from_source(source_id)
 
 	enemy.spawn_damage_number(int(final_damage), capture_pos, dn_color, source_id)
 	EnemyHitFeedbackService._play_hit_pulse(enemy )
@@ -76,4 +78,25 @@ static func take_damage(enemy: Node2D, amount: float, hit_global: Vector2 = Vect
 				and enemy.affix_service.try_pre_death(enemy):
 			return
 		enemy.die(capture_pos)
+
+static func _element_color_from_source(source_id: String) -> Color:
+	var prefix := source_id.split("_")[0] if "_" in source_id else source_id
+	match prefix:
+		"fire":        return Color(1.0, 0.35, 0.08)
+		"ice":         return Color(0.5, 0.9, 1.0)
+		"electricity": return Color(0.85, 0.75, 1.0)
+		"water":       return Color(0.15, 0.55, 1.0)
+		"earth":       return Color(0.68, 0.42, 0.16)
+		"darkness":    return Color(0.7, 0.2, 1.0)
+		"light":       return Color(1.0, 0.95, 0.4)
+		"nature":      return Color(0.15, 0.9, 0.3)
+		"life":        return Color(0.3, 1.0, 0.5)
+		"quark":       return Color(0.9, 0.4, 1.0)
+		"trickery":    return Color(0.75, 0.45, 1.0)
+		"pure":
+			# pure_fire, pure_ice etc — split again
+			var parts := source_id.split("_")
+			if parts.size() >= 2:
+				return _element_color_from_source(parts[1] + "_t1")
+	return Color.WHITE
 

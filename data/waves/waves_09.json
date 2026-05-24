@@ -53,7 +53,7 @@
         "interval": 0.16
       }
     ],
-    "intel": "Swarms screen the heavies. AoE clears the chaff — then focus on shield source."
+    "intel": "Swarms screen the heavies. AoE clears the chaff \u2014 then focus on shield source."
   },
   {
     "wave": 3,
@@ -155,7 +155,7 @@
         ]
       }
     ],
-    "intel": "All-speed wave with healer support. Kill healer first — speed units follow."
+    "intel": "All-speed wave with healer support. Kill healer first \u2014 speed units follow."
   },
   {
     "wave": 6,
@@ -305,7 +305,7 @@
         "interval": 0.62
       }
     ],
-    "intel": "Maximum support density. Kill order critical: Healer → Shieldbearer → Splitter → rest."
+    "intel": "Maximum support density. Kill order critical: Healer \u2192 Shieldbearer \u2192 Splitter \u2192 rest."
   },
   {
     "wave": 10,
@@ -349,13 +349,13 @@
         "interval": 0.6
       },
       {
-        "type": "boss",
+        "type": "boss_hunter",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "All support types simultaneously. This is the hardest wave so far. Every tower type earns its place here. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "All support types simultaneously. This is the hardest wave so far. Every tower type earns its place here. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

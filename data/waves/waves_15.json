@@ -639,13 +639,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_splitter",
         "count": 2,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Area 3 finale. Hunters demand Guardian attention, Bulwark demands it too. Sniper covers Guardian, Guardian takes Bulwark. No idle towers. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Area 3 finale. Hunters demand Guardian attention, Bulwark demands it too. Sniper covers Guardian, Guardian takes Bulwark. No idle towers. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]

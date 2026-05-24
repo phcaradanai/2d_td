@@ -43,6 +43,7 @@ static func _trigger_runner_dash(enemy: Node2D, reason: String = "burst") -> voi
 	enemy.runner_dash_remaining = enemy.runner_dash_duration
 	enemy.runner_dash_timer = enemy.runner_dash_cooldown
 	enemy.update_effective_speed()
+	EnemyAudioService.play_dash(enemy)
 	if enemy.vfx_controller:
 		enemy.vfx_controller.play_runner_burst()
 	enemy._spawn_impact_particle(Color(1.0, 0.46, 0.08, 0.56))

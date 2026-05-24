@@ -16,7 +16,7 @@
         "path": "lane_b"
       }
     ],
-    "intel": "Two entry points. Both must be covered — split your tower budget between lanes."
+    "intel": "Two entry points. Both must be covered \u2014 split your tower budget between lanes."
   },
   {
     "wave": 2,
@@ -261,7 +261,7 @@
         ]
       }
     ],
-    "intel": "Maximum dual-lane pressure. Shield source priority — always."
+    "intel": "Maximum dual-lane pressure. Shield source priority \u2014 always."
   },
   {
     "wave": 9,
@@ -303,13 +303,13 @@
         ]
       },
       {
-        "type": "boss",
+        "type": "boss_basic",
         "count": 1,
         "interval": 4.0,
         "spawn_delay": 3.0,
         "path": "default"
       }
     ],
-    "intel": "Two shielded heavy columns plus a speed rush on lane B. Lightning at the merge handles both. BOSS: Apex Sentinel activates at wave end — prioritize mechanical invuln windows."
+    "intel": "Two shielded heavy columns plus a speed rush on lane B. Lightning at the merge handles both. BOSS: Apex Sentinel activates at wave end \u2014 prioritize mechanical invuln windows."
   }
 ]
