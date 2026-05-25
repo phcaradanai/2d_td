@@ -59,6 +59,7 @@ export default function Layout() {
     { to: '/profiles', label: 'Access Profiles', icon: '○' },
     { to: '/tokens', label: 'Access Tokens', icon: '¤' },
     { to: '/audit-logs', label: 'Audit Logs', icon: '▹' },
+    { to: '/files', label: 'Files & Assets', icon: '◫' },
   ];
 
   return (

@@ -13,6 +13,11 @@ type Config struct {
 	AdminToken           string
 	DefaultAccessProfile string
 	PublicBaseURL        string
+	MinioEndpoint        string
+	MinioAccessKey       string
+	MinioSecretKey       string
+	MinioBucket          string
+	MinioUseSSL          bool
 }
 
 func Load() Config {
@@ -22,6 +27,11 @@ func Load() Config {
 			maxWave = n
 		}
 	}
+	useSSL := false
+	if v := os.Getenv("MINIO_USE_SSL"); v == "true" {
+		useSSL = true
+	}
+
 	return Config{
 		Port:                 getenv("PORT", "8080"),
 		DatabaseURL:          os.Getenv("DATABASE_URL"),
@@ -30,6 +40,11 @@ func Load() Config {
 		AdminToken:           getenv("ADMIN_TOKEN", "change-me-now"),
 		DefaultAccessProfile: getenv("DEFAULT_ACCESS_PROFILE", "demo"),
 		PublicBaseURL:        os.Getenv("PUBLIC_BASE_URL"),
+		MinioEndpoint:        os.Getenv("MINIO_ENDPOINT"),
+		MinioAccessKey:       os.Getenv("MINIO_ACCESS_KEY"),
+		MinioSecretKey:       os.Getenv("MINIO_SECRET_KEY"),
+		MinioBucket:          getenv("MINIO_BUCKET_NAME", "td2d-assets"),
+		MinioUseSSL:          useSSL,
 	}
 }
 

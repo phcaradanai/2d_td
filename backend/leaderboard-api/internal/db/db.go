@@ -180,6 +180,17 @@ CREATE TABLE IF NOT EXISTS audit_logs (
 );
 CREATE INDEX IF NOT EXISTS idx_al_created ON audit_logs (created_at DESC);
 CREATE INDEX IF NOT EXISTS idx_al_action  ON audit_logs (action);
+
+-- ── Uploaded Files ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS uploaded_files (
+    id           BIGSERIAL     PRIMARY KEY,
+    filename     VARCHAR(255)  NOT NULL,
+    object_name  VARCHAR(255)  NOT NULL UNIQUE,
+    download_url TEXT          NOT NULL,
+    size_bytes   BIGINT        NOT NULL DEFAULT 0,
+    created_at   TIMESTAMPTZ   NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_uf_created ON uploaded_files (created_at DESC);
 `
 
 const seedSQL = `

@@ -6,6 +6,7 @@ import InstallDetailPage from './pages/InstallDetailPage';
 import AccessProfilesPage from './pages/AccessProfilesPage';
 import AccessTokensPage from './pages/AccessTokensPage';
 import AuditLogsPage from './pages/AuditLogsPage';
+import FilesPage from './pages/FilesPage';
 
 export default function App() {
   return (
@@ -17,6 +18,7 @@ export default function App() {
         <Route path="profiles" element={<AccessProfilesPage />} />
         <Route path="tokens" element={<AccessTokensPage />} />
         <Route path="audit-logs" element={<AuditLogsPage />} />
+        <Route path="files" element={<FilesPage />} />
       </Route>
     </Routes>
   );

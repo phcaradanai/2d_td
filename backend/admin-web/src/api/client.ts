@@ -57,6 +57,22 @@ export const api = {
   post:   <T>(path: string, body: unknown)   => request<T>('POST', path, body),
   patch:  <T>(path: string, body: unknown)   => request<T>('PATCH', path, body),
   delete: <T>(path: string, body?: unknown)  => request<T>('DELETE', path, body),
+  upload: async <T>(path: string, file: File): Promise<T> => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const headers: Record<string, string> = {
+      'Authorization': `Bearer ${getToken()}`,
+    };
+    const res = await fetch(`${BASE_URL}${path}`, {
+      method: 'POST',
+      headers,
+      body: formData,
+    });
+    if (!res.ok) {
+      throw new ApiError(res.status, `HTTP ${res.status}: ${res.statusText}`);
+    }
+    return res.json() as Promise<T>;
+  },
 };
 
 export { ApiError };
@@ -189,3 +205,18 @@ export function normalizeAccessProfile(raw: Record<string, unknown>): AccessProf
 export function normalizeProfiles(rawItems: Record<string, unknown>[]): AccessProfile[] {
   return rawItems.map(normalizeAccessProfile);
 }
+
+export interface UploadedFile {
+  id: number;
+  filename: string;
+  object_name: string;
+  download_url: string;
+  size_bytes: number;
+  created_at: string;
+}
+
+export const fileApi = {
+  list: () => api.get<UploadedFile[]>('/api/admin/files'),
+  upload: (file: File) => api.upload<UploadedFile>('/api/admin/files/upload', file),
+  delete: (id: number) => api.delete(`/api/admin/files/${id}`),
+};

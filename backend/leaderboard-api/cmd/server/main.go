@@ -37,7 +37,13 @@ func main() {
 	runtimeRepo := repository.NewRuntimeRepository(database)
 	accessRepo  := repository.NewAccessRepository(database)
 	saveRepo    := repository.NewSaveRepository(database)
+	fileRepo    := repository.NewFileRepository(database)
 	resolver    := service.NewAccessResolver(runtimeRepo, accessRepo, cfg.DefaultAccessProfile)
+
+	minioSvc, err := service.NewMinioService(cfg)
+	if err != nil {
+		log.Printf("[startup] minio service warning: %v", err)
+	}
 
 	// ── Handlers ───────────────────────────────────────────────────────────
 	limiter    := ratelimit.New(60, time.Minute)
@@ -50,6 +56,7 @@ func main() {
 	install    := handler.NewInstallHandler(runtimeRepo, accessRepo, resolver)
 	tokens     := handler.NewTokenHandler(database, runtimeRepo, accessRepo, resolver)
 	auditH     := handler.NewAuditHandler(database)
+	fileH      := handler.NewFileHandler(fileRepo, minioSvc)
 	adminMW    := handler.AdminMiddleware(cfg.AdminToken)
 
 	mux := http.NewServeMux()
@@ -98,6 +105,9 @@ func main() {
 	mux.Handle("DELETE /api/admin/tokens/{token_code}",              adminMW(http.HandlerFunc(tokens.DeleteToken)))
 	mux.Handle("GET /api/admin/tokens/{token_code}/redemptions",     adminMW(http.HandlerFunc(tokens.GetTokenRedemptions)))
 	mux.Handle("GET /api/admin/audit-logs",                          adminMW(http.HandlerFunc(auditH.ListAuditLogs)))
+	mux.Handle("POST /api/admin/files/upload",                       adminMW(http.HandlerFunc(fileH.UploadFile)))
+	mux.Handle("GET /api/admin/files",                               adminMW(http.HandlerFunc(fileH.ListFiles)))
+	mux.Handle("DELETE /api/admin/files/{id}",                       adminMW(http.HandlerFunc(fileH.DeleteFile)))
 
 	// ── Global middleware stack ────────────────────────────────────────────
 	var h http.Handler = mux

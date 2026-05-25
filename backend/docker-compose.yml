@@ -18,13 +18,17 @@ services:
       ADMIN_TOKEN: "${ADMIN_TOKEN:-admin}"
       DEFAULT_ACCESS_PROFILE: "${DEFAULT_ACCESS_PROFILE:-demo}"
       PUBLIC_BASE_URL: "${PUBLIC_BASE_URL:-http://hrrvh3gci0j81306wurdiper.157.85.103.69.sslip.io}"
+      MINIO_ENDPOINT: "${MINIO_ENDPOINT:-http://gvbesaz3jj52upp8d3qnstp6.157.85.103.69.sslip.io:9000}"
+      MINIO_ACCESS_KEY: "${MINIO_ACCESS_KEY:-admin}"
+      MINIO_SECRET_KEY: "${MINIO_SECRET_KEY:-minio!@1234}"
+      MINIO_BUCKET_NAME: "${MINIO_BUCKET_NAME:-td2d-upload}"
+      MINIO_USE_SSL: "${MINIO_USE_SSL:-false}"
     healthcheck:
-      test: ["CMD", "wget", "-qO-", "http://localhost:8080/healthz"]
+      test: [ "CMD", "wget", "-qO-", "http://localhost:8080/healthz" ]
       interval: 30s
       timeout: 5s
       retries: 3
       start_period: 10s
-    
 
   admin-web:
     build:
