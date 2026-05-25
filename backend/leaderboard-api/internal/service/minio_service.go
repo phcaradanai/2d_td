@@ -27,7 +27,16 @@ func NewMinioService(cfg config.Config) (MinioService, error) {
 		return nil, fmt.Errorf("MINIO_ENDPOINT is not configured")
 	}
 
-	client, err := minio.New(cfg.MinioEndpoint, &minio.Options{
+	endpoint := cfg.MinioEndpoint
+	if len(endpoint) > 0 {
+		if len(endpoint) > 7 && endpoint[:7] == "http://" {
+			endpoint = endpoint[7:]
+		} else if len(endpoint) > 8 && endpoint[:8] == "https://" {
+			endpoint = endpoint[8:]
+		}
+	}
+
+	client, err := minio.New(endpoint, &minio.Options{
 		Creds:  credentials.NewStaticV4(cfg.MinioAccessKey, cfg.MinioSecretKey, ""),
 		Secure: cfg.MinioUseSSL,
 	})
