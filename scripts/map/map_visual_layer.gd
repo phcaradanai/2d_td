@@ -1138,8 +1138,6 @@ func _lane_marker_label(path_id: String) -> String:
 		return "B"
 	if path_id == "lane_c":
 		return "C"
-	if path_id == "air_lane":
-		return "AIR"
 	return path_id.substr(0, min(3, path_id.length())).to_upper()
 
 func _draw_path_portal_markers(font: Font, font_size: int, gs: int) -> void:

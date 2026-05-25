@@ -3114,6 +3114,8 @@ func _refresh_hud_wave_intel() -> void:
 	FrameSpikeLogger.end("wave_intel_refresh")
 
 func _refresh_route_preview() -> void:
+	if map_route_hint and wave_manager and level_manager:
+		map_route_hint.set_active_path_ids(_get_upcoming_wave_active_paths())
 	# MazeMapRenderer guideline handles route visualization
 	if maze_map_renderer:
 		return

@@ -1,41 +1,39 @@
 extends Node2D
 class_name MapRouteHint
 
-## Fixed-path route hint — lane lines with crossover bridge/gap visuals,
-## turn chevrons, portal markers, and a pre-wave flow pulse animation.
+## Fixed-path route hint — per-route lane lines, crossover bridge/gap visuals,
+## turn chevrons, portal markers, per-route flow pulses, and spawn badges.
 ##
-## Z-layering: z_index = 0, inserted at tree-position 1 (right after the baked
-## MazeMapRenderer sprite at 0). EnemyContainer and all gameplay nodes sit at
-## later tree positions and render on top at the same z=0.
+## Z-layering: z_index=0, tree-position 1 (right after baked MazeMapRenderer).
+## All gameplay containers (EnemyContainer, TowerContainer, …) are later in the
+## tree and render on top at the same z=0.
 
 # ============================================================= constants
 
 const LINE_WIDTH       := 2.0
 const CHEVRON_SIZE     := 6.0
-const CHEVRON_EVERY    := 8       # cells between non-turn chevrons
+const CHEVRON_EVERY    := 8
 const PORTAL_RADIUS    := 8.0
 const Z_INDEX_LAYER    := 0
 
-const OPACITY_BUILD    := 0.65    # pre-wave: clearly visible
-const OPACITY_WAVE     := 0.15    # during combat: subtle background guide
+const OPACITY_BUILD    := 0.65
+const OPACITY_WAVE     := 0.15
 
-# Crossover bridge / tunnel
-const GAP_HALF         := 15.0   # pixels skipped on each side of an under-crossover center
-const BRIDGE_BAR_HALF  := 13.0   # half-length of over-lane bridge deck bar
+const GAP_HALF         := 15.0
+const BRIDGE_BAR_HALF  := 13.0
 const BRIDGE_BAR_WIDTH := 4.5
-const TUNNEL_HALF      := 11.0   # half-length of under-lane tunnel shadow bar (perpendicular to bridge)
+const TUNNEL_HALF      := 11.0
 
-# Flow animation (pre-wave only)
-const FLOW_SPEED       := 0.16   # path-fraction per second — full lap ≈ 6 s
-const FLOW_DOT_RADIUS  := 3.0
-const FLOW_DOT_COUNT   := 2
-const FLOW_DOT_SPACING := 0.07   # spacing between dots in path-fraction units
+const FLOW_SPEED       := 0.16
+const FLOW_DOT_RADIUS  := 3.2
+const SPAWN_BADGE_R    := 9.0
+const SPAWN_FONT_SIZE  := 10
 
 static var LANE_PALETTE: Array[Color] = [
-	Color(0.20, 0.90, 1.00, 1.0),   # 0 cyan
-	Color(1.00, 0.65, 0.15, 1.0),   # 1 amber
-	Color(0.25, 1.00, 0.35, 1.0),   # 2 lime
-	Color(0.95, 0.25, 0.75, 1.0),   # 3 pink
+	Color(0.20, 0.90, 1.00, 1.0),
+	Color(1.00, 0.65, 0.15, 1.0),
+	Color(0.25, 1.00, 0.35, 1.0),
+	Color(0.95, 0.25, 0.75, 1.0),
 ]
 
 const PORTAL_ENTRY_COLOR  := Color(0.75, 0.30, 1.00, 1.0)
@@ -46,24 +44,29 @@ const FLOW_DOT_COLOR      := Color(1.00, 1.00, 1.00, 0.90)
 
 # ============================================================= state
 
-# {points: PackedVector2Array, lane_idx: int}
+# Each segment: {points: PackedVector2Array, lane_idx: int, path_id: String}
 var _segments: Array[Dictionary] = []
 var _portal_entry_positions: Array[Vector2] = []
 var _portal_exit_positions:  Array[Vector2] = []
 
-# Crossover bridge data — one entry per unique crossover cell
-# Each: {pos: Vector2, over_dir: Vector2, color: Color}
 var _crossover_bridge_data: Array[Dictionary] = []
-# Fast set for _draw: pos_key -> true
-var _crossover_world_set: Dictionary = {}
+var _crossover_world_set:   Dictionary = {}
 
-# Flow animation along the primary lane
-var _flow_path: PackedVector2Array = []
-var _flow_t: float = 0.0
+# Per-path flow data
+var _path_flows:     Dictionary = {}   # path_id -> PackedVector2Array
+var _path_lane_idx:  Dictionary = {}   # path_id -> int
+var _path_badge_pos: Dictionary = {}   # path_id -> Vector2 (badge anchor, 1 step into route)
+
+# Which path IDs are considered "active" for drawing.
+# Empty = draw all non-air paths (default for single-spawn maps).
+var _active_path_ids:  Array[String] = []
+var _all_non_air_ids:  Array[String] = []
+
+var _flow_t:    float = 0.0
 var _flow_active: bool = false
-
 var _show_routes: bool = true
 var _opacity_tween: Tween = null
+var _font: Font = null
 
 
 # ============================================================= lifecycle
@@ -88,7 +91,11 @@ func setup(lm: Node) -> void:
 	_portal_exit_positions.clear()
 	_crossover_bridge_data.clear()
 	_crossover_world_set.clear()
-	_flow_path = PackedVector2Array()
+	_path_flows.clear()
+	_path_lane_idx.clear()
+	_path_badge_pos.clear()
+	_active_path_ids.clear()
+	_all_non_air_ids.clear()
 	_flow_t = 0.0
 
 	if _opacity_tween:
@@ -100,18 +107,20 @@ func setup(lm: Node) -> void:
 		set_process(false)
 		return
 
+	_font = ThemeDB.fallback_font
+
 	var gs: int        = int(lm.grid_size)
 	var origin: Vector2 = lm.grid_origin
 	var multi_paths: Dictionary = lm.multi_paths
 	var level_data: Dictionary  = lm.level_data
 
-	# ── pass 1: visit every cell to detect crossovers and record first-visit dir ──
-	# cell_visits[cell_key] = Array of {lane_idx, pos, dir}
+	# ── pass 1: visit every non-air cell, collect for crossover detection ──────
 	var cell_visits: Dictionary = {}
 	var lane_idx := 0
 
 	for path_id in multi_paths.keys():
-		if (path_id as String).begins_with("air"):
+		var pid: String = path_id
+		if pid.begins_with("air"):
 			continue
 
 		var cells: Array = multi_paths[path_id]
@@ -133,13 +142,11 @@ func setup(lm: Node) -> void:
 			var ck: String = _key(cv)
 			if not cell_visits.has(ck):
 				cell_visits[ck] = []
-			(cell_visits[ck] as Array).append({
-				"lane_idx": lane_idx, "pos": wp, "dir": travel_dir
-			})
+			(cell_visits[ck] as Array).append({"lane_idx": lane_idx, "pos": wp, "dir": travel_dir})
 
 		lane_idx += 1
 
-	# ── pass 2: identify crossovers (cell visited by ≥2 lane-visits) ──────────
+	# ── pass 2: identify crossovers ────────────────────────────────────────────
 	for ck in cell_visits.keys():
 		var visits: Array = cell_visits[ck] as Array
 		if visits.size() < 2:
@@ -149,25 +156,29 @@ func setup(lm: Node) -> void:
 		var wk: String  = _pos_key(wp)
 		_crossover_world_set[wk] = true
 		_crossover_bridge_data.append({
-			"pos":      wp,
+			"pos": wp,
 			"over_dir": first["dir"],
-			"color":    LANE_PALETTE[int(first["lane_idx"]) % LANE_PALETTE.size()]
+			"color": LANE_PALETTE[int(first["lane_idx"]) % LANE_PALETTE.size()]
 		})
 
-	# ── pass 3: build segments (split at portal jumps: Manhattan dist > 1) ───
+	# ── pass 3: build segments + per-path flow paths ───────────────────────────
 	lane_idx = 0
-	var primary_lane_idx := 0   # first non-air lane = lane 0
 
 	for path_id in multi_paths.keys():
-		if (path_id as String).begins_with("air"):
+		var pid: String = path_id
+		if pid.begins_with("air"):
 			continue
 
-		var cells: Array        = multi_paths[path_id]
-		var world_pts           := _cells_to_world(cells, gs, origin)
+		_all_non_air_ids.append(pid)
+		_path_lane_idx[pid] = lane_idx
+
+		var cells: Array = multi_paths[path_id]
+		var world_pts    := _cells_to_world(cells, gs, origin)
 		if world_pts.size() < 2:
 			lane_idx += 1
 			continue
 
+		# Split into segments at portal jumps (Manhattan dist > 1)
 		var seg_start := 0
 		for i in range(1, cells.size()):
 			var a: Variant = cells[i - 1]
@@ -177,23 +188,32 @@ func setup(lm: Node) -> void:
 				if manhattan > 1:
 					var sp := PackedVector2Array(world_pts.slice(seg_start, i))
 					if sp.size() >= 2:
-						_segments.append({"points": sp, "lane_idx": lane_idx})
+						_segments.append({"points": sp, "lane_idx": lane_idx, "path_id": pid})
 					seg_start = i
 
 		var fp := PackedVector2Array(world_pts.slice(seg_start, world_pts.size()))
 		if fp.size() >= 2:
-			_segments.append({"points": fp, "lane_idx": lane_idx})
+			_segments.append({"points": fp, "lane_idx": lane_idx, "path_id": pid})
+
+		# Build flow path for this route (all its segments concatenated)
+		var flow: PackedVector2Array = PackedVector2Array()
+		for seg in _segments:
+			var spid: String = seg["path_id"]
+			if spid == pid:
+				var spts: PackedVector2Array = seg["points"]
+				for pt in spts:
+					flow.append(pt)
+		_path_flows[pid] = flow
+
+		# Badge anchor: 1 step into the route (index 1), not at the very first point
+		if flow.size() >= 2:
+			_path_badge_pos[pid] = flow[1]
+		elif flow.size() == 1:
+			_path_badge_pos[pid] = flow[0]
 
 		lane_idx += 1
 
-	# ── build flow path from primary lane segments ────────────────────────────
-	for seg in _segments:
-		if int(seg["lane_idx"]) == primary_lane_idx:
-			var flow_pts: PackedVector2Array = seg["points"]
-			for pt in flow_pts:
-				_flow_path.append(pt)
-
-	# ── portals ───────────────────────────────────────────────────────────────
+	# ── portals ────────────────────────────────────────────────────────────────
 	var portals = level_data.get("path_portals", [])
 	if portals is Array:
 		for portal in portals:
@@ -209,8 +229,24 @@ func setup(lm: Node) -> void:
 				_portal_exit_positions.append(_cell_center(lc[x_idx] as Vector2i, gs, origin))
 
 	_flow_active = true
-	set_process(_show_routes)
+	set_process(_show_routes and _flow_active)
 	queue_redraw()
+
+
+# ============================================================= active routes
+
+## Supply the path IDs used by the upcoming/current wave.
+## Call from main when the wave preview changes.
+## Pass [] to fall back to showing all non-air paths.
+func set_active_path_ids(ids: Array[String]) -> void:
+	_active_path_ids = ids.duplicate()
+	queue_redraw()
+
+
+func _get_effective_ids() -> Array[String]:
+	if not _active_path_ids.is_empty():
+		return _active_path_ids
+	return _all_non_air_ids
 
 
 # ============================================================= phase control
@@ -224,7 +260,7 @@ func set_wave_active(active: bool) -> void:
 	_flow_active = not active
 	set_process(_show_routes and _flow_active)
 	if not active:
-		queue_redraw()   # redraw without flow dots immediately
+		queue_redraw()
 
 
 func set_show_routes(visible_flag: bool) -> void:
@@ -239,26 +275,35 @@ func _draw() -> void:
 	if not _show_routes:
 		return
 
-	# Tracks which crossover world-positions have been claimed by an "over" lane.
-	# First drawer of a position = over (no gap); subsequent drawers = under (gap).
+	var effective_ids := _get_effective_ids()
+	if effective_ids.is_empty():
+		return
+
+	# crossover_drawn: first segment to reach a crossover pos "claims" over status
+	# gapped: positions where a gap was actually drawn (for bridge filter)
 	var crossover_drawn: Dictionary = {}
+	var gapped: Dictionary = {}
 
 	# 1. Lane lines — under-lanes get a gap at crossover centers
 	for seg in _segments:
+		var spid: String = seg["path_id"]
+		if not effective_ids.has(spid):
+			continue
 		var pts: PackedVector2Array = seg["points"]
 		var li: int = int(seg["lane_idx"])
-		var col: Color = LANE_PALETTE[li % LANE_PALETTE.size()]
-		_draw_lane_with_gaps(pts, col, crossover_drawn)
+		_draw_lane_with_gaps(pts, LANE_PALETTE[li % LANE_PALETTE.size()], crossover_drawn, gapped)
 
-	# 2. Bridge / tunnel visuals — drawn after lines so they appear on top
+	# 2. Bridge deck + tunnel shadow — only where a gap was actually created
 	for bd in _crossover_bridge_data:
-		var bpos: Vector2 = bd["pos"]
-		var bdir: Vector2 = bd["over_dir"]
-		var bcol: Color   = bd["color"]
-		_draw_bridge(bpos, bdir, bcol)
+		var bwk: String = _pos_key(bd["pos"])
+		if gapped.has(bwk):
+			_draw_bridge(bd["pos"], bd["over_dir"], bd["color"])
 
-	# 3. Turn chevrons per segment
+	# 3. Turn chevrons
 	for seg in _segments:
+		var spid: String = seg["path_id"]
+		if not effective_ids.has(spid):
+			continue
 		var pts: PackedVector2Array = seg["points"]
 		var li: int = int(seg["lane_idx"])
 		_draw_chevrons(pts, LANE_PALETTE[li % LANE_PALETTE.size()])
@@ -271,14 +316,42 @@ func _draw() -> void:
 		draw_circle(pos, PORTAL_RADIUS, Color(PORTAL_EXIT_COLOR, 0.25))
 		draw_arc(pos, PORTAL_RADIUS, 0.0, TAU, 24, PORTAL_EXIT_COLOR, 1.5)
 
-	# 5. Flow pulse animation (pre-wave only)
-	if _flow_active and _flow_path.size() >= 2:
-		_draw_flow_dots()
+	# 5. Per-route flow pulses (pre-wave)
+	if _flow_active:
+		var route_count := effective_ids.size()
+		for ri in range(route_count):
+			var pid: String = effective_ids[ri]
+			if not _path_flows.has(pid):
+				continue
+			var flow: PackedVector2Array = _path_flows[pid]
+			if flow.size() < 2:
+				continue
+			var phase: float = float(ri) / float(max(route_count, 1))
+			var t: float = fmod(_flow_t + phase, 1.0)
+			var li: int = int(_path_lane_idx.get(pid, 0))
+			var col: Color = LANE_PALETTE[li % LANE_PALETTE.size()]
+			var dot_pos: Vector2 = _sample_path(flow, t)
+			draw_circle(dot_pos, FLOW_DOT_RADIUS, Color(FLOW_DOT_COLOR, 0.88))
+			draw_arc(dot_pos, FLOW_DOT_RADIUS + 1.5, 0.0, TAU, 12, Color(col, 0.45), 1.2)
+
+	# 6. Spawn badges — only when multiple active routes AND pre-wave
+	if _flow_active and effective_ids.size() >= 2:
+		for ri in range(effective_ids.size()):
+			var pid: String = effective_ids[ri]
+			if not _path_badge_pos.has(pid):
+				continue
+			var badge_pos: Vector2 = _path_badge_pos[pid]
+			var li: int = int(_path_lane_idx.get(pid, 0))
+			var col: Color = LANE_PALETTE[li % LANE_PALETTE.size()]
+			var label: String = String.chr(65 + ri)  # 65 = ord('A')
+			_draw_spawn_badge(badge_pos, label, col)
 
 
-# Draws a polyline with a gap at any crossover point that has already been
-# "claimed" as over by an earlier draw call.  First visit claims (no gap).
-func _draw_lane_with_gaps(pts: PackedVector2Array, color: Color, drawn: Dictionary) -> void:
+# Draws a polyline for one lane, inserting a gap wherever a crossover position
+# has already been claimed by an earlier draw call (= over lane).
+# First visit to a crossover claims it as "over" (no gap). Fills `gapped` with
+# positions where a gap was actually inserted so the bridge filter can use it.
+func _draw_lane_with_gaps(pts: PackedVector2Array, color: Color, drawn: Dictionary, gapped: Dictionary) -> void:
 	var sub := PackedVector2Array()
 
 	for i in range(pts.size()):
@@ -287,21 +360,20 @@ func _draw_lane_with_gaps(pts: PackedVector2Array, color: Color, drawn: Dictiona
 
 		if _crossover_world_set.has(wk):
 			if not drawn.has(wk):
-				# First draw of this crossover = over lane — include normally
 				drawn[wk] = true
 				sub.append(pt)
 			else:
-				# Under lane — emit current sub-segment ending just before the gap
+				# Under-lane: create gap
 				if sub.size() > 0 and i > 0:
 					var dir_in: Vector2 = pts[i - 1].direction_to(pt)
 					sub.append(pt - dir_in * GAP_HALF)
 				if sub.size() >= 2:
 					draw_polyline(sub, color, LINE_WIDTH, false)
-				# Start fresh from the other side of the gap
 				sub = PackedVector2Array()
 				if i + 1 < pts.size():
 					var dir_out: Vector2 = pt.direction_to(pts[i + 1])
 					sub.append(pt + dir_out * GAP_HALF)
+				gapped[wk] = true
 		else:
 			sub.append(pt)
 
@@ -309,19 +381,12 @@ func _draw_lane_with_gaps(pts: PackedVector2Array, color: Color, drawn: Dictiona
 		draw_polyline(sub, color, LINE_WIDTH, false)
 
 
-# Bridge deck (bright bar along over_dir) + tunnel shadow (dark bar across it).
 func _draw_bridge(pos: Vector2, over_dir: Vector2, color: Color) -> void:
 	if over_dir.length_squared() < 0.001:
 		return
 	var perp: Vector2 = Vector2(-over_dir.y, over_dir.x)
-
-	# Tunnel shadow — dark bar in the under-lane direction, slightly wider
 	draw_line(pos - perp * TUNNEL_HALF, pos + perp * TUNNEL_HALF, TUNNEL_SHADOW_COLOR, BRIDGE_BAR_WIDTH + 2.0)
-
-	# Bridge deck — bright bar in the over-lane direction
 	draw_line(pos - over_dir * BRIDGE_BAR_HALF, pos + over_dir * BRIDGE_BAR_HALF, BRIDGE_BRIGHT_COLOR, BRIDGE_BAR_WIDTH)
-
-	# White centre dot for visual crispness
 	draw_circle(pos, 2.0, Color(1.0, 1.0, 1.0, 0.80))
 
 
@@ -356,13 +421,11 @@ func _draw_chevron(at: Vector2, dir: Vector2, color: Color) -> void:
 	draw_line(tip, right, color, 1.2)
 
 
-func _draw_flow_dots() -> void:
-	for i in range(FLOW_DOT_COUNT):
-		var t:   float  = fmod(_flow_t + float(i) * FLOW_DOT_SPACING, 1.0)
-		var pos: Vector2 = _sample_path(_flow_path, t)
-		var alpha: float = 1.0 - float(i) * 0.35
-		draw_circle(pos, FLOW_DOT_RADIUS, Color(FLOW_DOT_COLOR, alpha))
-		draw_arc(pos, FLOW_DOT_RADIUS + 1.5, 0.0, TAU, 12, Color(FLOW_DOT_COLOR, alpha * 0.38), 1.0)
+func _draw_spawn_badge(pos: Vector2, label: String, color: Color) -> void:
+	draw_circle(pos, SPAWN_BADGE_R, Color(0.0, 0.0, 0.0, 0.78))
+	draw_arc(pos, SPAWN_BADGE_R, 0.0, TAU, 20, color, 1.8)
+	if _font != null:
+		draw_string(_font, pos + Vector2(-3.0, 4.0), label, HORIZONTAL_ALIGNMENT_LEFT, -1, SPAWN_FONT_SIZE, color)
 
 
 func _sample_path(path_pts: PackedVector2Array, t: float) -> Vector2:
@@ -387,8 +450,7 @@ func _cells_to_world(cells: Array, gs: int, origin: Vector2) -> PackedVector2Arr
 
 
 func _cell_center(cv: Vector2i, gs: int, origin: Vector2) -> Vector2:
-	return origin + Vector2(float(cv.x) * float(gs) + float(gs) * 0.5,
-							float(cv.y) * float(gs) + float(gs) * 0.5)
+	return origin + Vector2(float(cv.x) * float(gs) + float(gs) * 0.5, float(cv.y) * float(gs) + float(gs) * 0.5)
 
 
 func _key(cell: Vector2i) -> String:

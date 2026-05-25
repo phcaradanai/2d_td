@@ -21,7 +21,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "Build 3-5 Neutral Arrow/Cannon towers near long path coverage. Yellow-tinted packets move in short bursts.",
@@ -41,7 +41,7 @@
         "affixes": [
           "mechanical"
         ],
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "swarm",
@@ -114,7 +114,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "swarm",
@@ -142,7 +142,7 @@
         "affixes": [
           "mechanical"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "swarm",
@@ -193,7 +193,7 @@
         "affixes": [
           "image"
         ],
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": "After choosing an element, build your first Single Element tower. Light air pressure checks targeting coverage.",
@@ -224,7 +224,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "swarm",
@@ -252,7 +252,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "tank",
@@ -325,7 +325,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "healer",
@@ -362,7 +362,7 @@
         "interval": 0.094,
         "max_hp": 90,
         "reward_gold": 9,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "runner",
@@ -418,7 +418,7 @@
         "interval": 0.263,
         "max_hp": 337,
         "reward_gold": 21,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "fast_flyer",
@@ -426,7 +426,7 @@
         "interval": 0.207,
         "max_hp": 209,
         "reward_gold": 23,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": ""
@@ -442,7 +442,7 @@
         "interval": 0.301,
         "max_hp": 577,
         "reward_gold": 29,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "basic",
@@ -486,7 +486,7 @@
         "interval": 0.263,
         "max_hp": 415,
         "reward_gold": 21,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "Element pick is earned after this wave.",
@@ -514,7 +514,7 @@
         "interval": 0.141,
         "max_hp": 373,
         "reward_gold": 17,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "runner",
@@ -539,7 +539,7 @@
         "interval": 0.451,
         "max_hp": 1190,
         "reward_gold": 37,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "tank",
@@ -572,7 +572,7 @@
         "interval": 0.169,
         "max_hp": 345,
         "reward_gold": 24,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "armored_flyer",
@@ -580,7 +580,7 @@
         "interval": 0.545,
         "max_hp": 1620,
         "reward_gold": 41,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": ""
@@ -607,7 +607,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -627,7 +627,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "healer",
@@ -693,7 +693,7 @@
         "interval": 0.451,
         "max_hp": 2408,
         "reward_gold": 40,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -710,7 +710,7 @@
         "interval": 0.282,
         "max_hp": 2088,
         "reward_gold": 41,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "runner",
@@ -749,7 +749,7 @@
         "interval": 0.207,
         "max_hp": 1156,
         "reward_gold": 26,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": "",
@@ -774,7 +774,7 @@
         "interval": 0.338,
         "max_hp": 3015,
         "reward_gold": 43,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "tank",
@@ -802,7 +802,7 @@
         "interval": 0.451,
         "max_hp": 4715,
         "reward_gold": 47,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "fast_flyer",
@@ -810,7 +810,7 @@
         "interval": 0.15,
         "max_hp": 1002,
         "reward_gold": 29,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": ""
@@ -865,7 +865,7 @@
         "interval": 0.207,
         "max_hp": 3057,
         "reward_gold": 37,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -882,7 +882,7 @@
         "interval": 0.226,
         "max_hp": 4372,
         "reward_gold": 44,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "fast_flyer",
@@ -890,7 +890,7 @@
         "interval": 0.15,
         "max_hp": 1352,
         "reward_gold": 29,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": ""
@@ -925,7 +925,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "Element pick is earned after this wave.",
@@ -953,7 +953,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -973,7 +973,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "shieldbearer",
@@ -1006,7 +1006,7 @@
         "interval": 0.395,
         "max_hp": 9484,
         "reward_gold": 52,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": "",
@@ -1031,7 +1031,7 @@
         "interval": 0.132,
         "max_hp": 2294,
         "reward_gold": 26,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1048,7 +1048,7 @@
         "interval": 0.395,
         "max_hp": 15924,
         "reward_gold": 69,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "healer",
@@ -1087,7 +1087,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "armored_flyer",
@@ -1095,7 +1095,7 @@
         "interval": 0.32,
         "max_hp": 12795,
         "reward_gold": 53,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": ""
@@ -1119,7 +1119,7 @@
         "interval": 0.32,
         "max_hp": 15908,
         "reward_gold": 59,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1136,7 +1136,7 @@
         "interval": 0.517,
         "max_hp": 25390,
         "reward_gold": 78,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "swarm",
@@ -1180,7 +1180,7 @@
         "interval": 0.15,
         "max_hp": 5935,
         "reward_gold": 30,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1208,7 +1208,7 @@
         "interval": 0.244,
         "max_hp": 15502,
         "reward_gold": 50,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "armored_flyer",
@@ -1219,7 +1219,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "Element pick is earned after this wave.",
@@ -1236,7 +1236,7 @@
         "interval": 0.094,
         "max_hp": 6314,
         "reward_gold": 29,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "tank",
@@ -1289,7 +1289,7 @@
         "interval": 0.075,
         "max_hp": 7486,
         "reward_gold": 35,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "disruptor",
@@ -1300,7 +1300,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": ""
@@ -1319,7 +1319,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "hunter",
@@ -1360,7 +1360,7 @@
         "interval": 0.042,
         "max_hp": 4841,
         "reward_gold": 15,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "Element pick is earned after this wave.",
@@ -1377,7 +1377,7 @@
         "interval": 0.226,
         "max_hp": 47540,
         "reward_gold": 61,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "fast_flyer",
@@ -1385,7 +1385,7 @@
         "interval": 0.075,
         "max_hp": 10102,
         "reward_gold": 37,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": ""
@@ -1401,7 +1401,7 @@
         "interval": 0.263,
         "max_hp": 72229,
         "reward_gold": 79,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "runner",
@@ -1448,7 +1448,7 @@
         "interval": 0.113,
         "max_hp": 30838,
         "reward_gold": 47,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1473,7 +1473,7 @@
         "interval": 0.113,
         "max_hp": 44097,
         "reward_gold": 56,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "fast_flyer",
@@ -1481,7 +1481,7 @@
         "interval": 0.075,
         "max_hp": 13629,
         "reward_gold": 38,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1498,7 +1498,7 @@
         "interval": 0.282,
         "max_hp": 115172,
         "reward_gold": 88,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "healer",
@@ -1517,7 +1517,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "Element pick is earned after this wave.",
@@ -1573,7 +1573,7 @@
         "interval": 0.169,
         "max_hp": 97358,
         "reward_gold": 72,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1590,7 +1590,7 @@
         "interval": 0.132,
         "max_hp": 86662,
         "reward_gold": 72,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "armored_flyer",
@@ -1598,7 +1598,7 @@
         "interval": 0.15,
         "max_hp": 95628,
         "reward_gold": 66,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "fast_flyer",
@@ -1606,7 +1606,7 @@
         "interval": 0.056,
         "max_hp": 20322,
         "reward_gold": 40,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": ""
@@ -1641,7 +1641,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1669,7 +1669,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "splitter",
@@ -1700,7 +1700,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "armored_flyer",
@@ -1708,7 +1708,7 @@
         "interval": 0.094,
         "max_hp": 129023,
         "reward_gold": 67,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "disruptor",
@@ -1749,7 +1749,7 @@
         "interval": 0.113,
         "max_hp": 160394,
         "reward_gold": 75,
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "",
@@ -1774,7 +1774,7 @@
         "interval": 0.066,
         "max_hp": 108307,
         "reward_gold": 63,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "splitter",
@@ -1802,7 +1802,7 @@
         "interval": 0.15,
         "max_hp": 282884,
         "reward_gold": 98,
-        "path": "air_lane"
+        "path": "default"
       },
       {
         "type": "healer",
@@ -1829,7 +1829,7 @@
         "interval": 0.094,
         "max_hp": 174080,
         "reward_gold": 70,
-        "path": "air_lane"
+        "path": "lane_b"
       }
     ],
     "intel": "",
@@ -1865,7 +1865,7 @@
         "interval": 0.066,
         "max_hp": 210996,
         "reward_gold": 63,
-        "path": "air_lane"
+        "path": "lane_b"
       },
       {
         "type": "disruptor",
@@ -1884,7 +1884,7 @@
         "affixes": [
           "fast"
         ],
-        "path": "air_lane"
+        "path": "default"
       }
     ],
     "intel": "Final normal wave. No element pick after this wave.",
