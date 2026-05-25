@@ -515,19 +515,17 @@ func _refresh_balance_tool_summary() -> void:
 	var difficulty := str(balance_tool_aggregate.get("difficulty_rating", latest_analysis.get("difficulty_rating", "Unknown")))
 	var risk := str(balance_tool_aggregate.get("dominant_strategy_risk", latest_analysis.get("dominant_strategy_risk", false)))
 	var top_tower := str(balance_tool_aggregate.get("tower_dominance", latest_analysis.get("tower_dominance", _get_top_key(current_report_data.get("damage_by_tower_type", {})))))
-	var hero_usage := float(balance_tool_aggregate.get("hero_used_rate", 1.0 if int(current_report_data.get("hero_deploy_count", 0)) > 0 else 0.0))
 	var gold_ratio := float(balance_tool_aggregate.get("gold_remaining_ratio", latest_analysis.get("gold_remaining_ratio", 0.0)))
 	var acceptance: Dictionary = {}
 	if balance_patch_generator:
 		acceptance = balance_patch_generator.last_patch_acceptance
 	var status := str(acceptance.get("status", "Rejected" if balance_tool_patch.is_empty() else "Pending")).capitalize().replace("_", " ")
-	summary.text = "[b]level_id:[/b] %s\n[b]reports:[/b] %d  [b]difficulty:[/b] %s  [b]risk:[/b] %s\n[b]top tower:[/b] %s  [b]hero usage:[/b] %d%%  [b]gold remaining:[/b] %.1f%%\n[b]Dominant Strategy:[/b] %s  [b]Mixed Defense:[/b] %s  [b]File Verify:[/b] %s\n[b]Patch Status:[/b] %s  [b]Last Attempt:[/b] %d" % [
+	summary.text = "[b]level_id:[/b] %s\n[b]reports:[/b] %d  [b]difficulty:[/b] %s  [b]risk:[/b] %s\n[b]top tower:[/b] %s  [b]gold remaining:[/b] %.1f%%\n[b]Dominant Strategy:[/b] %s  [b]Mixed Defense:[/b] %s  [b]File Verify:[/b] %s\n[b]Patch Status:[/b] %s  [b]Last Attempt:[/b] %d" % [
 		level_id,
 		reports_count,
 		difficulty,
 		risk,
 		top_tower,
-		int(round(hero_usage * 100.0)),
 		gold_ratio * 100.0,
 		"PASS" if bool(acceptance.get("dominant_strategy_pass", false)) else "FAIL",
 		"PASS" if bool(acceptance.get("mixed_defense_pass", false)) else "FAIL",
@@ -574,14 +572,13 @@ func _on_balance_analyze_pressed() -> void:
 	if not latest.is_empty():
 		current_report_data = latest
 	_refresh_balance_tool_summary()
-	_balance_set_output("[TELEMETRY_AGGREGATE]\nlevel=%s\nruns=%d\ndifficulty_rating=%s\navg_gold_remaining_ratio=%.1f%%\ntower_dominance=%s\ntower_dominance_ratio=%.1f%%\nhero_used_rate=%d%%\ndominant_strategy_risk=%s" % [
+	_balance_set_output("[TELEMETRY_AGGREGATE]\nlevel=%s\nruns=%d\ndifficulty_rating=%s\navg_gold_remaining_ratio=%.1f%%\ntower_dominance=%s\ntower_dominance_ratio=%.1f%%\ndominant_strategy_risk=%s" % [
 		level_id,
 		int(balance_tool_aggregate.get("source_reports_count", 0)),
 		str(balance_tool_aggregate.get("difficulty_rating", "Unknown")),
 		float(balance_tool_aggregate.get("gold_remaining_ratio", 0.0)) * 100.0,
 		str(balance_tool_aggregate.get("tower_dominance", "None")),
 		float(balance_tool_aggregate.get("tower_dominance_ratio", 0.0)) * 100.0,
-		int(round(float(balance_tool_aggregate.get("hero_used_rate", 0.0)) * 100.0)),
 		str(balance_tool_aggregate.get("dominant_strategy_risk", false))
 	])
 
@@ -723,8 +720,8 @@ func _format_bbcode_report(m: Dictionary) -> String:
 	t += "Earned: [color=#ffcc33]%d[/color] (Kills: %d, Waves: %d)\n" % [
 		m.get("gold_earned_total", 0), m.get("gold_earned_from_kills", 0), m.get("gold_earned_from_waves", 0)
 	]
-	t += "Spent: [color=#ff6666]%d[/color] (Build: %d, Upgr: %d, Hero: %d)\n" % [
-		m.get("gold_spent_total", 0), m.get("gold_spent_on_towers", 0), m.get("gold_spent_on_upgrades", 0), m.get("gold_spent_on_hero", 0)
+	t += "Spent: [color=#ff6666]%d[/color] (Build: %d, Upgr: %d)\n" % [
+		m.get("gold_spent_total", 0), m.get("gold_spent_on_towers", 0), m.get("gold_spent_on_upgrades", 0)
 	]
 	t += "Remaining: [color=#66ff66]%d[/color]\n" % m.get("gold_remaining", 0)
 	
@@ -741,13 +738,6 @@ func _format_bbcode_report(m: Dictionary) -> String:
 	t += "Total Leaks: [color=#ff6666]%d[/color] (%s)\n" % [
 		m.get("enemies_leaked_total", 0), _get_top_key(m.get("enemies_leaked_by_type", {}))
 	]
-	t += "\n"
-	
-	t += "[b][color=#66ccff]HERO IMPACT[/color][/b]\n"
-	t += "Damage: %d | Kills: %d | Active: %.1fs\n" % [
-		int(m.get("hero_damage", 0)), m.get("hero_kills", 0), m.get("hero_active_time_sec", 0.0)
-	]
-	
 	t += "\n"
 	
 	# Danger Wave

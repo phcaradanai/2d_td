@@ -67,12 +67,7 @@ func start_level(level_id: String, level_name: String, starting_lives: int, star
 		"tower_total_spent_by_type": {},
 		"tower_max_level_by_type": {},
 		
-		"hero_deploy_count": 0,
-		"hero_damage": 0.0,
-		"hero_kills": 0,
-		"hero_active_time_sec": 0.0,
-		
-		"wave_stats": {},
+			"wave_stats": {},
 		"leak_events": [],
 		"notable_events": [],
 		"timestamp": Time.get_datetime_string_from_system()
@@ -92,10 +87,9 @@ func start_wave(wave_index: int, wave_name: String) -> void:
 		"duration_sec": 0.0,
 		"enemies_spawned_by_type": {},
 		"enemies_killed_by_type": {},
-		"enemies_leaked_by_type": {},
-		"damage_by_tower_type": {},
-		"hero_damage": 0.0,
-		"lives_lost": 0,
+			"enemies_leaked_by_type": {},
+			"damage_by_tower_type": {},
+			"lives_lost": 0,
 		"gold_earned": 0,
 		"status": "in_progress"
 	}
@@ -136,9 +130,6 @@ func log_enemy_kill(source_type: String, enemy_type: String) -> void:
 	if not current_wave_stats.is_empty():
 		_increment_dict(current_wave_stats["enemies_killed_by_type"], enemy_type)
 	
-	if source_type == "hero":
-		metrics["hero_kills"] += 1
-	else:
 		_increment_dict(metrics["kills_by_tower_type"], source_type)
 
 func log_enemy_leak(enemy_type: String, hp_remaining: float, pos: Vector2, progress: float, lives_after: int) -> void:
@@ -168,15 +159,10 @@ func log_enemy_leak(enemy_type: String, hp_remaining: float, pos: Vector2, progr
 func log_damage(source_type: String, amount: float, attack_type: String, _enemy_type: String) -> void:
 	if not is_active: return
 	
-	if source_type == "hero":
-		metrics["hero_damage"] += amount
-		if not current_wave_stats.is_empty():
-			current_wave_stats["hero_damage"] += amount
-	else:
-		_increment_dict(metrics["damage_by_tower_type"], source_type, amount)
-		if not current_wave_stats.is_empty():
-			_increment_dict(current_wave_stats["damage_by_tower_type"], source_type, amount)
-			
+	_increment_dict(metrics["damage_by_tower_type"], source_type, amount)
+	if not current_wave_stats.is_empty():
+		_increment_dict(current_wave_stats["damage_by_tower_type"], source_type, amount)
+				
 	_increment_dict(metrics["damage_by_attack_type"], attack_type, amount)
 
 func log_tower_built(tower_type: String, cell: Vector2i, world_pos: Vector2, cost: int) -> void:
@@ -222,22 +208,6 @@ func log_tower_sold(tower_type: String, refund: int) -> void:
 		"type": tower_type,
 		"refund": refund
 	})
-
-func log_hero_deployed(pos: Vector2, cost: int) -> void:
-	if not is_active: return
-	
-	metrics["hero_deploy_count"] += 1
-	
-	log_notable_event("hero_deployed", {
-		"pos": {"x": pos.x, "y": pos.y},
-		"cost": cost
-	})
-	
-	metrics["gold_spent_on_hero"] += cost
-
-func log_hero_active_time(delta: float) -> void:
-	if not is_active: return
-	metrics["hero_active_time_sec"] += delta
 
 func log_gold_earned(amount: int, source: String = "other") -> void:
 	if not is_active: return
@@ -379,7 +349,6 @@ func print_balance_analysis() -> void:
 	print("gold_remaining_ratio=%.1f%%" % (analysis.get("gold_remaining_ratio", 0.0) * 100.0))
 	print("gold_spent_ratio=%.1f%%" % (analysis.get("gold_spent_ratio", 0.0) * 100.0))
 	print("tower_dominance=%s" % analysis.get("tower_dominance", "None"))
-	print("hero_relevance=%s" % analysis.get("hero_relevance", "N/A"))
 	print("recommended_actions:")
 	for action in analysis.get("recommended_actions", []):
 		print("- %s" % action)
@@ -418,10 +387,7 @@ func get_balance_analysis() -> Dictionary:
 	if total_dmg > 0:
 		top_tower_ratio = max_dmg / total_dmg
 		
-	# Hero Usage
-	var hero_used = metrics.get("hero_deploy_count", 0) > 0
-	
-	# Pressure (Leaks/Lives)
+		# Pressure (Leaks/Lives)
 	var perfect_clear = metrics.get("perfect_clear", true)
 	
 	# Danger Wave
@@ -470,11 +436,7 @@ func get_balance_analysis() -> Dictionary:
 		reasons.append("Tower dominance: %s (%.1f%% dmg)" % [top_tower.replace("_tower", ""), top_tower_ratio * 100.0])
 		actions.append("Add enemies resistant to %s" % top_tower.replace("_tower", ""))
 		
-	if not hero_used:
-		reasons.append("Hero not utilized")
-		actions.append("Create situations where Hero utility is needed (e.g. mobile threats)")
-
-	# Dominant Strategy Warning (Refined)
+		# Dominant Strategy Warning (Refined)
 	var dominant_strategy_risk = false
 	var ds_type = ""
 	
@@ -518,10 +480,9 @@ func get_balance_analysis() -> Dictionary:
 		"tower_dominance_ratio": top_tower_ratio,
 		"tower_variety_count": tower_variety,
 		"tower_total_count": tower_count,
-		"dominant_strategy_risk": dominant_strategy_risk,
-		"hero_relevance": "Used" if hero_used else "Not Used",
-		"recommended_actions": actions
-	}
+			"dominant_strategy_risk": dominant_strategy_risk,
+			"recommended_actions": actions
+		}
 
 func _save_report() -> void:
 	var timestamp = Time.get_unix_time_from_system()
@@ -597,9 +558,8 @@ func analyze_saved_reports(level_id: String) -> void:
 		"total_gold_spent_ratio": 0.0,
 		"tower_counts": {},
 		"leak_counts": {},
-		"total_leaks": 0,
-		"hero_runs": 0,
-		"difficulty_counts": {}
+			"total_leaks": 0,
+			"difficulty_counts": {}
 	}
 	
 	for r in reports:
@@ -607,8 +567,6 @@ func analyze_saved_reports(level_id: String) -> void:
 		if r.get("perfect_clear", false): stats.perfects += 1
 		stats.total_time += r.get("clear_time_sec", 0.0)
 		stats.total_leaks += r.get("enemies_leaked_total", 0)
-		if r.get("hero_deploy_count", 0) > 0: stats.hero_runs += 1
-		
 		var ba = r.get("balance_analysis", {})
 		if not ba.is_empty():
 			stats.total_gold_remaining_ratio += ba.get("gold_remaining_ratio", 0.0)
@@ -635,7 +593,6 @@ func analyze_saved_reports(level_id: String) -> void:
 			max_t = stats.tower_counts[t]
 			common_tower = t
 	print("top_damage_tower_most_common=%s" % common_tower)
-	print("hero_used_rate=%d%%" % int((float(stats.hero_runs) / stats.runs) * 100.0))
 	print("avg_leaks=%.1f" % (float(stats.total_leaks) / stats.runs))
 	
 	var final_rating = "Unknown"
@@ -662,7 +619,7 @@ func export_summary_csv(level_id: String) -> void:
 		"level_id", "result", "perfect", "time", "waves", 
 		"lives_lost", "gold_start", "gold_earned_total", "gold_spent_total", 
 		"gold_remaining", "gold_remaining_ratio", "top_damage_tower", 
-		"enemies_leaked", "hero_deploy_count", "difficulty_rating"
+		"enemies_leaked", "difficulty_rating"
 	]
 	file.store_line(",".join(columns))
 	
@@ -682,7 +639,6 @@ func export_summary_csv(level_id: String) -> void:
 			"%.3f" % ba.get("gold_remaining_ratio", 0.0),
 			ba.get("tower_dominance", "None"),
 			str(r.get("enemies_leaked_total", 0)),
-			str(r.get("hero_deploy_count", 0)),
 			ba.get("difficulty_rating", "Unknown")
 		]
 		file.store_line(",".join(row))

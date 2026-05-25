@@ -128,11 +128,6 @@ var save_game_service: Node = null # [MetaLayer] Run-state save/continue
 var leaderboard_service: Node = null
 var online_lb_client: Node = null # [MetaLayer] Online leaderboard client
 var leaderboard_panel: Node = null
-var current_hero: Node = null
-var hero_panel: Node = null
-var hero_cooldown: float = 0.0
-var hero_active_duration: float = 0.0
-var hero_is_deployed: bool = false
 var element_progression_manager = null
 var auto_next_wave_service: RefCounted = null
 var element_td_interest_service: RefCounted = null
@@ -636,8 +631,7 @@ func _setup_game_from_level() -> void:
 	# Pre-warm canvas shaders for all enemy visual types so the first AoE hit
 	# never causes a shader-compilation spike mid-wave.
 	call_deferred("_prewarm_enemy_visuals")
-	# Removed _spawn_hero() as it's now manual deployment
-	_setup_hero_if_enabled()
+	_setup_build_preview_for_level()
 
 ## Prewarm canvas shaders and bake all enemy textures before wave 1.
 ## Eliminates first-AoE shader-compilation spikes and texture-baking stutter.
@@ -652,14 +646,7 @@ func _prewarm_enemy_visuals() -> void:
 	if baker != null and baker.has_method("prewarm_all"):
 		baker.prewarm_all()
 
-func _setup_hero_if_enabled() -> void:
-	if game_hud and level_manager and level_manager.hero_config.get("enabled", false):
-		_setup_hero_ui()
-		if level_manager.hero_config.get("unlock_message", "") != "":
-			show_wave_feedback(level_manager.hero_config["unlock_message"], Color(0.4, 0.8, 1.0))
-	elif hero_panel:
-		hero_panel.hide()
-
+func _setup_build_preview_for_level() -> void:
 	if build_preview:
 		build_preview.setup(level_manager.grid_size, level_manager.grid_cols, level_manager.grid_rows)
 		build_preview.set_blocked_cells(level_manager.get_all_blocked_cells())
@@ -1129,9 +1116,6 @@ func _connect_signals() -> void:
 func _process(delta: float) -> void:
 	_update_auto_next_wave_countdown(delta)
 	_update_element_td_interest(delta)
-	if current_state == GameState.WAVE or current_state == GameState.BUILD or current_state == GameState.WAVE_COMPLETE:
-		_update_hero_timers(delta)
-		
 	if current_state != GameState.BUILD and current_state != GameState.WAVE: return
 
 	if build_manager and build_manager.is_build_mode_active():
@@ -1378,32 +1362,6 @@ func _on_level_select_requested() -> void:
 		level_select.show_unlocked_notification(pending_unlock_level_id)
 		pending_unlock_level_id = ""
 
-func _update_hero_timers(delta: float) -> void:
-	if hero_is_deployed:
-		if is_instance_valid(current_hero):
-			hero_active_duration = current_hero.active_duration_current
-			if hero_panel:
-				hero_panel.update_duration(hero_active_duration)
-		else:
-			# Hero retreated
-			hero_is_deployed = false
-			hero_active_duration = 0
-			if level_manager:
-				hero_cooldown = level_manager.hero_config.get("cooldown", 30)
-				if OS.is_debug_build(): print("[HeroDeploy] cooldown started seconds=%.1f" % hero_cooldown)
-	
-	elif hero_cooldown > 0:
-		hero_cooldown -= delta
-		if hero_panel and level_manager:
-			hero_panel.set_cooldown(hero_cooldown, level_manager.hero_config.get("cooldown", 30))
-		if hero_cooldown <= 0:
-			if hero_panel: hero_panel.set_ready()
-			if OS.is_debug_build(): print("[HeroDeploy] cooldown ready")
-	
-	elif hero_panel and game_manager and level_manager:
-		var cost = level_manager.hero_config.get("deploy_cost", 120)
-		hero_panel.set_insufficient_gold(game_manager.gold < cost)
-
 func _on_level_select_back() -> void:
 	set_game_phase(GameState.MENU)
 	_clear_route_preview()
@@ -1565,18 +1523,6 @@ func _clear_gameplay_state() -> void:
 			if is_instance_valid(effect) and not effect.has_meta("pooled"):
 				effect.queue_free()
 
-	if current_hero:
-		current_hero.queue_free()
-		current_hero = null
-	if hero_panel:
-		hero_panel.queue_free()
-		hero_panel = null
-		
-	hero_is_deployed = false
-	hero_cooldown = 0
-	hero_active_duration = 0
-	if OS.is_debug_build(): print("[HeroLifecycle] reset")
-
 	for enemy in get_tree().get_nodes_in_group("enemies"):
 		enemy.queue_free()
 
@@ -1593,12 +1539,6 @@ func _clear_gameplay_state() -> void:
 			game_hud.exit_end_game_ui_state()
 	_clear_route_preview()
 
-	# Setup UI
-	if game_hud and level_manager and level_manager.hero_config.get("enabled", false):
-		_setup_hero_ui()
-	elif hero_panel:
-		hero_panel.hide()
-
 func _clear_transient_combat_ui() -> void:
 	_clear_route_preview()
 	if settings_menu:
@@ -1610,138 +1550,6 @@ func _clear_transient_combat_ui() -> void:
 			game_hud.hide_center_message()
 		if game_hud.has_method("clear_wave_intel"):
 			game_hud.clear_wave_intel()
-
-func _setup_hero_ui() -> void:
-	if hero_panel:
-		hero_panel.queue_free()
-		
-	var panel_scene = load("res://scenes/ui/HeroPanel.tscn")
-	if not panel_scene: return
-	
-	hero_panel = panel_scene.instantiate()
-	game_hud.add_child(hero_panel)
-	
-	# Position bottom-left
-	hero_panel.set_anchors_and_offsets_preset(Control.PRESET_BOTTOM_LEFT)
-	hero_panel.position += Vector2(20, -100)
-	
-	hero_panel.setup_ui(level_manager.hero_config)
-	hero_panel.deploy_requested.connect(_on_hero_deploy_requested)
-	
-	if hero_cooldown > 0:
-		hero_panel.set_cooldown(hero_cooldown, level_manager.hero_config.get("cooldown", 30))
-	elif hero_is_deployed:
-		# Should not happen on setup unless mid-restart logic is weird
-		pass
-
-func _on_hero_deploy_requested() -> void:
-	if hero_is_deployed or hero_cooldown > 0: return
-	if not level_manager or not game_manager: return
-	
-	var cost = level_manager.hero_config.get("deploy_cost", 120)
-	if game_manager.gold < cost:
-		if OS.is_debug_build(): print("[BuildFlow] place failed: Not enough gold for hero! (needed %d)" % cost)
-		return
-		
-	if game_manager.spend_gold(cost):
-		if OS.is_debug_build(): print("[BuildFlow] hero deployed cost=%d" % cost)
-		_spawn_hero_unit()
-		if game_manager.battle_telemetry:
-			# Get a reasonable world position (spawn_pos is set in _spawn_hero_unit, but we can log after)
-			game_manager.battle_telemetry.log_hero_deployed(current_hero.global_position if current_hero else Vector2.ZERO, cost)
-		update_hud() # Update gold display
-
-func _spawn_hero_unit() -> void:
-	var hero_scene = load("res://scenes/units/HeroGuardian.tscn")
-	if not hero_scene: return
-	
-	current_hero = hero_scene.instantiate()
-	
-	# Configuration and Bounds
-	var battlefield_bounds = Rect2(Vector2(0, 0), Vector2(2560, 1440))
-	if level_manager:
-		battlefield_bounds = Rect2(Vector2(0, 0), Vector2(level_manager.grid_cols * level_manager.grid_size, level_manager.grid_rows * level_manager.grid_size))
-	
-	# Find rally point: near the base (last path point)
-	var rally_pos = Vector2(1000, 384) # Default
-	if level_manager:
-		var path = level_manager.get_path_points()
-		if path.size() > 0:
-			rally_pos = path[path.size() - 1] + Vector2(-80, 0)
-	
-	# Intelligent Spawn Position
-	var spawn_pos = rally_pos
-	var spawn_mode = "rally_point"
-	var target_enemy = null
-	
-	var enemies = get_tree().get_nodes_in_group("enemies")
-	var active_enemies = []
-	for e in enemies:
-		if is_instance_valid(e) and e.has_method("is_alive") and e.is_alive():
-			active_enemies.append(e)
-			
-	if active_enemies.size() > 0:
-		# Pick best target (furthest along path)
-		var max_prog = -1.0
-		for e in active_enemies:
-			if e.has_method("get_path_progress"):
-				var prog = e.get_path_progress()
-				if prog > max_prog:
-					max_prog = prog
-					target_enemy = e
-		
-		if is_instance_valid(target_enemy):
-			spawn_mode = "near_enemy"
-			# Spawn offset from enemy (approx 100px)
-			# Try to spawn towards the center of map
-			var offset_dir = (Vector2(640, 384) - target_enemy.global_position).normalized()
-			spawn_pos = target_enemy.global_position + offset_dir * 100.0
-	
-	# Clamp spawn position to bounds
-	spawn_pos.x = clamp(spawn_pos.x, battlefield_bounds.position.x + 50, battlefield_bounds.end.x - 50)
-	spawn_pos.y = clamp(spawn_pos.y, battlefield_bounds.position.y + 50, battlefield_bounds.end.y - 50)
-	
-	if OS.is_debug_build():
-		print("[HeroDeploy] active_enemies=%d" % active_enemies.size())
-		if spawn_mode == "near_enemy":
-			print("[HeroDeploy] spawn_mode=near_enemy target=%s spawn_pos=%s" % [target_enemy.name, str(spawn_pos)])
-		else:
-			print("[HeroDeploy] spawn_mode=rally_point spawn_pos=%s" % str(spawn_pos))
-
-	var units_container = get_node_or_null("WorldRoot/MapRoot/UnitsContainer")
-	if units_container:
-		units_container.add_child(current_hero)
-	else:
-		add_child(current_hero)
-		
-	# Initialize Hero stats and position
-	current_hero.initialize_hero(spawn_pos, rally_pos, battlefield_bounds)
-	
-	var h_cfg = level_manager.hero_config
-	current_hero.active_duration_max = h_cfg.get("duration", 28.0)
-	current_hero.active_duration_current = current_hero.active_duration_max
-	current_hero.max_hp = h_cfg.get("hp", 450.0)
-	current_hero.current_hp = current_hero.max_hp
-	current_hero.damage = h_cfg.get("damage", 36.0)
-	current_hero.attack_speed = h_cfg.get("attack_speed", 1.4)
-	current_hero.attack_range = h_cfg.get("attack_range", 125.0)
-	current_hero.move_speed = h_cfg.get("move_speed", 220.0)
-	
-	if current_hero.has_method("_update_range_collision"): current_hero._update_range_collision()
-	if current_hero.has_method("_update_range_visual"): current_hero._update_range_visual()
-	
-	# Trigger Shockwave at FINAL spawn position
-	if current_hero.has_method("trigger_shockwave"):
-		current_hero.trigger_shockwave()
-	
-	hero_is_deployed = true
-	if hero_panel:
-		hero_panel.set_deployed(current_hero, current_hero.active_duration_max)
-		
-	if OS.is_debug_build():
-		print("[HeroDeploy] deployed hero=Guardian duration=%.1f" % current_hero.active_duration_max)
-		print("[HeroDeploy] deploy requested cost=%d gold=%d" % [level_manager.hero_config.get("deploy_cost", 100), game_manager.gold])
-
 
 # --- Gameplay Handlers ---
 
@@ -1798,8 +1606,7 @@ func _refresh_ui_for_phase() -> void:
 		"select": level_select,
 		"hud": game_hud,
 		"world": world_root,
-		"debug": debug_panel,
-		"hero": hero_panel
+		"debug": debug_panel
 	}
 
 	for key in panels:
@@ -1847,10 +1654,6 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.set_build_status("Planning Phase — build your maze")
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
-			if hero_panel:
-				var hero_enabled = level_manager.hero_config.get("enabled", false) if level_manager else false
-				hero_panel.visible = hero_enabled
-				if OS.is_debug_build(): print("[HERO_UI] visible=", hero_panel.visible, " reason=GameState.BUILD")
 			if world_root: world_root.show()
 			get_tree().paused = false
 
@@ -1861,10 +1664,6 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.enter_gameplay_mode()
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
-			if hero_panel:
-				var hero_enabled = level_manager.hero_config.get("enabled", false) if level_manager else false
-				hero_panel.visible = hero_enabled
-				if OS.is_debug_build(): print("[HERO_UI] visible=", hero_panel.visible, " reason=GameState.WAVE")
 			if world_root: world_root.show()
 			get_tree().paused = false
 
@@ -1875,9 +1674,6 @@ func _refresh_ui_for_phase() -> void:
 				game_hud.enter_gameplay_mode()
 				if game_hud.has_method("set_wave_intel_visible"): game_hud.set_wave_intel_visible(true)
 				_refresh_gameplay_hud_state()
-			if hero_panel:
-				var hero_enabled = level_manager.hero_config.get("enabled", false) if level_manager else false
-				hero_panel.visible = hero_enabled
 			if world_root: world_root.show()
 			get_tree().paused = false
 

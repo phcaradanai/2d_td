@@ -292,8 +292,6 @@ func generate_softened_patch(base_patch: Dictionary) -> Dictionary:
 				changes.append(softened)
 			"tower_upgrade_cost_adjustment":
 				changes.append(softened)
-			"hero_opportunity_moment":
-				changes.append(softened)
 			_:
 				changes.append(softened)
 				
@@ -378,8 +376,6 @@ func preview_patch(patch: Dictionary) -> String:
 				])
 			"dominant_strategy_test_required":
 				lines.append("- require %s strategy test" % str(change.get("strategy", "dominant")))
-			"hero_opportunity_moment":
-				lines.append("- add optional hero opportunity intel in wave %d" % int(change.get("target_wave", 0)))
 
 	lines.append("")
 	lines.append("Expected effect:")
@@ -768,7 +764,6 @@ func run_mixed_defense_test(level_id: String, patch: Dictionary = {}, wave_manag
 	lines.append("[MIXED_DEFENSE_PLAN]")
 	lines.append("builds=%s" % _format_tower_builds(towers))
 	lines.append("upgrades=%s" % _format_tower_levels(towers))
-	lines.append("hero_timing=wave_4_or_5_optional")
 	lines.append("gold_spent_planned=%d" % int(result.get("gold_spent_total", 0)))
 	if gold_ratio > 1.0:
 		lines.append("[MIXED_DEFENSE_METRIC_WARNING]\ngold_remaining_ratio=%.3f" % gold_ratio)
@@ -787,7 +782,6 @@ func run_mixed_defense_test(level_id: String, patch: Dictionary = {}, wave_manag
 	lines.append("gold_spent_total=%d" % int(result.get("gold_spent_total", 0)))
 	lines.append("gold_remaining=%d" % int(result.get("gold_remaining", 0)))
 	lines.append("gold_remaining_ratio=%.3f" % gold_ratio)
-	lines.append("hero_used=%s" % str(result.get("hero_used", false)))
 	lines.append("fail_wave=%s" % str(result.get("fail_wave", "")))
 	lines.append("fail_reason=%s" % str(result.get("fail_reason", "")))
 	lines.append("leaks_by_enemy_type=%s" % JSON.stringify(result.get("leaks_by_enemy_type", {})))
@@ -950,12 +944,6 @@ func _apply_changes_to_waves(waves: Array, patch: Dictionary, enemies: Dictionar
 						waves[idx]["groups"] = _generate_spawn_groups(new_comp, idx)
 						_ensure_wave_formation_metadata(waves[idx], enemies)
 						
-			"hero_opportunity_moment":
-				var idx := int(change.get("target_wave", 0)) - 1
-				if idx >= 0 and idx < waves.size():
-					var append_text := str(change.get("intel_append", ""))
-					if append_text != "" and not str(waves[idx].get("intel", "")).contains(append_text.strip_edges()):
-						waves[idx]["intel"] = str(waves[idx].get("intel", "")) + append_text
 	return waves
 
 func _resolve_patch_target_waves(change: Dictionary, waves: Array) -> Array:
@@ -1312,8 +1300,7 @@ func _simulate_fixed_strategy(level_id: String, towers: Array[Dictionary], waves
 				"top_damage_tower": _top_damage_tower(damage_by_tower_type),
 				"fail_wave": waves_completed + 1,
 				"fail_reason": str(result.get("reason", "mixed defense leaked")),
-				"leaks_by_enemy_type": leaks_by_enemy_type,
-				"hero_used": false
+				"leaks_by_enemy_type": leaks_by_enemy_type
 			}
 		var delta := int(result.get("gold_delta", 0))
 		gold_earned += delta
@@ -1333,8 +1320,7 @@ func _simulate_fixed_strategy(level_id: String, towers: Array[Dictionary], waves
 		"top_damage_tower": _top_damage_tower(damage_by_tower_type),
 		"fail_wave": "",
 		"fail_reason": "",
-		"leaks_by_enemy_type": {},
-		"hero_used": false
+		"leaks_by_enemy_type": {}
 	}
 
 func _simulate_fixed_strategy_state(level_id: String, towers: Array[Dictionary], wave_index: int, wave: Dictionary, patch: Dictionary = {}) -> Dictionary:

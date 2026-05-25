@@ -35,7 +35,7 @@ static func apply_setup(enemy: Node2D, config: Dictionary) -> void:
 		enemy.remove_from_group("ground_enemies")
 	
 	enemy.is_bulwark = (enemy.enemy_type == "bulwark" or enemy.tags.has("shield"))
-	enemy.is_hunter = (enemy.enemy_type == "hunter" or enemy.tags.has("anti_hero"))
+	enemy.is_hunter = (enemy.enemy_type == "hunter" or enemy.tags.has("hunter"))
 	enemy.is_runner = (enemy.enemy_type == "runner" or enemy.tags.has("runner"))
 	if enemy.is_runner:
 		if enemy.has_method("_configure_runner_role"):

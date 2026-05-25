@@ -175,13 +175,13 @@ func infer_enemy_roles(enemy_type: String, group_data: Dictionary = {}) -> Array
 		_add_role(roles, ROLE_FRONTLINER)
 	if enemy_type in ["basic", "flyer"] or _has_any(tags, ["core", "baseline", "scout"]):
 		_add_role(roles, ROLE_ESCORT)
-	if enemy_type in ["fast", "runner", "hunter", "fast_flyer"] or _has_any(tags, ["fast", "runner", "danger", "anti_hero"]) or speed >= 135.0:
+	if enemy_type in ["fast", "runner", "hunter", "fast_flyer"] or _has_any(tags, ["fast", "runner", "danger", "hunter"]) or speed >= 135.0:
 		_add_role(roles, ROLE_PRESSURE)
 	if enemy_type == "swarm" or _has_any(tags, ["swarm", "small"]):
 		_add_role(roles, ROLE_SWARM)
 	if enemy_type in ["healer", "shieldbearer", "disruptor"] or _has_any(tags, ["support", "healing", "shield", "disruptor"]) or skill in ["healer", "shield_aura", "disrupt_aura"]:
 		_add_role(roles, ROLE_SUPPORT)
-	if enemy_type in ["cloaked", "disruptor", "hunter"] or _has_any(tags, ["stealth", "disruptor", "anti_hero"]):
+	if enemy_type in ["cloaked", "disruptor", "hunter"] or _has_any(tags, ["stealth", "disruptor", "hunter"]):
 		_add_role(roles, ROLE_DISRUPTOR)
 	if enemy_type in ["flyer", "fast_flyer", "armored_flyer", "disruptor"] or category == ENEMY_CATEGORY_AIR or movement_type == ENEMY_CATEGORY_AIR or tags.has("air"):
 		_add_role(roles, ROLE_AIR)

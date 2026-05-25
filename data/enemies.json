@@ -103,11 +103,11 @@
     "movement_type": "ground",
     "visual_type": "hunter",
     "tags": [
-      "anti_hero",
+      "hunter",
       "fast",
       "danger"
     ],
-    "description": "A lethal virus that targets your Guardian directly. Armor: Darkness.",
+    "description": "A lethal virus that pressures exposed support coverage. Armor: Darkness.",
     "counter_towers": [
       "sniper",
       "basic",
@@ -708,7 +708,7 @@
     "visual_type": "hunter",
     "tags": [
       "boss",
-      "anti_hero",
+      "hunter",
       "fast"
     ],
     "affixes": [],
@@ -721,7 +721,7 @@
     "hunter_attack_range": 55,
     "hunter_attack_damage": 4.0,
     "hunter_attack_cooldown": 1.2,
-    "description": "An elite predator that hunts heroes while jamming nearby tower fire rates.",
+    "description": "An elite predator that pressures weak backline coverage while jamming nearby tower fire rates.",
     "counter_towers": [
       "rapid",
       "slow",

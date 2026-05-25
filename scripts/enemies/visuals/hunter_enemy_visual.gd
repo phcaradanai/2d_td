@@ -46,7 +46,7 @@ static func draw(enemy: Node2D, size: float) -> void:
 	_draw_ground_shadow(enemy, origin, size)
 	_draw_stalker_legs(enemy, origin, size, void_trim, predator_violet, gait)
 	_draw_predator_hull(enemy, origin, size, dark_shell, night_plate, void_trim, predator_violet, danger_red, pulse)
-	_draw_anti_hero_core(enemy, origin, size, danger_red, hot_core, cyan_ping, pulse, blink)
+	_draw_hunter_core(enemy, origin, size, danger_red, hot_core, cyan_ping, pulse, blink)
 	_draw_claws(enemy, origin, size, danger_red, hot_core, pulse)
 	_draw_tail_spikes(enemy, origin, size, void_trim, predator_violet, danger_red)
 	_draw_role_marker(enemy, size, pulse_time, pulse)
@@ -147,7 +147,7 @@ static func _draw_predator_hull(
 	enemy.draw_polyline(_closed(outer), Color(predator_violet.r, predator_violet.g, predator_violet.b, 0.70), 1.35)
 
 
-static func _draw_anti_hero_core(
+static func _draw_hunter_core(
 	enemy: Node2D,
 	origin: Vector2,
 	size: float,

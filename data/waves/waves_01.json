@@ -117,7 +117,7 @@
   },
   {
 	"wave": 5,
-	"name": "Elemental Guardian I - Apex Node",
+	"name": "Elemental Sentinel I - Apex Node",
 	"reward": 60,
 	"groups": [
 	  {
@@ -272,7 +272,7 @@
   },
   {
 	"wave": 10,
-	"name": "Elemental Guardian II - Fortress Escort",
+	"name": "Elemental Sentinel II - Fortress Escort",
 	"reward": 75,
 	"groups": [
 	  {

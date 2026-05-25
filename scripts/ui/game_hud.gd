@@ -3600,11 +3600,6 @@ func enter_result_overlay() -> void:
 		dim_overlay.color = Color(0, 0, 0, 0.7) # Reset to dark translucent, in case it was red
 		dim_overlay.mouse_filter = Control.MOUSE_FILTER_STOP
 	
-	# Hide any loose hero panel if it exists as a direct child
-	for child in get_children():
-		if child.name.contains("HeroPanel"):
-			child.hide()
-
 func enter_result_mode(summary: Dictionary, improvements: Dictionary = {}, rank: int = -1) -> void:
 	enter_result_overlay()
 	

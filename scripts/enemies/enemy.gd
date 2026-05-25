@@ -489,23 +489,8 @@ func apply_delayed_damage(amount: float, delay: float, source_id: String = "", a
 func _process_hunter_ai(delta: float) -> void:
 	EnemyRoleHunter._process_hunter_ai(self , delta)
 
-func _update_hunter_target() -> void:
-	EnemyRoleHunter._update_hunter_target(self )
-
-func _is_hero_huntable(hero: Node) -> bool:
-	return EnemyRoleHunter._is_hero_huntable(self , hero)
-
 func _clear_hunter_target() -> void:
 	EnemyRoleHunter._clear_hunter_target(self )
-
-func _move_toward_hero(target_pos: Vector2, delta: float) -> void:
-	EnemyRoleHunter._move_toward_hero(self , target_pos, delta)
-
-func _face_hunter_target(_target_pos: Vector2, _delta: float) -> void:
-	EnemyRoleHunter._face_hunter_target(self , _target_pos, _delta)
-
-func _attack_hero(hero: Node) -> void:
-	EnemyRoleHunter._attack_hero(self , hero)
 
 func _process_pathing(delta: float) -> void:
 	EnemyMovementService._process_pathing(self , delta)

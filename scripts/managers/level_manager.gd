@@ -26,13 +26,6 @@ var starting_gold: int = 100
 var starting_lives: int = 20
 var waves_path: String = "res://data/waves/waves_01.json"
 var buildable_mode: String = "full_non_path"
-var hero_config: Dictionary = {
-	"enabled": false,
-	"unlock_message": "",
-	"deploy_cost": 100,
-	"duration": 28,
-	"cooldown": 35
-}
 var level_data: Dictionary = {}
 
 var current_theme: Resource = null
@@ -53,13 +46,6 @@ func reset_state() -> void:
 	buildable_cells.clear()
 	grid_cols = 20
 	grid_rows = 12
-	hero_config = {
-		"enabled": false,
-		"unlock_message": "",
-		"deploy_cost": 100,
-		"duration": 28,
-		"cooldown": 35
-	}
 	current_theme = null
 	level_data.clear()
 
@@ -106,19 +92,6 @@ func load_level(path: String) -> bool:
 	starting_lives = data.get("starting_lives", 20)
 	waves_path = data.get("waves_path", "res://data/waves/waves_01.json")
 	buildable_mode = data.get("buildable_mode", "full_non_path")
-	
-	hero_config = {
-		"enabled": data.get("hero_enabled", false),
-		"unlock_message": data.get("hero_unlock_message", ""),
-		"deploy_cost": data.get("hero_deploy_cost", 100),
-		"duration": data.get("hero_duration_seconds", 28),
-		"cooldown": data.get("hero_cooldown_seconds", 35),
-		"hp": data.get("hero_hp", 450.0),
-		"damage": data.get("hero_damage", 36.0),
-		"attack_speed": data.get("hero_attack_speed", 1.4),
-		"attack_range": data.get("hero_attack_range", 125.0),
-		"move_speed": data.get("hero_move_speed", 220.0)
-	}
 	
 	# Handle paths
 	path_cells.clear()
@@ -352,11 +325,10 @@ func get_config_as_dict() -> Dictionary:
 		"path_cells": path_cells,
 		"spawn_cells": spawn_cells,
 		"base_cells": base_cells,
-		"buildable_cells": buildable_cells,
-		"starting_gold": starting_gold,
-		"starting_lives": starting_lives,
-		"hero_config": hero_config
-	}
+			"buildable_cells": buildable_cells,
+			"starting_gold": starting_gold,
+			"starting_lives": starting_lives
+		}
 
 func _load_theme_for_area(area_id: int) -> void:
 	if theme_manager == null:

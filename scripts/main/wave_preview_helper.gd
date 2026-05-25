@@ -17,10 +17,7 @@ static func format_level_id(level_id: int) -> String:
 	return "level_%02d" % level_id
 
 static func sanitize_wave_name(raw_name: String) -> String:
-	var name := raw_name.strip_edges()
-	name = name.replace("Elemental Guardian", "Elemental Sentinel")
-	name = name.replace("Guardian", "Sentinel")
-	return name
+	return raw_name.strip_edges()
 
 static func normalize_enemy_type(raw: String) -> String:
 	var value = raw.to_lower()
@@ -61,8 +58,8 @@ static func classify_enemy_group(raw_type: String, group: Dictionary, enemy_conf
 		traits.append("Swarm")
 	if tags.has("shield") or skill == "shield_aura":
 		traits.append("Shield")
-	if tags.has("anti_hero") or enemy_type == "hunter":
-		traits.append("Anti-Hero")
+	if tags.has("hunter") or enemy_type == "hunter":
+		traits.append("Hunter")
 	if tags.has("healing") or skill == "healer" or affixes.has("healing"):
 		traits.append("Healing")
 	if tags.has("stealth") or skill == "stealth" or affixes.has("image"):
@@ -169,7 +166,7 @@ static func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categ
 	var has_heavy = false
 	var has_swarm = false
 	var has_shield = false
-	var has_anti_hero = false
+	var has_hunter = false
 	
 	for type_name in enemy_counts.keys():
 		var count = enemy_counts[type_name]
@@ -179,7 +176,7 @@ static func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categ
 		if type_name.contains("Heavy") and ratio > 0.2: has_heavy = true
 		if type_name.contains("Swarm") and ratio > 0.4: has_swarm = true
 		if type_name.contains("Bulwark") or type_name.contains("Shield"): has_shield = true
-		if type_name.contains("Hunter") or type_name.contains("Anti-Hero"): has_anti_hero = true
+		if type_name.contains("Hunter"): has_hunter = true
 		if type_name.contains("Healer"): traits.append("Healing")
 		if type_name.contains("Cloaked") or type_name.contains("Ghost"): traits.append("Stealth")
 		if type_name.contains("Disruptor") or type_name.contains("EMP"): traits.append("Disruption")
@@ -189,7 +186,7 @@ static func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categ
 	if has_heavy: traits.append("Heavy")
 	if has_swarm or total_count >= 15: traits.append("Swarm")
 	if has_shield: traits.append("Shield")
-	if has_anti_hero: traits.append("Anti-Hero")
+	if has_hunter: traits.append("Hunter")
 	
 	if enemy_counts.keys().size() >= 3:
 		traits.append("Mixed")
@@ -232,7 +229,7 @@ static func recommend_roles_for_wave(traits: Array[String]) -> Array[String]:
 		roles.append("Fire + Earth splash")
 		roles.append("Darkness vulnerability")
 
-	if traits.has("Anti-Hero"):
+	if traits.has("Hunter"):
 		roles.append("Light burst")
 		roles.append("Water control")
 
@@ -283,7 +280,7 @@ static func derive_wave_warnings(traits: Array[String]) -> Array[String]:
 		warnings.append("Boss unit present. Keep damage focused while clearing escorts.")
 	if traits.has("Shield"):
 		warnings.append("Protected units take reduced damage inside the dome.")
-	if traits.has("Anti-Hero"):
+	if traits.has("Hunter"):
 		warnings.append("Hunter pressure punishes exposed support and weak backline coverage.")
 	if traits.has("Healing"):
 		warnings.append("Healing support is active. Kill repair units before frontliners reset.")
@@ -299,7 +296,7 @@ static func derive_wave_warnings(traits: Array[String]) -> Array[String]:
 		warnings.append("Undead units may return once after lethal damage.")
 	if traits.has("Illusion"):
 		warnings.append("Illusion pressure adds decoys or copies; avoid overfocusing one target.")
-	if traits.has("Shield") and traits.has("Anti-Hero"):
+	if traits.has("Shield") and traits.has("Hunter"):
 		warnings.append("Danger: Shielded high-threat units detected.")
 	return warnings
 

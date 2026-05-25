@@ -14,7 +14,6 @@
       "buildable_count": 12,
       "path_count": 1,
       "wave_count": 4,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -102,7 +101,6 @@
       "buildable_count": 14,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -212,7 +210,6 @@
       "buildable_count": 10,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -321,7 +318,6 @@
       "buildable_count": 14,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -432,7 +428,6 @@
       "buildable_count": 14,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -546,7 +541,6 @@
       "buildable_count": 11,
       "path_count": 2,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -658,7 +652,6 @@
       "buildable_count": 14,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -772,7 +765,6 @@
       "buildable_count": 13,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -885,7 +877,6 @@
       "buildable_count": 18,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -1004,7 +995,6 @@
       "buildable_count": 15,
       "path_count": 1,
       "wave_count": 4,
-      "hero_enabled": false,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -1104,7 +1094,6 @@
       "buildable_count": 14,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -1219,7 +1208,6 @@
       "buildable_count": 9,
       "path_count": 2,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -1334,7 +1322,6 @@
       "buildable_count": 11,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -1449,7 +1436,6 @@
       "buildable_count": 12,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -1568,7 +1554,6 @@
       "buildable_count": 13,
       "path_count": 2,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": false,
       "first_air_wave": null,
       "waves": [
@@ -1688,7 +1673,6 @@
       "buildable_count": 12,
       "path_count": 2,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": true,
       "first_air_wave": 1,
       "waves": [
@@ -1805,7 +1789,6 @@
       "buildable_count": 13,
       "path_count": 2,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": true,
       "first_air_wave": 1,
       "waves": [
@@ -1914,7 +1897,7 @@
     "critical": [],
     "issues": [],
     "warnings": [
-      "WAVE 4: Air-only wave \u2014 Guardian does nothing (correct design, note only)",
+      "WAVE 4: Air-only wave \u2014 ground-only pressure does not affect air units (correct design, note only)",
       "WAVE 5 'Bulwark Line Finale': Final wave HP ratio=0.23 (may be too trivial)"
     ],
     "meta": {
@@ -1926,7 +1909,6 @@
       "buildable_count": 10,
       "path_count": 1,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": true,
       "first_air_wave": 1,
       "waves": [
@@ -2043,7 +2025,6 @@
       "buildable_count": 13,
       "path_count": 3,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": true,
       "first_air_wave": 2,
       "waves": [
@@ -2170,7 +2151,6 @@
       "buildable_count": 16,
       "path_count": 2,
       "wave_count": 5,
-      "hero_enabled": true,
       "has_air": true,
       "first_air_wave": 1,
       "waves": [

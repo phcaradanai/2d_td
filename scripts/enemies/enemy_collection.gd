@@ -9,7 +9,7 @@ const ENEMY_DEFS := [
 	{"id": "fast", "name": "Fast", "visual_type": "fast", "hp": 24, "speed": 0, "reward_gold": 6, "base_damage": 1, "tags": []},
 	{"id": "tank", "name": "Tank", "visual_type": "tank", "hp": 80, "speed": 0, "reward_gold": 10, "base_damage": 2, "tags": []},
 	{"id": "bulwark", "name": "Bulwark", "visual_type": "bulwark", "hp": 100, "speed": 0, "reward_gold": 12, "base_damage": 2, "tags": ["shield"]},
-	{"id": "hunter", "name": "Hunter", "visual_type": "hunter", "hp": 55, "speed": 0, "reward_gold": 9, "base_damage": 2, "tags": ["anti_hero"]},
+	{"id": "hunter", "name": "Hunter", "visual_type": "hunter", "hp": 55, "speed": 0, "reward_gold": 9, "base_damage": 2, "tags": ["hunter"]},
 	{"id": "swarm", "name": "Swarm", "visual_type": "swarm", "hp": 16, "speed": 0, "reward_gold": 3, "base_damage": 1, "tags": ["swarm"]},
 	{"id": "runner", "name": "Runner", "visual_type": "runner", "hp": 28, "speed": 0, "reward_gold": 6, "base_damage": 1, "tags": []},
 	{"id": "shieldbearer", "name": "Shieldbearer", "visual_type": "shieldbearer", "hp": 60, "speed": 0, "reward_gold": 8, "base_damage": 1, "tags": ["shield"]},

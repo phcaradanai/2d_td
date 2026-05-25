@@ -54,10 +54,7 @@ static func infer_enemy_category(enemy_type: String) -> String:
 	return ENEMY_CATEGORY_LAND
 
 static func sanitize_wave_name(raw_name: String) -> String:
-	var name := raw_name.strip_edges()
-	name = name.replace("Elemental Guardian", "Elemental Sentinel")
-	name = name.replace("Guardian", "Sentinel")
-	return name
+	return raw_name.strip_edges()
 
 static func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categories: Dictionary) -> Array[String]:
 	var traits: Array[String] = []
@@ -90,8 +87,8 @@ static func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categ
 			traits.append("Splitting")
 		if t.contains("disrupt") or t.contains("jammer"):
 			traits.append("Disruption")
-		if t.contains("anti_hero") or t.contains("anti-hero"):
-			traits.append("Anti-Hero")
+		if t.contains("hunter"):
+			traits.append("Hunter")
 
 	return dedupe_strings(traits)
 
@@ -116,7 +113,7 @@ static func recommend_roles_for_wave(traits: Array[String]) -> Array[String]:
 		roles.append("Fire + Earth splash")
 		roles.append("Darkness vulnerability")
 
-	if traits.has("Anti-Hero"):
+	if traits.has("Hunter"):
 		roles.append("Light burst")
 		roles.append("Water control")
 

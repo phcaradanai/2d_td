@@ -81,7 +81,6 @@ func analyze_reports(level_id: String) -> Dictionary:
 		"source_reports_count": reports.size(),
 		"victories": 0,
 		"perfects": 0,
-		"hero_runs": 0,
 		"total_gold_remaining_ratio": 0.0,
 		"total_tower_dominance_ratio": 0.0,
 		"total_tower_variety_count": 0.0,
@@ -97,8 +96,6 @@ func analyze_reports(level_id: String) -> Dictionary:
 			stats["victories"] += 1
 		if bool(report.get("perfect_clear", false)):
 			stats["perfects"] += 1
-		if int(report.get("hero_deploy_count", 0)) > 0:
-			stats["hero_runs"] += 1
 		stats["total_leaks"] += int(report.get("enemies_leaked_total", 0))
 
 		var analysis: Dictionary = report.get("balance_analysis", {})
@@ -121,7 +118,6 @@ func analyze_reports(level_id: String) -> Dictionary:
 	var avg_tower_count := float(stats["total_tower_count"]) / runs
 	var victory_rate := float(stats["victories"]) / runs
 	var perfect_rate := float(stats["perfects"]) / runs
-	var hero_used_rate := float(stats["hero_runs"]) / runs
 	var top_tower := _top_key(stats["tower_dominance_counts"])
 	var rating := _top_key(stats["difficulty_counts"])
 	if rating == "Unknown":
@@ -148,7 +144,6 @@ func analyze_reports(level_id: String) -> Dictionary:
 		"tower_dominance_ratio": avg_tower_dominance_ratio,
 		"tower_variety_count": avg_tower_variety_count,
 		"tower_total_count": avg_tower_count,
-		"hero_used_rate": hero_used_rate,
 		"victory_rate": victory_rate,
 		"perfect_rate": perfect_rate,
 		"avg_leaks": float(stats["total_leaks"]) / runs,

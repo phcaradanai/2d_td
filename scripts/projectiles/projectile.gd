@@ -307,7 +307,7 @@ func _draw_beam_sliver() -> void:
 
 func _get_hit_anchor_global_position(node: Variant) -> Vector2:
 	# Hot path: called every frame per projectile — avoid has_method reflection.
-	# All game targets (enemies, heroes) are Node2D; global_position matches their hit origin.
+	# All game targets are Node2D; global_position matches their hit origin.
 	if node != null and is_instance_valid(node) and node is Node2D:
 		return node.global_position
 	return global_position
