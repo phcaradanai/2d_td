@@ -1,17 +1,18 @@
 extends Node
 
-const SAVE_PATH          = "user://tower_defense_save.json"
-const IDENTITY_CACHE_PATH = "user://runtime_identity.json"
-const DEV_CONFIG_PATH     = "user://remote_access_config_dev.json"
-const BUNDLED_API_URL     = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"
-const BACKEND_TIMEOUT     = 10.0
+const BackendApiConfig = preload("res://scripts/config/backend_api_config.gd")
 
-var _api_base_url: String   = ""
-var _install_id: String     = ""
+const SAVE_PATH = "user://tower_defense_save.json"
+const IDENTITY_CACHE_PATH = "user://runtime_identity.json"
+const DEV_CONFIG_PATH = "user://remote_access_config_dev.json"
+const BACKEND_TIMEOUT = 10.0
+
+var _api_base_url: String = ""
+var _install_id: String = ""
 var _http_fetch: HTTPRequest = null
-var _http_push: HTTPRequest  = null
-var _push_in_flight: bool    = false
-var _push_pending: bool      = false
+var _http_push: HTTPRequest = null
+var _push_in_flight: bool = false
+var _push_pending: bool = false
 
 var save_data: Dictionary = {
 	"player_name": "Player",
@@ -209,9 +210,9 @@ func print_progress() -> void:
 	for level_id in save_data["levels"]:
 		var rec = save_data["levels"][level_id]
 		print("[%s] Best Score: %d, Stars: %d, Perfect: %s, Clears: %d" % [
-			level_id, 
-			rec.get("best_score", 0), 
-			rec.get("best_stars", 0), 
+			level_id,
+			rec.get("best_score", 0),
+			rec.get("best_stars", 0),
 			str(rec.get("perfect_clear", false)),
 			rec.get("times_cleared", 0)
 		])
@@ -258,7 +259,7 @@ func update_performance_settings(settings: Dictionary) -> void:
 # ── Backend Cloud Save ────────────────────────────────────────────────────────
 
 func _setup_backend() -> void:
-	_api_base_url = BUNDLED_API_URL
+	_api_base_url = BackendApiConfig.BUNDLED_API_URL
 	if FileAccess.file_exists(DEV_CONFIG_PATH):
 		var file = FileAccess.open(DEV_CONFIG_PATH, FileAccess.READ)
 		if file:
@@ -351,12 +352,12 @@ func _on_fetch_completed(result: int, response_code: int, _headers: PackedString
 
 func _merge_level_record(local_rec: Dictionary, remote_rec: Dictionary) -> Dictionary:
 	var merged = local_rec.duplicate()
-	merged["best_score"]    = max(local_rec.get("best_score", 0),    remote_rec.get("best_score", 0))
-	merged["best_stars"]    = max(local_rec.get("best_stars", 0),    remote_rec.get("best_stars", 0))
+	merged["best_score"] = max(local_rec.get("best_score", 0), remote_rec.get("best_score", 0))
+	merged["best_stars"] = max(local_rec.get("best_stars", 0), remote_rec.get("best_stars", 0))
 	merged["times_cleared"] = max(local_rec.get("times_cleared", 0), remote_rec.get("times_cleared", 0))
 	merged["perfect_clear"] = local_rec.get("perfect_clear", false) or remote_rec.get("perfect_clear", false)
-	merged["completed"]     = local_rec.get("completed", false)      or remote_rec.get("completed", false)
-	merged["unlocked"]      = local_rec.get("unlocked", false)       or remote_rec.get("unlocked", false)
+	merged["completed"] = local_rec.get("completed", false) or remote_rec.get("completed", false)
+	merged["unlocked"] = local_rec.get("unlocked", false) or remote_rec.get("unlocked", false)
 	return merged
 
 func _push_backend_save() -> void:
@@ -372,7 +373,7 @@ func _push_backend_save() -> void:
 	}
 	var body = JSON.stringify({
 		"install_id": _install_id,
-		"save_json":  JSON.stringify(cloud_payload)
+		"save_json": JSON.stringify(cloud_payload)
 	})
 	var headers = PackedStringArray(["Content-Type: application/json"])
 	var url = _api_base_url.rstrip("/") + "/api/v1/game/save"

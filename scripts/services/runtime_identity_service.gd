@@ -12,21 +12,22 @@ extends Node
 ##   registered(runtime_id)       — backend accepted registration
 ##   registration_failed(reason)  — backend unreachable; local IDs still usable
 
+const BackendApiConfig = preload("res://scripts/config/backend_api_config.gd")
+
 signal registered(runtime_id: String)
 signal registration_failed(reason: String)
 
-const CACHE_PATH     = "user://runtime_identity.json"
-const BUILD_ID       = "v1.0.0-RC1"   # must match VERSION in main.gd
-const BUNDLED_API_URL = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"
+const CACHE_PATH = "user://runtime_identity.json"
+const BUILD_ID = "v1.0.0-RC1" # must match VERSION in main.gd
 const DEV_CONFIG_PATH = "user://remote_access_config_dev.json"
 const REQUEST_TIMEOUT = 8.0
 
-var _install_id: String          = ""
-var _runtime_session_id: String  = ""
-var _runtime_id: String          = ""   # from backend
-var _api_base_url: String        = ""
-var _http: HTTPRequest           = null
-var _registering: bool           = false
+var _install_id: String = ""
+var _runtime_session_id: String = ""
+var _runtime_id: String = "" # from backend
+var _api_base_url: String = ""
+var _http: HTTPRequest = null
+var _registering: bool = false
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -61,12 +62,12 @@ func get_game_version() -> String:
 ## Full identity dict to include in every backend request.
 func get_identity_payload() -> Dictionary:
 	return {
-		"install_id":          _install_id,
-		"runtime_session_id":  _runtime_session_id,
-		"runtime_id":          _runtime_id,
-		"build_id":            BUILD_ID,
-		"platform":            get_platform(),
-		"game_version":        BUILD_ID,
+		"install_id": _install_id,
+		"runtime_session_id": _runtime_session_id,
+		"runtime_id": _runtime_id,
+		"build_id": BUILD_ID,
+		"platform": get_platform(),
+		"game_version": BUILD_ID,
 	}
 
 ## POST /api/v1/game/runtime/register with identity payload.
@@ -81,10 +82,10 @@ func register_runtime() -> void:
 		return
 
 	_registering = true
-	var url  = _api_base_url.rstrip("/") + "/api/v1/game/runtime/register"
+	var url = _api_base_url.rstrip("/") + "/api/v1/game/runtime/register"
 	var body = JSON.stringify(get_identity_payload())
 	var headers = PackedStringArray(["Content-Type: application/json"])
-	var err  = _http.request(url, headers, HTTPClient.METHOD_POST, body)
+	var err = _http.request(url, headers, HTTPClient.METHOD_POST, body)
 	if err != OK:
 		_registering = false
 		var reason = "HTTP request error %d" % err
@@ -121,8 +122,8 @@ func save_identity_cache() -> void:
 		push_warning("[RuntimeIdentity] Could not write cache.")
 		return
 	file.store_string(JSON.stringify({
-		"install_id":  _install_id,
-		"runtime_id":  _runtime_id,
+		"install_id": _install_id,
+		"runtime_id": _runtime_id,
 	}))
 	file.close()
 
@@ -160,7 +161,7 @@ func _on_register_completed(result: int, response_code: int, _headers: PackedStr
 # ── Internals ─────────────────────────────────────────────────────────────────
 
 func _load_api_url() -> void:
-	_api_base_url = BUNDLED_API_URL
+	_api_base_url = BackendApiConfig.BUNDLED_API_URL
 	if FileAccess.file_exists(DEV_CONFIG_PATH):
 		var file = FileAccess.open(DEV_CONFIG_PATH, FileAccess.READ)
 		if file:
@@ -178,7 +179,7 @@ func _make_install_id() -> String:
 	return _make_id("inst")
 
 func _make_id(prefix: String) -> String:
-	var t  = int(Time.get_unix_time_from_system())
+	var t = int(Time.get_unix_time_from_system())
 	var r1 = randi()
 	var r2 = randi()
 	return "%s_%08x%08x%08x" % [prefix, t, r1, r2]

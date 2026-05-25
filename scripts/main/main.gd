@@ -2194,7 +2194,7 @@ func _build_online_payload(summary: Dictionary) -> Dictionary:
 	var elements: Dictionary = {}
 	if element_progression_manager and element_progression_manager.has_method("get_element_levels"):
 		elements = element_progression_manager.get_element_levels()
-	return {
+	var payload := {
 		"player_name": player_name,
 		"level_id": current_level_id,
 		"wave_reached": wave,
@@ -2206,6 +2206,12 @@ func _build_online_payload(summary: Dictionary) -> Dictionary:
 		"elements": elements,
 		"client_created_at": int(Time.get_unix_time_from_system())
 	}
+	if runtime_identity_service and runtime_identity_service.has_method("get_identity_payload"):
+		var identity: Dictionary = runtime_identity_service.get_identity_payload()
+		payload["install_id"] = str(identity.get("install_id", ""))
+		payload["runtime_id"] = str(identity.get("runtime_id", ""))
+		payload["build_id"] = str(identity.get("build_id", ""))
+	return payload
 
 func _on_online_score_submitted(ok: bool, score: int, rank: int) -> void:
 	if OS.is_debug_build():

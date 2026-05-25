@@ -57,7 +57,7 @@ func update_ui(save_manager: Node) -> void:
 	# Update area headers
 	for area_id in range(1, 5):
 		if area_panels.has(area_id):
-			var unlocked = save_manager.is_area_unlocked(area_id)
+			var unlocked = save_manager.is_area_unlocked(area_id) or _access_grants_progression_bypass()
 			var panel = area_panels[area_id]
 			var header = panel.get_node("Header")
 			if not unlocked:
@@ -246,6 +246,12 @@ func _get_level_access_service() -> Node:
 		return main.get_node("LevelAccessService")
 	return null
 
+func _access_grants_progression_bypass() -> bool:
+	var access_service = _get_level_access_service()
+	if access_service == null or not access_service.has_method("is_full_version_unlocked"):
+		return false
+	return bool(access_service.is_full_version_unlocked())
+
 func _get_demo_gate_modal() -> CanvasLayer:
 	if _demo_gate_modal == null or not is_instance_valid(_demo_gate_modal):
 		var script = load(DEMO_GATE_MODAL_PATH)
@@ -286,8 +292,12 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 	var level_num := int(level_id.split("_")[1])
 	var access_service = _get_level_access_service()
 	var demo_locked := false
-	if access_service and access_service.is_demo_enabled():
-		demo_locked = not access_service.can_play_level(level_num)
+	var access_unlocked := false
+	if access_service:
+		access_unlocked = _access_grants_progression_bypass() and access_service.can_play_level(level_num)
+		if access_service.is_demo_enabled():
+			demo_locked = not access_service.can_play_level(level_num)
+	var effective_unlocked: bool = bool(progression_unlocked) or access_unlocked
 
 	# ── Premium-locked (demo gate) ────────────────────────────────────────────
 	if demo_locked:
@@ -324,8 +334,8 @@ func _update_dynamic_level_card(level_id: String, container: Control, save_manag
 		return
 
 	# ── Progression-locked (normal sequential lock) ───────────────────────────
-	if not progression_unlocked:
-		btn.disabled = not progression_unlocked
+	if not effective_unlocked:
+		btn.disabled = not effective_unlocked
 		_replace_button_press(btn, Callable())
 		lock_icon.visible = true
 		lock_icon.text = "SECURE"
@@ -807,8 +817,10 @@ func _update_play_button_state() -> void:
 		# Check demo gate
 		var access_service = _get_level_access_service()
 		var demo_locked := false
-		if access_service and access_service.is_demo_enabled():
-			demo_locked = not access_service.can_play_level(level_num)
+		if access_service:
+			unlocked = unlocked or (_access_grants_progression_bypass() and access_service.can_play_level(level_num))
+			if access_service.is_demo_enabled():
+				demo_locked = not access_service.can_play_level(level_num)
 
 		if leaderboard_button: leaderboard_button.disabled = false
 

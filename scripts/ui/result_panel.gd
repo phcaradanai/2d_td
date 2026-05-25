@@ -115,8 +115,8 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 	# Show panel animation
 	visible = true
 	animation_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-	animation_tween.tween_property(self, "modulate:a", 1.0, 0.4)
-	animation_tween.tween_property(self, "scale", Vector2.ONE, 0.5)
+	animation_tween.tween_property(self , "modulate:a", 1.0, 0.4)
+	animation_tween.tween_property(self , "scale", Vector2.ONE, 0.5)
 	
 	# Score counting animation
 	var count_tween = create_tween().set_trans(Tween.TRANS_LINEAR).set_ease(Tween.EASE_IN_OUT)
@@ -129,7 +129,7 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 		var star = stars_container.get_child(i)
 		var star_tween = create_tween().set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 		star_tween.tween_interval(star_delay + (i * 0.4))
-		star_tween.tween_callback(func(): 
+		star_tween.tween_callback(func():
 			if star.has_method("set"):
 				star.filled = true
 			_play_star_sound(i)
@@ -802,6 +802,6 @@ func hide_result() -> void:
 	if popup: popup.hide()
 	
 	animation_tween = create_tween().set_parallel(true).set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN)
-	animation_tween.tween_property(self, "modulate:a", 0.0, 0.3)
-	animation_tween.tween_property(self, "scale", Vector2(0.8, 0.8), 0.3)
+	animation_tween.tween_property(self , "modulate:a", 0.0, 0.3)
+	animation_tween.tween_property(self , "scale", Vector2(0.8, 0.8), 0.3)
 	animation_tween.tween_callback(func(): visible = false)

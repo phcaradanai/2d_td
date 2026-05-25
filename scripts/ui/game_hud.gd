@@ -115,7 +115,7 @@ var return_level_select_confirm_panel: PanelContainer = null
 
 # Feedback
 @onready var temp_message_label: Label = $Root/TemporaryMessageLabel
-enum HUDState { GAMEPLAY, PAUSED, RESULT }
+enum HUDState {GAMEPLAY, PAUSED, RESULT}
 var current_ui_state: HUDState = HUDState.GAMEPLAY
 
 @onready var root: Control = $Root
@@ -173,14 +173,14 @@ var _sell_text_label: Label = null
 # Tower Detail premium nodes
 var _td_name_label: Label = null
 var _td_tier_chip: Label = null
-var _td_el_badge: Control = null          # ElementIconControl or placeholder
+var _td_el_badge: Control = null # ElementIconControl or placeholder
 var _td_stat_dmg: Label = null
 var _td_stat_rng: Label = null
 var _td_stat_spd: Label = null
 var _td_stat_tgt: Label = null
-var _td_effect_section: Control = null    # whole EFFECT section (hide if empty)
-var _td_effect_title: Label = null        # effect-colored badge title
-var _td_effect_body: Label = null         # effect body + upgrade preview text
+var _td_effect_section: Control = null # whole EFFECT section (hide if empty)
+var _td_effect_title: Label = null # effect-colored badge title
+var _td_effect_body: Label = null # effect body + upgrade preview text
 var _td_header_panel: HUDDrawerHeaderControl = null
 var _td_chevron_label: Label = null
 var _td_content_nodes: Array[Control] = []
@@ -222,7 +222,7 @@ var enemy_role_tooltips = {
 var updating_target_mode_ui := false
 var updating_audio_ui := false
 var _selected_combat_mode: String = "balanced"
-var _combat_mode_btns: Dictionary = {}  # mode key -> Button
+var _combat_mode_btns: Dictionary = {} # mode key -> Button
 var target_modes = ["first", "last", "nearest", "strongest", "weakest", "fastest", "air_first", "support_first", "shield_first"]
 var target_mode_labels = {
 	"first": "First",
@@ -357,10 +357,10 @@ var _em_picks_label: Label = null
 var _em_close_btn: Button = null
 
 const RESULT_PANEL_SCENE = preload("res://scenes/ui/ResultPanel.tscn")
-const SHOP_LOCKED_TEXT_COLOR  := NeonStyle.INK_3
+const SHOP_LOCKED_TEXT_COLOR := NeonStyle.INK_3
 const SHOP_ENABLED_TEXT_COLOR := NeonStyle.INK_1
-const SHOP_HEADER_COLOR       := NeonStyle.CYAN_2
-const SHOP_GOLD_COLOR         := NeonStyle.WARN
+const SHOP_HEADER_COLOR := NeonStyle.CYAN_2
+const SHOP_GOLD_COLOR := NeonStyle.WARN
 var result_panel: Control = null
 var _display_mode_options: Array[Dictionary] = [
 	{"id": "windowed", "label": "Windowed"},
@@ -434,7 +434,7 @@ func _ready() -> void:
 	_ensure_pause_navigation_buttons()
 	_ensure_return_to_level_select_confirm()
 	
-	center_menu_button.pressed.connect(func(): 
+	center_menu_button.pressed.connect(func():
 		if center_menu_button.text == "Main Menu":
 			main_menu_requested.emit()
 		else:
@@ -514,7 +514,7 @@ func _ready() -> void:
 	hide_tower_info()
 	hide_center_message()
 	set_panel_active(settings_panel, false)
-	if dim_overlay: 
+	if dim_overlay:
 		dim_overlay.hide()
 		dim_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
@@ -855,9 +855,9 @@ func _ensure_damage_stats_panel() -> void:
 	ps.set_border_width_all(1)
 	ps.set_border_width(SIDE_LEFT, 3)
 	ps.set_corner_radius_all(0)
-	ps.content_margin_left   = 10
-	ps.content_margin_right  = 10
-	ps.content_margin_top    = 8
+	ps.content_margin_left = 10
+	ps.content_margin_right = 10
+	ps.content_margin_top = 8
 	ps.content_margin_bottom = 8
 	damage_stats_panel.add_theme_stylebox_override("panel", ps)
 	container.add_child(damage_stats_panel)
@@ -1018,9 +1018,9 @@ func _apply_terminal_hud_skin() -> void:
 		tb_style.border_color = NeonStyle.LINE
 		tb_style.set_border_width_all(0)
 		tb_style.border_width_bottom = 1
-		tb_style.content_margin_left   = 20
-		tb_style.content_margin_right  = 20
-		tb_style.content_margin_top    = 0
+		tb_style.content_margin_left = 20
+		tb_style.content_margin_right = 20
+		tb_style.content_margin_top = 0
 		tb_style.content_margin_bottom = 0
 		top_bar.add_theme_stylebox_override("panel", tb_style)
 		top_bar.custom_minimum_size.y = 68
@@ -1028,9 +1028,9 @@ func _apply_terminal_hud_skin() -> void:
 	# Settings panel (right_sidebar styled separately in _setup_right_sidebar_layout)
 	if settings_panel:
 		var s := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE, false)
-		s.content_margin_left   = 0
-		s.content_margin_right  = 0
-		s.content_margin_top    = 0
+		s.content_margin_left = 0
+		s.content_margin_right = 0
+		s.content_margin_top = 0
 		s.content_margin_bottom = 0
 		settings_panel.add_theme_stylebox_override("panel", s)
 	_apply_left_drawer_layout()
@@ -1292,16 +1292,16 @@ func _setup_settings_panel() -> void:
 
 	# ── Panel background upgrade (stronger glow border) ──────────────────────
 	var ps := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE_STRONG, true)
-	ps.content_margin_left   = 0
-	ps.content_margin_right  = 0
-	ps.content_margin_top    = 0
+	ps.content_margin_left = 0
+	ps.content_margin_right = 0
+	ps.content_margin_top = 0
 	ps.content_margin_bottom = 0
 	settings_panel.add_theme_stylebox_override("panel", ps)
 
 	var margin: MarginContainer = settings_panel.get_child(0)
-	margin.add_theme_constant_override("margin_left",   22)
-	margin.add_theme_constant_override("margin_right",  22)
-	margin.add_theme_constant_override("margin_top",    20)
+	margin.add_theme_constant_override("margin_left", 22)
+	margin.add_theme_constant_override("margin_right", 22)
+	margin.add_theme_constant_override("margin_top", 20)
 	margin.add_theme_constant_override("margin_bottom", 20)
 
 	var vbox: VBoxContainer = margin.get_child(0)
@@ -1410,9 +1410,9 @@ func _setup_settings_panel() -> void:
 	var mode_row := HBoxContainer.new()
 	mode_row.add_theme_constant_override("separation", 6)
 	var mode_defs: Array = [
-		["full",     "Full"],
+		["full", "Full"],
 		["balanced", "Balanced  ★"],
-		["minimal",  "Minimal"],
+		["minimal", "Minimal"],
 	]
 	for m in mode_defs:
 		var btn := Button.new()
@@ -1557,7 +1557,7 @@ func _update_tower_affordability(current_gold: int) -> void:
 		if btn == null or not is_instance_valid(btn):
 			continue
 		if btn.disabled:
-			continue  # Skip locked towers; they keep their gray state.
+			continue # Skip locked towers; they keep their gray state.
 		var cost: int = int(tower_prices.get(tower_id, 50))
 		var can_afford := current_gold >= cost
 		btn.set_meta("row_affordable", can_afford)
@@ -1704,9 +1704,9 @@ func _populate_tower_row_button(btn: Button, display_name: String, cost: int, el
 	var row := HBoxContainer.new()
 	row.name = "Row"
 	row.set_anchors_preset(Control.PRESET_FULL_RECT)
-	row.offset_left   = 12
-	row.offset_top    = 0
-	row.offset_right  = -8
+	row.offset_left = 12
+	row.offset_top = 0
+	row.offset_right = -8
 	row.offset_bottom = 0
 	row.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	row.add_theme_constant_override("separation", 9)
@@ -1820,9 +1820,9 @@ func _add_tower_section_hint(text: String) -> void:
 	style.border_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.18)
 	style.set_border_width_all(1)
 	style.set_corner_radius_all(3)
-	style.content_margin_left   = 10
-	style.content_margin_right  = 10
-	style.content_margin_top    = 9
+	style.content_margin_left = 10
+	style.content_margin_right = 10
+	style.content_margin_top = 9
 	style.content_margin_bottom = 9
 	panel.add_theme_stylebox_override("panel", style)
 	tower_shop_list.add_child(panel)
@@ -1858,21 +1858,21 @@ func _get_section_unlock_hint(section_key: String, is_empty_section: bool) -> St
 	return "Unlock more elements to reveal towers"
 
 func _style_tower_shop_button(btn: Button, is_unlocked: bool) -> void:
-	var normal   := NeonStyle.row_normal(is_unlocked)
+	var normal := NeonStyle.row_normal(is_unlocked)
 	var hover_sb := NeonStyle.row_hover()
-	var pressed  := NeonStyle.row_normal(is_unlocked)
+	var pressed := NeonStyle.row_normal(is_unlocked)
 	pressed.bg_color = NeonStyle.BG_3
 	var disabled := NeonStyle.row_normal(false)
 	disabled.bg_color = Color(NeonStyle.BG_1.r, NeonStyle.BG_1.g, NeonStyle.BG_1.b, 0.78)
 	disabled.border_color = Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.16)
 
-	btn.add_theme_stylebox_override("normal",   normal)
-	btn.add_theme_stylebox_override("hover",    hover_sb if is_unlocked else disabled)
-	btn.add_theme_stylebox_override("pressed",  pressed)
+	btn.add_theme_stylebox_override("normal", normal)
+	btn.add_theme_stylebox_override("hover", hover_sb if is_unlocked else disabled)
+	btn.add_theme_stylebox_override("pressed", pressed)
 	btn.add_theme_stylebox_override("disabled", disabled)
-	btn.add_theme_stylebox_override("focus",    StyleBoxEmpty.new())
-	btn.add_theme_color_override("font_color",          SHOP_ENABLED_TEXT_COLOR)
-	btn.add_theme_color_override("font_hover_color",    NeonStyle.CYAN_2)
+	btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	btn.add_theme_color_override("font_color", SHOP_ENABLED_TEXT_COLOR)
+	btn.add_theme_color_override("font_hover_color", NeonStyle.CYAN_2)
 	btn.add_theme_color_override("font_disabled_color", NeonStyle.INK_4)
 
 func _build_locked_tooltip(_tower_id: String, cfg: Dictionary, cost: int) -> String:
@@ -2132,11 +2132,11 @@ func _ensure_build_towers_header_ui(container: Control) -> void:
 	var guide_btn_hover_style := guide_btn_style.duplicate() as StyleBoxFlat
 	guide_btn_hover_style.bg_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.22)
 	guide_btn_hover_style.border_color = NeonStyle.CYAN
-	guide_btn.add_theme_stylebox_override("normal",  guide_btn_style)
-	guide_btn.add_theme_stylebox_override("hover",   guide_btn_hover_style)
+	guide_btn.add_theme_stylebox_override("normal", guide_btn_style)
+	guide_btn.add_theme_stylebox_override("hover", guide_btn_hover_style)
 	guide_btn.add_theme_stylebox_override("pressed", guide_btn_style)
-	guide_btn.add_theme_stylebox_override("focus",   StyleBoxEmpty.new())
-	guide_btn.add_theme_color_override("font_color",       NeonStyle.CYAN)
+	guide_btn.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	guide_btn.add_theme_color_override("font_color", NeonStyle.CYAN)
 	guide_btn.add_theme_color_override("font_hover_color", NeonStyle.INK_1)
 	guide_btn.add_theme_font_size_override("font_size", 12)
 	guide_btn.pressed.connect(_open_element_guide)
@@ -2359,9 +2359,9 @@ func _em_chip(text: String, col: Color) -> PanelContainer:
 	var chip := PanelContainer.new()
 	chip.add_theme_stylebox_override("panel", _em_sb(Color(col.r, col.g, col.b, 0.18), Color(col.r, col.g, col.b, 0.65), 1.0, 4.0))
 	var mg := MarginContainer.new()
-	mg.add_theme_constant_override("margin_left",   6)
-	mg.add_theme_constant_override("margin_right",  6)
-	mg.add_theme_constant_override("margin_top",    2)
+	mg.add_theme_constant_override("margin_left", 6)
+	mg.add_theme_constant_override("margin_right", 6)
+	mg.add_theme_constant_override("margin_top", 2)
 	mg.add_theme_constant_override("margin_bottom", 2)
 	chip.add_child(mg)
 	var lbl := Label.new()
@@ -2398,13 +2398,13 @@ func _ensure_element_modal() -> void:
 	_em_panel.set_anchors_preset(Control.PRESET_CENTER)
 	_em_panel.custom_minimum_size = Vector2(1320, 720)
 	_em_panel.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	_em_panel.grow_vertical   = Control.GROW_DIRECTION_BOTH
+	_em_panel.grow_vertical = Control.GROW_DIRECTION_BOTH
 	_em_panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, true))
 	_em_overlay.add_child(_em_panel)
 
 	var outer := MarginContainer.new()
-	for s in ["left","right","top","bottom"]:
-		outer.add_theme_constant_override("margin_"+s, 26)
+	for s in ["left", "right", "top", "bottom"]:
+		outer.add_theme_constant_override("margin_" + s, 26)
 	_em_panel.add_child(outer)
 
 	var main_v := VBoxContainer.new()
@@ -2482,7 +2482,7 @@ func _ensure_element_modal() -> void:
 	# ── Center column (details) ──
 	var ctr_scroll := ScrollContainer.new()
 	ctr_scroll.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	ctr_scroll.size_flags_vertical   = Control.SIZE_EXPAND_FILL
+	ctr_scroll.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	ctr_scroll.horizontal_scroll_mode = ScrollContainer.SCROLL_MODE_DISABLED
 	cols.add_child(ctr_scroll)
 
@@ -2530,7 +2530,7 @@ func _em_rebuild_cards() -> void:
 	_em_card_nodes.clear()
 
 	var levels: Dictionary = _em_data.get("levels", {})
-	var all_ids := ["light","darkness","water","fire","nature","earth","__interest__"]
+	var all_ids := ["light", "darkness", "water", "fire", "nature", "earth", "__interest__"]
 	for element_id in all_ids:
 		if element_id == "__interest__":
 			var sp := Control.new()
@@ -2542,30 +2542,30 @@ func _em_rebuild_cards() -> void:
 
 func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68, 0.5, 1.0)
-	var cur_lv  := int(levels.get(element_id, 0)) if element_id != "__interest__" else -1
-	var is_max  := element_id != "__interest__" and cur_lv >= 3
-	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
+	var cur_lv := int(levels.get(element_id, 0)) if element_id != "__interest__" else -1
+	var is_max := element_id != "__interest__" and cur_lv >= 3
+	var is_lock: bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
 	var card := PanelContainer.new()
 	card.custom_minimum_size = Vector2(0, 66)
 	card.size_flags_horizontal = Control.SIZE_FILL
 
-	var s_normal := _em_sb(NeonStyle.BG_1,                         Color(NeonStyle.LINE_2.r, NeonStyle.LINE_2.g, NeonStyle.LINE_2.b, 0.60), 1.0, 6.0)
-	var s_hover  := _em_sb(NeonStyle.BG_2,                         Color(el_col.r, el_col.g, el_col.b, 0.70),                               1.5, 6.0)
-	var s_lock   := _em_sb(Color(NeonStyle.BG_0.r, NeonStyle.BG_0.g, NeonStyle.BG_0.b, 0.70), Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.25), 1.0, 6.0)
+	var s_normal := _em_sb(NeonStyle.BG_1, Color(NeonStyle.LINE_2.r, NeonStyle.LINE_2.g, NeonStyle.LINE_2.b, 0.60), 1.0, 6.0)
+	var s_hover := _em_sb(NeonStyle.BG_2, Color(el_col.r, el_col.g, el_col.b, 0.70), 1.5, 6.0)
+	var s_lock := _em_sb(Color(NeonStyle.BG_0.r, NeonStyle.BG_0.g, NeonStyle.BG_0.b, 0.70), Color(NeonStyle.LINE.r, NeonStyle.LINE.g, NeonStyle.LINE.b, 0.25), 1.0, 6.0)
 	card.add_theme_stylebox_override("panel", s_lock if (is_max or is_lock) else s_normal)
 	card.set_meta("s_normal", s_normal)
-	card.set_meta("s_hover",  s_hover)
-	card.set_meta("s_lock",   s_lock)
-	card.set_meta("el_col",   el_col)
-	card.set_meta("el_id",    element_id)
+	card.set_meta("s_hover", s_hover)
+	card.set_meta("s_lock", s_lock)
+	card.set_meta("el_col", el_col)
+	card.set_meta("el_id", element_id)
 	card.set_meta("option_type", _em_option_type(element_id))
-	card.set_meta("is_max",   is_max)
-	card.set_meta("is_lock",  is_lock)
+	card.set_meta("is_max", is_max)
+	card.set_meta("is_lock", is_lock)
 
 	var mg := MarginContainer.new()
-	for sd in ["left","right","top","bottom"]:
-		mg.add_theme_constant_override("margin_"+sd, 10)
+	for sd in ["left", "right", "top", "bottom"]:
+		mg.add_theme_constant_override("margin_" + sd, 10)
 	card.add_child(mg)
 
 	var row := HBoxContainer.new()
@@ -2582,7 +2582,7 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 	# Text
 	var txt_v := VBoxContainer.new()
 	txt_v.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	txt_v.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
+	txt_v.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	txt_v.add_theme_constant_override("separation", 3)
 	row.add_child(txt_v)
 
@@ -2595,8 +2595,8 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 	var sub_l := Label.new()
 	sub_l.add_theme_font_size_override("font_size", 12)
 	if element_id == "__interest__":
-		var ir : String = _em_data.get("interest_rate","2%")
-		var nr : String = _em_data.get("next_interest_rate","3%")
+		var ir: String = _em_data.get("interest_rate", "2%")
+		var nr: String = _em_data.get("next_interest_rate", "3%")
 		if is_lock:
 			sub_l.text = "Max upgrades reached"
 			sub_l.add_theme_color_override("font_color", NeonStyle.INK_3)
@@ -2607,7 +2607,7 @@ func _em_make_card(element_id: String, levels: Dictionary) -> PanelContainer:
 		sub_l.text = "Lv.3  ●  MAX"
 		sub_l.add_theme_color_override("font_color", NeonStyle.INK_3)
 	else:
-		sub_l.text = "Lv.%d  →  Lv.%d" % [cur_lv, cur_lv+1]
+		sub_l.text = "Lv.%d  →  Lv.%d" % [cur_lv, cur_lv + 1]
 		sub_l.add_theme_color_override("font_color", NeonStyle.CYAN_2)
 	txt_v.add_child(sub_l)
 
@@ -2631,13 +2631,13 @@ func _em_select(element_id: String) -> void:
 		var card: PanelContainer = _em_card_nodes[eid]
 		if not is_instance_valid(card):
 			continue
-		var is_max: bool  = card.get_meta("is_max",  false)
+		var is_max: bool = card.get_meta("is_max", false)
 		var is_lock: bool = card.get_meta("is_lock", false)
 		if is_max or is_lock:
 			continue
 		if eid == element_id:
 			var ec: Color = card.get_meta("el_col", Color.WHITE)
-			var sel_sb := _em_sb(Color(ec.r,ec.g,ec.b,0.22), ec, 2.0, 6.0)
+			var sel_sb := _em_sb(Color(ec.r, ec.g, ec.b, 0.22), ec, 2.0, 6.0)
 			sel_sb.border_width_left = 3
 			card.add_theme_stylebox_override("panel", sel_sb)
 		else:
@@ -2652,8 +2652,8 @@ func _em_rebuild_center(element_id: String) -> void:
 	for c in _em_center_col.get_children():
 		c.queue_free()
 
-	var el_col  := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68,0.5,1.0)
-	var meta_d  : Dictionary = ELEMENT_UI_META.get(element_id, {})
+	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68, 0.5, 1.0)
+	var meta_d: Dictionary = ELEMENT_UI_META.get(element_id, {})
 
 	# Header row: large icon + name
 	var hdr := HBoxContainer.new()
@@ -2669,7 +2669,7 @@ func _em_rebuild_center(element_id: String) -> void:
 
 	var name_col := VBoxContainer.new()
 	name_col.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	name_col.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
+	name_col.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	name_col.add_theme_constant_override("separation", 6)
 	hdr.add_child(name_col)
 
@@ -2678,13 +2678,13 @@ func _em_rebuild_center(element_id: String) -> void:
 	name_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	name_col.add_child(name_l)
 
-	var desc_l := _em_lbl(meta_d.get("description",""), 13, Color(0.72,0.82,0.92))
+	var desc_l := _em_lbl(meta_d.get("description", ""), 13, Color(0.72, 0.82, 0.92))
 	desc_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	desc_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	name_col.add_child(desc_l)
 
 	if element_id == "__interest__":
-		var ir_l := _em_lbl("Interest  %s  →  %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")], 12, Color(0.95,0.82,0.3))
+		var ir_l := _em_lbl("Interest  %s  →  %s" % [_em_data.get("interest_rate", "2%"), _em_data.get("next_interest_rate", "3%")], 12, Color(0.95, 0.82, 0.3))
 		ir_l.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 		name_col.add_child(ir_l)
 
@@ -2714,22 +2714,22 @@ func _em_rebuild_center(element_id: String) -> void:
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		use_v.add_child(row)
-		var dot := _em_lbl("✓", 12, Color(0.3,0.9,0.5))
+		var dot := _em_lbl("✓", 12, Color(0.3, 0.9, 0.5))
 		dot.custom_minimum_size.x = 18
 		row.add_child(dot)
-		row.add_child(_em_lbl(s, 12, Color(0.78,0.9,0.78)))
+		row.add_child(_em_lbl(s, 12, Color(0.78, 0.9, 0.78)))
 	for w in meta_d.get("weaknesses", []):
 		var row := HBoxContainer.new()
 		row.add_theme_constant_override("separation", 6)
 		use_v.add_child(row)
-		var dot := _em_lbl("✗", 12, Color(0.9,0.4,0.3))
+		var dot := _em_lbl("✗", 12, Color(0.9, 0.4, 0.3))
 		dot.custom_minimum_size.x = 18
 		row.add_child(dot)
-		row.add_child(_em_lbl(w, 12, Color(0.85,0.68,0.62)))
-	var best_l := _em_lbl("Best against: " + meta_d.get("best_against",""), 12, Color(0.62,0.84,1.0))
+		row.add_child(_em_lbl(w, 12, Color(0.85, 0.68, 0.62)))
+	var best_l := _em_lbl("Best against: " + meta_d.get("best_against", ""), 12, Color(0.62, 0.84, 1.0))
 	best_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_em_center_col.add_child(best_l)
-	var rec_l := _em_lbl("Tip: " + meta_d.get("recommended",""), 12, Color(0.88,0.76,0.38))
+	var rec_l := _em_lbl("Tip: " + meta_d.get("recommended", ""), 12, Color(0.88, 0.76, 0.38))
 	rec_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_em_center_col.add_child(rec_l)
 	var bottom_pad := Control.new()
@@ -2747,11 +2747,11 @@ func _em_build_unlock_preview(element_id: String, el_col: Color) -> void:
 	unlocked_now.append_array(preview.get("dual_element", []))
 	unlocked_now.append_array(preview.get("triple_element", []))
 
-	var now_title := _em_lbl("Unlocked Now", 13, Color(0.78,0.92,1.0))
+	var now_title := _em_lbl("Unlocked Now", 13, Color(0.78, 0.92, 1.0))
 	now_title.horizontal_alignment = HORIZONTAL_ALIGNMENT_LEFT
 	unlock_wrap.add_child(now_title)
 	if unlocked_now.is_empty():
-		var none := _em_lbl("No new tower unlocks at this level.", 12, Color(0.62,0.70,0.80))
+		var none := _em_lbl("No new tower unlocks at this level.", 12, Color(0.62, 0.70, 0.80))
 		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		unlock_wrap.add_child(none)
 	else:
@@ -2770,18 +2770,18 @@ func _em_build_economy_preview() -> void:
 	var bv := VBoxContainer.new()
 	bv.add_theme_constant_override("separation", 6)
 	_em_center_col.add_child(bv)
-	_em_bonus_row(bv, "Interest", _em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%"), Color(0.95,0.82,0.3))
-	_em_bonus_row(bv, "Applies", "Every 15s", "", Color(0.6,0.8,1.0))
-	_em_bonus_row(bv, "Tower unlocks", "No tower unlock", "", Color(0.62,0.72,0.84))
-	_em_bonus_row(bv, "Timing", "Best if chosen early", "", Color(0.88,0.76,0.38))
+	_em_bonus_row(bv, "Interest", _em_data.get("interest_rate", "2%"), _em_data.get("next_interest_rate", "3%"), Color(0.95, 0.82, 0.3))
+	_em_bonus_row(bv, "Applies", "Every 15s", "", Color(0.6, 0.8, 1.0))
+	_em_bonus_row(bv, "Tower unlocks", "No tower unlock", "", Color(0.62, 0.72, 0.84))
+	_em_bonus_row(bv, "Timing", "Best if chosen early", "", Color(0.88, 0.76, 0.38))
 
 func _em_make_tower_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
 	var card := PanelContainer.new()
 	card.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	card.add_theme_stylebox_override("panel", _em_sb(Color(0.07,0.09,0.14), Color(el_col.r,el_col.g,el_col.b,0.3), 1.0, 5.0))
+	card.add_theme_stylebox_override("panel", _em_sb(Color(0.07, 0.09, 0.14), Color(el_col.r, el_col.g, el_col.b, 0.3), 1.0, 5.0))
 	var mg := MarginContainer.new()
-	for sd in ["left","right","top","bottom"]:
-		mg.add_theme_constant_override("margin_"+sd, 8)
+	for sd in ["left", "right", "top", "bottom"]:
+		mg.add_theme_constant_override("margin_" + sd, 8)
 	card.add_child(mg)
 	var row := HBoxContainer.new()
 	row.add_theme_constant_override("separation", 8)
@@ -2795,14 +2795,14 @@ func _em_make_tower_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
 
 	var info := VBoxContainer.new()
 	info.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	info.size_flags_vertical    = Control.SIZE_SHRINK_CENTER
+	info.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	info.add_theme_constant_override("separation", 3)
 	row.add_child(info)
 
-	var tower_name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name","Tower"))))
-	info.add_child(_em_lbl(tower_name, 13, Color(0.9,0.92,1.0)))
+	var tower_name := _compact_tower_display_name(str(cfg.get("display_name", cfg.get("name", "Tower"))))
+	info.add_child(_em_lbl(tower_name, 13, Color(0.9, 0.92, 1.0)))
 	if not elems.is_empty():
-		var combo_l := _em_lbl(_format_element_combo_label(elems), 11, Color(0.58,0.78,0.94))
+		var combo_l := _em_lbl(_format_element_combo_label(elems), 11, Color(0.58, 0.78, 0.94))
 		combo_l.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		info.add_child(combo_l)
 
@@ -2810,20 +2810,20 @@ func _em_make_tower_card(cfg: Dictionary, el_col: Color) -> PanelContainer:
 	tags_v.add_theme_constant_override("separation", 3)
 	row.add_child(tags_v)
 
-	var at := str(cfg.get("attack_type",""))
-	tags_v.add_child(_em_chip(_em_attack_label(at), Color(0.38,0.72,1.0)))
-	var tgt: Array = cfg.get("target_categories",["land"])
+	var at := str(cfg.get("attack_type", ""))
+	tags_v.add_child(_em_chip(_em_attack_label(at), Color(0.38, 0.72, 1.0)))
+	var tgt: Array = cfg.get("target_categories", ["land"])
 	var tgt_text := "Ground + Air" if (tgt.has("land") and tgt.has("air")) else ("Air Only" if tgt.has("air") else "Ground")
-	tags_v.add_child(_em_chip(tgt_text, Color(0.45,0.82,0.55)))
+	tags_v.add_child(_em_chip(tgt_text, Color(0.45, 0.82, 0.55)))
 	return card
 
 func _em_attack_label(at: String) -> String:
 	match at:
 		"single": return "Single Target"
 		"splash": return "AoE Splash"
-		"slow":   return "Slow / Control"
-		"chain":  return "Chain Lightning"
-		"aura":   return "Aura / Debuff"
+		"slow": return "Slow / Control"
+		"chain": return "Chain Lightning"
+		"aura": return "Aura / Debuff"
 		"support_aura": return "Support Aura"
 		"clone_support": return "Clone Support"
 		_: return at.capitalize() if not at.is_empty() else "N/A"
@@ -2862,10 +2862,10 @@ func _em_make_future_combo_card(cfg: Dictionary, el_col: Color) -> PanelContaine
 func _em_bonus_row(parent: VBoxContainer, lbl_text: String, cur: String, nxt: String, vc: Color) -> void:
 	var row := HBoxContainer.new()
 	parent.add_child(row)
-	var arrow := _em_lbl("▸", 11, Color(vc.r,vc.g,vc.b,0.7))
+	var arrow := _em_lbl("▸", 11, Color(vc.r, vc.g, vc.b, 0.7))
 	arrow.custom_minimum_size.x = 16
 	row.add_child(arrow)
-	var n := _em_lbl(lbl_text, 12, Color(0.62,0.72,0.84))
+	var n := _em_lbl(lbl_text, 12, Color(0.62, 0.72, 0.84))
 	n.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 	row.add_child(n)
 	var v_text := ("%s  →  %s" % [cur, nxt]) if not nxt.is_empty() else cur
@@ -2977,10 +2977,10 @@ func _em_rebuild_right(element_id: String) -> void:
 			c.queue_free()
 	_em_confirm_btn = null
 
-	var levels : Dictionary = _em_data.get("levels", {})
-	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68,0.5,1.0)
-	var is_max  := element_id != "__interest__" and int(levels.get(element_id,0)) >= 3
-	var is_lock : bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
+	var levels: Dictionary = _em_data.get("levels", {})
+	var el_col := _get_element_ui_color(element_id) if element_id != "__interest__" else Color(0.68, 0.5, 1.0)
+	var is_max := element_id != "__interest__" and int(levels.get(element_id, 0)) >= 3
+	var is_lock: bool = element_id == "__interest__" and not _em_data.get("can_upgrade_interest", true)
 
 	# ── SELECTED ELEMENT ─────────────────────────────────────────────────────
 	_em_right_col.add_child(_em_sec_hdr("SELECTED ELEMENT"))
@@ -3007,7 +3007,7 @@ func _em_rebuild_right(element_id: String) -> void:
 	var cur_lv := int(levels.get(element_id, 0))
 	if element_id == "__interest__":
 		el_name_col.add_child(_em_lbl(
-			"%s → %s" % [_em_data.get("interest_rate","2%"), _em_data.get("next_interest_rate","3%")],
+			"%s → %s" % [_em_data.get("interest_rate", "2%"), _em_data.get("next_interest_rate", "3%")],
 			11, NeonStyle.WARN))
 	elif is_max:
 		el_name_col.add_child(_em_lbl("Lv.3  MAX", 11, NeonStyle.INK_3))
@@ -3027,11 +3027,11 @@ func _em_rebuild_right(element_id: String) -> void:
 	_em_confirm_btn.size_flags_horizontal = Control.SIZE_FILL
 	_em_confirm_btn.add_theme_font_size_override("font_size", 15)
 	if not (is_max or is_lock):
-		var bf_top := Color(el_col.r*0.22, el_col.g*0.22, el_col.b*0.22, 1.0)
-		var bh_top := Color(el_col.r*0.36, el_col.g*0.36, el_col.b*0.36, 1.0)
-		_em_confirm_btn.add_theme_color_override("font_color", Color(1,1,1))
-		_em_confirm_btn.add_theme_stylebox_override("normal",  _em_sb(bf_top, el_col, 2.0, 8.0))
-		_em_confirm_btn.add_theme_stylebox_override("hover",   _em_sb(bh_top, el_col.lightened(0.25), 2.5, 8.0))
+		var bf_top := Color(el_col.r * 0.22, el_col.g * 0.22, el_col.b * 0.22, 1.0)
+		var bh_top := Color(el_col.r * 0.36, el_col.g * 0.36, el_col.b * 0.36, 1.0)
+		_em_confirm_btn.add_theme_color_override("font_color", Color(1, 1, 1))
+		_em_confirm_btn.add_theme_stylebox_override("normal", _em_sb(bf_top, el_col, 2.0, 8.0))
+		_em_confirm_btn.add_theme_stylebox_override("hover", _em_sb(bh_top, el_col.lightened(0.25), 2.5, 8.0))
 		_em_confirm_btn.add_theme_stylebox_override("pressed", _em_sb(el_col.darkened(0.4), el_col, 2.0, 8.0))
 		var option_top := _em_make_pick_option(element_id)
 		_em_confirm_btn.pressed.connect(func():
@@ -3039,8 +3039,8 @@ func _em_rebuild_right(element_id: String) -> void:
 				_em_confirm_btn.disabled = true
 			element_choice_requested.emit(option_top))
 	else:
-		_em_confirm_btn.add_theme_stylebox_override("disabled", _em_sb(Color(0.08,0.1,0.14), Color(0.2,0.25,0.36,0.4), 1.0, 8.0))
-		_em_confirm_btn.add_theme_color_override("font_disabled_color", Color(0.35,0.4,0.5))
+		_em_confirm_btn.add_theme_stylebox_override("disabled", _em_sb(Color(0.08, 0.1, 0.14), Color(0.2, 0.25, 0.36, 0.4), 1.0, 8.0))
+		_em_confirm_btn.add_theme_color_override("font_disabled_color", Color(0.35, 0.4, 0.5))
 	if is_instance_valid(_em_confirm_wrap):
 		_em_confirm_wrap.add_child(_em_confirm_btn)
 	else:
@@ -3058,7 +3058,7 @@ func _em_rebuild_right(element_id: String) -> void:
 		var preview := _em_get_unlock_preview_for_element(element_id)
 		var tower_cfgs: Array = []
 		tower_cfgs.append_array(preview.get("single_element", []))
-		tower_cfgs.append_array(preview.get("dual_element",   []))
+		tower_cfgs.append_array(preview.get("dual_element", []))
 		tower_cfgs.append_array(preview.get("triple_element", []))
 
 		# ── NEW TOWERS ────────────────────────────────────────────────────────
@@ -3079,16 +3079,16 @@ func _em_rebuild_right(element_id: String) -> void:
 				row.add_child(t_icon)
 				var nc := VBoxContainer.new()
 				nc.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-				nc.size_flags_vertical   = Control.SIZE_SHRINK_CENTER
+				nc.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 				nc.add_theme_constant_override("separation", 2)
 				row.add_child(nc)
-				var t_name := _compact_tower_display_name(str(tcfg.get("display_name", tcfg.get("name","Tower"))))
+				var t_name := _compact_tower_display_name(str(tcfg.get("display_name", tcfg.get("name", "Tower"))))
 				nc.add_child(_em_lbl(t_name, 13, NeonStyle.INK_1))
 				if t_elems.size() >= 2:
 					nc.add_child(_em_lbl(_format_element_combo_label(t_elems), 11, NeonStyle.INK_2))
 
 		# ── COMBO PREVIEW ────────────────────────────────────────────────────
-		var combo_prev_levels : Dictionary = _em_data.get("levels", {}).duplicate(true)
+		var combo_prev_levels: Dictionary = _em_data.get("levels", {}).duplicate(true)
 		combo_prev_levels[element_id] = min(int(combo_prev_levels.get(element_id, 0)) + 1, 3)
 		var combo_towers := _em_get_future_combo_towers(element_id, combo_prev_levels)
 		if not combo_towers.is_empty():
@@ -3177,15 +3177,15 @@ func _format_element_levels(levels: Dictionary) -> String:
 
 func _element_label(element_id: String) -> String:
 	match element_id.to_lower():
-		"0", "light":    return "Light"
+		"0", "light": return "Light"
 		"1", "darkness": return "Darkness"
-		"2", "water":    return "Water"
-		"3", "fire":     return "Fire"
-		"4", "nature":   return "Nature"
-		"5", "earth":    return "Earth"
-		"__interest__":  return "Interest"
-		"":              return "Unknown"
-		_:               return element_id.capitalize()
+		"2", "water": return "Water"
+		"3", "fire": return "Fire"
+		"4", "nature": return "Nature"
+		"5", "earth": return "Earth"
+		"__interest__": return "Interest"
+		"": return "Unknown"
+		_: return element_id.capitalize()
 
 func _get_element_ui_color(element_id: String) -> Color:
 	return NeonStyle.element_color(element_id)
@@ -3693,11 +3693,11 @@ func show_tower_info(info: Dictionary) -> void:
 			tower_target_label.text = "→ Nearby Towers"
 			tower_target_label.add_theme_color_override("font_color", NeonStyle.CYAN)
 		else:
-			var targets : Array = info.get("target_categories", ["land"])
+			var targets: Array = info.get("target_categories", ["land"])
 			var target_str: String
-			if targets.size() >= 2:   target_str = "→ Ground + Air"
-			elif targets.has("air"):  target_str = "→ Air Only"
-			else:                     target_str = "→ Ground Only"
+			if targets.size() >= 2: target_str = "→ Ground + Air"
+			elif targets.has("air"): target_str = "→ Air Only"
+			else: target_str = "→ Ground Only"
 			tower_target_label.text = target_str
 			tower_target_label.add_theme_color_override("font_color",
 				NeonStyle.EL_NATURE if targets.has("air") else NeonStyle.INK_2)
@@ -3739,9 +3739,9 @@ func show_tower_info(info: Dictionary) -> void:
 			tower_splash_label.add_theme_color_override("font_color", NeonStyle.EL_INTEREST)
 		"support_aura":
 			var sup_type := str(info.get("support_type", ""))
-			var sup_pct  := int(round(float(info.get("support_value", 0.0)) * 100.0))
-			var sup_cnt  := int(info.get("support_target_count", 0))
-			var sup_lim  := int(info.get("support_limit", 4))
+			var sup_pct := int(round(float(info.get("support_value", 0.0)) * 100.0))
+			var sup_cnt := int(info.get("support_target_count", 0))
+			var sup_lim := int(info.get("support_limit", 4))
 			if sup_type == "attack_speed":
 				tower_splash_label.text = "SPEED AURA  +%d%%  (%d/%d)" % [sup_pct, sup_cnt, sup_lim]
 				tower_splash_label.add_theme_color_override("font_color", NeonStyle.CYAN)
@@ -3753,7 +3753,7 @@ func show_tower_info(info: Dictionary) -> void:
 				tower_splash_label.add_theme_color_override("font_color", NeonStyle.CYAN)
 		"clone_support":
 			var clone_pct := int(float(info.get("clone_damage_multiplier", 0.0)) * 100.0)
-			var tgt_name  := str(info.get("clone_target_name", ""))
+			var tgt_name := str(info.get("clone_target_name", ""))
 			tower_splash_label.text = ("CLONE  +%d%%  → %s" % [clone_pct, tgt_name]) if tgt_name != "" \
 									else ("CLONE  +%d%%" % clone_pct)
 			tower_splash_label.add_theme_color_override("font_color", NeonStyle.EL_INTEREST)
@@ -3762,7 +3762,7 @@ func show_tower_info(info: Dictionary) -> void:
 			tower_splash_label.add_theme_color_override("font_color", NeonStyle.INK_2)
 
 	# Rich effect block — replaces old _build_tower_special_effect_text().
-	var eff_lines  := TowerEffectFormatter.effect_lines(info)
+	var eff_lines := TowerEffectFormatter.effect_lines(info)
 	var eff_joined := "\n".join(eff_lines) if eff_lines.size() > 0 else ""
 
 	# Upgrade preview (compact, non-intrusive).
@@ -3770,7 +3770,7 @@ func show_tower_info(info: Dictionary) -> void:
 	if not info.get("is_max_tier", false):
 		var next_ids: Array = info.get("next_upgrade_ids", [])
 		if not next_ids.is_empty():
-			var next_id  := str(next_ids[0])
+			var next_id := str(next_ids[0])
 			var next_cfg: Dictionary = tower_catalog.get(next_id, {})
 			if not next_cfg.is_empty():
 				upgrade_preview = TowerEffectFormatter.upgrade_preview(info, next_cfg)
@@ -4159,15 +4159,15 @@ func _setup_hover_card() -> void:
 	_hover_card.custom_minimum_size = Vector2(210, 0)
 
 	var style := NeonStyle.panel(NeonStyle.BG_1, NeonStyle.LINE_STRONG, true)
-	style.shadow_color  = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.30)
-	style.shadow_size   = 18
+	style.shadow_color = Color(NeonStyle.CYAN.r, NeonStyle.CYAN.g, NeonStyle.CYAN.b, 0.30)
+	style.shadow_size = 18
 	style.shadow_offset = Vector2.ZERO
 	_hover_card.add_theme_stylebox_override("panel", style)
 
 	var margin := MarginContainer.new()
-	margin.add_theme_constant_override("margin_left",   12)
-	margin.add_theme_constant_override("margin_right",  12)
-	margin.add_theme_constant_override("margin_top",    10)
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_top", 10)
 	margin.add_theme_constant_override("margin_bottom", 10)
 	margin.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hover_card.add_child(margin)
@@ -4608,9 +4608,9 @@ func _setup_right_sidebar_layout() -> void:
 	# Margins
 	var detail_margin := right_sidebar.get_node_or_null("MarginContainer")
 	if detail_margin is MarginContainer:
-		detail_margin.add_theme_constant_override("margin_left",   0)
-		detail_margin.add_theme_constant_override("margin_right",  0)
-		detail_margin.add_theme_constant_override("margin_top",    0)
+		detail_margin.add_theme_constant_override("margin_left", 0)
+		detail_margin.add_theme_constant_override("margin_right", 0)
+		detail_margin.add_theme_constant_override("margin_top", 0)
 		detail_margin.add_theme_constant_override("margin_bottom", 0)
 
 	# Rework tower detail VBox content
@@ -5095,7 +5095,7 @@ func refresh_wave_intel(level_id: int, previews: Array[Dictionary], current_idx:
 	wave_intel_status_label.add_theme_color_override("font_color",
 		NeonStyle.OK if is_running else NeonStyle.WARN)
 
-	var reward : int = current_preview.get("reward", 0)
+	var reward: int = current_preview.get("reward", 0)
 	if reward > 0:
 		if _wi_reward_display and _wi_reward_row:
 			_wi_reward_display.configure(reward, true)

@@ -11,12 +11,13 @@ extends Node
 ##
 ## All callers must use LevelAccessService — never this service directly.
 
+const BackendApiConfig = preload("res://scripts/config/backend_api_config.gd")
+
 signal config_changed(config: Dictionary)
 signal config_updated(source: String)
 signal fetch_failed(reason: String)
 
 
-const BUNDLED_API_URL = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"
 const DEV_CONFIG_PATH = "user://remote_access_config_dev.json"
 const CACHE_PATH      = "user://remote_access_config.json"
 const DEFAULT_PATH    = "res://data/default_access_config.json"
@@ -50,7 +51,7 @@ func _ready() -> void:
 	_load_initial_config()
 
 func _load_api_url() -> void:
-	_api_base_url = BUNDLED_API_URL
+	_api_base_url = BackendApiConfig.BUNDLED_API_URL
 	if FileAccess.file_exists(DEV_CONFIG_PATH):
 		var file = FileAccess.open(DEV_CONFIG_PATH, FileAccess.READ)
 		if file:

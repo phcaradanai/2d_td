@@ -53,7 +53,7 @@ func _on_online_scores_loaded(ok: bool, items: Array) -> void:
 	if online_client and online_client.top_scores_loaded.is_connected(_on_online_scores_loaded):
 		online_client.top_scores_loaded.disconnect(_on_online_scores_loaded)
 
-	if ok and not items.is_empty():
+	if ok:
 		_render_online(items)
 	else:
 		# Fall back to local scores silently
