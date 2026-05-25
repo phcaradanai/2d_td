@@ -33,13 +33,8 @@ var cast_beam: Node = null
 var target_links: Node = null
 var status_icon: Node = null
 var protected_icon: Node = null
-# [VISUAL-OPT] Permanent compact identity symbol for special creep roles.
-var role_icon: Node = null
-var heal_cast_icon: Node = null
 # Dynamic status-effect indicators (slow/root/burn/poison/vuln).
 var status_effects_vfx: Node = null
-var _last_heal_cast_msec: int = 0
-var _heal_cast_hide_remaining: float = 0.0
 var role_color: Color = Color(0.25, 0.85, 1.0)
 var linked_towers: Array[Node] = []
 var signals_connected: bool = false
@@ -97,17 +92,12 @@ func refresh_debug_visibility() -> void:
 	_apply_debug_visibility()
 
 func play_heal_cast() -> void:
-	if not debug_show_heal_tick_events:
-		return
-	var now_msec := Time.get_ticks_msec()
-	if now_msec - _last_heal_cast_msec < 180:
-		return
-	_last_heal_cast_msec = now_msec
-	_show_heal_cast_icon()
+	# Healer identity is baked into the sprite. Avoid runtime cast nodes in dense waves.
+	pass
 
 func play_heal_received(_amount: float) -> void:
-	# Healing is already represented by one pooled cast icon on the healer.
-	# Avoid spawning per-target impact nodes during dense support waves.
+	# Per-target healing VFX is intentionally silent for FPS stability.
+	# The healer's pooled cast icon represents each heal tick once.
 	pass
 
 func play_shield_spark(raw_damage: float, final_damage: float) -> void:
@@ -246,23 +236,16 @@ func _configure_role() -> void:
 	if status_icon and is_instance_valid(status_icon):
 		_release_status_icon(status_icon)
 		status_icon = null
-	# [VISUAL-OPT] Hide previous role identity icon before reconfiguring.
-	if role_icon and is_instance_valid(role_icon):
-		_release_status_icon(role_icon)
-		role_icon = null
 	role_color = PolisherScript.role_color(enemy_type, visual_type, tags, skill_id)
 	if skill_id == "healer":
-		# [VISUAL-OPT] Aura hidden by default; replaced by compact cross/plus icon.
+		# Aura hidden by default; role identity is baked into the enemy sprite.
 		_create_passive_aura("heal", float(skill_params.get("radius", 0.0)))
-		_create_role_icon("healer_id", Color(0.4, 1.0, 0.6))
 	elif skill_id == "disrupt_aura":
-		# [VISUAL-OPT] Aura hidden by default; replaced by compact jammer icon.
+		# Aura hidden by default; role identity is baked into the enemy sprite.
 		_create_passive_aura("emp", float(skill_params.get("radius", 0.0)))
-		_create_role_icon("disruptor_id", Color(1.0, 0.55, 0.15))
 	elif skill_id == "shield_aura" or owner_enemy.get("is_bulwark"):
-		# [VISUAL-OPT] Shield dome radius hidden by default; replaced by compact shield icon.
+		# Shield dome radius hidden by default; role identity is baked into the enemy sprite.
 		_create_passive_aura("shield", float(skill_params.get("radius", owner_enemy.get("shield_radius"))))
-		_create_role_icon("bulwark_id", Color(0.3, 0.75, 1.0))
 	if str(owner_enemy.get("enemy_category")) == "air":
 		_show_status("air", Color(0.45, 0.9, 1.0), "")
 	if enemy_type == "cloaked" or skill_id == "stealth":
@@ -277,24 +260,6 @@ func _create_passive_aura(kind: String, radius: float) -> void:
 	passive_aura.set_exact_radius_visible(global_exact_radius_visible)
 	vfx_root.add_child(passive_aura)
 	_apply_debug_visibility()
-
-# [VISUAL-OPT] Compact identity icon above the creep body, always visible.
-func _create_role_icon(icon_type: String, color: Color) -> void:
-	if role_icon == null or not is_instance_valid(role_icon):
-		role_icon = _acquire_status_icon(vfx_root, "RoleIcon", Vector2(0, -24))
-		if role_icon == null:
-			return
-	role_icon.visible = true
-	role_icon.setup(icon_type, color)
-
-func _show_heal_cast_icon() -> void:
-	if heal_cast_icon == null or not is_instance_valid(heal_cast_icon):
-		heal_cast_icon = _acquire_status_icon(vfx_root, "HealCastIcon", Vector2(0, -38))
-		if heal_cast_icon == null:
-			return
-	heal_cast_icon.visible = true
-	heal_cast_icon.setup("heal_cast", Color(0.55, 1.0, 0.72))
-	_heal_cast_hide_remaining = 0.34
 
 func _connect_enemy_signals() -> void:
 	if owner_enemy == null:
@@ -319,16 +284,8 @@ func _connect_enemy_signals() -> void:
 		owner_enemy.enemy_modifier_changed.connect(_on_enemy_modifier_changed)
 	signals_connected = true
 
-func _process(delta: float) -> void:
-	if _heal_cast_hide_remaining <= 0.0:
-		return
-	_heal_cast_hide_remaining -= delta
-	if _heal_cast_hide_remaining <= 0.0 and heal_cast_icon and is_instance_valid(heal_cast_icon):
-		_release_status_icon(heal_cast_icon)
-		heal_cast_icon = null
-
 func _acquire_status_icon(parent: Node, icon_name: String, icon_position: Vector2) -> Node:
-	var pool := get_node_or_null("res://root/VisualEffectPoolService")
+	var pool := get_node_or_null("/root/VisualEffectPoolService")
 	if pool == null or not pool.has_method("acquire_script"):
 		return null
 	var icon := pool.acquire_script(StatusIconScript, parent, "status_icon", "status_icon") as Node
@@ -355,12 +312,6 @@ func _release_owned_status_icons() -> void:
 	if status_icon and is_instance_valid(status_icon):
 		_release_status_icon(status_icon)
 	status_icon = null
-	if role_icon and is_instance_valid(role_icon):
-		_release_status_icon(role_icon)
-	role_icon = null
-	if heal_cast_icon and is_instance_valid(heal_cast_icon):
-		_release_status_icon(heal_cast_icon)
-	heal_cast_icon = null
 
 func _on_healer_heal_tick(_healer: Node, targets: Array, _amount: float) -> void:
 	if targets.is_empty():
@@ -476,6 +427,3 @@ func _apply_debug_visibility() -> void:
 		status_icon.visible = debug_show_cloaked_state or str(status_icon.icon_type) != "cloaked"
 	if protected_icon and is_instance_valid(protected_icon):
 		protected_icon.visible = debug_show_shield_coverage
-	# [VISUAL-OPT] Role identity icon is always visible — it replaces the area aura.
-	if role_icon and is_instance_valid(role_icon):
-		role_icon.visible = true

@@ -56,6 +56,7 @@ class _BakeRenderer extends Node2D:
 		_ROUTER._dispatch_simple(self, visual_type, 16.0)
 		_draw_faux_3q_depth_cue()
 		_draw_faux_3q_form_planes()
+		_draw_baked_role_marker()
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
 
@@ -409,6 +410,41 @@ class _BakeRenderer extends Node2D:
 		for c in [Vector2(-6.0, -3.0), Vector2(6.0, -3.0), Vector2(0.0, 5.2)]:
 			_draw_flat_ellipse(c + Vector2(-1.2, -2.0), 4.0, 2.0, Color(0.88, 1.0, 0.70, 0.16))
 			_draw_flat_ellipse(c + Vector2(0.8, 2.2), 4.2, 1.9, Color(0.0, 0.06, 0.03, 0.18))
+
+	func _draw_baked_role_marker() -> void:
+		match visual_type:
+			"healer":
+				_draw_baked_plus_marker(Vector2(0.0, -14.5), Color(0.42, 1.0, 0.58, 0.82))
+			"disruptor":
+				_draw_baked_triangle_marker(Vector2(0.0, -14.2), Color(1.0, 0.55, 0.15, 0.82))
+			"bulwark", "shieldbearer":
+				_draw_baked_shield_marker(Vector2(0.0, -15.0), Color(0.30, 0.78, 1.0, 0.82))
+
+	func _draw_baked_plus_marker(center: Vector2, color: Color) -> void:
+		draw_line(center + Vector2(-4.8, 0.0), center + Vector2(4.8, 0.0), color, 2.2, true)
+		draw_line(center + Vector2(0.0, -4.8), center + Vector2(0.0, 4.8), color, 2.2, true)
+		draw_circle(center, 1.3, Color(0.92, 1.0, 0.94, 0.58))
+
+	func _draw_baked_triangle_marker(center: Vector2, color: Color) -> void:
+		var r := 5.8
+		var pts := PackedVector2Array()
+		for i in range(3):
+			var a := -PI * 0.5 + float(i) * TAU / 3.0
+			pts.append(center + Vector2(cos(a), sin(a)) * r)
+		draw_polyline(pts + PackedVector2Array([pts[0]]), color, 1.7, true)
+		draw_circle(center, 1.8, Color(color.r, color.g, color.b, 0.50))
+
+	func _draw_baked_shield_marker(center: Vector2, color: Color) -> void:
+		var pts := PackedVector2Array([
+			center + Vector2(0, -6.8),
+			center + Vector2(6.0, -2.6),
+			center + Vector2(3.8, 5.6),
+			center + Vector2(0, 7.2),
+			center + Vector2(-3.8, 5.6),
+			center + Vector2(-6.0, -2.6),
+		])
+		draw_polyline(pts + PackedVector2Array([pts[0]]), color, 1.6, true)
+		draw_circle(center, 1.8, Color(color.r, color.g, color.b, 0.46))
 
 	func _get_type_top_plane_color() -> Color:
 		match visual_type:
