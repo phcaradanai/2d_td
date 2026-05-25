@@ -540,11 +540,14 @@ func _setup_game_from_level() -> void:
 			var show_dynamic_overlay := bool(level_manager.level_data.get("show_dynamic_route_overlay", false))
 			enemy_route_overlay.visible = show_dynamic_overlay and not _level_uses_fixed_pathing()
 
-	# Fixed-path route hint — lane lines + portal markers + crossover indicators
+	# Fixed-path route hint — lane lines + portal markers + crossover indicators.
+	# Placed at tree-position 1 (right after MazeMapRenderer at 0) so EnemyContainer
+	# and all gameplay nodes (later in tree, same z=0) always render on top.
 	if map_route_hint == null:
 		map_route_hint = MAP_ROUTE_HINT_SCRIPT.new()
 		map_route_hint.name = "MapRouteHint"
 		map_root.add_child(map_route_hint)
+		map_root.move_child(map_route_hint, 1)
 	if level_manager:
 		map_route_hint.setup(level_manager)
 

@@ -1,21 +1,26 @@
 extends Node2D
 class_name MapRouteHint
 
-## Fixed-path route visualizer — draws colored lane lines, portal markers,
-## and crossover bridge indicators. No pathfinding. No per-frame processing.
-## Chevrons are handled by MazeMapRenderer (baked). This node handles only
-## the elements that need to change opacity (BUILD bright / WAVE dim).
+## Fixed-path route visualizer — lane lines, turn chevrons, portal markers,
+## and crossover bridge indicators.
+##
+## Z-layering: z_index = 0, placed at tree-position 1 (right after the baked
+## MazeMapRenderer sprite). All gameplay nodes (TowerContainer, EnemyContainer,
+## ProjectileContainer, EffectsContainer) are later in the tree and therefore
+## always render on top at the same z-level.
 
 # ------------------------------------------------------------------ visuals
 const LINE_WIDTH      := 2.0
+const CHEVRON_SIZE    := 6.0   # smaller than map-baked chevrons
+const CHEVRON_EVERY   := 8     # interval between non-turn chevrons (cells)
 const PORTAL_RADIUS   := 8.0
 const BRIDGE_SIZE     := 6.0
-const Z_INDEX_LAYER   := 2    # above EnemyRouteOverlay(1), below towers(4+)
+const Z_INDEX_LAYER   := 0     # same z as map; tree-position keeps us below enemies
 
-const OPACITY_BUILD   := 0.55
-const OPACITY_WAVE    := 0.18
+const OPACITY_BUILD   := 0.65  # pre-wave: clearly visible
+const OPACITY_WAVE    := 0.15  # during combat: subtle background guide
 
-# Per-lane tint palette (alpha set at draw time via modulate)
+# Per-lane tint palette
 static var LANE_PALETTE: Array[Color] = [
 	Color(0.20, 0.90, 1.00, 1.0),   # 0 cyan
 	Color(1.00, 0.65, 0.15, 1.0),   # 1 amber
@@ -32,7 +37,7 @@ const CROSSOVER_COLOR    := Color(1.00, 1.00, 0.30, 1.0)  # yellow — bridge in
 var _segments: Array[Dictionary] = []
 var _portal_entry_positions: Array[Vector2] = []
 var _portal_exit_positions:  Array[Vector2] = []
-# crossover_positions: cells world-centers that appear in ≥2 ground lanes
+# world-centers of cells that appear in ≥2 ground lanes
 var _crossover_positions: Array[Vector2] = []
 
 var _show_routes: bool = true
@@ -55,6 +60,12 @@ func setup(lm: Node) -> void:
 	_portal_exit_positions.clear()
 	_crossover_positions.clear()
 
+	# Reset opacity on every level load — the node persists, _ready() does not re-run.
+	if _opacity_tween:
+		_opacity_tween.kill()
+		_opacity_tween = null
+	modulate.a = OPACITY_BUILD
+
 	if lm == null or not is_instance_valid(lm):
 		return
 
@@ -65,8 +76,7 @@ func setup(lm: Node) -> void:
 
 	# ---- collect all non-air ground lanes -----------------------------------
 	var lane_idx := 0
-	# cell_to_lane: maps Vector2i key -> Array of lane indices that use it (for crossover)
-	var cell_to_lane: Dictionary = {}
+	var cell_to_lane: Dictionary = {}   # Vector2i key -> Array of lane indices
 
 	for path_id in multi_paths.keys():
 		if (path_id as String).begins_with("air"):
@@ -86,7 +96,7 @@ func setup(lm: Node) -> void:
 					cell_to_lane[key] = []
 				(cell_to_lane[key] as Array).append(lane_idx)
 
-		# Split into segments at portal jumps (Manhattan dist > 1 between consecutive cells)
+		# Split into segments at portal jumps (Manhattan dist > 1)
 		var seg_start := 0
 		for i in range(1, cells.size()):
 			var a: Variant = cells[i - 1]
@@ -94,7 +104,6 @@ func setup(lm: Node) -> void:
 			if a is Vector2i and b is Vector2i:
 				var manhattan: int = abs((b as Vector2i).x - (a as Vector2i).x) + abs((b as Vector2i).y - (a as Vector2i).y)
 				if manhattan > 1:
-					# portal jump — close current segment, start new one
 					var seg_pts := PackedVector2Array(world_pts.slice(seg_start, i))
 					if seg_pts.size() >= 2:
 						_segments.append({"points": seg_pts, "lane_idx": lane_idx})
@@ -110,14 +119,14 @@ func setup(lm: Node) -> void:
 	# ---- crossover positions -------------------------------------------------
 	for key in cell_to_lane.keys():
 		if (cell_to_lane[key] as Array).size() >= 2:
-			# Extract cell back from key
 			var parts := (key as String).split(",")
 			if parts.size() == 2:
 				var cx := int(parts[0])
 				var cy := int(parts[1])
-				var world_center := grid_origin + Vector2(cx * grid_size + grid_size * 0.5,
-														  cy * grid_size + grid_size * 0.5)
-				_crossover_positions.append(world_center)
+				_crossover_positions.append(
+					grid_origin + Vector2(cx * grid_size + grid_size * 0.5,
+										  cy * grid_size + grid_size * 0.5)
+				)
 
 	# ---- portal entry / exit positions from path_portals JSON ---------------
 	var portals = level_data.get("path_portals", [])
@@ -147,7 +156,7 @@ func setup(lm: Node) -> void:
 
 # ================================================================ opacity
 
-## Call when wave starts/ends.
+## Call when wave starts (active=true) or ends (active=false).
 func set_wave_active(active: bool) -> void:
 	var target_a := OPACITY_WAVE if active else OPACITY_BUILD
 	if _opacity_tween:
@@ -156,7 +165,7 @@ func set_wave_active(active: bool) -> void:
 	_opacity_tween.tween_property(self, "modulate:a", target_a, 0.35)
 
 
-## Toggle whether routes are drawn at all (for "Show Route" HUD button).
+## Toggle route visibility (for "Show Route" HUD button).
 func set_show_routes(visible_flag: bool) -> void:
 	_show_routes = visible_flag
 	queue_redraw()
@@ -168,14 +177,15 @@ func _draw() -> void:
 	if not _show_routes:
 		return
 
-	# ---- lane lines --------------------------------------------------------
+	# ---- lane lines + turn chevrons ----------------------------------------
 	for seg in _segments:
 		var pts: PackedVector2Array = seg["points"]
 		var li: int = seg["lane_idx"]
 		var color: Color = LANE_PALETTE[li % LANE_PALETTE.size()]
 		draw_polyline(pts, color, LINE_WIDTH, false)
+		_draw_chevrons_for_segment(pts, color)
 
-	# ---- crossover bridge indicators (yellow diamond at intersection) ------
+	# ---- crossover bridge indicators ---------------------------------------
 	for pos in _crossover_positions:
 		_draw_diamond(pos, BRIDGE_SIZE, CROSSOVER_COLOR)
 
@@ -188,6 +198,42 @@ func _draw() -> void:
 	for pos in _portal_exit_positions:
 		draw_circle(pos, PORTAL_RADIUS, Color(PORTAL_EXIT_COLOR, 0.25))
 		draw_arc(pos, PORTAL_RADIUS, 0.0, TAU, 24, PORTAL_EXIT_COLOR, 1.5)
+
+
+## Draw chevrons at every turn and at regular intervals along a segment.
+## Prioritises turns so that confusing bends always get a direction indicator.
+func _draw_chevrons_for_segment(pts: PackedVector2Array, color: Color) -> void:
+	var n := pts.size()
+	if n < 2:
+		return
+
+	var last_chevron_at := -CHEVRON_EVERY  # force one early in segment
+
+	for i in range(1, n - 1):
+		var from_dir := (pts[i] - pts[i - 1]).normalized()
+		var to_dir   := (pts[i + 1] - pts[i]).normalized()
+		var is_turn  := from_dir.dot(to_dir) < 0.92    # ~23° threshold
+		var is_interval := (i - last_chevron_at) >= CHEVRON_EVERY
+
+		if is_turn or is_interval:
+			_draw_chevron(pts[i], to_dir, color)
+			last_chevron_at = i
+
+	# One near the end of the segment so the final direction is always clear
+	if n >= 3:
+		var final_dir := (pts[n - 1] - pts[n - 2]).normalized()
+		_draw_chevron(pts[n - 2].lerp(pts[n - 1], 0.4), final_dir, color)
+
+
+func _draw_chevron(at: Vector2, dir: Vector2, color: Color) -> void:
+	if dir.length_squared() < 0.001:
+		return
+	var perp := Vector2(-dir.y, dir.x)
+	var tip   := at + dir * CHEVRON_SIZE * 0.45
+	var left  := tip - dir * CHEVRON_SIZE * 0.55 + perp * CHEVRON_SIZE * 0.50
+	var right := tip - dir * CHEVRON_SIZE * 0.55 - perp * CHEVRON_SIZE * 0.50
+	draw_line(tip, left,  color, 1.2)
+	draw_line(tip, right, color, 1.2)
 
 
 func _draw_diamond(center: Vector2, half: float, color: Color) -> void:
