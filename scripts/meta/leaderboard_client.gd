@@ -1,7 +1,5 @@
 extends Node
 
-const BackendApiConfig = preload("res://scripts/config/backend_api_config.gd")
-
 # Online leaderboard client with offline fallback.
 #
 # Configuration:
@@ -14,6 +12,7 @@ const BackendApiConfig = preload("res://scripts/config/backend_api_config.gd")
 #   fetch_top_scores(level_id, limit) → emits top_scores_loaded(ok, items)
 #   retry_pending()          → retries any stored failed submissions
 
+const BUNDLED_API_URL: String = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io" # Set to your deployed API URL
 const CONFIG_PATH: String = "user://leaderboard_config.json"
 const PENDING_PATH: String = "user://pending_leaderboard.json"
 const REQUEST_TIMEOUT: float = 10.0
@@ -21,7 +20,7 @@ const REQUEST_TIMEOUT: float = 10.0
 signal score_submitted(ok: bool, score: int, rank: int)
 signal top_scores_loaded(ok: bool, items: Array)
 
-enum _State { IDLE, SUBMITTING, FETCHING }
+enum _State {IDLE, SUBMITTING, FETCHING}
 
 var api_base_url: String = ""
 var _state: _State = _State.IDLE
@@ -78,7 +77,7 @@ func _process_queue() -> void:
 	_current_job = job
 	match job["type"]:
 		"submit": _do_submit(job["payload"])
-		"fetch":  _do_fetch(str(job["level_id"]), int(job.get("limit", 50)))
+		"fetch": _do_fetch(str(job["level_id"]), int(job.get("limit", 50)))
 
 func _do_submit(payload: Dictionary) -> void:
 	if not has_api_url():
@@ -201,7 +200,7 @@ func _load_pending() -> void:
 
 func _load_config() -> void:
 	# Start with bundled URL constant
-	api_base_url = BackendApiConfig.BUNDLED_API_URL
+	api_base_url = BUNDLED_API_URL
 
 	# Override from user config if present (useful for dev / per-server deploys)
 	if FileAccess.file_exists(CONFIG_PATH):

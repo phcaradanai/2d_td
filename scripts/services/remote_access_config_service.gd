@@ -11,34 +11,33 @@ extends Node
 ##
 ## All callers must use LevelAccessService — never this service directly.
 
-const BackendApiConfig = preload("res://scripts/config/backend_api_config.gd")
-
 signal config_changed(config: Dictionary)
 signal config_updated(source: String)
 signal fetch_failed(reason: String)
 
 
+const BUNDLED_API_URL = "http://ecn8h5mus6i7ommtg7hjpfl4.157.85.103.69.sslip.io"
 const DEV_CONFIG_PATH = "user://remote_access_config_dev.json"
-const CACHE_PATH      = "user://remote_access_config.json"
-const DEFAULT_PATH    = "res://data/default_access_config.json"
+const CACHE_PATH = "user://remote_access_config.json"
+const DEFAULT_PATH = "res://data/default_access_config.json"
 const REQUEST_TIMEOUT = 8.0
-const BUILD_NUMBER    = 1
+const BUILD_NUMBER = 1
 const DEFAULT_ACCESS_CONFIG_PATH := "res://data/default_access_config.json"
 
-enum _State { IDLE, FETCHING }
+enum _State {IDLE, FETCHING}
 
-var _state: _State       = _State.IDLE
-var _http: HTTPRequest   = null
+var _state: _State = _State.IDLE
+var _http: HTTPRequest = null
 var _api_base_url: String = ""
-var _identity: Node      = null   # RuntimeIdentityService, optional
+var _identity: Node = null # RuntimeIdentityService, optional
 
 # Resolved config fields
-var _config: Dictionary      = {}
+var _config: Dictionary = {}
 var _entitlement: Dictionary = {}
-var _resolved_from: String   = ""
-var _tags: Array             = []
-var _config_source: String   = "default"
-var _ready_flag: bool        = false
+var _resolved_from: String = ""
+var _tags: Array = []
+var _config_source: String = "default"
+var _ready_flag: bool = false
 
 # ── Lifecycle ─────────────────────────────────────────────────────────────────
 
@@ -51,7 +50,7 @@ func _ready() -> void:
 	_load_initial_config()
 
 func _load_api_url() -> void:
-	_api_base_url = BackendApiConfig.BUNDLED_API_URL
+	_api_base_url = BUNDLED_API_URL
 	if FileAccess.file_exists(DEV_CONFIG_PATH):
 		var file = FileAccess.open(DEV_CONFIG_PATH, FileAccess.READ)
 		if file:
@@ -315,7 +314,7 @@ func _ingest_response(parsed: Dictionary, source: String = "remote") -> void:
 		access_data["max_demo_wave"] = access_data["max_wave"]
 
 	_resolved_from = str(access_data.get("resolved_from", ""))
-	var raw_tags   = access_data.get("tags", [])
+	var raw_tags = access_data.get("tags", [])
 	_tags = raw_tags if raw_tags is Array else []
 	_apply_config(access_data, source)
 
@@ -357,9 +356,9 @@ func _apply_safe_defaults() -> void:
 		"allow_sandbox": false, "maintenance_enabled": false,
 		"force_update": false, "min_supported_build": 1, "announcement": ""
 	}
-	_entitlement   = {"full_version_unlocked": false, "owned_products": []}
+	_entitlement = {"full_version_unlocked": false, "owned_products": []}
 	_resolved_from = ""
-	_tags          = []
+	_tags = []
 	_config_source = "default"
 
 func _save_cache(full_response: Dictionary) -> void:
