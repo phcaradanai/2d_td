@@ -2144,10 +2144,16 @@ func _on_victory() -> void:
 	var summary = game_manager.get_run_summary(total_waves)
 	var improvements = {}
 	var rank = -1
+	var cosmetic_rewards: Array = []
 
 	# Save progress
 	if save_manager and level_manager:
 		improvements = save_manager.update_level_record(level_manager.level_id, summary)
+		var cosmetic_reward_service := get_node_or_null("/root/CosmeticRewardService")
+		if cosmetic_reward_service != null and cosmetic_reward_service.has_method("process_victory"):
+			cosmetic_rewards = cosmetic_reward_service.process_victory(level_manager.level_id, summary)
+			if not cosmetic_rewards.is_empty():
+				improvements["new_cosmetics"] = cosmetic_rewards
 		if level_select: level_select.update_ui(save_manager)
 
 		# [DemoGate] Only submit to leaderboard when permitted.

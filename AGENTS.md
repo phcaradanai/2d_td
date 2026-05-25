@@ -79,4 +79,8 @@ var audio_player_pool := []
 
 func play_tower_sound(...):
 	# hundreds of lines of audio policy here
+```
+## Coding Rules
+
+1.do not make god file. use service/controller pattern instead.
 

@@ -38,6 +38,7 @@ var balance_tool_aggregate: Dictionary = {}
 var balance_tool_patch: Dictionary = {}
 var balance_tool_preview_text: String = ""
 var balance_tool_last_attempt: int = 0
+var cosmetic_rewards_container: VBoxContainer = null
 
 func _ready() -> void:
 	retry_button.pressed.connect(func(): retry_pressed.emit())
@@ -50,6 +51,7 @@ func _ready() -> void:
 	scale = Vector2(0.8, 0.8)
 	pivot_offset = size / 2.0
 	if record_feedback: record_feedback.visible = false
+	_ensure_cosmetic_rewards_container()
 
 func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int = -1) -> void:
 	if animation_tween:
@@ -104,6 +106,7 @@ func show_result(summary: Dictionary, improvements: Dictionary = {}, rank: int =
 	
 	perfect_clear_badge.visible = summary.get("is_perfect", false)
 	next_button.visible = is_victory
+	_setup_cosmetic_rewards(improvements.get("new_cosmetics", []))
 	
 	# Reset stars
 	for star in stars_container.get_children():
@@ -199,6 +202,103 @@ func _setup_record_feedback(improvements: Dictionary, summary: Dictionary = {}) 
 		if record_tween:
 			record_tween.kill()
 		record_feedback.visible = false
+
+func _ensure_cosmetic_rewards_container() -> void:
+	if cosmetic_rewards_container != null and is_instance_valid(cosmetic_rewards_container):
+		return
+	var root_vbox := get_node_or_null("MarginContainer/VBoxContainer")
+	if root_vbox == null:
+		return
+	cosmetic_rewards_container = VBoxContainer.new()
+	cosmetic_rewards_container.name = "CosmeticRewards"
+	cosmetic_rewards_container.add_theme_constant_override("separation", 8)
+	cosmetic_rewards_container.visible = false
+	var buttons := root_vbox.get_node_or_null("ButtonsVBox")
+	if buttons:
+		root_vbox.add_child(cosmetic_rewards_container)
+		root_vbox.move_child(cosmetic_rewards_container, buttons.get_index())
+	else:
+		root_vbox.add_child(cosmetic_rewards_container)
+
+func _setup_cosmetic_rewards(rewards: Array) -> void:
+	_ensure_cosmetic_rewards_container()
+	if cosmetic_rewards_container == null:
+		return
+	for child in cosmetic_rewards_container.get_children():
+		child.queue_free()
+	cosmetic_rewards_container.visible = not rewards.is_empty()
+	if rewards.is_empty():
+		return
+	var title := Label.new()
+	title.text = "COSMETIC UNLOCKS"
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_size_override("font_size", 15)
+	title.add_theme_color_override("font_color", Color(0.45, 0.95, 1.0))
+	cosmetic_rewards_container.add_child(title)
+	for reward in rewards:
+		if reward is Dictionary:
+			cosmetic_rewards_container.add_child(_create_cosmetic_reward_card(reward))
+
+func _create_cosmetic_reward_card(reward: Dictionary) -> Control:
+	var registry := get_node_or_null("/root/CosmeticRegistry")
+	var rarity := str(reward.get("rarity", "common"))
+	var rarity_color := Color(0.4, 0.85, 1.0)
+	var rarity_label := rarity.capitalize()
+	if registry != null:
+		rarity_color = registry.get_rarity_color(rarity)
+		rarity_label = registry.get_rarity_label(rarity)
+	var panel := PanelContainer.new()
+	panel.custom_minimum_size = Vector2(0, 74)
+	var style := StyleBoxFlat.new()
+	style.bg_color = Color(0.025, 0.035, 0.055, 0.94)
+	style.border_color = rarity_color
+	style.set_border_width_all(2)
+	style.corner_radius_top_left = 8
+	style.corner_radius_top_right = 8
+	style.corner_radius_bottom_left = 8
+	style.corner_radius_bottom_right = 8
+	panel.add_theme_stylebox_override("panel", style)
+	var margin := MarginContainer.new()
+	margin.add_theme_constant_override("margin_left", 12)
+	margin.add_theme_constant_override("margin_top", 8)
+	margin.add_theme_constant_override("margin_right", 12)
+	margin.add_theme_constant_override("margin_bottom", 8)
+	panel.add_child(margin)
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 10)
+	margin.add_child(row)
+	var text_box := VBoxContainer.new()
+	text_box.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	row.add_child(text_box)
+	var name := Label.new()
+	name.text = str(reward.get("display_name", reward.get("id", "Cosmetic")))
+	name.add_theme_font_size_override("font_size", 15)
+	name.add_theme_color_override("font_color", Color.WHITE)
+	text_box.add_child(name)
+	var meta := Label.new()
+	meta.text = "%s  ·  %s" % [rarity_label.to_upper(), _format_slot(str(reward.get("slot", "")))]
+	meta.add_theme_font_size_override("font_size", 11)
+	meta.add_theme_color_override("font_color", rarity_color)
+	text_box.add_child(meta)
+	var equip := Button.new()
+	equip.text = "EQUIP"
+	equip.custom_minimum_size = Vector2(96, 34)
+	equip.disabled = not _can_equip_reward(reward)
+	equip.pressed.connect(func() -> void:
+		var inventory := get_node_or_null("/root/CosmeticInventory")
+		if inventory != null and inventory.has_method("equip"):
+			inventory.equip(str(reward.get("tower_id", "")), str(reward.get("slot", "")), str(reward.get("id", "")))
+			equip.text = "EQUIPPED"
+			equip.disabled = true
+	)
+	row.add_child(equip)
+	return panel
+
+func _can_equip_reward(reward: Dictionary) -> bool:
+	return str(reward.get("tower_id", "")) != "" and str(reward.get("slot", "")) != "" and str(reward.get("id", "")) != ""
+
+func _format_slot(slot: String) -> String:
+	return slot.replace("_", " ").capitalize()
 
 func _format_time(seconds: int) -> String:
 	var mins = int(float(seconds) / 60.0)

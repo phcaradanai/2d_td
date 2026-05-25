@@ -1,0 +1,21 @@
+{
+	"slots": [
+		"tower_skin",
+		"projectile_skin",
+		"impact_skin"
+	],
+	"rarities": {
+		"common": {
+			"label": "Common",
+			"color": "#66d9ff"
+		},
+		"rare": {
+			"label": "Rare",
+			"color": "#b87cff"
+		},
+		"perfect": {
+			"label": "Perfect",
+			"color": "#ffd966"
+		}
+	}
+}

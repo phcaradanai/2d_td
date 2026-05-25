@@ -37,6 +37,10 @@ var save_data: Dictionary = {
 			"status_effects": "icons_only",
 			"screen_shake": "off"
 		}
+	},
+	"cosmetics": {
+		"unlocked": [],
+		"equipped": {}
 	}
 }
 
@@ -71,6 +75,12 @@ func load_save() -> Dictionary:
 					save_data["settings"][category] = {}
 				for key in loaded_settings[category]:
 					save_data["settings"][category][key] = loaded_settings[category][key]
+		if loaded_data.has("cosmetics") and loaded_data["cosmetics"] is Dictionary:
+			var loaded_cosmetics: Dictionary = loaded_data["cosmetics"]
+			if loaded_cosmetics.has("unlocked") and loaded_cosmetics["unlocked"] is Array:
+				save_data["cosmetics"]["unlocked"] = loaded_cosmetics["unlocked"].duplicate()
+			if loaded_cosmetics.has("equipped") and loaded_cosmetics["equipped"] is Dictionary:
+				save_data["cosmetics"]["equipped"] = loaded_cosmetics["equipped"].duplicate(true)
 		
 		if OS.is_debug_build(): print("[SaveManager] Save loaded and merged.")
 	else:
@@ -255,6 +265,52 @@ func get_performance_settings() -> Dictionary:
 func update_performance_settings(settings: Dictionary) -> void:
 	save_data["settings"]["performance"] = settings
 	save_to_disk()
+
+func get_unlocked_cosmetic_ids() -> Array[String]:
+	_ensure_cosmetics_data()
+	var out: Array[String] = []
+	for id in save_data["cosmetics"]["unlocked"]:
+		out.append(str(id))
+	return out
+
+func unlock_cosmetic(cosmetic_id: String) -> bool:
+	_ensure_cosmetics_data()
+	if cosmetic_id == "" or save_data["cosmetics"]["unlocked"].has(cosmetic_id):
+		return false
+	save_data["cosmetics"]["unlocked"].append(cosmetic_id)
+	save_to_disk()
+	return true
+
+func get_equipped_cosmetic(tower_id: String, slot: String) -> String:
+	_ensure_cosmetics_data()
+	var equipped: Dictionary = save_data["cosmetics"]["equipped"]
+	if not equipped.has(tower_id) or not (equipped[tower_id] is Dictionary):
+		return ""
+	return str(equipped[tower_id].get(slot, ""))
+
+func equip_cosmetic(tower_id: String, slot: String, cosmetic_id: String) -> bool:
+	_ensure_cosmetics_data()
+	if tower_id == "" or slot == "":
+		return false
+	var equipped: Dictionary = save_data["cosmetics"]["equipped"]
+	if not equipped.has(tower_id) or not (equipped[tower_id] is Dictionary):
+		equipped[tower_id] = {}
+	if str(equipped[tower_id].get(slot, "")) == cosmetic_id:
+		return false
+	if cosmetic_id == "":
+		equipped[tower_id].erase(slot)
+	else:
+		equipped[tower_id][slot] = cosmetic_id
+	save_to_disk()
+	return true
+
+func _ensure_cosmetics_data() -> void:
+	if not save_data.has("cosmetics") or not (save_data["cosmetics"] is Dictionary):
+		save_data["cosmetics"] = {}
+	if not save_data["cosmetics"].has("unlocked") or not (save_data["cosmetics"]["unlocked"] is Array):
+		save_data["cosmetics"]["unlocked"] = []
+	if not save_data["cosmetics"].has("equipped") or not (save_data["cosmetics"]["equipped"] is Dictionary):
+		save_data["cosmetics"]["equipped"] = {}
 
 # ── Backend Cloud Save ────────────────────────────────────────────────────────
 

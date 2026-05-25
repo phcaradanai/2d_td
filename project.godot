@@ -36,6 +36,10 @@ TowerTextureBaker="*res://scripts/towers/tower_texture_baker.gd"
 EnemyTextureBaker="*res://scripts/enemies/enemy_texture_baker.gd"
 EnemyAffixService="*res://scripts/enemies/enemy_affix_service.gd"
 TutorialService="*res://scripts/services/tutorial_service.gd"
+CosmeticRegistry="*res://systems/cosmetics/cosmetic_registry.gd"
+CosmeticInventory="*res://systems/cosmetics/cosmetic_inventory_service.gd"
+CosmeticApplyService="*res://systems/cosmetics/cosmetic_apply_service.gd"
+CosmeticRewardService="*res://systems/cosmetics/cosmetic_reward_service.gd"
 
 [display]
 

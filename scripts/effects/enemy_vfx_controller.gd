@@ -285,10 +285,16 @@ func _connect_enemy_signals() -> void:
 	signals_connected = true
 
 func _acquire_status_icon(parent: Node, icon_name: String, icon_position: Vector2) -> Node:
-	var pool := get_node_or_null("/root/VisualEffectPoolService")
-	if pool == null or not pool.has_method("acquire_script"):
+	if parent == null:
 		return null
-	var icon := pool.acquire_script(StatusIconScript, parent, "status_icon", "status_icon") as Node
+	var pool := _get_autoload_node("VisualEffectPoolService")
+	var icon: Node = null
+	if pool != null and pool.has_method("acquire_script"):
+		icon = pool.acquire_script(StatusIconScript, parent, "status_icon", "status_icon") as Node
+	else:
+		icon = StatusIconScript.new()
+		icon.set_meta("local_status_icon", true)
+		parent.add_child(icon)
 	if icon == null:
 		return null
 	icon.name = icon_name
@@ -299,9 +305,11 @@ func _acquire_status_icon(parent: Node, icon_name: String, icon_position: Vector
 func _release_status_icon(icon: Node) -> void:
 	if icon == null or not is_instance_valid(icon):
 		return
-	var pool := get_node_or_null("/root/VisualEffectPoolService")
-	if pool != null and pool.has_method("release"):
+	var pool := _get_autoload_node("VisualEffectPoolService")
+	if pool != null and pool.has_method("release") and not icon.has_meta("local_status_icon"):
 		pool.release(icon)
+	elif icon.has_meta("local_status_icon"):
+		icon.queue_free()
 	else:
 		icon.visible = false
 
@@ -353,10 +361,10 @@ func _on_enemy_modifier_changed(enemy: Node, modifier_name: String, value: Varia
 		play_runner_burst()
 
 func _spawn_impact(mode: String, color: Color, duration: float, amount: float = 0.0, debug_text: String = "") -> void:
-	var perf_service := get_node_or_null("/root/PerformanceBudgetService")
+	var perf_service := _get_autoload_node("PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("get_budget") and not bool(perf_service.get_budget("allow_minor_impacts")):
 		return
-	var pool := get_node_or_null("/root/VisualEffectPoolService")
+	var pool := _get_autoload_node("VisualEffectPoolService")
 	if pool == null or not pool.has_method("acquire_script"):
 		return
 	var impact: Node2D = null
@@ -377,10 +385,15 @@ func _spawn_impact(mode: String, color: Color, duration: float, amount: float = 
 	impact.setup(mode, color, duration, amount, debug_text)
 
 func _get_link_color(effect_type: String) -> Color:
-	var comfort := get_node_or_null("/root/VisualComfort")
+	var comfort := _get_autoload_node("VisualComfort")
 	if comfort != null and comfort.has_method("get_link_color"):
 		return comfort.get_link_color(effect_type)
 	return Color(0.48, 0.78, 1.0, 0.28)
+
+func _get_autoload_node(node_name: String) -> Node:
+	if not is_inside_tree():
+		return null
+	return get_node_or_null("/root/%s" % node_name)
 
 func _show_status(icon_type: String, color: Color, text: String) -> void:
 	if status_icon == null or not is_instance_valid(status_icon):

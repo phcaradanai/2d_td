@@ -561,21 +561,21 @@ func _request_baked_textures() -> void:
 	var request_visual_type := visual_type
 	var request_elements := elements.duplicate()
 	var request_tier := tree_tier
-	TowerTextureBaker.request_textures(tower_id, visual_type, elements, tree_tier,
-		func(result: Dictionary) -> void:
-			if not is_instance_valid(captured_self):
-				return
-			if captured_self._is_stale_baked_texture_result(
-					request_serial,
-					request_tower_id,
-					request_visual_type,
-					request_elements,
-					request_tier):
-				return
-			if result.is_empty():
-				return
-			captured_self._apply_baked_textures(result)
-	)
+	var request_cosmetic_skin_id := _get_equipped_cosmetic_id("tower_skin")
+	var texture_callback := func(result: Dictionary) -> void:
+		if not is_instance_valid(captured_self):
+			return
+		if captured_self._is_stale_baked_texture_result(
+				request_serial,
+				request_tower_id,
+				request_visual_type,
+				request_elements,
+				request_tier):
+			return
+		if result.is_empty():
+			return
+		captured_self._apply_baked_textures(result)
+	TowerTextureBaker.request_textures(tower_id, visual_type, elements, tree_tier, texture_callback, request_cosmetic_skin_id)
 
 func _is_stale_baked_texture_result(
 		request_serial: int,
@@ -1123,6 +1123,12 @@ func _get_current_gold() -> int:
 		return gm.gold
 	return -1
 
+func _get_equipped_cosmetic_id(slot: String) -> String:
+	var cosmetic_service := get_node_or_null("/root/CosmeticApplyService")
+	if cosmetic_service != null and cosmetic_service.has_method("get_equipped_id"):
+		return str(cosmetic_service.get_equipped_id(tower_id, slot))
+	return ""
+
 
 func _extract_string_array(raw: Variant) -> Array[String]:
 	var out: Array[String] = []
@@ -1323,6 +1329,7 @@ func _request_tower_visual_redraw_if_dirty() -> void:
 
 func _ready() -> void:
 	_disable_control_mouse_filter(self )
+	add_to_group("towers")
 
 	if preview_mode:
 		apply_level_visuals()
@@ -1621,6 +1628,9 @@ func shoot() -> void:
 				projectile.setup_chain(chain_jumps, chain_range, chain_falloff)
 		projectile.scale = Vector2(proj_scale, proj_scale)
 		projectile.modulate = proj_color
+		var cosmetic_service := get_node_or_null("/root/CosmeticApplyService")
+		if cosmetic_service != null and cosmetic_service.has_method("apply_projectile_cosmetic"):
+			cosmetic_service.apply_projectile_cosmetic(projectile, tower_id)
 		
 		# VISUAL POLISH: Recoil + directional contextual VFX
 		play_fire_recoil()

@@ -28,6 +28,7 @@ class _BakeRenderer extends Node2D:
 	var tower_id:         String         = ""
 	var visual_type:      String         = "basic"
 	var tree_tier:        int            = 1
+	var cosmetic_skin_id: String         = ""
 	var elements:         Array[String]  = []
 	var attack_range:     float          = 160.0
 	var is_selected:      bool           = false
@@ -39,11 +40,12 @@ class _BakeRenderer extends Node2D:
 	const TVR = preload("res://scripts/towers/tower_visual_renderer.gd")
 	const MuzzleAnchors = preload("res://scripts/config/tower_muzzle_anchor_config.gd")
 
-	func configure(p_id: String, p_visual: String, p_elements: Array[String], p_tier: int) -> void:
+	func configure(p_id: String, p_visual: String, p_elements: Array[String], p_tier: int, p_cosmetic_skin_id: String = "") -> void:
 		tower_id    = p_id
 		visual_type = p_visual
 		elements    = p_elements.duplicate()
 		tree_tier   = p_tier
+		cosmetic_skin_id = p_cosmetic_skin_id
 
 	func _draw() -> void:
 		if draw_mode == DrawMode.BASE:
@@ -153,9 +155,10 @@ func request_textures(
 		visual_type: String,
 		elements: Array[String],
 		tier: int,
-		callback: Callable
+		callback: Callable,
+		cosmetic_skin_id: String = ""
 ) -> void:
-	var key := _cache_key(tower_id, visual_type, elements, tier)
+	var key := _cache_key(tower_id, visual_type, elements, tier, cosmetic_skin_id)
 	if _cache.has(key):
 		callback.call(_cache[key])
 		return
@@ -170,6 +173,7 @@ func request_textures(
 		"visual":    visual_type,
 		"elements":  elements.duplicate(),
 		"tier":      tier,
+		"cosmetic_skin_id": cosmetic_skin_id,
 		"callbacks": [callback],
 	})
 	set_process(true)
@@ -195,12 +199,13 @@ func _bake_job(job: Dictionary) -> void:
 	var visual:     String        = job["visual"]
 	var elements:   Array[String] = job["elements"]
 	var tier:       int           = job["tier"]
+	var cosmetic_skin_id: String = str(job.get("cosmetic_skin_id", ""))
 	var callbacks:  Array         = job["callbacks"]
 	var cache_key:  String        = job["key"]
 
 	# Bake base first, then turret.
-	_bake_layer(DrawMode.BASE, tower_id, visual, elements, tier, func(base_tex: ImageTexture) -> void:
-		_bake_layer(DrawMode.TURRET, tower_id, visual, elements, tier, func(turret_tex: ImageTexture) -> void:
+	_bake_layer(DrawMode.BASE, tower_id, visual, elements, tier, cosmetic_skin_id, func(base_tex: ImageTexture) -> void:
+		_bake_layer(DrawMode.TURRET, tower_id, visual, elements, tier, cosmetic_skin_id, func(turret_tex: ImageTexture) -> void:
 			var result := {}
 			if base_tex != null:
 				result["base"] = base_tex
@@ -222,6 +227,7 @@ func _bake_layer(
 		visual: String,
 		elements: Array[String],
 		tier: int,
+		cosmetic_skin_id: String,
 		done: Callable
 ) -> void:
 	# Clear renderer root.
@@ -231,7 +237,7 @@ func _bake_layer(
 
 	var r := _BakeRenderer.new()
 	r.draw_mode = mode
-	r.configure(tower_id, visual, elements, tier)
+	r.configure(tower_id, visual, elements, tier, cosmetic_skin_id)
 	_renderer_root.add_child(r)
 	r.queue_redraw()
 
@@ -252,7 +258,7 @@ func _bake_layer(
 
 # ── Helpers ──────────────────────────────────────────────────────────────────
 
-static func _cache_key(tower_id: String, visual_type: String, elements: Array[String], tier: int) -> String:
+static func _cache_key(tower_id: String, visual_type: String, elements: Array[String], tier: int, cosmetic_skin_id: String = "") -> String:
 	var sorted := elements.duplicate()
 	sorted.sort()
-	return "%s|%s|%s|%d" % [tower_id, visual_type, "+".join(sorted), tier]
+	return "%s|%s|%s|%d|%s" % [tower_id, visual_type, "+".join(sorted), tier, cosmetic_skin_id]

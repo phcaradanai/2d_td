@@ -14,6 +14,7 @@ const ENEMY_CATEGORY_AIR := "air"
 const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
 const ENEMIES_DATA_PATH := "res://data/enemies.json"
 const TOWERS_TREE_DATA_PATH := "res://data/towers_tree.json"
+const CosmeticDrawUtilsScript := preload("res://systems/cosmetics/cosmetic_draw_utils.gd")
 
 # Element TD WC3-style elemental damage relation.
 # Cycle used by classic Element TD logic:
@@ -79,6 +80,9 @@ var last_known_target_pos: Vector2 = Vector2.ZERO
 var vfx_core_color: Color = Color(0.75, 0.9, 1.0, 1.0)
 var vfx_glow_color: Color = Color(0.25, 0.85, 1.0, 0.75)
 var vfx_accent_color: Color = Color.WHITE
+var cosmetic_projectile_id: String = ""
+var cosmetic_trail_seconds: float = 0.0
+var cosmetic_projectile_cfg: Dictionary = {}
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
 @onready var audio_manager := get_tree().current_scene.get_node_or_null("AudioManager")
@@ -107,6 +111,7 @@ func setup(p_target: Variant, p_damage: float, p_speed: float = 500.0, p_attack_
 	_refresh_vfx_palette()
 	if target != null and is_instance_valid(target):
 		last_known_target_pos = _get_hit_anchor_global_position(target)
+		_face_target_position(last_known_target_pos)
 	
 	# Density Control: Shorten trail for fast/rapid projectiles to avoid clutter
 	if p_speed > 600:
@@ -146,6 +151,23 @@ func setup_status_effects(effects: Array) -> void:
 	for raw_effect in effects:
 		if raw_effect is Dictionary:
 			status_effects.append(raw_effect.duplicate(true))
+
+func setup_cosmetic(cosmetic_id: String, cfg: Dictionary) -> void:
+	cosmetic_projectile_id = cosmetic_id
+	cosmetic_projectile_cfg = cfg.duplicate(true)
+	cosmetic_trail_seconds = minf(float(cfg.get("trail_seconds", 0.0)), 0.18)
+	if cfg.has("core_color"):
+		vfx_core_color = Color.from_string(str(cfg.get("core_color")), vfx_core_color)
+	if cfg.has("glow_color"):
+		vfx_glow_color = Color.from_string(str(cfg.get("glow_color")), vfx_glow_color)
+	if cfg.has("accent_color"):
+		vfx_accent_color = Color.from_string(str(cfg.get("accent_color")), vfx_accent_color)
+	if cosmetic_id != "":
+		modulate = Color.WHITE
+		z_index = 80
+		queue_redraw()
+	else:
+		z_index = 0
 
 func _process(delta: float) -> void:
 	FrameSpikeLogger.begin("projectile_tick")
@@ -208,6 +230,9 @@ func _update_trail() -> void:
 	queue_redraw()
 
 func _draw() -> void:
+	if cosmetic_projectile_id != "":
+		_draw_cosmetic_projectile()
+		return
 	if bool(get_meta("catalog_projectile_preview", false)):
 		_draw_performance_projectile()
 		return
@@ -292,6 +317,9 @@ func _draw_elemental_droplet() -> void:
 	draw_polyline(pts + PackedVector2Array([pts[0]]), vfx_glow_color, 1.0)
 	draw_circle(Vector2(-2, 0), 2.5, Color.WHITE)
 
+func _draw_cosmetic_projectile() -> void:
+	CosmeticDrawUtilsScript.draw_projectile(self, cosmetic_projectile_id, cosmetic_projectile_cfg, speed)
+
 func _draw_flame_stream() -> void:
 	var flame_len := 20.0
 	var outer := PackedVector2Array([Vector2(-5, -5), Vector2(flame_len, -2), Vector2(flame_len + 8, 0), Vector2(flame_len, 2), Vector2(-5, 5)])
@@ -311,6 +339,11 @@ func _get_hit_anchor_global_position(node: Variant) -> Vector2:
 	if node != null and is_instance_valid(node) and node is Node2D:
 		return node.global_position
 	return global_position
+
+func _face_target_position(target_pos: Vector2) -> void:
+	var to_target := target_pos - global_position
+	if to_target.length_squared() > 0.001:
+		rotation = to_target.angle()
 
 func _refresh_vfx_palette() -> void:
 	var attack_elements := _get_attack_elements_from_source()
@@ -468,6 +501,12 @@ func _find_next_chain_target(hit_pos: Vector2) -> Node2D:
 	return best_target
 
 func _spawn_impact_effect(hit_pos: Vector2, color: Color = Color.WHITE, hit_angle: float = 0.0) -> void:
+	var cosmetic_service := get_node_or_null("/root/CosmeticApplyService")
+	if cosmetic_service != null and cosmetic_service.has_method("spawn_impact"):
+		var effects_container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
+		var parent_node: Node = effects_container if effects_container else get_tree().current_scene
+		if cosmetic_service.spawn_impact(parent_node, source_id, hit_pos, hit_angle):
+			return
 	if PerformanceFirebreak.disable_impact_effects: return
 	if not _allow_impact_fx():
 		return

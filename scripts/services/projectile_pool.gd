@@ -82,6 +82,10 @@ func _reset_projectile(proj: Node) -> void:
 	proj.set("vulnerability_percent", 0.0)
 	proj.set("vulnerability_duration", 0.0)
 	proj.set("source_id", "")
+	proj.set("cosmetic_projectile_id", "")
+	proj.set("cosmetic_trail_seconds", 0.0)
+	proj.set("cosmetic_projectile_cfg", {})
+	proj.z_index = 0
 	proj.set("chain_range", 0.0)
 	proj.set("chain_falloff", 1.0)
 	proj.set("target_categories", ["land"])

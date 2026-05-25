@@ -12,6 +12,8 @@ signal start_pressed()
 signal level_select_pressed()
 
 const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
+const CosmeticPreviewPanelControl = preload("res://scripts/ui/cosmetic_preview_panel.gd")
+const RewardMenuPanelControl = preload("res://scripts/ui/reward_menu_panel.gd")
 
 @onready var player_name_input: LineEdit = $Root/NameContainer/PlayerNameInput
 @onready var play_button: Button = $Root/VBoxContainer/PlayButton
@@ -26,6 +28,9 @@ const NeonStyle = preload("res://scripts/ui/neon_terminal_style.gd")
 
 var _access_status_label: Label = null
 var _identity_panel: CanvasLayer = null   # RuntimeIdentityPanel, lazy-created
+var reward_button: Button = null
+var reward_panel: Control = null
+var cosmetic_preview_panel: Control = null
 
 func _ready() -> void:
 	_apply_neon_terminal_layout()
@@ -43,6 +48,7 @@ func _ready() -> void:
 		credits_close_button.pressed.connect(_on_credits_close_pressed)
 	if credits_panel:
 		credits_panel.hide()
+	_ensure_reward_entry()
 
 	if player_name_input:
 		player_name_input.max_length = 20
@@ -56,12 +62,20 @@ func _ready() -> void:
 func _on_play_pressed() -> void:
 	_unlock_audio()
 	_commit_player_name()
+	if cosmetic_preview_panel:
+		cosmetic_preview_panel.hide()
+	if reward_panel:
+		reward_panel.hide()
 	new_game_pressed.emit()
 	start_pressed.emit()  # backward compat
 
 func _on_continue_pressed() -> void:
 	_unlock_audio()
 	_commit_player_name()
+	if cosmetic_preview_panel:
+		cosmetic_preview_panel.hide()
+	if reward_panel:
+		reward_panel.hide()
 	continue_pressed.emit()
 
 func _commit_player_name() -> void:
@@ -139,6 +153,76 @@ func _apply_neon_terminal_layout() -> void:
 		credits_panel.add_theme_stylebox_override("panel", NeonStyle.panel(NeonStyle.PANEL_DENSE, NeonStyle.CYAN_DIM, true))
 
 	_build_identity_button()
+	_style_reward_entry()
+
+func _ensure_reward_entry() -> void:
+	var menu_box := get_node_or_null("Root/VBoxContainer")
+	var root_node := get_node_or_null("Root")
+	if menu_box == null or root_node == null:
+		return
+	if reward_button == null:
+		reward_button = Button.new()
+		reward_button.name = "RewardButton"
+		reward_button.text = "REWARD"
+		reward_button.custom_minimum_size = Vector2(220, 48)
+		reward_button.pressed.connect(_on_reward_pressed)
+		menu_box.add_child(reward_button)
+		if leaderboard_button:
+			menu_box.move_child(reward_button, leaderboard_button.get_index())
+	if reward_panel == null:
+		reward_panel = RewardMenuPanelControl.new()
+		reward_panel.name = "RewardMenuPanel"
+		reward_panel.visible = false
+		reward_panel.set_anchors_preset(Control.PRESET_CENTER)
+		reward_panel.offset_left = -260
+		reward_panel.offset_top = -190
+		reward_panel.offset_right = 260
+		reward_panel.offset_bottom = 190
+		if reward_panel.has_signal("cosmetics_requested"):
+			reward_panel.cosmetics_requested.connect(_on_reward_cosmetics_requested)
+		root_node.add_child(reward_panel)
+	if cosmetic_preview_panel == null:
+		cosmetic_preview_panel = CosmeticPreviewPanelControl.new()
+		cosmetic_preview_panel.name = "CosmeticPreviewPanel"
+		cosmetic_preview_panel.visible = false
+		cosmetic_preview_panel.set_anchors_preset(Control.PRESET_CENTER)
+		cosmetic_preview_panel.offset_left = -520
+		cosmetic_preview_panel.offset_top = -295
+		cosmetic_preview_panel.offset_right = 520
+		cosmetic_preview_panel.offset_bottom = 295
+		root_node.add_child(cosmetic_preview_panel)
+	_style_reward_entry()
+
+func _style_reward_entry() -> void:
+	if reward_button == null:
+		return
+	NeonStyle.style_button(reward_button, Color(1.0, 0.74, 0.22), false)
+	reward_button.custom_minimum_size.y = 44
+
+func _on_reward_pressed() -> void:
+	_unlock_audio()
+	if reward_panel == null:
+		_ensure_reward_entry()
+	if reward_panel == null:
+		return
+	if reward_panel.visible:
+		reward_panel.hide()
+		return
+	if cosmetic_preview_panel:
+		cosmetic_preview_panel.hide()
+	reward_panel.show()
+
+func _on_reward_cosmetics_requested() -> void:
+	_unlock_audio()
+	if cosmetic_preview_panel == null:
+		_ensure_reward_entry()
+	if cosmetic_preview_panel == null:
+		return
+	if reward_panel:
+		reward_panel.hide()
+	if cosmetic_preview_panel.has_method("refresh"):
+		cosmetic_preview_panel.refresh()
+	cosmetic_preview_panel.show()
 
 ## Update the small access-config status line shown on the main menu.
 ## source: "remote" | "cache" | "default"
