@@ -628,13 +628,23 @@ func _draw_guideline_path() -> void:
 		var from_pos: Vector2 = _cell_center(_guideline_cells[i])
 		var to_pos: Vector2 = _cell_center(_guideline_cells[i + 1])
 		var dir: Vector2 = from_pos.direction_to(to_pos)
-		_draw_chevron(from_pos.lerp(to_pos, 0.35), dir, _grid_size * 0.30)
+		var chevron_pos := from_pos.lerp(to_pos, 0.35)
+		if _is_on_road_cell(chevron_pos):
+			_draw_chevron(chevron_pos, dir, _grid_size * 0.30)
 
 	var last_idx: int = path_size - 1
 	var last_pos: Vector2 = _cell_center(_guideline_cells[last_idx])
 	var prev_pos: Vector2 = _cell_center(_guideline_cells[last_idx - 1])
 	var last_dir: Vector2 = prev_pos.direction_to(last_pos)
-	_draw_chevron(prev_pos.lerp(last_pos, 0.55), last_dir, _grid_size * 0.36)
+	var last_chevron_pos := prev_pos.lerp(last_pos, 0.55)
+	if _is_on_road_cell(last_chevron_pos):
+		_draw_chevron(last_chevron_pos, last_dir, _grid_size * 0.36)
+
+
+func _is_on_road_cell(world_pos: Vector2) -> bool:
+	var local_pos := world_pos - _grid_origin
+	var cell := Vector2i(floori(local_pos.x / _grid_size), floori(local_pos.y / _grid_size))
+	return _road_cells.has(cell)
 
 
 func _draw_chevron(at: Vector2, dir: Vector2, size: float) -> void:
