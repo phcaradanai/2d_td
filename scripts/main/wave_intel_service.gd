@@ -53,6 +53,12 @@ static func infer_enemy_category(enemy_type: String) -> String:
 		return ENEMY_CATEGORY_AIR
 	return ENEMY_CATEGORY_LAND
 
+static func sanitize_wave_name(raw_name: String) -> String:
+	var name := raw_name.strip_edges()
+	name = name.replace("Elemental Guardian", "Elemental Sentinel")
+	name = name.replace("Guardian", "Sentinel")
+	return name
+
 static func derive_wave_traits(enemy_counts: Dictionary, total_count: int, categories: Dictionary) -> Array[String]:
 	var traits: Array[String] = []
 
@@ -93,7 +99,7 @@ static func recommend_roles_for_wave(traits: Array[String]) -> Array[String]:
 	var roles: Array[String] = []
 
 	# Element TD-style guidance: recommend element roles and combo directions,
-	# not old tower classes such as Basic/Rapid/Cannon/Slow/Guardian.
+	# not old tower classes such as Basic/Rapid/Cannon/Slow or removed hero systems.
 	if traits.has("Air"):
 		roles.append("Light/Nature anti-air")
 		roles.append("Dual universal tower")

@@ -754,15 +754,17 @@ func _update_intel_panel(config: Dictionary) -> void:
 			for r in preview.get("recommended_roles", []): all_roles[r] = true
 		
 		var intel_list = all_traits.keys()
+		intel_list.sort()
 		mission_info_labels["enemy_intel"].text = ", ".join(intel_list) if not intel_list.is_empty() else "Unknown"
 		
 		var rec_list = all_roles.keys()
+		rec_list.sort()
 		mission_info_labels["recommended"].text = ", ".join(rec_list) if not rec_list.is_empty() else "None"
 		
 		# Teaching Copy Logic
 		var briefing_text = config.get("description", "Mission parameters nominal.")
 		if level_id_number == 11:
-			briefing_text = "TACTICAL: Guardian unit available. Deploy from HUD for mobile defense. Watch for Hunters—they specialize in tracking and disabling your Hero."
+			briefing_text = "TACTICAL: Hunter and disruptor pressure appears in this sector. Keep support coverage protected and prioritize reload-jamming enemies."
 		elif level_id_number == 12:
 			briefing_text = "TACTICAL: Restricted foundations detected. Construction allowed on designated industrial plates only."
 		elif level_id_number == 14:

@@ -5235,7 +5235,7 @@ func _format_wave_intel_list(values: Array, fallback: String) -> String:
 func _get_trait_description(trait_name: String) -> String:
 	match trait_name.to_lower():
 		"shield": return "Bulwark: Energy shield protects nearby."
-		"anti-hero": return "Hunter: Focuses on your Guardian."
+		"anti-hero": return "Hunter: Punishes exposed support and weak backline coverage."
 		"fast": return "High Speed: Fast, hard to track."
 		"armored": return "Heavy Armor: Reduces incoming damage."
 		"boss": return "COMMAND UNIT: Extreme durability."

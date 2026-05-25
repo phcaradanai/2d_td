@@ -2906,6 +2906,7 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	var categories = {}
 	var total = 0
 	var lane_info = {} # path_id -> { "counts": {}, "total": 0 }
+	var explicit_traits: Array[String] = []
 
 	var groups = _get_preview_wave_groups(wave_data)
 	for group in groups:
@@ -2920,9 +2921,15 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 			continue
 
 		var enemy_type = str(raw_type)
-		var norm_type = normalize_enemy_type(enemy_type)
-		var enemy_category = resolve_preview_enemy_category(group, enemy_type)
-		var display_type = format_preview_enemy_label(norm_type, enemy_category)
+		var enemy_config := get_enemy_type_config(enemy_type)
+		var classification: Dictionary = WAVE_PREVIEW_HELPER_SCRIPT.classify_enemy_group(enemy_type, group, enemy_config)
+		var enemy_category = str(classification.get("category", resolve_preview_enemy_category(group, enemy_type)))
+		var display_type = str(classification.get("label", normalize_enemy_type(enemy_type)))
+		var classification_traits: Array = classification.get("traits", [])
+		for raw_trait in classification_traits:
+			var trait_name := str(raw_trait)
+			if trait_name != "" and not explicit_traits.has(trait_name):
+				explicit_traits.append(trait_name)
 
 		counts[display_type] = counts.get(display_type, 0) + count
 		categories[enemy_category] = true
@@ -2937,15 +2944,16 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	if counts.is_empty():
 		return {}
 
-	var traits = derive_wave_traits(counts, total, categories)
+	var traits = WAVE_PREVIEW_HELPER_SCRIPT.merge_wave_traits(derive_wave_traits(counts, total, categories), explicit_traits)
 	var rec_roles = recommend_roles_for_wave(traits)
 	var warnings = derive_wave_warnings(traits)
 	FrameSpikeLogger.begin("spawn_formation_plan")
 	var formation_preview = _summarize_wave_formations_for_preview(wave_data)
 	FrameSpikeLogger.end("spawn_formation_plan")
 	
-	if wave_data.has("intel") and wave_data["intel"] != "":
-		warnings.append(wave_data["intel"])
+	var progression_note := WAVE_PREVIEW_HELPER_SCRIPT.extract_progression_note(str(wave_data.get("intel", "")))
+	if progression_note != "":
+		warnings.append(progression_note)
 	
 	if lane_info.keys().size() > 1:
 		warnings.append("Dual-Lane Pressure: Enemies arriving from multiple routes.")
@@ -2956,7 +2964,7 @@ func summarize_wave_for_preview(wave) -> Dictionary:
 	_validate_wave_design(wave_data, traits, total)
 
 	return {
-		"name": wave_data.get("name", "Unknown Wave"),
+		"name": WAVE_PREVIEW_HELPER_SCRIPT.sanitize_wave_name(str(wave_data.get("name", "Unknown Wave"))),
 		"reward": wave_data.get("reward", 0),
 		"enemy_counts": counts,
 		"total_count": total,
