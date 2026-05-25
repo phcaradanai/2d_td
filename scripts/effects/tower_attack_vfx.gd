@@ -86,6 +86,13 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 		return
 	if not is_instance_valid(tower) or not is_instance_valid(target):
 		return
+	# Respect per-tower VFX mode preference.
+	var tower_id_early: String = str(tower.get("tower_id")) if "tower_id" in tower else ""
+	if tower_id_early != "":
+		var inv_early := tower.get_node_or_null("/root/CosmeticInventory")
+		if inv_early != null and inv_early.has_method("get_attack_mode"):
+			if inv_early.get_attack_mode(tower_id_early) == "projectile":
+				return  # player chose lightweight projectile cosmetic; VFX suppressed
 
 	# EffectsContainer is the standard bucket for short-lived VFX nodes.
 	var container: Node = \
@@ -115,6 +122,13 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 			if target.has_method("get_hit_origin") else target.global_position
 		var color_o: Color = tower._get_tower_color() \
 			if tower.has_method("_get_tower_color") else Color.WHITE
+		var tower_id_o: String = str(tower.get("tower_id")) if "tower_id" in tower else ""
+		if tower_id_o != "":
+			var svc_o := tower.get_node_or_null("/root/CosmeticApplyService")
+			if svc_o != null and svc_o.has_method("get_attack_vfx_skin_colors"):
+				var ov_o : Variant = svc_o.get_attack_vfx_skin_colors(tower_id_o)
+				if ov_o.has("primary_color"):
+					color_o = ov_o["primary_color"]
 		owned_vfx.show_shot_static(origin_o, tgt_o, color_o)
 		return
 

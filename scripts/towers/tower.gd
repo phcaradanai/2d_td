@@ -776,19 +776,34 @@ func _get_aura_impact_vfx_type() -> String:
 		return "void_bloom"
 	return attack_type
 
+func _get_aura_skin_color_overrides() -> Dictionary:
+	var svc := get_node_or_null("/root/CosmeticApplyService")
+	if svc != null and svc.has_method("get_aura_skin_colors"):
+		return svc.get_aura_skin_colors(tower_id)
+	return {}
+
 func _get_aura_core_color() -> Color:
 	if _get_aura_impact_vfx_type() == "toxic_bloom":
 		return Color(0.42, 1.0, 0.22, 1.0)
+	var ov := _get_aura_skin_color_overrides()
+	if ov.has("core_color"):
+		return ov["core_color"]
 	return _get_tower_color()
 
 func _get_aura_secondary_color() -> Color:
 	if _get_aura_impact_vfx_type() == "toxic_bloom":
 		return Color(0.46, 0.12, 0.76, 1.0)
+	var ov := _get_aura_skin_color_overrides()
+	if ov.has("glow_color"):
+		return ov["glow_color"]
 	return _get_secondary_element_color()
 
 func _get_aura_accent_color() -> Color:
 	if _get_aura_impact_vfx_type() == "toxic_bloom":
 		return Color(0.62, 1.0, 0.34, 1.0)
+	var ov := _get_aura_skin_color_overrides()
+	if ov.has("accent_color"):
+		return ov["accent_color"]
 	return _get_tertiary_element_color()
 
 func _draw() -> void:

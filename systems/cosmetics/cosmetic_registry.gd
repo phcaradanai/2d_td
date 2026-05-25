@@ -4,6 +4,8 @@ const COSMETICS_PATH := "res://data/cosmetics/cosmetics.json"
 const TOWER_SKINS_PATH := "res://data/cosmetics/tower_skins.json"
 const PROJECTILE_SKINS_PATH := "res://data/cosmetics/projectile_skins.json"
 const IMPACT_SKINS_PATH := "res://data/cosmetics/impact_skins.json"
+const AURA_SKINS_PATH := "res://data/cosmetics/aura_skins.json"
+const ATTACK_VFX_SKINS_PATH := "res://data/cosmetics/attack_vfx_skins.json"
 
 const SLOT_TOWER_SKIN := "tower_skin"
 const SLOT_PROJECTILE_SKIN := "projectile_skin"
@@ -31,6 +33,8 @@ func reload() -> void:
 	_load_entries(TOWER_SKINS_PATH)
 	_load_entries(PROJECTILE_SKINS_PATH)
 	_load_entries(IMPACT_SKINS_PATH)
+	_load_entries(AURA_SKINS_PATH)
+	_load_entries(ATTACK_VFX_SKINS_PATH)
 
 func get_cosmetic(cosmetic_id: String) -> Dictionary:
 	return cosmetics_by_id.get(cosmetic_id, {}).duplicate(true)

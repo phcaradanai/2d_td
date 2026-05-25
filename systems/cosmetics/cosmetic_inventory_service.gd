@@ -6,6 +6,9 @@ signal equipped_changed(tower_id: String, slot: String, cosmetic_id: String)
 const SLOT_TOWER_SKIN := "tower_skin"
 const SLOT_PROJECTILE_SKIN := "projectile_skin"
 const SLOT_IMPACT_SKIN := "impact_skin"
+const SLOT_ATTACK_VFX_SKIN := "attack_vfx_skin"
+## Synthetic slot used to store per-tower VFX mode preference via equip_cosmetic.
+const _SLOT_ATTACK_MODE := "attack_vfx_mode"
 
 func get_unlocked_ids() -> Array[String]:
 	var sm := _save_manager()
@@ -48,6 +51,25 @@ func equip(tower_id: String, slot: String, cosmetic_id: String) -> bool:
 
 func unequip(tower_id: String, slot: String) -> bool:
 	return equip(tower_id, slot, "")
+
+## Returns "projectile" or "attack_vfx" (default).
+func get_attack_mode(tower_id: String) -> String:
+	var sm := _save_manager()
+	if sm != null and sm.has_method("get_equipped_cosmetic"):
+		var v := str(sm.get_equipped_cosmetic(tower_id, _SLOT_ATTACK_MODE))
+		if v == "projectile":
+			return "projectile"
+	return "attack_vfx"
+
+## Persists the per-tower VFX mode preference ("attack_vfx" or "projectile").
+func set_attack_mode(tower_id: String, mode: String) -> void:
+	if tower_id == "":
+		return
+	var safe_mode := "projectile" if mode == "projectile" else "attack_vfx"
+	var sm := _save_manager()
+	if sm != null and sm.has_method("equip_cosmetic"):
+		sm.equip_cosmetic(tower_id, _SLOT_ATTACK_MODE, safe_mode)
+		equipped_changed.emit(tower_id, _SLOT_ATTACK_MODE, safe_mode)
 
 func get_equipped(tower_id: String, slot: String) -> String:
 	var sm := _save_manager()

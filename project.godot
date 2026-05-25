@@ -40,6 +40,7 @@ CosmeticRegistry="*res://systems/cosmetics/cosmetic_registry.gd"
 CosmeticInventory="*res://systems/cosmetics/cosmetic_inventory_service.gd"
 CosmeticApplyService="*res://systems/cosmetics/cosmetic_apply_service.gd"
 CosmeticRewardService="*res://systems/cosmetics/cosmetic_reward_service.gd"
+AttackVFXFrameBaker="*res://systems/cosmetics/attack_vfx_frame_baker.gd"
 
 [display]
 

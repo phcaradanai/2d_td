@@ -4,6 +4,8 @@
 class_name TowerAttackVFXService
 extends RefCounted
 
+const _BakedSpriteScript := preload("res://scripts/vfx/core/baked_attack_vfx_sprite.gd")
+
 ## instance_id(tower) → WeakRef(active VFX node)
 ## Every tower gets its own slot; the previous VFX is released when a new one spawns.
 static var _tower_slots: Dictionary = {}
@@ -33,6 +35,14 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 
 	var color: Color = tower._get_tower_color() \
 		if tower.has_method("_get_tower_color") else Color.WHITE
+	var secondary_override: Color = Color(-1, -1, -1, -1)
+	var svc := tower.get_node_or_null("/root/CosmeticApplyService")
+	if svc != null and svc.has_method("get_attack_vfx_skin_colors"):
+		var ov : Variant = svc.get_attack_vfx_skin_colors(tower_id)
+		if ov.has("primary_color"):
+			color = ov["primary_color"]
+		if ov.has("secondary_color"):
+			secondary_override = ov["secondary_color"]
 
 	var pool := tower.get_node_or_null("/root/VisualEffectPoolService")
 	if pool == null or not pool.has_method("acquire_for_tower"):
@@ -48,6 +58,18 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 			old_node._release_to_pool()
 		_tower_slots.erase(tower_iid)
 
+	# Prefer baked sprite frames when the baker has them — zero draw-API calls per shot.
+	var baker := tower.get_node_or_null("/root/AttackVFXFrameBaker")
+	if baker != null and baker.has_method("has_frames") and baker.has_frames(tower_id):
+		var frames: Array = baker.get_frames(tower_id)
+		var sprite := _BakedSpriteScript.new()
+		container.add_child(sprite)
+		sprite.play(origin, tgt_pos, frames, 0.15, color)
+		return
+	# Trigger background bake for next shot so subsequent ones use the sprite path.
+	if baker != null and baker.has_method("request_bake"):
+		baker.request_bake(tower_id, script)
+
 	# Acquire — pool grows on demand, never returns null.
 	var node := pool.acquire_for_tower(script, container) as Node2D
 	if node == null:
@@ -55,4 +77,6 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 
 	_tower_slots[tower_iid] = weakref(node)
 	node.setup(origin, tgt_pos, color)
+	if secondary_override.a >= 0.0:
+		node.set("palette_secondary", secondary_override)
 	node.configure({})

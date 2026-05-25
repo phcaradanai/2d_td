@@ -2,7 +2,9 @@
 	"slots": [
 		"tower_skin",
 		"projectile_skin",
-		"impact_skin"
+		"impact_skin",
+		"aura_skin",
+		"attack_vfx_skin"
 	],
 	"rarities": {
 		"common": {

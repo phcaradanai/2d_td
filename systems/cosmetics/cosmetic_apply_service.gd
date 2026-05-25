@@ -6,6 +6,8 @@ const CosmeticPerformancePolicyScript := preload("res://systems/cosmetics/cosmet
 const SLOT_TOWER_SKIN := "tower_skin"
 const SLOT_PROJECTILE_SKIN := "projectile_skin"
 const SLOT_IMPACT_SKIN := "impact_skin"
+const SLOT_AURA_SKIN := "aura_skin"
+const SLOT_ATTACK_VFX_SKIN := "attack_vfx_skin"
 const IMPACT_POOL_SIZE := 16
 
 var active_projectile_vfx: int = 0
@@ -48,6 +50,32 @@ func get_equipped_id(tower_id: String, slot: String) -> String:
 	if inventory != null and inventory.has_method("get_equipped"):
 		return str(inventory.get_equipped(tower_id, slot))
 	return ""
+
+func get_aura_skin_colors(tower_id: String) -> Dictionary:
+	var cosmetic_id := get_equipped_id(tower_id, SLOT_AURA_SKIN)
+	var cfg := _registry_get(cosmetic_id)
+	if cfg.is_empty():
+		return {}
+	var out := {}
+	if cfg.has("core_color"):
+		out["core_color"] = Color.from_string(str(cfg["core_color"]), Color.WHITE)
+	if cfg.has("glow_color"):
+		out["glow_color"] = Color.from_string(str(cfg["glow_color"]), Color.WHITE)
+	if cfg.has("accent_color"):
+		out["accent_color"] = Color.from_string(str(cfg["accent_color"]), Color.WHITE)
+	return out
+
+func get_attack_vfx_skin_colors(tower_id: String) -> Dictionary:
+	var cosmetic_id := get_equipped_id(tower_id, SLOT_ATTACK_VFX_SKIN)
+	var cfg := _registry_get(cosmetic_id)
+	if cfg.is_empty():
+		return {}
+	var out := {}
+	if cfg.has("primary_color"):
+		out["primary_color"] = Color.from_string(str(cfg["primary_color"]), Color.WHITE)
+	if cfg.has("secondary_color"):
+		out["secondary_color"] = Color.from_string(str(cfg["secondary_color"]), Color.WHITE)
+	return out
 
 func get_tower_skin_visual_script(tower_id: String) -> GDScript:
 	var cosmetic_id := get_equipped_id(tower_id, SLOT_TOWER_SKIN)
