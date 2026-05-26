@@ -92,6 +92,7 @@ func apply_projectile_cosmetic(projectile: Node, tower_id: String) -> void:
 		return
 	var cosmetic_id := get_equipped_id(tower_id, SLOT_PROJECTILE_SKIN)
 	var cfg := _registry_get(cosmetic_id)
+	print("[apply] tower_id=", tower_id, " equipped=", cosmetic_id, " cfg_empty=", cfg.is_empty())
 	if cfg.is_empty():
 		if projectile.has_method("setup_cosmetic"):
 			projectile.setup_cosmetic("", {})

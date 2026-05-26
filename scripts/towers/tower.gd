@@ -1646,7 +1646,16 @@ func shoot() -> void:
 		var cosmetic_service := get_node_or_null("/root/CosmeticApplyService")
 		if cosmetic_service != null and cosmetic_service.has_method("apply_projectile_cosmetic"):
 			cosmetic_service.apply_projectile_cosmetic(projectile, tower_id)
-		
+		# In "Projectile (Fast)" mode without a cosmetic, show basic projectile body
+		# so it stays visible even though attack VFX is suppressed.
+		var _inv_node := get_node_or_null("/root/CosmeticInventory")
+		if _inv_node != null and _inv_node.has_method("get_attack_mode"):
+			if _inv_node.get_attack_mode(tower_id) == "projectile" \
+					and str(projectile.get("cosmetic_projectile_id")) == "":
+				projectile.set("_show_body_in_projectile_mode", true)
+				projectile.z_index = 80
+				projectile.queue_redraw()
+
 		# VISUAL POLISH: Recoil + directional contextual VFX
 		play_fire_recoil()
 		TowerAttackVFX.spawn_attack_vfx(self , current_target)

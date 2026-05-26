@@ -85,6 +85,7 @@ func _reset_projectile(proj: Node) -> void:
 	proj.set("cosmetic_projectile_id", "")
 	proj.set("cosmetic_trail_seconds", 0.0)
 	proj.set("cosmetic_projectile_cfg", {})
+	proj.set("_show_body_in_projectile_mode", false)
 	proj.z_index = 0
 	proj.set("chain_range", 0.0)
 	proj.set("chain_falloff", 1.0)

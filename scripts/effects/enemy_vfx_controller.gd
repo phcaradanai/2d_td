@@ -145,7 +145,7 @@ func set_protected_icon(active: bool) -> void:
 
 func update_disrupted_towers(towers: Array) -> void:
 	for old_tower in linked_towers:
-		if not towers.has(old_tower):
+		if not is_instance_valid(old_tower) or not towers.has(old_tower):
 			_remove_tower_icon(old_tower)
 	linked_towers = towers.duplicate()
 	_ensure_target_links()
