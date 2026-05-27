@@ -1,0 +1,28 @@
+{
+	"tower_skin": [],
+	"projectile_skin": [],
+	"impact_skin": [],
+	"aura_skin": [
+		{
+			"id": "well_moonbloom_t1",
+			"display_name": "Moonbloom Aura",
+			"rarity": "rare",
+			"description": "Moonlit botanical radiance flows through the water channels, nature chevrons glow with pale silver light.",
+			"core_color": "#d4eeff",
+			"glow_color": "#a8f0c8",
+			"accent_color": "#f0f8ff",
+			"aura_pattern": "ring"
+		},
+		{
+			"id": "well_golden_spring_t1",
+			"display_name": "Golden Spring Aura",
+			"rarity": "perfect",
+			"description": "The well overflows with liquid gold. Nearby towers shimmer with a blessed haste that transcends the natural.",
+			"core_color": "#ffd966",
+			"glow_color": "#80ffcc",
+			"accent_color": "#fffacc",
+			"aura_pattern": "ring"
+		}
+	],
+	"attack_vfx_skin": []
+}

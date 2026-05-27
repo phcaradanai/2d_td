@@ -1,0 +1,59 @@
+{
+	"tower_skin": [
+		{
+			"id": "basic_neon_silver",
+			"display_name": "Neon Silver Frame",
+			"rarity": "common",
+			"description": "A polished silver starter chassis with cyan circuit accents.",
+			"visual_script": "res://systems/cosmetics/visuals/basic_neon_silver_visual.gd"
+		},
+		{
+			"id": "basic_perfect_gold",
+			"display_name": "Perfect Gold Frame",
+			"rarity": "perfect",
+			"description": "A gold victory chassis reserved for a flawless first clear.",
+			"visual_script": "res://systems/cosmetics/visuals/basic_perfect_gold_visual.gd"
+		}
+	],
+	"projectile_skin": [
+		{
+			"id": "basic_gold_bolt",
+			"display_name": "Gold Bolt",
+			"rarity": "perfect",
+			"description": "A compact gold kinetic bolt tuned for clean high-FPS readability.",
+			"core_color": "#ffd966",
+			"glow_color": "#ff9f2e",
+			"accent_color": "#fff4b8",
+			"trail_seconds": 0.0
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "basic_cyber_pop",
+			"display_name": "Cyber Pop",
+			"rarity": "rare",
+			"description": "A crisp cyan-magenta impact burst capped at 0.25s.",
+			"core_color": "#44f6ff",
+			"glow_color": "#ff4fd8",
+			"accent_color": "#ffffff",
+			"duration": 0.25
+		}
+	],
+	"aura_skin": [],
+	"attack_vfx_skin": [
+		{
+			"id": "basic_gold_tracer",
+			"display_name": "Gold Tracer",
+			"rarity": "rare",
+			"primary_color": "#ffd966",
+			"secondary_color": "#ffe599"
+		},
+		{
+			"id": "basic_void_tracer",
+			"display_name": "Void Tracer",
+			"rarity": "perfect",
+			"primary_color": "#9933ff",
+			"secondary_color": "#cc66ff"
+		}
+	]
+}

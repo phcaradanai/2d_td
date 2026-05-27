@@ -1,0 +1,15 @@
+{
+	"tower_skin": [],
+	"projectile_skin": [],
+	"impact_skin": [],
+	"aura_skin": [],
+	"attack_vfx_skin": [
+		{
+			"id": "sniper_crimson_beam",
+			"display_name": "Crimson Beam",
+			"rarity": "rare",
+			"primary_color": "#ff2244",
+			"secondary_color": "#ff6688"
+		}
+	]
+}

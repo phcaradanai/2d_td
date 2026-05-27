@@ -1,0 +1,28 @@
+{
+	"tower_skin": [],
+	"projectile_skin": [],
+	"impact_skin": [],
+	"aura_skin": [
+		{
+			"id": "blacksmith_hellforge_t3",
+			"display_name": "Hellforge Aura",
+			"rarity": "rare",
+			"description": "Heat from an infernal crucible — forge chambers glow deep crimson, pylons smolder with dark embers.",
+			"core_color": "#ff2200",
+			"glow_color": "#ff6600",
+			"accent_color": "#ff9944",
+			"aura_pattern": "spark"
+		},
+		{
+			"id": "blacksmith_cold_iron_t3",
+			"display_name": "Cold Iron Aura",
+			"rarity": "perfect",
+			"description": "A master of cold-working tempers steel in ice. Pale blue sparks dance off the striking face, tempering allies in frost-hardened steel.",
+			"core_color": "#88ccff",
+			"glow_color": "#aaeeff",
+			"accent_color": "#ddf4ff",
+			"aura_pattern": "spark"
+		}
+	],
+	"attack_vfx_skin": []
+}

@@ -1,15 +1,11 @@
 extends Node
 
 const COSMETICS_PATH := "res://data/cosmetics/cosmetics.json"
-const TOWER_SKINS_PATH := "res://data/cosmetics/tower_skins.json"
-const PROJECTILE_SKINS_PATH := "res://data/cosmetics/projectile_skins.json"
-const IMPACT_SKINS_PATH := "res://data/cosmetics/impact_skins.json"
-const AURA_SKINS_PATH := "res://data/cosmetics/aura_skins.json"
-const ATTACK_VFX_SKINS_PATH := "res://data/cosmetics/attack_vfx_skins.json"
+const TOWERS_DIR     := "res://data/cosmetics/towers/"
 
-const SLOT_TOWER_SKIN := "tower_skin"
+const SLOT_TOWER_SKIN    := "tower_skin"
 const SLOT_PROJECTILE_SKIN := "projectile_skin"
-const SLOT_IMPACT_SKIN := "impact_skin"
+const SLOT_IMPACT_SKIN   := "impact_skin"
 
 var slots: Array[String] = []
 var rarities: Dictionary = {}
@@ -26,15 +22,24 @@ func reload() -> void:
 	cosmetics_by_id.clear()
 	cosmetics_by_slot.clear()
 	cosmetics_by_tower_slot.clear()
+
 	var base := _load_json(COSMETICS_PATH)
 	for slot in base.get("slots", []):
 		slots.append(str(slot))
 	rarities = base.get("rarities", {}).duplicate(true)
-	_load_entries(TOWER_SKINS_PATH)
-	_load_entries(PROJECTILE_SKINS_PATH)
-	_load_entries(IMPACT_SKINS_PATH)
-	_load_entries(AURA_SKINS_PATH)
-	_load_entries(ATTACK_VFX_SKINS_PATH)
+
+	var dir := DirAccess.open(TOWERS_DIR)
+	if dir == null:
+		push_warning("[CosmeticRegistry] towers/ directory not found: " + TOWERS_DIR)
+		return
+	dir.list_dir_begin()
+	var file_name := dir.get_next()
+	while file_name != "":
+		if not dir.current_is_dir() and file_name.ends_with(".json"):
+			var tower_id := file_name.get_basename()
+			_load_tower_file(TOWERS_DIR + file_name, tower_id)
+		file_name = dir.get_next()
+	dir.list_dir_end()
 
 func get_cosmetic(cosmetic_id: String) -> Dictionary:
 	return cosmetics_by_id.get(cosmetic_id, {}).duplicate(true)
@@ -54,23 +59,30 @@ func get_rarity_label(rarity: String) -> String:
 	var cfg: Dictionary = rarities.get(rarity, {})
 	return str(cfg.get("label", rarity.capitalize()))
 
-func _load_entries(path: String) -> void:
+## Load one per-tower file. tower_id and slot are injected automatically.
+func _load_tower_file(path: String, tower_id: String) -> void:
 	var data := _load_json(path)
-	for cosmetic_id in data.keys():
-		var cfg: Dictionary = data[cosmetic_id]
-		cfg["id"] = str(cfg.get("id", cosmetic_id))
-		var slot := str(cfg.get("slot", ""))
-		var tower_id := str(cfg.get("tower_id", ""))
-		if cfg["id"] == "" or slot == "" or tower_id == "":
+	for slot in data.keys():
+		var entries = data[slot]
+		if not entries is Array:
 			continue
-		cosmetics_by_id[cfg["id"]] = cfg
-		if not cosmetics_by_slot.has(slot):
-			cosmetics_by_slot[slot] = []
-		cosmetics_by_slot[slot].append(cfg["id"])
-		var key := _tower_slot_key(tower_id, slot)
-		if not cosmetics_by_tower_slot.has(key):
-			cosmetics_by_tower_slot[key] = []
-		cosmetics_by_tower_slot[key].append(cfg["id"])
+		for raw in entries:
+			if not raw is Dictionary:
+				continue
+			var cfg: Dictionary = raw.duplicate(true)
+			cfg["tower_id"] = tower_id
+			cfg["slot"]     = slot
+			var id := str(cfg.get("id", "")).strip_edges()
+			if id == "":
+				continue
+			cosmetics_by_id[id] = cfg
+			if not cosmetics_by_slot.has(slot):
+				cosmetics_by_slot[slot] = []
+			cosmetics_by_slot[slot].append(id)
+			var key := _tower_slot_key(tower_id, slot)
+			if not cosmetics_by_tower_slot.has(key):
+				cosmetics_by_tower_slot[key] = []
+			cosmetics_by_tower_slot[key].append(id)
 
 func _load_json(path: String) -> Dictionary:
 	if not FileAccess.file_exists(path):

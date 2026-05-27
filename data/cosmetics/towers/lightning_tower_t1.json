@@ -1,0 +1,15 @@
+{
+	"tower_skin": [],
+	"projectile_skin": [],
+	"impact_skin": [],
+	"aura_skin": [],
+	"attack_vfx_skin": [
+		{
+			"id": "lightning_arclight",
+			"display_name": "Arclight",
+			"rarity": "perfect",
+			"primary_color": "#ffee22",
+			"secondary_color": "#ffffff"
+		}
+	]
+}

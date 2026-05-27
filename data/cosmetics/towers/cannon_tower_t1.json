@@ -1,0 +1,22 @@
+{
+	"tower_skin": [],
+	"projectile_skin": [],
+	"impact_skin": [],
+	"aura_skin": [],
+	"attack_vfx_skin": [
+		{
+			"id": "cannon_inferno_blast",
+			"display_name": "Inferno Blast",
+			"rarity": "rare",
+			"primary_color": "#ff4400",
+			"secondary_color": "#ff8800"
+		},
+		{
+			"id": "cannon_frost_cannon",
+			"display_name": "Frost Cannon",
+			"rarity": "perfect",
+			"primary_color": "#88ddff",
+			"secondary_color": "#ccf4ff"
+		}
+	]
+}
