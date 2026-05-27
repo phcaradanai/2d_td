@@ -154,7 +154,6 @@ func setup_status_effects(effects: Array) -> void:
 			status_effects.append(raw_effect.duplicate(true))
 
 func setup_cosmetic(cosmetic_id: String, cfg: Dictionary) -> void:
-	print("[setup_cosmetic] id=", cosmetic_id, " has_core=", cfg.has("core_color"))
 	cosmetic_projectile_id = cosmetic_id
 	cosmetic_projectile_cfg = cfg.duplicate(true)
 	cosmetic_trail_seconds = minf(float(cfg.get("trail_seconds", 0.0)), 0.18)
@@ -232,7 +231,6 @@ func _update_trail() -> void:
 	queue_redraw()
 
 func _draw() -> void:
-	print("[draw] cid=", cosmetic_projectile_id, " visible=", visible, " modulate=", modulate)
 	if cosmetic_projectile_id != "":
 		_draw_cosmetic_projectile()
 		return

@@ -11,17 +11,29 @@ const SLOT_ATTACK_VFX_SKIN := "attack_vfx_skin"
 const _SLOT_ATTACK_MODE := "attack_vfx_mode"
 
 func get_unlocked_ids() -> Array[String]:
+	var us := _unlock_service()
+	if us != null:
+		return us.get_unlocked_ids()
 	var sm := _save_manager()
 	if sm != null and sm.has_method("get_unlocked_cosmetic_ids"):
 		return sm.get_unlocked_cosmetic_ids()
 	return []
 
 func is_unlocked(cosmetic_id: String) -> bool:
+	var us := _unlock_service()
+	if us != null:
+		return us.is_unlocked(cosmetic_id)
 	return get_unlocked_ids().has(cosmetic_id)
 
 func unlock(cosmetic_id: String) -> bool:
 	if cosmetic_id == "":
 		return false
+	var us := _unlock_service()
+	if us != null:
+		var changed : Variant = us.unlock(cosmetic_id)
+		if changed:
+			cosmetics_changed.emit()
+		return changed
 	var sm := _save_manager()
 	if sm == null or not sm.has_method("unlock_cosmetic"):
 		return false
@@ -31,22 +43,17 @@ func unlock(cosmetic_id: String) -> bool:
 	return changed
 
 func equip(tower_id: String, slot: String, cosmetic_id: String) -> bool:
-	print("[inv.equip] called tower=", tower_id, " slot=", slot, " id=", cosmetic_id)
 	if tower_id == "" or slot == "":
-		print("[inv.equip] REJECTED: empty tower_id or slot")
 		return false
 	if cosmetic_id != "" and not is_unlocked(cosmetic_id):
-		print("[inv.equip] REJECTED: not unlocked. unlocked_ids=", get_unlocked_ids())
 		return false
 	var registry := _registry()
 	if cosmetic_id != "" and registry != null and registry.has_method("get_cosmetic"):
 		var cfg: Dictionary = registry.get_cosmetic(cosmetic_id)
 		if cfg.is_empty() or str(cfg.get("tower_id", "")) != tower_id or str(cfg.get("slot", "")) != slot:
-			print("[inv.equip] REJECTED: cfg mismatch. cfg=", cfg)
 			return false
 	var sm := _save_manager()
 	if sm == null or not sm.has_method("equip_cosmetic"):
-		print("[inv.equip] REJECTED: SaveManager not found. sm=", sm)
 		return false
 	var changed := bool(sm.equip_cosmetic(tower_id, slot, cosmetic_id))
 	if changed:
@@ -81,6 +88,9 @@ func get_equipped(tower_id: String, slot: String) -> String:
 	if sm != null and sm.has_method("get_equipped_cosmetic"):
 		return str(sm.get_equipped_cosmetic(tower_id, slot))
 	return ""
+
+func _unlock_service() -> Node:
+	return get_node_or_null("/root/CosmeticUnlockService")
 
 func _save_manager() -> Node:
 	var scene := get_tree().current_scene
