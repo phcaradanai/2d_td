@@ -34,19 +34,28 @@ static func _update_separation(enemy: Node2D) -> void:
 
 
 static func _get_nearby_enemy_count(enemy: Node2D, radius: float) -> int:
+	var frame := Engine.get_process_frames()
+	if enemy._crowd_cache_frame == frame:
+		return enemy._crowd_cache_count
 	var count := 0
 	var radius_sq := radius * radius
 	var pb: Node = enemy.get_node_or_null("/root/PerformanceBudget")
 	var enemies: Array = pb.get_enemies() if pb != null and pb.has_method("get_enemies") else enemy.get_tree().get_nodes_in_group("enemies")
+	var ep := enemy.global_position
 	for e in enemies:
 		if e == enemy or not is_instance_valid(e) or not (e is Node2D):
 			continue
 		if e.has_method("is_alive") and not e.is_alive():
 			continue
-		if enemy.global_position.distance_squared_to(e.global_position) <= radius_sq:
+		var op: Vector2 = e.global_position
+		var dx := op.x - ep.x
+		var dy := op.y - ep.y
+		if dx * dx + dy * dy <= radius_sq:
 			count += 1
 			if count >= enemy.CROWDED_ENEMY_THRESHOLD:
-				return count
+				break
+	enemy._crowd_cache_frame = frame
+	enemy._crowd_cache_count = count
 	return count
 
 ## Death pop — instant scale burst + fade before queue_free fires.

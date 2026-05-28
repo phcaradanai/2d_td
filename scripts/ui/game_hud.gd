@@ -100,6 +100,7 @@ var sell_tower_button: Button = null
 @onready var center_restart_button: Button = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterRestartButton
 @onready var center_next_level_button: Button = get_node_or_null("Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterNextLevelButton")
 @onready var center_menu_button: Button = $Root/CenterMessagePanel/MarginContainer/VBoxContainer/CenterMenuButton
+var center_resume_button: Button = null
 var center_settings_button: Button = null
 var center_level_select_button: Button = null
 var return_level_select_confirm_panel: PanelContainer = null
@@ -139,7 +140,6 @@ var visual_quality_option_button: OptionButton = null
 var attack_vfx_option_button: OptionButton = null
 var floating_damage_option_button: OptionButton = null
 var status_effects_option_button: OptionButton = null
-var screen_shake_option_button: OptionButton = null
 
 # Wave Intel Panel
 var wave_intel_panel: PanelContainer = null
@@ -1261,7 +1261,6 @@ func _refresh_performance_options() -> void:
 	_select_option_metadata(attack_vfx_option_button, str(_performance_settings.get("attack_vfx", "normal")))
 	_select_option_metadata(floating_damage_option_button, str(_performance_settings.get("floating_damage_numbers", "off")))
 	_select_option_metadata(status_effects_option_button, str(_performance_settings.get("status_effects", "icons_only")))
-	_select_option_metadata(screen_shake_option_button, str(_performance_settings.get("screen_shake", "off")))
 
 func _select_option_metadata(option_button: OptionButton, metadata: String) -> void:
 	if option_button == null:
@@ -1367,10 +1366,6 @@ func _setup_settings_panel() -> void:
 	status_effects_option_button = status_row[1]
 	perf_grid.add_child(status_row[0])
 	perf_grid.add_child(status_effects_option_button)
-	var shake_row := _make_settings_option_row("Screen Shake", [["off", "Off"], ["minimal", "Minimal"], ["full", "Full"]], "screen_shake")
-	screen_shake_option_button = shake_row[1]
-	perf_grid.add_child(shake_row[0])
-	perf_grid.add_child(screen_shake_option_button)
 	vbox.add_child(perf_grid)
 	vbox.move_child(perf_grid, 5)
 	_refresh_performance_options()
@@ -4016,6 +4011,16 @@ func _ensure_pause_navigation_buttons() -> void:
 	var container = center_restart_button.get_parent()
 	if container == null:
 		return
+	if center_resume_button == null:
+		center_resume_button = Button.new()
+		center_resume_button.name = "CenterResumeButton"
+		center_resume_button.text = "Resume"
+		center_resume_button.custom_minimum_size = Vector2(240, 44)
+		center_resume_button.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+		center_resume_button.pressed.connect(func(): pause_requested.emit())
+		container.add_child(center_resume_button)
+		container.move_child(center_resume_button, center_restart_button.get_index())
+		NeonStyle.style_button(center_resume_button, NeonStyle.CYAN, true)
 	if center_settings_button == null:
 		center_settings_button = Button.new()
 		center_settings_button.name = "CenterSettingsButton"
@@ -4039,6 +4044,8 @@ func _ensure_pause_navigation_buttons() -> void:
 	_set_pause_navigation_visible(false)
 
 func _set_pause_navigation_visible(visible_value: bool) -> void:
+	if center_resume_button:
+		center_resume_button.visible = visible_value
 	if center_settings_button:
 		center_settings_button.visible = visible_value
 	if center_level_select_button:

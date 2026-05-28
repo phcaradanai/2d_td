@@ -115,7 +115,7 @@ static func _spawn_hit_spark(enemy: Node2D, hit_pos: Vector2, color: Color) -> v
 		"death_pop")
 	if spark == null:
 		return
-	spark.enemy.global_position = hit_pos
+	spark.global_position = hit_pos
 	spark.scale = Vector2.ONE * (0.32 if crowded else 0.45)   # tiny spark — not an explosion
 	if spark.has_method("setup"):
 		spark.setup("default", Color(color.r, color.g, color.b, 0.9), 0.10 if crowded else 0.12, 2 if crowded else 3)
@@ -165,17 +165,28 @@ static func flash_body(enemy: Node2D, damage_context: String = "") -> void:
 
 
 static func spawn_damage_number(enemy: Node2D, amount: int, hit_global: Vector2, color: Color = Color.WHITE, source_id: String = "") -> void:
-	if PerformanceFirebreak.disable_damage_numbers: return
-	if enemy._get_nearby_enemy_count(enemy.CROWDED_ENEMY_RADIUS) >= enemy.CROWDED_ENEMY_THRESHOLD and amount < int(enemy.max_hp * 0.18):
+	if PerformanceFirebreak.disable_damage_numbers:
+		if OS.is_debug_build():
+			print("[FloatingDamageMissing] source=", source_id, " enemy=", enemy.enemy_type, " reason=firebreak_disabled (setting=off or not applied)")
+		return
+	if enemy._get_nearby_enemy_count(enemy.CROWDED_ENEMY_RADIUS) >= enemy.CROWDED_ENEMY_THRESHOLD and amount < int(enemy.max_hp * 0.03):
+		if OS.is_debug_build():
+			print("[FloatingDamageMissing] source=", source_id, " enemy=", enemy.enemy_type, " reason=crowded_small_hit amount=", amount, " threshold=", int(enemy.max_hp * 0.03))
 		return
 	var perf_service := enemy.get_node_or_null("/root/PerformanceBudgetService")
 	if perf_service != null and perf_service.has_method("allow_floating_damage_number"):
 		if not perf_service.allow_floating_damage_number():
+			if OS.is_debug_build():
+				var fps_ok: bool = perf_service.current_fps >= 55.0
+				var reason := "fps_low" if not fps_ok else "rate_limited"
+				print("[FloatingDamageMissing] source=", source_id, " enemy=", enemy.enemy_type, " reason=", reason, " fps=", perf_service.current_fps)
 			return
 	elif not enemy.SHOW_FLOATING_DAMAGE_NUMBERS:
 		return
 	# Budget cap — skip new labels when too many are already alive.
 	if DamageNumber._active_count >= DamageNumber.MAX_ACTIVE:
+		if OS.is_debug_build():
+			print("[FloatingDamageMissing] source=", source_id, " enemy=", enemy.enemy_type, " reason=max_active_cap count=", DamageNumber._active_count)
 		return
 	if enemy.damage_number_scene:
 		var pool := enemy.get_node_or_null("/root/VisualEffectPoolService")
@@ -184,11 +195,13 @@ static func spawn_damage_number(enemy: Node2D, amount: int, hit_global: Vector2,
 		if pool != null and pool.has_method("acquire_scene"):
 			dn = pool.acquire_scene("damage_number", parent_node, "damage_number")
 		if dn == null:
+			if OS.is_debug_build():
+				print("[FloatingDamageMissing] source=", source_id, " enemy=", enemy.enemy_type, " reason=pool_null_or_capped amount=", amount)
 			return
 		var offset := Vector2(randf_range(-5, 5), -20 + randf_range(-5, 5))
 		if source_id.begins_with("disease_"):
 			offset = Vector2(randf_range(-12, 12), -12 + randf_range(-3, 3))
-		dn.enemy.global_position = hit_global + offset
+		dn.global_position = hit_global + offset
 		dn.setup(amount, color)
 
 
@@ -241,6 +254,6 @@ static func _spawn_swarm_hit_effect(enemy: Node2D, hit_global: Vector2) -> void:
 		effect = pool.acquire_scene("death_pop", container, "death_pop")
 	if effect == null:
 		return
-	effect.enemy.global_position = hit_global
+	effect.global_position = hit_global
 	if effect.has_method("setup"):
 		effect.setup("swarm_hit", enemy.swarm_core_glow_color, 0.18, 6)

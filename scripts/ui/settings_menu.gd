@@ -104,7 +104,6 @@ func _build_ui() -> void:
 	_add_option(content, "Attack VFX", "performance.attack_vfx", [["minimal", "Minimal"], ["normal", "Normal"], ["full", "Full"]])
 	_add_option(content, "Floating Damage Numbers", "performance.floating_damage_numbers", [["off", "Off"], ["limited", "Limited"], ["full", "Full"]])
 	_add_option(content, "Status Effects", "performance.status_effects", [["icons_only", "Icons Only"], ["icons_minimal_pulse", "Icons + Minimal Pulse"]])
-	_add_option(content, "Screen Shake", "performance.screen_shake", [["off", "Off"], ["minimal", "Minimal"], ["full", "Full"]])
 	_add_section(content, "AUDIO")
 	_add_slider(content, "Master Volume", "audio.master_volume")
 	_add_slider(content, "Music Volume", "audio.music_volume")

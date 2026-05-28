@@ -260,11 +260,15 @@ func _recompute_budgets() -> void:
 
 	match damage_numbers:
 		"full":
-			max_damage_numbers_per_second = 20 if quality != Quality.LOW else 0
+			max_damage_numbers_per_second = 20 if quality != Quality.LOW else 10
 		"limited":
-			max_damage_numbers_per_second = 10 if quality == Quality.HIGH else (5 if quality == Quality.BALANCED else 0)
+			max_damage_numbers_per_second = 10 if quality == Quality.HIGH else (5 if quality == Quality.BALANCED else 5)
 		_:
 			max_damage_numbers_per_second = 0
+
+	PerformanceFirebreak.disable_damage_numbers = (damage_numbers == "off")
+	PerformanceFirebreak.disable_status_animations = (status_effects == "icons_only")
+	print("[Settings] floating_damage=", damage_numbers, " status_effects=", status_effects, " applied")
 
 func _apply_platform_defaults() -> void:
 	if _is_low_power_platform():

@@ -54,7 +54,9 @@ static func take_damage(enemy: Node2D, amount: float, hit_global: Vector2 = Vect
 	else:
 		dn_color = _element_color_from_source(source_id)
 
-	enemy.spawn_damage_number(int(final_damage), capture_pos, dn_color, source_id)
+	var display_damage := roundi(final_damage)
+	if display_damage > 0:
+		enemy.spawn_damage_number(display_damage, capture_pos, dn_color, source_id)
 	EnemyHitFeedbackService._play_hit_pulse(enemy )
 	if enemy._body_baked:
 		# One heavy impact path only. enemy.flash_body() resolves comfort colour/LOD;

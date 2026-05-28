@@ -135,7 +135,7 @@ func get_cap(cap_key: String) -> int:
 			if quality_name == "HIGH":
 				return 20
 			if quality_name == "LOW":
-				return 0
+				return 8
 			return 10
 		CAP_DEATH:
 			if quality_name == "HIGH":

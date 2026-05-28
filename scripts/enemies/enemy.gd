@@ -161,6 +161,8 @@ var _sep_lateral: float = 0.0 # current smoothed lateral offset (px)
 var _sep_target: float = 0.0 # target lateral from last avoidance scan
 var _sep_check_timer: float = 0.0 # countdown to next scan
 var _spawn_spread_lateral: float = 0.0 # early visual-only lane offset; fades with progress
+var _crowd_cache_frame: int = -1
+var _crowd_cache_count: int = 0
 
 const SEP_SCAN_INTERVAL := 0.38 # base seconds between scans per enemy
 const SEP_SCAN_RADIUS_SQ := 784.0 # 28 px² — world-space proximity filter

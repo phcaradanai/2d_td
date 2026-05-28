@@ -23,8 +23,8 @@ static func process(enemy: Node2D, delta: float) -> void:
 		var skip = (enemy._anim_lod == enemy.ANIM_LOD_LOW) and (enemy._anim_frame_counter % 3 != 0)
 		if not skip:
 			enemy._update_sprite_movement_anim()
-			# Redraw overlay arcs only when something is active (shield/slow)
-			if enemy.shield_remaining > 0 or enemy.active_slow_percent > 0:
+			# Redraw overlay arcs at 20 fps — semi-transparent circles don't need 60 fps refresh.
+			if (enemy.shield_remaining > 0 or enemy.active_slow_percent > 0) and enemy._anim_frame_counter % 3 == 0:
 				enemy.queue_redraw()
 		# Separation: lazy scan + per-frame lerp. Lerp cost = ~3 floats, free.
 		enemy._sep_check_timer -= delta
