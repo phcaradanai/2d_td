@@ -55,6 +55,8 @@ class TowerPreviewNode extends Node2D:
 		var core_color := Color(0.7, 0.8, 0.85, 1.0)
 		var element_colors := _get_all_element_colors()
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2(1.45, 1.45))
+		if visual_script.has_method("draw_base"):
+			visual_script.draw_base(self)
 		if visual_script.has_method("draw_contour"):
 			visual_script.draw_contour(self)
 		if visual_script.has_method("draw_top"):

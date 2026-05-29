@@ -1,5 +1,13 @@
 ﻿{
-	"tower_skin": [],
+	"tower_skin": [
+		{
+			"id": "neutral_cannon_ripped_t1",
+			"display_name": "Ripped Cannon T1",
+			"rarity": "common",
+			"description": "A pixel-art stone base and metal cannon skin from the supplied Neutral Cannon T1 asset.",
+			"visual_script": "res://systems/cosmetics/visuals/neutral_cannon_ripped_t1_visual.gd"
+		}
+	],
 	"projectile_skin": [],
 	"impact_skin": [],
 	"aura_skin": [],

@@ -8,6 +8,10 @@ const TowerVisualDrawUtilsScript = preload("res://scripts/towers/visuals/common/
 const TowerVisualRegistryScript = preload("res://scripts/towers/visuals/tower_visual_registry.gd")
 
 static func draw_base_plate(t: Node2D) -> void:
+	var cosmetic_script := _get_cosmetic_visual_script(t)
+	if cosmetic_script != null and cosmetic_script.has_method("draw_base"):
+		cosmetic_script.draw_base(t)
+		return
 	TowerVisualDrawUtilsScript.draw_base_plate(t)
 
 static func draw_element_core(t: Node2D) -> void:
@@ -40,9 +44,37 @@ static func draw_turret_top(t: Node2D) -> void:
 		visual_script.draw_top(t, main_color, secondary_color, core_color, lvl, size, el_colors)
 
 static func _get_visual_script(t: Node2D) -> Script:
+	var cosmetic_script := _get_cosmetic_visual_script(t)
+	if cosmetic_script != null:
+		return cosmetic_script
+	return TowerVisualRegistryScript.get_visual_script(t.tower_id, t.visual_type)
+
+static func _get_cosmetic_visual_script(t: Node2D) -> Script:
+	var direct_skin_id := ""
+	if "tower_skin_id" in t:
+		direct_skin_id = str(t.tower_skin_id)
+	elif "cosmetic_skin_id" in t:
+		direct_skin_id = str(t.cosmetic_skin_id)
+	if direct_skin_id != "":
+		var direct_script := _load_cosmetic_visual_script(t, direct_skin_id)
+		if direct_script != null:
+			return direct_script
 	var cosmetic_service := t.get_node_or_null("/root/CosmeticApplyService")
 	if cosmetic_service != null and cosmetic_service.has_method("get_tower_skin_visual_script"):
 		var cosmetic_script: Script = cosmetic_service.get_tower_skin_visual_script(t.tower_id)
 		if cosmetic_script != null:
 			return cosmetic_script
-	return TowerVisualRegistryScript.get_visual_script(t.tower_id, t.visual_type)
+	return null
+
+static func _load_cosmetic_visual_script(t: Node2D, cosmetic_id: String) -> Script:
+	var cfg := {}
+	if "registry" in t and t.registry != null and t.registry.has_method("get_cosmetic"):
+		cfg = t.registry.get_cosmetic(cosmetic_id)
+	else:
+		var registry := t.get_node_or_null("/root/CosmeticRegistry")
+		if registry != null and registry.has_method("get_cosmetic"):
+			cfg = registry.get_cosmetic(cosmetic_id)
+	var path := str(cfg.get("visual_script", ""))
+	if path == "" or not ResourceLoader.exists(path):
+		return null
+	return load(path) as Script
