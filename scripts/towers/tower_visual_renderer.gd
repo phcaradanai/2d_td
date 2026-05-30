@@ -41,7 +41,16 @@ static func draw_turret_top(t: Node2D) -> void:
 	var size = 20.0
 	var visual_script := _get_visual_script(t)
 	if visual_script:
-		visual_script.draw_top(t, main_color, secondary_color, core_color, lvl, size, el_colors)
+		if visual_script.has_method("draw_top_directional"):
+			var pivot := t.get("turret_pivot") as Node2D
+			var angle := pivot.rotation if is_instance_valid(pivot) else 0.0
+			visual_script.draw_top_directional(t, angle, main_color, secondary_color, core_color, lvl, size, el_colors)
+		else:
+			visual_script.draw_top(t, main_color, secondary_color, core_color, lvl, size, el_colors)
+
+static func cosmetic_script_is_directional(t: Node2D) -> bool:
+	var script := _get_cosmetic_visual_script(t)
+	return script != null and script.has_method("draw_top_directional")
 
 static func _get_visual_script(t: Node2D) -> Script:
 	var cosmetic_script := _get_cosmetic_visual_script(t)

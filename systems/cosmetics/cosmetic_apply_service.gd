@@ -77,6 +77,18 @@ func get_attack_vfx_skin_colors(tower_id: String) -> Dictionary:
 		out["secondary_color"] = Color.from_string(str(cfg["secondary_color"]), Color.WHITE)
 	return out
 
+func get_attack_vfx_skin_sprite_data(tower_id: String) -> Dictionary:
+	var cosmetic_id := get_equipped_id(tower_id, SLOT_ATTACK_VFX_SKIN)
+	var cfg := _registry_get(cosmetic_id)
+	if cfg.is_empty() or not cfg.has("sprite_dir"):
+		return {}
+	var out := {}
+	out["sprite_dir"] = str(cfg["sprite_dir"])
+	out["sprite_prefix"] = str(cfg.get("sprite_prefix", ""))
+	out["sprite_count"] = int(cfg.get("sprite_count", 0))
+	out["sprite_scale"] = float(cfg.get("sprite_scale", 0.25))
+	return out
+
 func get_tower_skin_visual_script(tower_id: String) -> GDScript:
 	var cosmetic_id := get_equipped_id(tower_id, SLOT_TOWER_SKIN)
 	if cosmetic_id == "":

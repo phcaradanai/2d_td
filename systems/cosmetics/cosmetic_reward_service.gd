@@ -1,28 +1,5 @@
 extends Node
 
-const REWARD_RULES: Array[Dictionary] = [
-	{
-		"id": "basic_neon_silver",
-		"type": "total_stars",
-		"count": 1
-	},
-	{
-		"id": "basic_perfect_gold",
-		"type": "perfect_level",
-		"level_id": "level_01"
-	},
-	{
-		"id": "basic_gold_bolt",
-		"type": "perfect_count",
-		"count": 1
-	},
-	{
-		"id": "basic_cyber_pop",
-		"type": "perfect_any",
-		"count": 1
-	}
-]
-
 func process_victory(level_id: String, summary: Dictionary) -> Array[Dictionary]:
 	if str(summary.get("result", "")) != "Victory":
 		return []
@@ -37,31 +14,37 @@ func _process_rules(level_id: String = "") -> Array[Dictionary]:
 	if inventory == null or registry == null:
 		return []
 	var newly_unlocked: Array[Dictionary] = []
-	for rule in REWARD_RULES:
-		var id := str(rule.get("id", ""))
-		if id == "" or inventory.is_unlocked(id):
+	for raw_id in registry.cosmetics_by_id.keys():
+		var id := str(raw_id)
+		if inventory.is_unlocked(id):
 			continue
-		if _rule_passes(rule, level_id):
+		var cfg: Dictionary = registry.get_cosmetic(id)
+		var condition: Dictionary = cfg.get("unlock_condition", {}) as Dictionary
+		if condition.is_empty():
+			continue
+		if _condition_passes(condition, level_id):
 			if inventory.unlock(id):
-				newly_unlocked.append(registry.get_cosmetic(id))
+				newly_unlocked.append(cfg)
 	return newly_unlocked
 
-func _rule_passes(rule: Dictionary, level_id: String) -> bool:
+func _condition_passes(condition: Dictionary, level_id: String) -> bool:
 	var sm := _save_manager()
 	if sm == null:
 		return false
-	match str(rule.get("type", "")):
+	match str(condition.get("type", "")):
 		"total_stars":
-			return _total_stars(sm) >= int(rule.get("count", 0))
+			return _total_stars(sm) >= int(condition.get("count", 0))
 		"perfect_level":
-			var target_level := str(rule.get("level_id", ""))
+			var target_level := str(condition.get("level_id", ""))
 			if target_level == "":
 				return false
 			return (level_id == "" or level_id == target_level) and _is_perfect(sm, target_level)
 		"perfect_count":
-			return _perfect_count(sm) >= int(rule.get("count", 0))
+			return _perfect_count(sm) >= int(condition.get("count", 0))
 		"perfect_any":
-			return _perfect_count(sm) >= int(rule.get("count", 1))
+			return _perfect_count(sm) >= int(condition.get("count", 1))
+		"always_unlocked":
+			return true
 	return false
 
 func _total_stars(sm: Node) -> int:

@@ -83,6 +83,7 @@ var vfx_accent_color: Color = Color.WHITE
 var cosmetic_projectile_id: String = ""
 var cosmetic_trail_seconds: float = 0.0
 var cosmetic_projectile_cfg: Dictionary = {}
+var _cosmetic_texture: Texture2D = null
 var _show_body_in_projectile_mode: bool = false
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
@@ -163,6 +164,11 @@ func setup_cosmetic(cosmetic_id: String, cfg: Dictionary) -> void:
 		vfx_glow_color = Color.from_string(str(cfg.get("glow_color")), vfx_glow_color)
 	if cfg.has("accent_color"):
 		vfx_accent_color = Color.from_string(str(cfg.get("accent_color")), vfx_accent_color)
+	var texture_path := str(cfg.get("texture_path", ""))
+	if texture_path != "" and ResourceLoader.exists(texture_path):
+		_cosmetic_texture = load(texture_path) as Texture2D
+	else:
+		_cosmetic_texture = null
 	if cosmetic_id != "":
 		modulate = Color.WHITE
 		z_index = 80
@@ -321,6 +327,11 @@ func _draw_elemental_droplet() -> void:
 	draw_circle(Vector2(-2, 0), 2.5, Color.WHITE)
 
 func _draw_cosmetic_projectile() -> void:
+	if _cosmetic_texture != null:
+		var tex_scale := float(cosmetic_projectile_cfg.get("sprite_scale", 0.25))
+		var half := _cosmetic_texture.get_size() * tex_scale * 0.5
+		draw_texture_rect(_cosmetic_texture, Rect2(-half, _cosmetic_texture.get_size() * tex_scale), false)
+		return
 	CosmeticDrawUtilsScript.draw_projectile(self, cosmetic_projectile_id, cosmetic_projectile_cfg, speed)
 
 func _draw_flame_stream() -> void:

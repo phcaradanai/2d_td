@@ -1,15 +1,51 @@
-﻿{
+{
 	"tower_skin": [
 		{
 			"id": "neutral_cannon_ripped_t1",
 			"display_name": "Ripped Cannon T1",
 			"rarity": "common",
 			"description": "A pixel-art stone base and metal cannon skin from the supplied Neutral Cannon T1 asset.",
-			"visual_script": "res://systems/cosmetics/visuals/neutral_cannon_ripped_t1_visual.gd"
+			"visual_script": "res://systems/cosmetics/visuals/neutral_cannon_ripped_t1_visual.gd",
+			"unlock_condition": { "type": "total_stars", "count": 1 }
 		}
 	],
-	"projectile_skin": [],
-	"impact_skin": [],
+	"projectile_skin": [
+		{
+			"id": "neutral_cannon_ripped_projectile",
+			"display_name": "Stone Cannonball",
+			"rarity": "common",
+			"description": "Heavy stone cannonball sprite from the Neutral Cannon T1 ripped asset.",
+			"texture_path": "res://assets/sprites/neutral_cannon_t1_ripped/frames_fixed_256/projectile/projectile_00.png",
+			"sprite_scale": 0.1,
+			"unlock_condition": { "type": "total_stars", "count": 1 }
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "neutral_cannon_ripped_splash",
+			"display_name": "Stone Splash",
+			"rarity": "common",
+			"description": "Animated stone splash impact from the Neutral Cannon T1 ripped asset.",
+			"sprite_dir": "res://assets/sprites/neutral_cannon_t1_ripped/frames_fixed_256/splash_impact/",
+			"sprite_prefix": "splash_impact_",
+			"sprite_count": 7,
+			"sprite_scale": 0.18,
+			"duration": 0.25,
+			"unlock_condition": { "type": "total_stars", "count": 3 }
+		}
+	],
 	"aura_skin": [],
-	"attack_vfx_skin": []
+	"attack_vfx_skin": [
+		{
+			"id": "neutral_cannon_ripped_fire_vfx",
+			"display_name": "Ripped Cannon Fire",
+			"rarity": "common",
+			"description": "Sprite muzzle-flash animation from the Neutral Cannon T1 ripped asset.",
+			"sprite_dir": "res://assets/sprites/neutral_cannon_t1_ripped/frames_fixed_256/turret_fire/",
+			"sprite_prefix": "turret_fire_",
+			"sprite_count": 5,
+			"sprite_scale": 0.25,
+			"unlock_condition": { "type": "perfect_any", "count": 1 }
+		}
+	]
 }

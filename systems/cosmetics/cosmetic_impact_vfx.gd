@@ -11,6 +11,7 @@ var _age: float = 0.0
 var _redraw_elapsed: float = 0.0
 var _redraw_interval: float = DEFAULT_REDRAW_INTERVAL
 var _cfg: Dictionary = {}
+var _sprite_frames: Array[Texture2D] = []
 
 func setup(cfg: Dictionary) -> void:
 	_duration = minf(float(cfg.get("duration", MAX_DURATION)), MAX_DURATION)
@@ -18,6 +19,15 @@ func setup(cfg: Dictionary) -> void:
 	_redraw_elapsed = 0.0
 	_redraw_interval = clampf(float(cfg.get("_redraw_interval", DEFAULT_REDRAW_INTERVAL)), 0.04, MAX_DURATION)
 	_cfg = cfg.duplicate(true)
+	_sprite_frames.clear()
+	var sprite_dir := str(cfg.get("sprite_dir", ""))
+	var sprite_count := int(cfg.get("sprite_count", 0))
+	var sprite_prefix := str(cfg.get("sprite_prefix", ""))
+	if sprite_dir != "" and sprite_count > 0:
+		for i in range(sprite_count):
+			var path := sprite_dir + sprite_prefix + "%02d.png" % i
+			if ResourceLoader.exists(path):
+				_sprite_frames.append(load(path) as Texture2D)
 	scale = Vector2.ONE
 	modulate = Color.WHITE
 	z_as_relative = false
@@ -37,4 +47,13 @@ func _process(delta: float) -> void:
 		queue_redraw()
 
 func _draw() -> void:
+	if _sprite_frames.size() > 0:
+		var progress := _age / maxf(_duration, 0.001)
+		var frame_idx := mini(int(progress * _sprite_frames.size()), _sprite_frames.size() - 1)
+		var tex := _sprite_frames[frame_idx]
+		if tex != null:
+			var tex_scale := float(_cfg.get("sprite_scale", 0.25))
+			var half := tex.get_size() * tex_scale * 0.5
+			draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
+		return
 	CosmeticDrawUtilsScript.draw_impact(self, _cfg, _age / maxf(_duration, 0.001))

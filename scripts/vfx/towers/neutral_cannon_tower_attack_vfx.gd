@@ -1,11 +1,35 @@
 extends "res://scripts/vfx/core/base_tower_attack_vfx.gd"
 
+var _cosmetic_sprite_data: Dictionary = {}
+var _cosmetic_sprite_frames: Array[Texture2D] = []
+
 func configure(_data: Dictionary) -> void:
 	lifetime = 0.16
 	palette_primary  = Color(0.80, 0.65, 0.35)
 	palette_secondary = Color(1.00, 0.85, 0.45)
+	_reload_sprite_frames()
+
+func _reload_sprite_frames() -> void:
+	_cosmetic_sprite_frames.clear()
+	var sprite_dir := str(_cosmetic_sprite_data.get("sprite_dir", ""))
+	var sprite_count := int(_cosmetic_sprite_data.get("sprite_count", 0))
+	var sprite_prefix := str(_cosmetic_sprite_data.get("sprite_prefix", ""))
+	if sprite_dir == "" or sprite_count <= 0:
+		return
+	for i in range(sprite_count):
+		var path := sprite_dir + sprite_prefix + "%02d.png" % i
+		if ResourceLoader.exists(path):
+			_cosmetic_sprite_frames.append(load(path) as Texture2D)
 
 func _draw_vfx(t: float, a: float, _lend: Vector2) -> void:
+	if _cosmetic_sprite_frames.size() > 0:
+		var frame_idx := mini(int(t * _cosmetic_sprite_frames.size()), _cosmetic_sprite_frames.size() - 1)
+		var tex := _cosmetic_sprite_frames[frame_idx]
+		if tex != null:
+			var tex_scale := float(_cosmetic_sprite_data.get("sprite_scale", 0.25))
+			var half := tex.get_size() * tex_scale * 0.5
+			draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false, Color(1.0, 1.0, 1.0, a))
+		return
 	_draw_muzzle_burst(t, a)
 
 func _draw_muzzle_burst(t: float, a: float) -> void:

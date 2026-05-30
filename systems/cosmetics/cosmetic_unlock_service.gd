@@ -36,6 +36,9 @@ var _push_queue: Array[String] = []
 var _fetch_in_flight: bool = false
 var _push_in_flight: bool = false
 
+var _dev_grant_all: bool = false
+var _dev_grant_ids: Array[String] = []
+
 # ── Lifecycle ──────────────────────────────────────────────────────────────────
 
 func _ready() -> void:
@@ -44,6 +47,7 @@ func _ready() -> void:
 	_load_api_url_override()
 	_setup_http()
 	_load_cache()
+	_load_dev_grants()
 	# Migration runs lazily (SaveManager is a scene node, not yet available here).
 	# _fetch runs deferred so HTTPRequest children are fully ready.
 	call_deferred("_fetch_from_server_background")
@@ -56,6 +60,8 @@ func get_unlocked_ids() -> Array[String]:
 
 func is_unlocked(cosmetic_id: String) -> bool:
 	_try_lazy_migration()
+	if _dev_grant_all or _dev_grant_ids.has(cosmetic_id):
+		return true
 	return _unlocked_ids.has(cosmetic_id)
 
 func unlock(cosmetic_id: String) -> bool:
@@ -91,6 +97,24 @@ func _load_cache() -> void:
 		var s := str(raw_id).strip_edges()
 		if s != "" and not _unlocked_ids.has(s):
 			_unlocked_ids.append(s)
+
+func _load_dev_grants() -> void:
+	const DEV_GRANTS_PATH := "user://dev_cosmetic_grants.json"
+	if not FileAccess.file_exists(DEV_GRANTS_PATH):
+		return
+	var file := FileAccess.open(DEV_GRANTS_PATH, FileAccess.READ)
+	if file == null:
+		return
+	var parsed = JSON.parse_string(file.get_as_text())
+	file.close()
+	if not parsed is Dictionary:
+		return
+	_dev_grant_all = bool(parsed.get("grant_all", false))
+	_dev_grant_ids.clear()
+	for raw_id in parsed.get("grant_ids", []):
+		var s := str(raw_id).strip_edges()
+		if s != "":
+			_dev_grant_ids.append(s)
 
 func _save_cache() -> void:
 	var file := FileAccess.open(CACHE_PATH, FileAccess.WRITE)

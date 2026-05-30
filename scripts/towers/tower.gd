@@ -554,6 +554,12 @@ func _request_baked_textures() -> void:
 	if not is_inside_tree():
 		call_deferred("_request_baked_textures")
 		return
+	# Directional sprite cosmetics manage frames themselves — skip baking so the
+	# procedural draw path (use_sprite = false) stays active at runtime.
+	if TowerVisualRendererScript.cosmetic_script_is_directional(self):
+		modulate = Color(1.0, 1.0, 1.0, 1.0)
+		queue_redraw()
+		return
 	var captured_self := self
 	_tower_texture_request_serial += 1
 	var request_serial := _tower_texture_request_serial

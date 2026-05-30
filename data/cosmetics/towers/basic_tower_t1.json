@@ -5,14 +5,16 @@
 			"display_name": "Neon Silver Frame",
 			"rarity": "common",
 			"description": "A polished silver starter chassis with cyan circuit accents.",
-			"visual_script": "res://systems/cosmetics/visuals/basic_neon_silver_visual.gd"
+			"visual_script": "res://systems/cosmetics/visuals/basic_neon_silver_visual.gd",
+			"unlock_condition": { "type": "total_stars", "count": 1 }
 		},
 		{
 			"id": "basic_perfect_gold",
 			"display_name": "Perfect Gold Frame",
 			"rarity": "perfect",
 			"description": "A gold victory chassis reserved for a flawless first clear.",
-			"visual_script": "res://systems/cosmetics/visuals/basic_perfect_gold_visual.gd"
+			"visual_script": "res://systems/cosmetics/visuals/basic_perfect_gold_visual.gd",
+			"unlock_condition": { "type": "perfect_level", "level_id": "level_01" }
 		}
 	],
 	"projectile_skin": [
@@ -24,7 +26,8 @@
 			"core_color": "#ffd966",
 			"glow_color": "#ff9f2e",
 			"accent_color": "#fff4b8",
-			"trail_seconds": 0.0
+			"trail_seconds": 0.0,
+			"unlock_condition": { "type": "perfect_count", "count": 1 }
 		}
 	],
 	"impact_skin": [
@@ -36,7 +39,8 @@
 			"core_color": "#44f6ff",
 			"glow_color": "#ff4fd8",
 			"accent_color": "#ffffff",
-			"duration": 0.25
+			"duration": 0.25,
+			"unlock_condition": { "type": "perfect_any", "count": 1 }
 		}
 	],
 	"aura_skin": [],

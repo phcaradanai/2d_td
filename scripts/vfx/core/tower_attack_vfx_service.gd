@@ -36,6 +36,7 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 	var color: Color = tower._get_tower_color() \
 		if tower.has_method("_get_tower_color") else Color.WHITE
 	var secondary_override: Color = Color(-1, -1, -1, -1)
+	var sprite_data: Dictionary = {}
 	var svc := tower.get_node_or_null("/root/CosmeticApplyService")
 	if svc != null and svc.has_method("get_attack_vfx_skin_colors"):
 		var ov : Variant = svc.get_attack_vfx_skin_colors(tower_id)
@@ -43,6 +44,8 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 			color = ov["primary_color"]
 		if ov.has("secondary_color"):
 			secondary_override = ov["secondary_color"]
+	if svc != null and svc.has_method("get_attack_vfx_skin_sprite_data"):
+		sprite_data = svc.get_attack_vfx_skin_sprite_data(tower_id)
 
 	var pool := tower.get_node_or_null("/root/VisualEffectPoolService")
 	if pool == null or not pool.has_method("acquire_for_tower"):
@@ -59,15 +62,16 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 		_tower_slots.erase(tower_iid)
 
 	# Prefer baked sprite frames when the baker has them — zero draw-API calls per shot.
+	# Skip baked path when a sprite cosmetic is active (baked frames show default procedural VFX).
 	var baker := tower.get_node_or_null("/root/AttackVFXFrameBaker")
-	if baker != null and baker.has_method("has_frames") and baker.has_frames(tower_id):
+	if sprite_data.is_empty() and baker != null and baker.has_method("has_frames") and baker.has_frames(tower_id):
 		var frames: Array = baker.get_frames(tower_id)
 		var sprite := _BakedSpriteScript.new()
 		container.add_child(sprite)
 		sprite.play(origin, tgt_pos, frames, 0.15, color)
 		return
 	# Trigger background bake for next shot so subsequent ones use the sprite path.
-	if baker != null and baker.has_method("request_bake"):
+	if sprite_data.is_empty() and baker != null and baker.has_method("request_bake"):
 		baker.request_bake(tower_id, script)
 
 	# Acquire — pool grows on demand, never returns null.
@@ -79,4 +83,6 @@ static func spawn(tower: Node2D, target: Node2D) -> void:
 	node.setup(origin, tgt_pos, color)
 	if secondary_override.a >= 0.0:
 		node.set("palette_secondary", secondary_override)
+	if not sprite_data.is_empty():
+		node.set("_cosmetic_sprite_data", sprite_data)
 	node.configure({})
