@@ -62,6 +62,8 @@ func is_unlocked(cosmetic_id: String) -> bool:
 	_try_lazy_migration()
 	if _dev_grant_all or _dev_grant_ids.has(cosmetic_id):
 		return true
+	if _is_registry_always_unlocked(cosmetic_id):
+		return true
 	return _unlocked_ids.has(cosmetic_id)
 
 func unlock(cosmetic_id: String) -> bool:
@@ -76,6 +78,14 @@ func unlock(cosmetic_id: String) -> bool:
 ## Force a server re-fetch (e.g. after login or when the player opens the shop).
 func refresh_from_server() -> void:
 	_fetch_from_server_background()
+
+func _is_registry_always_unlocked(cosmetic_id: String) -> bool:
+	var registry := get_node_or_null("/root/CosmeticRegistry")
+	if registry == null or not registry.has_method("get_cosmetic"):
+		return false
+	var cfg: Dictionary = registry.get_cosmetic(cosmetic_id)
+	var condition: Dictionary = cfg.get("unlock_condition", {}) as Dictionary
+	return str(condition.get("type", "")) == "always_unlocked"
 
 # ── Local cache ────────────────────────────────────────────────────────────────
 

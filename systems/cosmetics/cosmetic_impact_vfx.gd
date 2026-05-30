@@ -20,12 +20,26 @@ func setup(cfg: Dictionary) -> void:
 	_redraw_interval = clampf(float(cfg.get("_redraw_interval", DEFAULT_REDRAW_INTERVAL)), 0.04, MAX_DURATION)
 	_cfg = cfg.duplicate(true)
 	_sprite_frames.clear()
+	var raw_paths = cfg.get("sprite_paths", [])
+	if raw_paths is Array and not raw_paths.is_empty():
+		for raw_path in raw_paths:
+			var path := str(raw_path)
+			if ResourceLoader.exists(path):
+				_sprite_frames.append(load(path) as Texture2D)
+		scale = Vector2.ONE
+		modulate = Color.WHITE
+		z_as_relative = false
+		z_index = 180
+		set_process(true)
+		queue_redraw()
+		return
 	var sprite_dir := str(cfg.get("sprite_dir", ""))
 	var sprite_count := int(cfg.get("sprite_count", 0))
 	var sprite_prefix := str(cfg.get("sprite_prefix", ""))
 	if sprite_dir != "" and sprite_count > 0:
+		var start_index := int(cfg.get("sprite_start_index", 0))
 		for i in range(sprite_count):
-			var path := sprite_dir + sprite_prefix + "%02d.png" % i
+			var path := sprite_dir + sprite_prefix + "%02d.png" % (i + start_index)
 			if ResourceLoader.exists(path):
 				_sprite_frames.append(load(path) as Texture2D)
 	scale = Vector2.ONE

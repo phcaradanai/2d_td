@@ -1,7 +1,49 @@
-﻿{
+{
 	"tower_skin": [],
-	"projectile_skin": [],
-	"impact_skin": [],
+	"projectile_skin": [
+		{
+			"id": "light_t1_v01_projectile",
+			"display_name": "Radiant Bolt",
+			"rarity": "common",
+			"description": "A bright Light Tower projectile sprite from the Radiant Prism Mk I set.",
+			"texture_path": "res://assets/sprites/light_t1_v01/frames_fixed_160/projectile_02.png",
+			"sprite_scale": 0.16,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "light_t1_v01_impact",
+			"display_name": "Radiant Prism Impact",
+			"rarity": "common",
+			"description": "Animated prism hit impact from the Radiant Prism Mk I set.",
+			"sprite_paths": [
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_01.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_02.png"
+			],
+			"sprite_scale": 0.26,
+			"duration": 0.25,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
 	"aura_skin": [],
-	"attack_vfx_skin": []
+	"attack_vfx_skin": [
+		{
+			"id": "light_t1_v01_attack_vfx",
+			"display_name": "Radiant Muzzle Flash",
+			"rarity": "common",
+			"description": "Sprite muzzle flash frames from the Radiant Prism Mk I set.",
+			"sprite_paths": [
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_05.png"
+			],
+			"sprite_scale": 0.1,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	]
 }

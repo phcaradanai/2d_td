@@ -398,6 +398,8 @@ func _make_row(slot: String, cosmetic_id: String, label_text: String, available:
 		var inventory := get_node_or_null("/root/CosmeticInventory")
 		if inventory != null:
 			inventory.equip(_selected_tower_id, slot, cosmetic_id)
+			if slot == SLOT_ATTACK_VFX_SKIN and inventory.has_method("set_attack_mode"):
+				inventory.set_attack_mode(_selected_tower_id, "attack_vfx")
 		_preview_selection[slot] = cosmetic_id
 		refresh()
 	)

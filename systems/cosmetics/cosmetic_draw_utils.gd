@@ -263,12 +263,24 @@ static func draw_projectile(canvas: CanvasItem, cosmetic_id: String, cfg: Dictio
 	_draw_default_bolt(canvas, core, glow, accent, length)
 
 static func draw_impact(canvas: CanvasItem, cfg: Dictionary, progress: float) -> void:
+	var raw_paths = cfg.get("sprite_paths", [])
+	if raw_paths is Array and not raw_paths.is_empty():
+		var frame_idx := mini(int(progress * raw_paths.size()), raw_paths.size() - 1)
+		var path := str(raw_paths[frame_idx])
+		if ResourceLoader.exists(path):
+			var tex := load(path) as Texture2D
+			if tex != null:
+				var tex_scale := float(cfg.get("sprite_scale", 0.25))
+				var half := tex.get_size() * tex_scale * 0.5
+				canvas.draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
+				return
 	var sprite_dir := str(cfg.get("sprite_dir", ""))
 	var sprite_count := int(cfg.get("sprite_count", 0))
 	var sprite_prefix := str(cfg.get("sprite_prefix", ""))
 	if sprite_dir != "" and sprite_count > 0:
 		var frame_idx := mini(int(progress * sprite_count), sprite_count - 1)
-		var path := sprite_dir + sprite_prefix + "%02d.png" % frame_idx
+		var start_index := int(cfg.get("sprite_start_index", 0))
+		var path := sprite_dir + sprite_prefix + "%02d.png" % (frame_idx + start_index)
 		if ResourceLoader.exists(path):
 			var tex := load(path) as Texture2D
 			if tex != null:

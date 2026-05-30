@@ -289,6 +289,14 @@ func _apply_attack_vfx_state() -> void:
 			primary = Color.from_string(str(cfg["primary_color"]), primary)
 		if cfg.has("secondary_color"):
 			secondary = Color.from_string(str(cfg["secondary_color"]), secondary)
+		if "_cosmetic_sprite_data" in _attack_vfx_node:
+			_attack_vfx_node.set("_cosmetic_sprite_data", cfg)
+			if _attack_vfx_node.has_method("configure"):
+				_attack_vfx_node.configure({})
+	elif "_cosmetic_sprite_data" in _attack_vfx_node:
+		_attack_vfx_node.set("_cosmetic_sprite_data", {})
+		if _attack_vfx_node.has_method("configure"):
+			_attack_vfx_node.configure({})
 	_attack_vfx_node.set("palette_primary", primary)
 	_attack_vfx_node.set("palette_secondary", secondary)
 	_attack_vfx_node.visible = true

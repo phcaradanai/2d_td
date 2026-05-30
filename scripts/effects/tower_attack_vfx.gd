@@ -129,6 +129,11 @@ static func spawn_attack_vfx(tower: Node2D, target: Node2D,
 				var ov_o : Variant = svc_o.get_attack_vfx_skin_colors(tower_id_o)
 				if ov_o.has("primary_color"):
 					color_o = ov_o["primary_color"]
+			if svc_o != null and svc_o.has_method("get_attack_vfx_skin_sprite_data") \
+					and "_cosmetic_sprite_data" in owned_vfx:
+				owned_vfx.set("_cosmetic_sprite_data", svc_o.get_attack_vfx_skin_sprite_data(tower_id_o))
+				if owned_vfx.has_method("configure"):
+					owned_vfx.configure({})
 		owned_vfx.show_shot_static(origin_o, tgt_o, color_o)
 		return
 

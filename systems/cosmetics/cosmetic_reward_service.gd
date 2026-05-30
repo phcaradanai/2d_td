@@ -28,6 +28,8 @@ func _process_rules(level_id: String = "") -> Array[Dictionary]:
 	return newly_unlocked
 
 func _condition_passes(condition: Dictionary, level_id: String) -> bool:
+	if str(condition.get("type", "")) == "always_unlocked":
+		return true
 	var sm := _save_manager()
 	if sm == null:
 		return false
@@ -43,8 +45,6 @@ func _condition_passes(condition: Dictionary, level_id: String) -> bool:
 			return _perfect_count(sm) >= int(condition.get("count", 0))
 		"perfect_any":
 			return _perfect_count(sm) >= int(condition.get("count", 1))
-		"always_unlocked":
-			return true
 	return false
 
 func _total_stars(sm: Node) -> int:
