@@ -1,25 +1,33 @@
 extends RefCounted
 
-# Cosmetic tower skin for Darkness Tower I using the darkness_turret_ripped sprite set.
-# Visual-only: no gameplay state, no spawned nodes, no particles.
+# Animated tower skin for Darkness Tower I.
+# Frame paths are read from the cosmetic JSON ("idle_sprite_paths" / "attack_sprite_paths")
+# so they can be changed without touching this script.
+# draw_top_directional is declared so the baker skips baking and the live
+# procedural draw path stays active for per-frame animation.
 
-const BASE_TEX_PATH := "res://assets/sprites/darkness_turret_ripped/frames_trimmed/idle_01.png"
+const IDLE_FRAME_MS := 125    # 8 fps
+const ATTACK_FRAME_MS := 83   # ~12 fps
 
-const SPRITE_SIZE := Vector2(39.0, 39.0)
-const BASE_SCALE := 1.16
-
-static var _base_tex: Texture2D = null
+# Cache keyed by cosmetic_id so a skin swap invalidates automatically.
+static var _texture_cache: Dictionary = {}   # cosmetic_id -> {idle, attack, scale}
 
 static func draw_base(t: Node2D) -> void:
-	var tex := _get_base_texture()
+	var entry := _get_cache_entry(t)
+	if entry.is_empty():
+		return
+	var t_msec := Time.get_ticks_msec()
+	var has_target: bool = bool(t.get("cached_target_valid") if "cached_target_valid" in t else false)
+	var frames: Array = entry["attack"] if has_target else entry["idle"]
+	if frames.is_empty():
+		return
+	var frame := (t_msec / (ATTACK_FRAME_MS if has_target else IDLE_FRAME_MS)) % frames.size()
+	var tex: Texture2D = frames[frame]
 	if tex == null:
 		return
-	t.draw_texture_rect(
-		tex,
-		_centered_rect(BASE_SCALE),
-		false,
-		Color.WHITE
-	)
+	var scale: float = entry["scale"]
+	var size := tex.get_size() * scale
+	t.draw_texture_rect(tex, Rect2(-size * 0.5, size), false, Color.WHITE)
 
 static func draw_contour(_t: Node2D) -> void:
 	pass
@@ -27,16 +35,54 @@ static func draw_contour(_t: Node2D) -> void:
 static func draw_top(_t: Node2D, _main_color: Color, _secondary_color: Color, _core_color: Color, _lvl: int, _size: float, _el_colors: Array[Color]) -> void:
 	pass
 
-static func _centered_rect(scale: float) -> Rect2:
-	var size := SPRITE_SIZE * scale
-	return Rect2(size * -0.5, size)
+# Presence of this method makes cosmetic_script_is_directional() return true,
+# bypassing the bake system so draw_base is called live every frame.
+static func draw_top_directional(t: Node2D, _angle: float, main_color: Color, secondary_color: Color, core_color: Color, lvl: int, size: float, el_colors: Array[Color]) -> void:
+	draw_top(t, main_color, secondary_color, core_color, lvl, size, el_colors)
 
-static func _get_base_texture() -> Texture2D:
-	if _base_tex != null:
-		return _base_tex
-	var img := Image.load_from_file(BASE_TEX_PATH)
+static func _get_cache_entry(t: Node2D) -> Dictionary:
+	var skin_id := _get_equipped_skin_id(t)
+	if skin_id == "":
+		return {}
+	if _texture_cache.has(skin_id):
+		return _texture_cache[skin_id]
+	var cfg := _get_skin_cfg(t, skin_id)
+	var entry := {
+		"idle": _load_frames(cfg.get("idle_sprite_paths", [])),
+		"attack": _load_frames(cfg.get("attack_sprite_paths", [])),
+		"scale": float(cfg.get("sprite_scale", 1.0)),
+	}
+	_texture_cache[skin_id] = entry
+	return entry
+
+static func _get_equipped_skin_id(t: Node2D) -> String:
+	var svc := t.get_node_or_null("/root/CosmeticApplyService")
+	if svc != null and svc.has_method("get_equipped_id"):
+		return str(svc.get_equipped_id(str(t.get("tower_id") if "tower_id" in t else ""), "tower_skin"))
+	return ""
+
+static func _get_skin_cfg(t: Node2D, skin_id: String) -> Dictionary:
+	var registry := t.get_node_or_null("/root/CosmeticRegistry")
+	if registry != null and registry.has_method("get_cosmetic"):
+		return registry.get_cosmetic(skin_id)
+	return {}
+
+static func _load_frames(paths: Array) -> Array:
+	var out: Array = []
+	for raw in paths:
+		var path := str(raw)
+		var tex := _load_tex(path)
+		if tex != null:
+			out.append(tex)
+	return out
+
+static func _load_tex(path: String) -> Texture2D:
+	if path == "":
+		return null
+	var source := ProjectSettings.globalize_path(path) if path.begins_with("res://") else path
+	var img := Image.load_from_file(source)
 	if img != null and not img.is_empty():
-		_base_tex = ImageTexture.create_from_image(img)
-	elif ResourceLoader.exists(BASE_TEX_PATH):
-		_base_tex = load(BASE_TEX_PATH) as Texture2D
-	return _base_tex
+		return ImageTexture.create_from_image(img)
+	if ResourceLoader.exists(path):
+		return load(path) as Texture2D
+	return null

@@ -6,6 +6,23 @@
 			"rarity": "common",
 			"description": "A compact violet core chassis from the Darkness turret sprite set.",
 			"visual_script": "res://systems/cosmetics/visuals/darkness_turret_core_visual.gd",
+			"idle_sprite_paths": [
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/idle_01.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/idle_02.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/idle_03.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/idle_04.png"
+			],
+			"attack_sprite_paths": [
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_01.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_02.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_03.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_04.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_05.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_06.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_07.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_08.png"
+			],
+			"sprite_scale": 1.16,
 			"unlock_condition": {
 				"type": "always_unlocked"
 			}

@@ -6,7 +6,12 @@
 			"display_name": "Radiant Bolt",
 			"rarity": "common",
 			"description": "A bright Light Tower projectile sprite from the Radiant Prism Mk I set.",
-			"texture_path": "res://assets/sprites/light_t1_v01/frames_fixed_160/projectile_02.png",
+			"sprite_paths": [
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/projectile_01.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/projectile_02.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/projectile_03.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/projectile_04.png"
+			],
 			"sprite_scale": 0.16,
 			"unlock_condition": {
 				"type": "always_unlocked"
@@ -21,7 +26,8 @@
 			"description": "Animated prism hit impact from the Radiant Prism Mk I set.",
 			"sprite_paths": [
 				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_01.png",
-				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_02.png"
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_02.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_03.png"
 			],
 			"sprite_scale": 0.26,
 			"duration": 0.25,
@@ -38,7 +44,10 @@
 			"rarity": "common",
 			"description": "Sprite muzzle flash frames from the Radiant Prism Mk I set.",
 			"sprite_paths": [
-				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_bottom_05.png"
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_top_01.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_top_02.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_top_03.png",
+				"res://assets/sprites/light_t1_v01/frames_fixed_160/impact_top_04.png"
 			],
 			"sprite_scale": 0.18,
 			"unlock_condition": {

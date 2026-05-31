@@ -1497,7 +1497,7 @@ func _process_inner_tower(delta: float) -> void:
 	# Full-rate redraw for selected/debug towers; throttled to 15 Hz for others.
 	if is_selected or debug_draw_range:
 		queue_redraw()
-	elif not use_sprite and cached_target_valid:
+	elif not use_sprite:
 		_procedural_draw_timer -= delta
 		if _procedural_draw_timer <= 0.0:
 			_procedural_draw_timer = PROCEDURAL_DRAW_INTERVAL
