@@ -1,0 +1,686 @@
+{
+  "source_image": "/mnt/data/image.png",
+  "frame_count": 34,
+  "frames": [
+    {
+      "group": "fixed_base",
+      "name": "fixed_base_01",
+      "crop_box": [
+        18,
+        62,
+        110,
+        158
+      ],
+      "trimmed_size": [
+        81,
+        87
+      ],
+      "trimmed_path": "frames_trimmed/fixed_base_01.png",
+      "fixed_path": "frames_fixed_160/fixed_base_01.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "fixed_base",
+      "name": "fixed_base_02",
+      "crop_box": [
+        146,
+        62,
+        238,
+        158
+      ],
+      "trimmed_size": [
+        80,
+        87
+      ],
+      "trimmed_path": "frames_trimmed/fixed_base_02.png",
+      "fixed_path": "frames_fixed_160/fixed_base_02.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "fixed_base",
+      "name": "fixed_base_03",
+      "crop_box": [
+        274,
+        62,
+        366,
+        158
+      ],
+      "trimmed_size": [
+        80,
+        87
+      ],
+      "trimmed_path": "frames_trimmed/fixed_base_03.png",
+      "fixed_path": "frames_fixed_160/fixed_base_03.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "fixed_base",
+      "name": "fixed_base_04",
+      "crop_box": [
+        402,
+        62,
+        494,
+        158
+      ],
+      "trimmed_size": [
+        80,
+        87
+      ],
+      "trimmed_path": "frames_trimmed/fixed_base_04.png",
+      "fixed_path": "frames_fixed_160/fixed_base_04.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "fixed_base",
+      "name": "fixed_base_05",
+      "crop_box": [
+        530,
+        62,
+        622,
+        158
+      ],
+      "trimmed_size": [
+        80,
+        87
+      ],
+      "trimmed_path": "frames_trimmed/fixed_base_05.png",
+      "fixed_path": "frames_fixed_160/fixed_base_05.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_01",
+      "crop_box": [
+        10,
+        178,
+        118,
+        292
+      ],
+      "trimmed_size": [
+        67,
+        90
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_01.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_01.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_02",
+      "crop_box": [
+        138,
+        178,
+        246,
+        292
+      ],
+      "trimmed_size": [
+        79,
+        90
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_02.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_02.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_03",
+      "crop_box": [
+        266,
+        178,
+        374,
+        292
+      ],
+      "trimmed_size": [
+        80,
+        90
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_03.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_03.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_04",
+      "crop_box": [
+        394,
+        178,
+        502,
+        292
+      ],
+      "trimmed_size": [
+        80,
+        91
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_04.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_04.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_05",
+      "crop_box": [
+        522,
+        178,
+        630,
+        292
+      ],
+      "trimmed_size": [
+        68,
+        100
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_05.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_05.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_06",
+      "crop_box": [
+        10,
+        300,
+        118,
+        424
+      ],
+      "trimmed_size": [
+        79,
+        92
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_06.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_06.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_07",
+      "crop_box": [
+        138,
+        300,
+        246,
+        424
+      ],
+      "trimmed_size": [
+        79,
+        92
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_07.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_07.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_08",
+      "crop_box": [
+        266,
+        300,
+        374,
+        424
+      ],
+      "trimmed_size": [
+        78,
+        92
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_08.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_08.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "rotating_turret",
+      "name": "rotating_turret_09",
+      "crop_box": [
+        394,
+        300,
+        502,
+        424
+      ],
+      "trimmed_size": [
+        79,
+        92
+      ],
+      "trimmed_path": "frames_trimmed/rotating_turret_09.png",
+      "fixed_path": "frames_fixed_160/rotating_turret_09.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "projectile",
+      "name": "projectile_01",
+      "crop_box": [
+        650,
+        68,
+        726,
+        143
+      ],
+      "trimmed_size": [
+        24,
+        16
+      ],
+      "trimmed_path": "frames_trimmed/projectile_01.png",
+      "fixed_path": "frames_fixed_160/projectile_01.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "projectile",
+      "name": "projectile_02",
+      "crop_box": [
+        746,
+        68,
+        822,
+        143
+      ],
+      "trimmed_size": [
+        42,
+        15
+      ],
+      "trimmed_path": "frames_trimmed/projectile_02.png",
+      "fixed_path": "frames_fixed_160/projectile_02.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "projectile",
+      "name": "projectile_03",
+      "crop_box": [
+        842,
+        68,
+        918,
+        143
+      ],
+      "trimmed_size": [
+        48,
+        26
+      ],
+      "trimmed_path": "frames_trimmed/projectile_03.png",
+      "fixed_path": "frames_fixed_160/projectile_03.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "projectile",
+      "name": "projectile_04",
+      "crop_box": [
+        938,
+        68,
+        1014,
+        143
+      ],
+      "trimmed_size": [
+        48,
+        41
+      ],
+      "trimmed_path": "frames_trimmed/projectile_04.png",
+      "fixed_path": "frames_fixed_160/projectile_04.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "attack_vfx",
+      "name": "attack_vfx_01",
+      "crop_box": [
+        652,
+        178,
+        756,
+        286
+      ],
+      "trimmed_size": [
+        66,
+        68
+      ],
+      "trimmed_path": "frames_trimmed/attack_vfx_01.png",
+      "fixed_path": "frames_fixed_160/attack_vfx_01.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "attack_vfx",
+      "name": "attack_vfx_02",
+      "crop_box": [
+        780,
+        178,
+        884,
+        286
+      ],
+      "trimmed_size": [
+        90,
+        90
+      ],
+      "trimmed_path": "frames_trimmed/attack_vfx_02.png",
+      "fixed_path": "frames_fixed_160/attack_vfx_02.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "attack_vfx",
+      "name": "attack_vfx_03",
+      "crop_box": [
+        908,
+        178,
+        1012,
+        286
+      ],
+      "trimmed_size": [
+        100,
+        103
+      ],
+      "trimmed_path": "frames_trimmed/attack_vfx_03.png",
+      "fixed_path": "frames_fixed_160/attack_vfx_03.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "impact_vfx",
+      "name": "impact_vfx_01",
+      "crop_box": [
+        524,
+        305,
+        628,
+        421
+      ],
+      "trimmed_size": [
+        82,
+        73
+      ],
+      "trimmed_path": "frames_trimmed/impact_vfx_01.png",
+      "fixed_path": "frames_fixed_160/impact_vfx_01.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "impact_vfx",
+      "name": "impact_vfx_02",
+      "crop_box": [
+        652,
+        305,
+        756,
+        421
+      ],
+      "trimmed_size": [
+        85,
+        89
+      ],
+      "trimmed_path": "frames_trimmed/impact_vfx_02.png",
+      "fixed_path": "frames_fixed_160/impact_vfx_02.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "impact_vfx",
+      "name": "impact_vfx_03",
+      "crop_box": [
+        780,
+        305,
+        884,
+        421
+      ],
+      "trimmed_size": [
+        92,
+        89
+      ],
+      "trimmed_path": "frames_trimmed/impact_vfx_03.png",
+      "fixed_path": "frames_fixed_160/impact_vfx_03.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "impact_vfx",
+      "name": "impact_vfx_04",
+      "crop_box": [
+        908,
+        305,
+        1012,
+        421
+      ],
+      "trimmed_size": [
+        92,
+        88
+      ],
+      "trimmed_path": "frames_trimmed/impact_vfx_04.png",
+      "fixed_path": "frames_fixed_160/impact_vfx_04.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_01",
+      "crop_box": [
+        12,
+        438,
+        116,
+        558
+      ],
+      "trimmed_size": [
+        56,
+        88
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_01.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_01.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_02",
+      "crop_box": [
+        140,
+        438,
+        244,
+        558
+      ],
+      "trimmed_size": [
+        75,
+        87
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_02.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_02.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_03",
+      "crop_box": [
+        268,
+        438,
+        372,
+        558
+      ],
+      "trimmed_size": [
+        76,
+        87
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_03.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_03.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_04",
+      "crop_box": [
+        396,
+        438,
+        500,
+        558
+      ],
+      "trimmed_size": [
+        75,
+        102
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_04.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_04.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_05",
+      "crop_box": [
+        524,
+        438,
+        628,
+        558
+      ],
+      "trimmed_size": [
+        62,
+        106
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_05.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_05.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_06",
+      "crop_box": [
+        652,
+        438,
+        756,
+        558
+      ],
+      "trimmed_size": [
+        63,
+        114
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_06.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_06.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_07",
+      "crop_box": [
+        780,
+        438,
+        884,
+        558
+      ],
+      "trimmed_size": [
+        84,
+        114
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_07.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_07.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "upgrade_stage",
+      "name": "upgrade_stage_08",
+      "crop_box": [
+        908,
+        438,
+        1012,
+        558
+      ],
+      "trimmed_size": [
+        91,
+        113
+      ],
+      "trimmed_path": "frames_trimmed/upgrade_stage_08.png",
+      "fixed_path": "frames_fixed_160/upgrade_stage_08.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    },
+    {
+      "group": "bonus",
+      "name": "bonus_sparkle",
+      "crop_box": [
+        946,
+        478,
+        1016,
+        544
+      ],
+      "trimmed_size": [
+        48,
+        66
+      ],
+      "trimmed_path": "frames_trimmed/bonus_sparkle.png",
+      "fixed_path": "frames_fixed_160/bonus_sparkle.png",
+      "fixed_size": [
+        160,
+        160
+      ]
+    }
+  ]
+}

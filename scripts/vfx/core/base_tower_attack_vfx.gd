@@ -30,6 +30,7 @@ func show_shot_static(origin: Vector2, target_pos: Vector2, tower_color: Color) 
 		return
 	palette_primary  = tower_color
 	palette_secondary = tower_color.lightened(0.28)
+	elapsed = 0.0
 	global_position  = origin
 	var diff := target_pos - origin
 	distance = diff.length()
@@ -37,7 +38,8 @@ func show_shot_static(origin: Vector2, target_pos: Vector2, tower_color: Color) 
 		global_rotation = diff.angle()
 	modulate = Color(1.0, 1.0, 1.0, 1.0)
 	visible  = true
-	queue_redraw()   # single draw call — static_mode draws at t=1,a=1
+	queue_redraw()
+	set_process(_has_static_sprite_animation())
 	if _shot_tween:
 		_shot_tween.kill()
 	_shot_tween = create_tween()
@@ -46,6 +48,8 @@ func show_shot_static(origin: Vector2, target_pos: Vector2, tower_color: Color) 
 
 func _on_static_shot_done() -> void:
 	visible  = false
+	if static_mode:
+		set_process(false)
 	modulate = Color(1.0, 1.0, 1.0, 1.0)  # reset for next shot
 
 func _ready() -> void:
@@ -79,6 +83,11 @@ func _draw_vfx(t: float, a: float, lend: Vector2) -> void:
 	_h_rapid_tracer(t, a, lend)
 
 func _process(delta: float) -> void:
+	if static_mode:
+		elapsed += delta
+		if elapsed < lifetime:
+			queue_redraw()
+		return
 	elapsed += delta
 	if elapsed >= lifetime:
 		_release_to_pool()
@@ -114,12 +123,20 @@ func reset_for_pool() -> void:
 func _draw() -> void:
 	var lend := _get_visual_lend()
 	if static_mode:
-		# Draw at full extent (t=1) and full alpha (a=1).
-		# modulate.a is handled by the Tween — no per-frame alpha logic needed.
-		_draw_vfx(1.0, 1.0, lend)
+		var t := clampf(elapsed / maxf(lifetime, 0.001), 0.0, 1.0) \
+			if _has_static_sprite_animation() else 1.0
+		_draw_vfx(t, 1.0, lend)
 	else:
 		var t := clampf(elapsed / maxf(lifetime, 0.001), 0.0, 1.0)
 		_draw_vfx(t, 1.0 - t, lend)
+
+func _has_static_sprite_animation() -> bool:
+	if not static_mode:
+		return false
+	if not "_cosmetic_sprite_frames" in self:
+		return false
+	var frames: Array = get("_cosmetic_sprite_frames")
+	return frames.size() > 1
 
 func _get_visual_lend() -> Vector2:
 	return Vector2(minf(distance, max_visual_reach), 0.0)

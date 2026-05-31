@@ -1,0 +1,44 @@
+{
+  "image": "fixed_base_fixed_160.png",
+  "cell_size": [
+    160,
+    160
+  ],
+  "frames": [
+    {
+      "name": "fixed_base_01",
+      "x": 0,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_02",
+      "x": 160,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_03",
+      "x": 320,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_04",
+      "x": 480,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_05",
+      "x": 640,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    }
+  ]
+}

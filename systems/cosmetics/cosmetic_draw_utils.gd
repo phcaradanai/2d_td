@@ -242,6 +242,17 @@ static func _draw_aura_spark(canvas: CanvasItem, core: Color, glow: Color, accen
 		canvas.draw_circle(dir * 24.0, 0.8, Color.WHITE)
 
 static func draw_projectile(canvas: CanvasItem, cosmetic_id: String, cfg: Dictionary, speed: float = 560.0) -> void:
+	var raw_paths = cfg.get("sprite_paths", [])
+	if raw_paths is Array and not raw_paths.is_empty():
+		var frame_idx: int = int(Engine.get_process_frames() / 3) % int(raw_paths.size())
+		var path := str(raw_paths[frame_idx])
+		if ResourceLoader.exists(path):
+			var tex := load(path) as Texture2D
+			if tex != null:
+				var tex_scale := float(cfg.get("sprite_scale", 0.25))
+				var half := tex.get_size() * tex_scale * 0.5
+				canvas.draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
+				return
 	var texture_path := str(cfg.get("texture_path", ""))
 	if texture_path != "" and ResourceLoader.exists(texture_path):
 		var tex := load(texture_path) as Texture2D

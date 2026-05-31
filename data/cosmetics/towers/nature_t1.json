@@ -1,7 +1,58 @@
-﻿{
+{
 	"tower_skin": [],
-	"projectile_skin": [],
-	"impact_skin": [],
+	"projectile_skin": [
+		{
+			"id": "nature_turret_symmetric_projectile",
+			"display_name": "Verdant Seed Bolt",
+			"rarity": "common",
+			"description": "A bright nature projectile from the symmetric turret sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_01.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_02.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_03.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_04.png"
+			],
+			"sprite_scale": 0.26,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "nature_turret_symmetric_impact",
+			"display_name": "Verdant Bloom Impact",
+			"rarity": "common",
+			"description": "Animated nature impact frames from the symmetric turret sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_01.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_02.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_03.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_04.png"
+			],
+			"sprite_scale": 0.26,
+			"duration": 0.25,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
 	"aura_skin": [],
-	"attack_vfx_skin": []
+	"attack_vfx_skin": [
+		{
+			"id": "nature_turret_symmetric_attack_vfx",
+			"display_name": "Verdant Shot Bloom",
+			"rarity": "common",
+			"description": "Sprite attack bloom frames from the symmetric turret sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/attack_vfx_01.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/attack_vfx_02.png",
+				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/attack_vfx_03.png"
+			],
+			"sprite_scale": 0.22,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	]
 }

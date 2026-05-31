@@ -84,6 +84,7 @@ var cosmetic_projectile_id: String = ""
 var cosmetic_trail_seconds: float = 0.0
 var cosmetic_projectile_cfg: Dictionary = {}
 var _cosmetic_texture: Texture2D = null
+var _cosmetic_textures: Array[Texture2D] = []
 var _show_body_in_projectile_mode: bool = false
 
 @onready var game_manager := get_tree().current_scene.get_node_or_null("GameManager")
@@ -165,10 +166,19 @@ func setup_cosmetic(cosmetic_id: String, cfg: Dictionary) -> void:
 	if cfg.has("accent_color"):
 		vfx_accent_color = Color.from_string(str(cfg.get("accent_color")), vfx_accent_color)
 	var texture_path := str(cfg.get("texture_path", ""))
+	_cosmetic_textures.clear()
 	if texture_path != "" and ResourceLoader.exists(texture_path):
 		_cosmetic_texture = load(texture_path) as Texture2D
 	else:
 		_cosmetic_texture = null
+		var raw_paths = cfg.get("sprite_paths", [])
+		if raw_paths is Array:
+			for raw_path in raw_paths:
+				var path := str(raw_path)
+				if ResourceLoader.exists(path):
+					var tex := load(path) as Texture2D
+					if tex != null:
+						_cosmetic_textures.append(tex)
 	if cosmetic_id != "":
 		modulate = Color.WHITE
 		z_index = 80
@@ -217,6 +227,8 @@ func _process_projectile(delta: float) -> void:
 	lifetime -= delta
 	if lifetime <= 0:
 		_release_to_pool()
+	elif _cosmetic_textures.size() > 1:
+		queue_redraw()
 
 func _update_trail() -> void:
 	# Avoid adding points if we're already at the target or dead
@@ -327,10 +339,14 @@ func _draw_elemental_droplet() -> void:
 	draw_circle(Vector2(-2, 0), 2.5, Color.WHITE)
 
 func _draw_cosmetic_projectile() -> void:
-	if _cosmetic_texture != null:
+	var tex := _cosmetic_texture
+	if tex == null and not _cosmetic_textures.is_empty():
+		var frame_idx := int(Engine.get_process_frames() / 3) % _cosmetic_textures.size()
+		tex = _cosmetic_textures[frame_idx]
+	if tex != null:
 		var tex_scale := float(cosmetic_projectile_cfg.get("sprite_scale", 0.25))
-		var half := _cosmetic_texture.get_size() * tex_scale * 0.5
-		draw_texture_rect(_cosmetic_texture, Rect2(-half, _cosmetic_texture.get_size() * tex_scale), false)
+		var half := tex.get_size() * tex_scale * 0.5
+		draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
 		return
 	CosmeticDrawUtilsScript.draw_projectile(self, cosmetic_projectile_id, cosmetic_projectile_cfg, speed)
 

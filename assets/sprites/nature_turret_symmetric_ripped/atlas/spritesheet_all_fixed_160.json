@@ -1,0 +1,281 @@
+{
+  "image": "spritesheet_all_fixed_160.png",
+  "cell_size": [
+    160,
+    160
+  ],
+  "frames": [
+    {
+      "name": "fixed_base_01",
+      "group": "fixed_base",
+      "x": 0,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_02",
+      "group": "fixed_base",
+      "x": 160,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_03",
+      "group": "fixed_base",
+      "x": 320,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_04",
+      "group": "fixed_base",
+      "x": 480,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "fixed_base_05",
+      "group": "fixed_base",
+      "x": 640,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_01",
+      "group": "rotating_turret",
+      "x": 800,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_02",
+      "group": "rotating_turret",
+      "x": 960,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_03",
+      "group": "rotating_turret",
+      "x": 1120,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_04",
+      "group": "rotating_turret",
+      "x": 0,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_05",
+      "group": "rotating_turret",
+      "x": 160,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_06",
+      "group": "rotating_turret",
+      "x": 320,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_07",
+      "group": "rotating_turret",
+      "x": 480,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_08",
+      "group": "rotating_turret",
+      "x": 640,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "rotating_turret_09",
+      "group": "rotating_turret",
+      "x": 800,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "projectile_01",
+      "group": "projectile",
+      "x": 960,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "projectile_02",
+      "group": "projectile",
+      "x": 1120,
+      "y": 160,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "projectile_03",
+      "group": "projectile",
+      "x": 0,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "projectile_04",
+      "group": "projectile",
+      "x": 160,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "attack_vfx_01",
+      "group": "attack_vfx",
+      "x": 320,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "attack_vfx_02",
+      "group": "attack_vfx",
+      "x": 480,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "attack_vfx_03",
+      "group": "attack_vfx",
+      "x": 640,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "impact_vfx_01",
+      "group": "impact_vfx",
+      "x": 800,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "impact_vfx_02",
+      "group": "impact_vfx",
+      "x": 960,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "impact_vfx_03",
+      "group": "impact_vfx",
+      "x": 1120,
+      "y": 320,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "impact_vfx_04",
+      "group": "impact_vfx",
+      "x": 0,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_01",
+      "group": "upgrade_stage",
+      "x": 160,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_02",
+      "group": "upgrade_stage",
+      "x": 320,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_03",
+      "group": "upgrade_stage",
+      "x": 480,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_04",
+      "group": "upgrade_stage",
+      "x": 640,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_05",
+      "group": "upgrade_stage",
+      "x": 800,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_06",
+      "group": "upgrade_stage",
+      "x": 960,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_07",
+      "group": "upgrade_stage",
+      "x": 1120,
+      "y": 480,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_08",
+      "group": "upgrade_stage",
+      "x": 0,
+      "y": 640,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "bonus_sparkle",
+      "group": "bonus",
+      "x": 160,
+      "y": 640,
+      "w": 160,
+      "h": 160
+    }
+  ]
+}

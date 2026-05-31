@@ -1,0 +1,65 @@
+{
+  "image": "upgrade_stage_fixed_160.png",
+  "cell_size": [
+    160,
+    160
+  ],
+  "frames": [
+    {
+      "name": "upgrade_stage_01",
+      "x": 0,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_02",
+      "x": 160,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_03",
+      "x": 320,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_04",
+      "x": 480,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_05",
+      "x": 640,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_06",
+      "x": 800,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_07",
+      "x": 960,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    },
+    {
+      "name": "upgrade_stage_08",
+      "x": 1120,
+      "y": 0,
+      "w": 160,
+      "h": 160
+    }
+  ]
+}
