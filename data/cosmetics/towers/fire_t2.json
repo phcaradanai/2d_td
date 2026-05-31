@@ -1,7 +1,47 @@
-﻿{
+{
 	"tower_skin": [],
-	"projectile_skin": [],
-	"impact_skin": [],
+	"projectile_skin": [
+		{
+			"id": "fire_t2_projectile_v01",
+			"display_name": "Ember Bolt",
+			"rarity": "common",
+			"description": "Animated fire projectile frames from the Fire tower sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/towers/fire/projectile/version_01/projectile_01.png",
+				"res://assets/sprites/towers/fire/projectile/version_01/projectile_02.png",
+				"res://assets/sprites/towers/fire/projectile/version_01/projectile_03.png",
+				"res://assets/sprites/towers/fire/projectile/version_01/projectile_04.png",
+				"res://assets/sprites/towers/fire/projectile/version_01/projectile_05.png",
+				"res://assets/sprites/towers/fire/projectile/version_01/projectile_06.png"
+			],
+			"sprite_scale": 0.22,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "fire_t2_impact_v01",
+			"display_name": "Ember Burst Impact",
+			"rarity": "common",
+			"description": "Animated fire impact frames from the Fire tower sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/towers/fire/impact/version_01/impact_row1_01.png",
+				"res://assets/sprites/towers/fire/impact/version_01/impact_row1_02.png",
+				"res://assets/sprites/towers/fire/impact/version_01/impact_row1_03.png",
+				"res://assets/sprites/towers/fire/impact/version_01/impact_row1_04.png",
+				"res://assets/sprites/towers/fire/impact/version_01/impact_row1_05.png",
+				"res://assets/sprites/towers/fire/impact/version_01/impact_row1_06.png",
+				"res://assets/sprites/towers/fire/impact/version_01/impact_row1_07.png"
+			],
+			"sprite_scale": 0.15,
+			"duration": 0.28,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
 	"aura_skin": [],
 	"attack_vfx_skin": []
 }
