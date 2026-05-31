@@ -1,6 +1,7 @@
 extends Node
 
 const CosmeticImpactVFXScript := preload("res://systems/cosmetics/cosmetic_impact_vfx.gd")
+const CosmeticProjectileVFXScript := preload("res://systems/cosmetics/cosmetic_projectile_vfx.gd")
 const CosmeticPerformancePolicyScript := preload("res://systems/cosmetics/cosmetic_performance_policy.gd")
 
 const SLOT_TOWER_SKIN := "tower_skin"
@@ -9,11 +10,13 @@ const SLOT_IMPACT_SKIN := "impact_skin"
 const SLOT_AURA_SKIN := "aura_skin"
 const SLOT_ATTACK_VFX_SKIN := "attack_vfx_skin"
 const IMPACT_POOL_SIZE := 16
+const PROJECTILE_POOL_SIZE := 16
 
 var active_projectile_vfx: int = 0
 var active_impact_vfx: int = 0
 var skipped_impact_vfx: int = 0
 var _impact_free_list: Array[Node2D] = []
+var _projectile_free_list: Array[Node2D] = []
 var _impact_spawn_frame: int = -1
 var _impact_spawned_this_frame: int = 0
 
@@ -27,6 +30,13 @@ func _ready() -> void:
 		fx.finished.connect(_on_impact_finished.bind(fx))
 		add_child(fx)
 		_impact_free_list.append(fx)
+	for i in range(PROJECTILE_POOL_SIZE):
+		var fx := CosmeticProjectileVFXScript.new()
+		fx.name = "CosmeticProjectileVFX"
+		fx.visible = false
+		fx.finished.connect(_on_projectile_finished.bind(fx))
+		add_child(fx)
+		_projectile_free_list.append(fx)
 	var inventory := get_node_or_null("/root/CosmeticInventory")
 	if inventory != null and inventory.has_signal("equipped_changed"):
 		inventory.equipped_changed.connect(func(_tower_id: String, _slot: String, _cosmetic_id: String) -> void:
@@ -115,6 +125,19 @@ func apply_projectile_cosmetic(projectile: Node, tower_id: String) -> void:
 	if projectile.has_method("setup_cosmetic"):
 		projectile.setup_cosmetic(cosmetic_id, cfg)
 
+func spawn_projectile_visual(parent: Node, tower_id: String, start_pos: Vector2, end_pos: Vector2) -> bool:
+	var cosmetic_id := get_equipped_id(tower_id, SLOT_PROJECTILE_SKIN)
+	var cfg := _registry_get(cosmetic_id)
+	if cfg.is_empty():
+		return false
+	if _projectile_free_list.is_empty():
+		return false
+	var fx: Node2D = _projectile_free_list.pop_back()
+	fx.reparent(parent)
+	fx.visible = true
+	fx.setup(cfg, start_pos, end_pos)
+	return true
+
 func spawn_impact(parent: Node, tower_id: String, hit_pos: Vector2, hit_angle: float = 0.0) -> bool:
 	var cosmetic_id := get_equipped_id(tower_id, SLOT_IMPACT_SKIN)
 	var cfg := _registry_get(cosmetic_id)
@@ -163,6 +186,13 @@ func _on_impact_finished(fx: Node2D) -> void:
 	fx.visible = false
 	fx.reparent(self)
 	_impact_free_list.append(fx)
+
+func _on_projectile_finished(fx: Node2D) -> void:
+	if not is_instance_valid(fx):
+		return
+	fx.visible = false
+	fx.reparent(self)
+	_projectile_free_list.append(fx)
 
 func _can_spawn_impact() -> bool:
 	var max_active := CosmeticPerformancePolicyScript.max_active_impacts(self)

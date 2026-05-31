@@ -150,7 +150,7 @@ func _build() -> void:
 
 	# Center: live preview
 	var preview_col := _make_column_panel(Color(0.20, 0.78, 1.0, 0.28))
-	preview_col.custom_minimum_size = Vector2(260, 0)
+	preview_col.custom_minimum_size = Vector2(360, 0)
 	body.add_child(preview_col)
 	var pc_inner := _column_inner(preview_col)
 	var preview_title_row := HBoxContainer.new()
@@ -163,7 +163,7 @@ func _build() -> void:
 	preview_title_row.add_child(prev_lbl)
 	_preview = CosmeticPreviewCanvasScript.new()
 	_preview.registry = get_node_or_null("/root/CosmeticRegistry")
-	_preview.custom_minimum_size = Vector2(0, 160)
+	_preview.custom_minimum_size = Vector2(0, 260)
 	_preview.size_flags_vertical = Control.SIZE_EXPAND_FILL
 	pc_inner.add_child(_preview)
 	var preview_note := Label.new()

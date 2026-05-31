@@ -15,6 +15,7 @@ const DEFAULT_TARGET_CATEGORIES: Array[String] = [ENEMY_CATEGORY_LAND]
 const ENEMIES_DATA_PATH := "res://data/enemies.json"
 const TOWERS_TREE_DATA_PATH := "res://data/towers_tree.json"
 const CosmeticDrawUtilsScript := preload("res://systems/cosmetics/cosmetic_draw_utils.gd")
+const CosmeticSpriteRendererScript := preload("res://systems/cosmetics/cosmetic_sprite_renderer.gd")
 
 # Element TD WC3-style elemental damage relation.
 # Cycle used by classic Element TD logic:
@@ -167,18 +168,11 @@ func setup_cosmetic(cosmetic_id: String, cfg: Dictionary) -> void:
 		vfx_accent_color = Color.from_string(str(cfg.get("accent_color")), vfx_accent_color)
 	var texture_path := str(cfg.get("texture_path", ""))
 	_cosmetic_textures.clear()
-	if texture_path != "" and ResourceLoader.exists(texture_path):
-		_cosmetic_texture = load(texture_path) as Texture2D
+	if texture_path != "":
+		_cosmetic_texture = CosmeticSpriteRendererScript.load_texture(texture_path)
 	else:
 		_cosmetic_texture = null
-		var raw_paths = cfg.get("sprite_paths", [])
-		if raw_paths is Array:
-			for raw_path in raw_paths:
-				var path := str(raw_path)
-				if ResourceLoader.exists(path):
-					var tex := load(path) as Texture2D
-					if tex != null:
-						_cosmetic_textures.append(tex)
+		_cosmetic_textures = CosmeticSpriteRendererScript.collect_textures(cfg)
 	if cosmetic_id != "":
 		modulate = Color.WHITE
 		z_index = 80
@@ -344,9 +338,7 @@ func _draw_cosmetic_projectile() -> void:
 		var frame_idx := int(Engine.get_process_frames() / 3) % _cosmetic_textures.size()
 		tex = _cosmetic_textures[frame_idx]
 	if tex != null:
-		var tex_scale := float(cosmetic_projectile_cfg.get("sprite_scale", 0.25))
-		var half := tex.get_size() * tex_scale * 0.5
-		draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
+		CosmeticSpriteRendererScript.draw_texture(self, cosmetic_projectile_cfg, tex)
 		return
 	CosmeticDrawUtilsScript.draw_projectile(self, cosmetic_projectile_id, cosmetic_projectile_cfg, speed)
 

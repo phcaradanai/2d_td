@@ -2,6 +2,7 @@ extends RefCounted
 class_name CosmeticDrawUtils
 
 const _ResolverScript := preload("res://systems/cosmetics/cosmetic_preview_resolver.gd")
+const _SpriteRendererScript := preload("res://systems/cosmetics/cosmetic_sprite_renderer.gd")
 
 static func draw_projectile_default(canvas: CanvasItem, tower_cfg: Dictionary) -> void:
 	var info := _ResolverScript.get_projectile_draw_info(tower_cfg)
@@ -242,25 +243,9 @@ static func _draw_aura_spark(canvas: CanvasItem, core: Color, glow: Color, accen
 		canvas.draw_circle(dir * 24.0, 0.8, Color.WHITE)
 
 static func draw_projectile(canvas: CanvasItem, cosmetic_id: String, cfg: Dictionary, speed: float = 560.0) -> void:
-	var raw_paths = cfg.get("sprite_paths", [])
-	if raw_paths is Array and not raw_paths.is_empty():
-		var frame_idx: int = int(Engine.get_process_frames() / 3) % int(raw_paths.size())
-		var path := str(raw_paths[frame_idx])
-		if ResourceLoader.exists(path):
-			var tex := load(path) as Texture2D
-			if tex != null:
-				var tex_scale := float(cfg.get("sprite_scale", 0.25))
-				var half := tex.get_size() * tex_scale * 0.5
-				canvas.draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
-				return
-	var texture_path := str(cfg.get("texture_path", ""))
-	if texture_path != "" and ResourceLoader.exists(texture_path):
-		var tex := load(texture_path) as Texture2D
-		if tex != null:
-			var tex_scale := float(cfg.get("sprite_scale", 0.25))
-			var half := tex.get_size() * tex_scale * 0.5
-			canvas.draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
-			return
+	var textures: Array[Texture2D] = _SpriteRendererScript.collect_textures(cfg)
+	if _SpriteRendererScript.draw_frame(canvas, cfg, textures, float(Engine.get_process_frames() % 24) / 24.0):
+		return
 	var core := Color.from_string(str(cfg.get("core_color", "#8fc8ff")), Color(0.56, 0.78, 1.0, 1.0))
 	var glow := Color.from_string(str(cfg.get("glow_color", "#2f7fff")), Color(0.18, 0.50, 1.0, 0.78))
 	var accent := Color.from_string(str(cfg.get("accent_color", "#ffffff")), Color.WHITE)
@@ -274,31 +259,9 @@ static func draw_projectile(canvas: CanvasItem, cosmetic_id: String, cfg: Dictio
 	_draw_default_bolt(canvas, core, glow, accent, length)
 
 static func draw_impact(canvas: CanvasItem, cfg: Dictionary, progress: float) -> void:
-	var raw_paths = cfg.get("sprite_paths", [])
-	if raw_paths is Array and not raw_paths.is_empty():
-		var frame_idx := mini(int(progress * raw_paths.size()), raw_paths.size() - 1)
-		var path := str(raw_paths[frame_idx])
-		if ResourceLoader.exists(path):
-			var tex := load(path) as Texture2D
-			if tex != null:
-				var tex_scale := float(cfg.get("sprite_scale", 0.25))
-				var half := tex.get_size() * tex_scale * 0.5
-				canvas.draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
-				return
-	var sprite_dir := str(cfg.get("sprite_dir", ""))
-	var sprite_count := int(cfg.get("sprite_count", 0))
-	var sprite_prefix := str(cfg.get("sprite_prefix", ""))
-	if sprite_dir != "" and sprite_count > 0:
-		var frame_idx := mini(int(progress * sprite_count), sprite_count - 1)
-		var start_index := int(cfg.get("sprite_start_index", 0))
-		var path := sprite_dir + sprite_prefix + "%02d.png" % (frame_idx + start_index)
-		if ResourceLoader.exists(path):
-			var tex := load(path) as Texture2D
-			if tex != null:
-				var tex_scale := float(cfg.get("sprite_scale", 0.25))
-				var half := tex.get_size() * tex_scale * 0.5
-				canvas.draw_texture_rect(tex, Rect2(-half, tex.get_size() * tex_scale), false)
-				return
+	var textures: Array[Texture2D] = _SpriteRendererScript.collect_textures(cfg)
+	if _SpriteRendererScript.draw_frame(canvas, cfg, textures, progress):
+		return
 	var t := clampf(progress, 0.0, 1.0)
 	var fade := 1.0 - t
 	var core := Color.from_string(str(cfg.get("core_color", "#8fc8ff")), Color(0.56, 0.78, 1.0, 1.0))

@@ -58,6 +58,7 @@ func equip(tower_id: String, slot: String, cosmetic_id: String) -> bool:
 	var changed := bool(sm.equip_cosmetic(tower_id, slot, cosmetic_id))
 	if changed:
 		equipped_changed.emit(tower_id, slot, cosmetic_id)
+		_equip_linked_cosmetic_bundle(sm, tower_id, slot, cosmetic_id)
 		cosmetics_changed.emit()
 	return changed
 
@@ -82,6 +83,24 @@ func set_attack_mode(tower_id: String, mode: String) -> void:
 	if sm != null and sm.has_method("equip_cosmetic"):
 		sm.equip_cosmetic(tower_id, _SLOT_ATTACK_MODE, safe_mode)
 		equipped_changed.emit(tower_id, _SLOT_ATTACK_MODE, safe_mode)
+
+func _equip_linked_cosmetic_bundle(sm: Node, tower_id: String, slot: String, cosmetic_id: String) -> void:
+	if tower_id != "darkness_t1" or slot != SLOT_TOWER_SKIN or cosmetic_id != "darkness_turret_core":
+		return
+	var linked := {
+		SLOT_PROJECTILE_SKIN: "darkness_turret_projectile",
+		SLOT_IMPACT_SKIN: "darkness_turret_impact",
+		SLOT_ATTACK_VFX_SKIN: "darkness_turret_attack_vfx",
+	}
+	for linked_slot in linked.keys():
+		var linked_id := str(linked[linked_slot])
+		if sm.has_method("get_equipped_cosmetic") and str(sm.get_equipped_cosmetic(tower_id, linked_slot)) == linked_id:
+			continue
+		if sm.has_method("equip_cosmetic") and bool(sm.equip_cosmetic(tower_id, linked_slot, linked_id)):
+			equipped_changed.emit(tower_id, linked_slot, linked_id)
+	if sm.has_method("equip_cosmetic"):
+		sm.equip_cosmetic(tower_id, _SLOT_ATTACK_MODE, "attack_vfx")
+		equipped_changed.emit(tower_id, _SLOT_ATTACK_MODE, "attack_vfx")
 
 func get_equipped(tower_id: String, slot: String) -> String:
 	var sm := _save_manager()

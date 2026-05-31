@@ -1689,6 +1689,7 @@ func _perform_aura_attack() -> void:
 	var toxic_vfx_limit := _get_toxic_vfx_limit(quality_name)
 	var aura_hit_vfx_spawned := 0
 	var aura_hit_vfx_limit := _get_aura_hit_vfx_limit(quality_name)
+	var cosmetic_service := get_node_or_null("/root/CosmeticApplyService")
 	
 	# Visual effect for aura
 	var container = get_tree().current_scene.get_node_or_null("WorldRoot/MapRoot/EffectsContainer")
@@ -1719,27 +1720,33 @@ func _perform_aura_attack() -> void:
 						_nd = _d
 						_nearest = _en
 			if _nearest != null:
-				var vtype_to_vfx := {
-					"support_halo": "magic_enchant",
-					"void_orb": "shadow_lash",
-					"ember_bloom": "flame_cone",
-					"root_cage": "nature_vine",
-					"voodoo_totem": "void_rift",
-					"chaos_orb": "void_rift",
-					"void_vortex": "void_rift",
-					"void_flower": "void_rift",
-					"spore_cap": "spore_puff",
-					"toxin_vial": "poison_spray",
-					"bio_vine": "nature_vine",
-					"storm_turbine": "chain_lightning",
-				}
-				var av_type: String = vtype_to_vfx.get(visual_type, "magic_enchant")
-				var pool := get_node_or_null("/root/VisualEffectPoolService")
-				if pool != null and pool.has_method("acquire_script"):
-					var av_node := pool.acquire_script(_av_script, container, "attack_vfx_legacy", "attack_vfx") as Node2D
-					if av_node != null:
-						av_node.setup(av_type, get_muzzle_global_position(),
-								get_target_hit_anchor_global_position(_nearest), tower_color)
+				var has_cosmetic_attack_vfx := false
+				if cosmetic_service != null and cosmetic_service.has_method("get_attack_vfx_skin_sprite_data"):
+					has_cosmetic_attack_vfx = not cosmetic_service.get_attack_vfx_skin_sprite_data(tower_id).is_empty()
+				if has_cosmetic_attack_vfx:
+					TowerAttackVFX.spawn_attack_vfx(self, _nearest)
+				else:
+					var vtype_to_vfx := {
+						"support_halo": "magic_enchant",
+						"void_orb": "shadow_lash",
+						"ember_bloom": "flame_cone",
+						"root_cage": "nature_vine",
+						"voodoo_totem": "void_rift",
+						"chaos_orb": "void_rift",
+						"void_vortex": "void_rift",
+						"void_flower": "void_rift",
+						"spore_cap": "spore_puff",
+						"toxin_vial": "poison_spray",
+						"bio_vine": "nature_vine",
+						"storm_turbine": "chain_lightning",
+					}
+					var av_type: String = vtype_to_vfx.get(visual_type, "magic_enchant")
+					var pool := get_node_or_null("/root/VisualEffectPoolService")
+					if pool != null and pool.has_method("acquire_script"):
+						var av_node := pool.acquire_script(_av_script, container, "attack_vfx_legacy", "attack_vfx") as Node2D
+						if av_node != null:
+							av_node.setup(av_type, get_muzzle_global_position(),
+									get_target_hit_anchor_global_position(_nearest), tower_color)
 	elif allow_minor_impacts and muzzle_flash_scene:
 		var pool := get_node_or_null("/root/VisualEffectPoolService")
 		var flash: Node = null
@@ -1789,6 +1796,25 @@ func _perform_aura_attack() -> void:
 				continue
 
 			if allow_minor_impacts and aura_hit_vfx_spawned < aura_hit_vfx_limit:
+				var spawned_cosmetic_hit := false
+				if cosmetic_service != null:
+					if cosmetic_service.has_method("spawn_projectile_visual"):
+						spawned_cosmetic_hit = bool(cosmetic_service.spawn_projectile_visual(
+							_aura_impact_container,
+							tower_id,
+							get_muzzle_global_position(),
+							enemy_pos
+						)) or spawned_cosmetic_hit
+					if cosmetic_service.has_method("spawn_impact"):
+						spawned_cosmetic_hit = bool(cosmetic_service.spawn_impact(
+							_aura_impact_container,
+							tower_id,
+							enemy_pos,
+							0.0
+						)) or spawned_cosmetic_hit
+				if spawned_cosmetic_hit:
+					aura_hit_vfx_spawned += 1
+					continue
 				TowerHitVFXDispatcherScript.spawn(
 					self ,
 					enemy_pos,

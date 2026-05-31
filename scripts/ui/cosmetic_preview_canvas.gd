@@ -3,6 +3,12 @@ extends Control
 const CosmeticDrawUtilsScript := preload("res://systems/cosmetics/cosmetic_draw_utils.gd")
 const TowerVisualRegistryScript := preload("res://scripts/towers/visuals/tower_visual_registry.gd")
 const TowerAttackVFXRegistryScript := preload("res://scripts/vfx/core/tower_attack_vfx_registry.gd")
+const CosmeticProjectileVFXScript := preload("res://systems/cosmetics/cosmetic_projectile_vfx.gd")
+const CosmeticImpactVFXScript := preload("res://systems/cosmetics/cosmetic_impact_vfx.gd")
+const PROJECTILE_PREVIEW_DURATION := 0.85
+const IMPACT_PREVIEW_DURATION := 0.95
+const ATTACK_VFX_PREVIEW_LOOP_SECONDS := 1.05
+const ATTACK_VFX_PREVIEW_HOLD_SECONDS := 0.75
 
 var tower_skin_id: String = ""
 var projectile_skin_id: String = ""
@@ -14,6 +20,8 @@ var tower_node: Node2D = null
 var tower_cfg: Dictionary = {}
 
 var _attack_vfx_node: Node2D = null
+var _projectile_vfx_node: Node2D = null
+var _impact_vfx_node: Node2D = null
 var _last_vfx_tower_id: String = ""
 var _vfx_tween: Tween = null
 
@@ -166,7 +174,7 @@ class TowerPreviewNode extends Node2D:
 		return Vector2.ZERO
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(240, 150)
+	custom_minimum_size = Vector2(320, 240)
 	tower_node = TowerPreviewNode.new()
 	tower_node.name = "TowerPreviewNode"
 	add_child(tower_node)
@@ -175,6 +183,7 @@ func _ready() -> void:
 func set_tower_config(cfg: Dictionary) -> void:
 	tower_cfg = cfg.duplicate(true)
 	_update_tower_node()
+	_apply_cosmetic_sprite_preview_state()
 	queue_redraw()
 
 func set_cosmetics(tower_skin: String, projectile_skin: String, impact_skin: String, aura_skin: String = "", attack_vfx_skin: String = "") -> void:
@@ -184,18 +193,20 @@ func set_cosmetics(tower_skin: String, projectile_skin: String, impact_skin: Str
 	aura_skin_id = aura_skin
 	attack_vfx_skin_id = attack_vfx_skin
 	_update_tower_node()
+	_apply_cosmetic_sprite_preview_state()
 	queue_redraw()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_RESIZED:
 		_update_tower_node()
 		_apply_attack_vfx_state()
+		_apply_cosmetic_sprite_preview_state()
 
 func _draw() -> void:
-	var center := size * 0.5 + Vector2(-42, 8)
 	var is_support := str(tower_cfg.get("attack_type", "")) == "support_aura"
 
 	if is_support:
+		var center := _tower_preview_position()
 		draw_set_transform(center, 0.0, Vector2.ONE)
 		if aura_skin_id == "":
 			CosmeticDrawUtilsScript.draw_aura_default(self, tower_cfg)
@@ -203,26 +214,42 @@ func _draw() -> void:
 			CosmeticDrawUtilsScript.draw_aura(self, aura_skin_id, _get_cosmetic_cfg(aura_skin_id))
 		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 	else:
-		var bolt_center := center + Vector2(112, -24)
-		draw_set_transform(bolt_center, 0.0, Vector2.ONE)
+		var bolt_center := _projectile_preview_position()
 		if projectile_skin_id == "":
+			draw_set_transform(bolt_center, 0.0, Vector2.ONE)
 			CosmeticDrawUtilsScript.draw_projectile_default(self, tower_cfg)
-		else:
-			CosmeticDrawUtilsScript.draw_projectile(self, projectile_skin_id, _get_cosmetic_cfg(projectile_skin_id), 560.0)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
 
-		var impact_center := center + Vector2(116, 34)
-		draw_set_transform(impact_center, 0.0, Vector2.ONE)
+		var impact_center := _impact_preview_position()
 		if impact_skin_id == "":
+			draw_set_transform(impact_center, 0.0, Vector2.ONE)
 			CosmeticDrawUtilsScript.draw_impact_default(self, tower_cfg)
-		else:
-			CosmeticDrawUtilsScript.draw_impact(self, _get_cosmetic_cfg(impact_skin_id), 0.35)
-		draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+			draw_set_transform(Vector2.ZERO, 0.0, Vector2.ONE)
+
+func _tower_preview_position() -> Vector2:
+	var w := maxf(size.x, custom_minimum_size.x)
+	var h := maxf(size.y, custom_minimum_size.y)
+	return Vector2(w * 0.5, h * 0.31)
+
+func _projectile_preview_position() -> Vector2:
+	var w := maxf(size.x, custom_minimum_size.x)
+	var h := maxf(size.y, custom_minimum_size.y)
+	return Vector2(w * 0.34, h * 0.73)
+
+func _impact_preview_position() -> Vector2:
+	var w := maxf(size.x, custom_minimum_size.x)
+	var h := maxf(size.y, custom_minimum_size.y)
+	return Vector2(w * 0.68, h * 0.73)
+
+func _attack_vfx_preview_position() -> Vector2:
+	var w := maxf(size.x, custom_minimum_size.x)
+	var h := maxf(size.y, custom_minimum_size.y)
+	return Vector2(w * 0.50, h * 0.53)
 
 func _update_tower_node() -> void:
 	if tower_node == null:
 		return
-	tower_node.position = size * 0.5 + Vector2(-42, 8)
+	tower_node.position = _tower_preview_position()
 	if tower_node.has_method("set_tower_config"):
 		tower_node.set_tower_config(tower_cfg)
 	if tower_node.has_method("set_skin"):
@@ -239,6 +266,73 @@ func _update_tower_node() -> void:
 		_rebuild_attack_vfx_node()
 	else:
 		_apply_attack_vfx_state()
+	_apply_cosmetic_sprite_preview_state()
+
+func _apply_cosmetic_sprite_preview_state() -> void:
+	var is_support := str(tower_cfg.get("attack_type", "")) == "support_aura"
+	if is_support:
+		_hide_cosmetic_sprite_previews()
+		return
+	if projectile_skin_id == "":
+		if _projectile_vfx_node != null and is_instance_valid(_projectile_vfx_node):
+			_projectile_vfx_node.visible = false
+	else:
+		_restart_projectile_preview()
+	if impact_skin_id == "":
+		if _impact_vfx_node != null and is_instance_valid(_impact_vfx_node):
+			_impact_vfx_node.visible = false
+	else:
+		_restart_impact_preview()
+
+func _hide_cosmetic_sprite_previews() -> void:
+	if _projectile_vfx_node != null and is_instance_valid(_projectile_vfx_node):
+		_projectile_vfx_node.visible = false
+		_projectile_vfx_node.set_process(false)
+	if _impact_vfx_node != null and is_instance_valid(_impact_vfx_node):
+		_impact_vfx_node.visible = false
+		_impact_vfx_node.set_process(false)
+
+func _restart_projectile_preview() -> void:
+	var cfg := _get_cosmetic_cfg(projectile_skin_id)
+	if cfg.is_empty():
+		return
+	var preview_cfg := cfg.duplicate(true)
+	preview_cfg["_preview_duration"] = PROJECTILE_PREVIEW_DURATION
+	if _projectile_vfx_node == null or not is_instance_valid(_projectile_vfx_node):
+		_projectile_vfx_node = CosmeticProjectileVFXScript.new() as Node2D
+		_projectile_vfx_node.name = "CosmeticProjectilePreview"
+		add_child(_projectile_vfx_node)
+		if _projectile_vfx_node.has_signal("finished"):
+			_projectile_vfx_node.finished.connect(_on_projectile_preview_finished)
+	var start_pos: Vector2 = global_position + _projectile_preview_position() + Vector2(-18.0, 0.0)
+	var end_pos: Vector2 = global_position + _projectile_preview_position() + Vector2(18.0, 0.0)
+	if _projectile_vfx_node.has_method("setup"):
+		_projectile_vfx_node.setup(preview_cfg, start_pos, end_pos)
+
+func _restart_impact_preview() -> void:
+	var cfg := _get_cosmetic_cfg(impact_skin_id)
+	if cfg.is_empty():
+		return
+	var preview_cfg := cfg.duplicate(true)
+	preview_cfg["_preview_duration"] = IMPACT_PREVIEW_DURATION
+	preview_cfg["_redraw_interval"] = 0.03
+	if _impact_vfx_node == null or not is_instance_valid(_impact_vfx_node):
+		_impact_vfx_node = CosmeticImpactVFXScript.new() as Node2D
+		_impact_vfx_node.name = "CosmeticImpactPreview"
+		add_child(_impact_vfx_node)
+		if _impact_vfx_node.has_signal("finished"):
+			_impact_vfx_node.finished.connect(_on_impact_preview_finished)
+	_impact_vfx_node.position = _impact_preview_position()
+	if _impact_vfx_node.has_method("setup"):
+		_impact_vfx_node.setup(preview_cfg)
+
+func _on_projectile_preview_finished() -> void:
+	if is_visible_in_tree() and projectile_skin_id != "":
+		_restart_projectile_preview()
+
+func _on_impact_preview_finished() -> void:
+	if is_visible_in_tree() and impact_skin_id != "":
+		_restart_impact_preview()
 
 func _rebuild_attack_vfx_node() -> void:
 	if _vfx_tween != null:
@@ -276,11 +370,9 @@ func _rebuild_attack_vfx_node() -> void:
 func _apply_attack_vfx_state() -> void:
 	if _attack_vfx_node == null or not is_instance_valid(_attack_vfx_node):
 		return
-	var center := size * 0.5 + Vector2(-42, 8)
-	# Start from just past the tower model edge (tower draws at ~1.45× scale, radius ~29px).
-	_attack_vfx_node.position = center + Vector2(40, 0)
+	_attack_vfx_node.position = _attack_vfx_preview_position()
 	_attack_vfx_node.rotation = 0.0
-	_attack_vfx_node.set("distance", 95.0)
+	_attack_vfx_node.set("distance", clampf(size.x * 0.32, 78.0, 128.0))
 	var primary := _get_tower_preview_color()
 	var secondary := primary.lightened(0.28)
 	if attack_vfx_skin_id != "":
@@ -313,14 +405,14 @@ func _start_vfx_loop() -> void:
 	_attack_vfx_node.set("elapsed", 0.0)
 	_attack_vfx_node.queue_redraw()
 	_vfx_tween = create_tween().set_loops()
-	# Play at preview speed (0.5s) regardless of in-game lifetime so it's readable.
+	# Play slower than combat timing so cosmetic frames are readable in the loadout preview.
 	_vfx_tween.tween_method(func(v: float) -> void:
 		if is_instance_valid(_attack_vfx_node):
 			_attack_vfx_node.set("elapsed", v)
 			_attack_vfx_node.queue_redraw()
-	, 0.0, lifetime, 0.5)
+	, 0.0, lifetime, ATTACK_VFX_PREVIEW_LOOP_SECONDS)
 	# Pause at end state before next loop so the user can see the full trail.
-	_vfx_tween.tween_interval(0.65)
+	_vfx_tween.tween_interval(ATTACK_VFX_PREVIEW_HOLD_SECONDS)
 
 func _get_tower_preview_color() -> Color:
 	var elements: Array = tower_cfg.get("elements", [])

@@ -1,7 +1,82 @@
-﻿{
-	"tower_skin": [],
-	"projectile_skin": [],
-	"impact_skin": [],
+{
+	"tower_skin": [
+		{
+			"id": "darkness_turret_core",
+			"display_name": "Void Core Turret",
+			"rarity": "common",
+			"description": "A compact violet core chassis from the Darkness turret sprite set.",
+			"visual_script": "res://systems/cosmetics/visuals/darkness_turret_core_visual.gd",
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
+	"projectile_skin": [
+		{
+			"id": "darkness_turret_projectile",
+			"display_name": "Void Core Shot",
+			"rarity": "common",
+			"description": "Animated violet projectile frames from the Darkness turret sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_01.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_02.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_03.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_04.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_05.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_06.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_07.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/projectile_08.png"
+			],
+			"sprite_scale": 0.72,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "darkness_turret_impact",
+			"display_name": "Void Ring Impact",
+			"rarity": "common",
+			"description": "Animated void impact ring from the Darkness turret sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_01.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_02.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_03.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_04.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_05.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_06.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_07.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/impact_vfx_08.png"
+			],
+			"sprite_scale": 0.82,
+			"duration": 0.25,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
 	"aura_skin": [],
-	"attack_vfx_skin": []
+	"attack_vfx_skin": [
+		{
+			"id": "darkness_turret_attack_vfx",
+			"display_name": "Void Ring Attack",
+			"rarity": "common",
+			"description": "Animated attack ring frames from the Darkness turret sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_01.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_02.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_03.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_04.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_05.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_06.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_07.png",
+				"res://assets/sprites/darkness_turret_ripped/frames_trimmed/attack_vfx_08.png"
+			],
+			"sprite_scale": 0.78,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	]
 }
