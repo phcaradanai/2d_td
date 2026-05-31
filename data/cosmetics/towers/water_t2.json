@@ -1,7 +1,41 @@
-﻿{
+{
 	"tower_skin": [],
-	"projectile_skin": [],
-	"impact_skin": [],
+	"projectile_skin": [
+		{
+			"id": "water_t2_projectile_v01",
+			"display_name": "Water Bolt",
+			"rarity": "common",
+			"description": "Animated water projectile frames from the Water tower sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/towers/water/projectile/version_01/projectile_water.png"
+			],
+			"sprite_scale": 0.22,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "water_t2_impact_v01",
+			"display_name": "Water Splash Impact",
+			"rarity": "common",
+			"description": "Animated water impact frames from the Water tower sprite set.",
+			"sprite_paths": [
+				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_01.png",
+				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_02.png",
+				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_03.png",
+				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_04.png",
+				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_05.png",
+				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_06.png"
+			],
+			"sprite_scale": 0.15,
+			"duration": 0.28,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
 	"aura_skin": [],
 	"attack_vfx_skin": []
 }
