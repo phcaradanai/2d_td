@@ -8,7 +8,10 @@
 			"description": "Heavy stone cannonball sprite from the Neutral Cannon T1 ripped asset.",
 			"texture_path": "res://assets/sprites/neutral_cannon_t1_ripped/frames_fixed_256/projectile/projectile_00.png",
 			"sprite_scale": 0.1,
-			"unlock_condition": { "type": "total_stars", "count": 1 }
+			"unlock_condition": {
+				"type": "total_stars",
+				"count": 1
+			}
 		}
 	],
 	"impact_skin": [
@@ -22,21 +25,12 @@
 			"sprite_count": 7,
 			"sprite_scale": 0.18,
 			"duration": 0.25,
-			"unlock_condition": { "type": "total_stars", "count": 3 }
+			"unlock_condition": {
+				"type": "total_stars",
+				"count": 3
+			}
 		}
 	],
 	"aura_skin": [],
-	"attack_vfx_skin": [
-		{
-			"id": "neutral_cannon_ripped_fire_vfx",
-			"display_name": "Ripped Cannon Fire",
-			"rarity": "common",
-			"description": "Sprite muzzle-flash animation from the Neutral Cannon T1 ripped asset.",
-			"sprite_dir": "res://assets/sprites/neutral_cannon_t1_ripped/frames_fixed_256/turret_fire/",
-			"sprite_prefix": "turret_fire_",
-			"sprite_count": 5,
-			"sprite_scale": 0.25,
-			"unlock_condition": { "type": "perfect_any", "count": 1 }
-		}
-	]
+	"attack_vfx_skin": []
 }

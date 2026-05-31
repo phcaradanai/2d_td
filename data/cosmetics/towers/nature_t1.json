@@ -12,7 +12,7 @@
 				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_03.png",
 				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_04.png"
 			],
-			"sprite_scale": 0.26,
+			"sprite_scale": 0.18,
 			"unlock_condition": {
 				"type": "always_unlocked"
 			}
