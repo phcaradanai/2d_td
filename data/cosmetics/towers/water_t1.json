@@ -29,7 +29,7 @@
 				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_05.png",
 				"res://assets/sprites/towers/water/impact/version_01/water_impact_vfx_06.png"
 			],
-			"sprite_scale": 0.25,
+			"sprite_scale": 0.36,
 			"duration": 0.28,
 			"unlock_condition": {
 				"type": "always_unlocked"
