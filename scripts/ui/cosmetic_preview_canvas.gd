@@ -55,6 +55,13 @@ class TowerPreviewNode extends Node2D:
 		queue_redraw()
 
 	func _draw() -> void:
+		var cfg := _get_cosmetic_cfg(tower_skin_id)
+		if not cfg.is_empty() and (cfg.has("sprite_paths") or cfg.has("sprite_dir")):
+			var TowerVisualRendererScript = load("res://scripts/towers/tower_visual_renderer.gd")
+			if TowerVisualRendererScript != null and TowerVisualRendererScript.has_method("_draw_animated_sprite_paths"):
+				TowerVisualRendererScript._draw_animated_sprite_paths(self, cfg, 1.45)
+			return
+			
 		var visual_script := _get_tower_visual_script()
 		if visual_script == null:
 			return

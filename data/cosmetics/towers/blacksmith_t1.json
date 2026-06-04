@@ -1,5 +1,22 @@
 {
-	"tower_skin": [],
+	"tower_skin": [
+		{
+			"id": "blacksmith_forge_animated_t1",
+			"display_name": "Animated Forge",
+			"rarity": "common",
+			"description": "A burning forge working continuously.",
+			"sprite_paths": [
+				"res://assets/sprites/towers/blacksmith/turrets/blacksmith_td_v01.png",
+				"res://assets/sprites/towers/blacksmith/turrets/blacksmith_td_v02.png",
+				"res://assets/sprites/towers/blacksmith/turrets/blacksmith_td_v03.png",
+				"res://assets/sprites/towers/blacksmith/turrets/blacksmith_td_v04.png"
+			],
+			"sprite_scale": 0.26,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
+		}
+	],
 	"projectile_skin": [],
 	"impact_skin": [],
 	"aura_skin": [
