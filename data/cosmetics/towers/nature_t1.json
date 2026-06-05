@@ -2,16 +2,14 @@
 	"tower_skin": [],
 	"projectile_skin": [
 		{
-			"id": "nature_turret_symmetric_projectile",
-			"display_name": "Verdant Seed Bolt",
+			"id": "nature_v1_proj",
+			"display_name": "Verdant Seed Bolt V1",
 			"rarity": "common",
-			"description": "A bright nature projectile from the symmetric turret sprite set.",
-			"sprite_paths": [
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_01.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_02.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_03.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/projectile_04.png"
-			],
+			"description": "A bright nature projectile from the new nature sprite set.",
+			"sprite_dir": "res://assets/sprites/towers/nature/projectile/version_01/",
+			"sprite_prefix": "projectile_",
+			"sprite_start_index": 1,
+			"sprite_count": 3,
 			"sprite_scale": 0.18,
 			"unlock_condition": {
 				"type": "always_unlocked"
@@ -20,16 +18,14 @@
 	],
 	"impact_skin": [
 		{
-			"id": "nature_turret_symmetric_impact",
-			"display_name": "Verdant Bloom Impact",
+			"id": "nature_v1_impact",
+			"display_name": "Verdant Bloom Impact V1",
 			"rarity": "common",
-			"description": "Animated nature impact frames from the symmetric turret sprite set.",
-			"sprite_paths": [
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_01.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_02.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_03.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/impact_vfx_04.png"
-			],
+			"description": "Animated nature impact frames from the new nature sprite set.",
+			"sprite_dir": "res://assets/sprites/towers/nature/impact/version_01/",
+			"sprite_prefix": "impact_vfx_",
+			"sprite_start_index": 1,
+			"sprite_count": 4,
 			"sprite_scale": 0.26,
 			"duration": 0.25,
 			"unlock_condition": {
@@ -40,15 +36,14 @@
 	"aura_skin": [],
 	"attack_vfx_skin": [
 		{
-			"id": "nature_turret_symmetric_attack_vfx",
-			"display_name": "Verdant Shot Bloom",
+			"id": "nature_v1_attack_vfx",
+			"display_name": "Verdant Shot Bloom V1",
 			"rarity": "common",
-			"description": "Sprite attack bloom frames from the symmetric turret sprite set.",
-			"sprite_paths": [
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/attack_vfx_01.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/attack_vfx_02.png",
-				"res://assets/sprites/nature_turret_symmetric_ripped/frames_fixed_160/attack_vfx_03.png"
-			],
+			"description": "Sprite attack bloom frames from the new nature sprite set.",
+			"sprite_dir": "res://assets/sprites/towers/nature/attack_vfx/version_01/",
+			"sprite_prefix": "attack_vfx_",
+			"sprite_start_index": 1,
+			"sprite_count": 3,
 			"sprite_scale": 0.22,
 			"unlock_condition": {
 				"type": "always_unlocked"

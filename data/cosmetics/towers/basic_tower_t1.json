@@ -6,7 +6,10 @@
 			"rarity": "common",
 			"description": "A polished silver starter chassis with cyan circuit accents.",
 			"visual_script": "res://systems/cosmetics/visuals/basic_neon_silver_visual.gd",
-			"unlock_condition": { "type": "total_stars", "count": 1 }
+			"unlock_condition": {
+				"type": "total_stars",
+				"count": 1
+			}
 		},
 		{
 			"id": "basic_perfect_gold",
@@ -14,7 +17,26 @@
 			"rarity": "perfect",
 			"description": "A gold victory chassis reserved for a flawless first clear.",
 			"visual_script": "res://systems/cosmetics/visuals/basic_perfect_gold_visual.gd",
-			"unlock_condition": { "type": "perfect_level", "level_id": "level_01" }
+			"unlock_condition": {
+				"type": "perfect_level",
+				"level_id": "level_01"
+			}
+		},
+		{
+			"id": "basic_arrow_v1",
+			"display_name": "Arrow Skin V1",
+			"rarity": "rare",
+			"description": "Custom arrow skin v1.",
+			"visual_script": "res://systems/cosmetics/visuals/basic_arrow_v1_visual.gd",
+			"base_scale": 0.7,
+			"base_offset_x": 0,
+			"base_offset_y": 0,
+			"turret_scale": 0.6,
+			"turret_offset_x": 5.5,
+			"turret_offset_y": -8.5,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
 		}
 	],
 	"projectile_skin": [
@@ -27,7 +49,19 @@
 			"glow_color": "#ff9f2e",
 			"accent_color": "#fff4b8",
 			"trail_seconds": 0.0,
-			"unlock_condition": { "type": "perfect_count", "count": 1 }
+			"unlock_condition": {
+				"type": "perfect_count",
+				"count": 1
+			}
+		},
+		{
+			"id": "basic_arrow_v1_proj",
+			"display_name": "Arrow Projectile V1",
+			"rarity": "rare",
+			"texture_path": "res://assets/sprites/towers/arrow/projectile/version_01/version_01.png",
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
 		}
 	],
 	"impact_skin": [
@@ -40,7 +74,22 @@
 			"glow_color": "#ff4fd8",
 			"accent_color": "#ffffff",
 			"duration": 0.25,
-			"unlock_condition": { "type": "perfect_any", "count": 1 }
+			"unlock_condition": {
+				"type": "perfect_any",
+				"count": 1
+			}
+		},
+		{
+			"id": "basic_arrow_v1_impact",
+			"display_name": "Arrow Impact V1",
+			"rarity": "rare",
+			"sprite_dir": "res://assets/sprites/towers/arrow/impact/version_01/",
+			"sprite_prefix": "version_01_",
+			"sprite_start_index": 1,
+			"sprite_count": 5,
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
 		}
 	],
 	"aura_skin": [],
@@ -50,14 +99,20 @@
 			"display_name": "Gold Tracer",
 			"rarity": "rare",
 			"primary_color": "#ffd966",
-			"secondary_color": "#ffe599"
+			"secondary_color": "#ffe599",
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
 		},
 		{
 			"id": "basic_void_tracer",
 			"display_name": "Void Tracer",
 			"rarity": "perfect",
 			"primary_color": "#9933ff",
-			"secondary_color": "#cc66ff"
+			"secondary_color": "#cc66ff",
+			"unlock_condition": {
+				"type": "always_unlocked"
+			}
 		}
 	]
 }

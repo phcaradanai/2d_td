@@ -6,7 +6,7 @@
 			"display_name": "Stone Cannonball",
 			"rarity": "common",
 			"description": "Heavy stone cannonball sprite from the Neutral Cannon T1 ripped asset.",
-			"texture_path": "res://assets/sprites/neutral_cannon_t1_ripped/frames_fixed_256/projectile/projectile_00.png",
+			"texture_path": "res://assets/sprites/towers/cannon/projectile/version_01/projectile_00.png",
 			"sprite_scale": 0.1,
 			"unlock_condition": {
 				"type": "total_stars",
@@ -20,7 +20,7 @@
 			"display_name": "Stone Splash",
 			"rarity": "common",
 			"description": "Animated stone splash impact from the Neutral Cannon T1 ripped asset.",
-			"sprite_dir": "res://assets/sprites/neutral_cannon_t1_ripped/frames_fixed_256/splash_impact/",
+			"sprite_dir": "res://assets/sprites/towers/cannon/impact/version_01/",
 			"sprite_prefix": "splash_impact_",
 			"sprite_count": 7,
 			"sprite_scale": 0.18,

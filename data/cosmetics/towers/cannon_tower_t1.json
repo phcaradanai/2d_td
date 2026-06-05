@@ -1,7 +1,31 @@
 {
-	"tower_skin": [],
-	"projectile_skin": [],
-	"impact_skin": [],
+	"tower_skin": [
+		{
+			"id": "cannon_v1",
+			"display_name": "Cannon Skin V1",
+			"rarity": "rare",
+			"visual_script": "res://systems/cosmetics/visuals/cannon_v1_visual.gd"
+		}
+	],
+	"projectile_skin": [
+		{
+			"id": "cannon_v1_proj",
+			"display_name": "Cannon Projectile V1",
+			"rarity": "rare",
+			"texture_path": "res://assets/sprites/towers/cannon/projectile/version_01/projectile_00.png"
+		}
+	],
+	"impact_skin": [
+		{
+			"id": "cannon_v1_impact",
+			"display_name": "Cannon Impact V1",
+			"rarity": "rare",
+			"sprite_dir": "res://assets/sprites/towers/cannon/impact/version_01/",
+			"sprite_prefix": "splash_impact_",
+			"sprite_start_index": 0,
+			"sprite_count": 7
+		}
+	],
 	"aura_skin": [],
 	"attack_vfx_skin": [
 		{
